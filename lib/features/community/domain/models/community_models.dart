@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/utils/current_user.dart';
 export 'event_requests.dart';
 import 'event_requests.dart';
 
@@ -401,19 +402,98 @@ class EventModel {
 
     final organizerObj = json['organizer'] is Map<String, dynamic>
         ? json['organizer'] as Map<String, dynamic>
-        : null;
+        : (json['creator'] is Map<String, dynamic>
+            ? json['creator'] as Map<String, dynamic>
+            : (json['user'] is Map<String, dynamic>
+                ? json['user'] as Map<String, dynamic>
+                : (json['author'] is Map<String, dynamic>
+                    ? json['author'] as Map<String, dynamic>
+                    : (json['owner'] is Map<String, dynamic>
+                        ? json['owner'] as Map<String, dynamic>
+                        : (json['host'] is Map<String, dynamic>
+                            ? json['host'] as Map<String, dynamic>
+                            : null)))));
 
-    final orgId =
+    final createdByObj = json['createdBy'] is Map<String, dynamic>
+        ? json['createdBy'] as Map<String, dynamic>
+        : (json['created_by'] is Map<String, dynamic>
+            ? json['created_by'] as Map<String, dynamic>
+            : null);
+
+    final isBackendOwner = json['isOwner'] == true ||
+        json['is_owner'] == true ||
+        json['isOrganizer'] == true ||
+        json['is_organizer'] == true ||
+        json['canEdit'] == true ||
+        json['can_edit'] == true;
+
+    final rawOrgId =
         json['organizerId']?.toString() ??
+        json['organizer_id']?.toString() ??
+        json['creatorId']?.toString() ??
+        json['creator_id']?.toString() ??
+        json['userId']?.toString() ??
+        json['user_id']?.toString() ??
+        json['authorId']?.toString() ??
+        json['author_id']?.toString() ??
+        json['ownerId']?.toString() ??
+        json['owner_id']?.toString() ??
+        json['hostId']?.toString() ??
+        json['host_id']?.toString() ??
+        json['accountId']?.toString() ??
+        json['account_id']?.toString() ??
+        (json['organizer'] is! Map ? json['organizer']?.toString() : null) ??
+        (json['creator'] is! Map ? json['creator']?.toString() : null) ??
+        (json['user'] is! Map ? json['user']?.toString() : null) ??
+        (json['author'] is! Map ? json['author']?.toString() : null) ??
+        (json['owner'] is! Map ? json['owner']?.toString() : null) ??
+        (json['host'] is! Map ? json['host']?.toString() : null) ??
+        (json['createdBy'] is! Map ? json['createdBy']?.toString() : null) ??
+        (json['created_by'] is! Map ? json['created_by']?.toString() : null) ??
         organizerObj?['id']?.toString() ??
-        organizerObj?['userId']?.toString();
+        organizerObj?['userId']?.toString() ??
+        organizerObj?['user_id']?.toString() ??
+        organizerObj?['uuid']?.toString() ??
+        organizerObj?['_id']?.toString() ??
+        organizerObj?['sub']?.toString() ??
+        createdByObj?['id']?.toString() ??
+        createdByObj?['userId']?.toString() ??
+        createdByObj?['user_id']?.toString() ??
+        createdByObj?['uuid']?.toString() ??
+        createdByObj?['_id']?.toString() ??
+        createdByObj?['sub']?.toString();
+
+    final currentUserId = CurrentUser.id.trim();
+    String? orgId = (rawOrgId != null && rawOrgId.trim().isNotEmpty) ? rawOrgId.trim() : null;
+
+    if (orgId == null || orgId.isEmpty) {
+      if (isBackendOwner && currentUserId.isNotEmpty) {
+        orgId = currentUserId;
+      } else if (currentUserId.isNotEmpty) {
+        final currentUsername = CurrentUser.username.trim();
+        final currentEmail = CurrentUser.get()?.email.trim() ?? '';
+        final orgUsername = (organizerObj?['username'] ?? organizerObj?['userName'])?.toString().trim();
+        final orgEmail = (organizerObj?['email'])?.toString().trim();
+        if ((orgUsername != null && orgUsername.isNotEmpty && orgUsername.toLowerCase() == currentUsername.toLowerCase()) ||
+            (orgEmail != null && orgEmail.isNotEmpty && orgEmail.toLowerCase() == currentEmail.toLowerCase())) {
+          orgId = currentUserId;
+        }
+      }
+    }
 
     final orgName =
         organizerObj?['fullName'] as String? ??
         organizerObj?['username'] as String? ??
         organizerObj?['name'] as String? ??
         organizerObj?['displayName'] as String? ??
+        createdByObj?['fullName'] as String? ??
+        createdByObj?['username'] as String? ??
+        createdByObj?['name'] as String? ??
         json['organizerName'] as String? ??
+        json['organizer_name'] as String? ??
+        json['creatorName'] as String? ??
+        json['authorName'] as String? ??
+        json['userName'] as String? ??
         '';
     final orgAvatar =
         organizerObj?['avatarUrl'] as String? ??
@@ -423,6 +503,8 @@ class EventModel {
         organizerObj?['profilePicture'] as String? ??
         organizerObj?['picture'] as String? ??
         organizerObj?['image'] as String? ??
+        createdByObj?['avatarUrl'] as String? ??
+        createdByObj?['avatar'] as String? ??
         json['organizerAvatar'] as String? ??
         json['organizerAvatarUrl'] as String? ??
         json['avatarUrl'] as String? ??

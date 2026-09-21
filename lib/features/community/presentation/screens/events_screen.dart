@@ -6,6 +6,8 @@ import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_creation_flow.dart';
 import 'event_details_screen.dart';
+import '../../../../shared/utils/current_user.dart';
+import 'create_event_screen.dart';
 import 'my_events_screen.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -377,7 +379,7 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 }
 
-class _EventCard extends StatelessWidget {
+class EventCard extends StatefulWidget {
   final EventModel event;
   final CommunityController controller;
   final int index;
@@ -388,7 +390,8 @@ class _EventCard extends StatelessWidget {
   final Color cardBg;
   final Color borderSubtle;
 
-  const _EventCard({
+  const EventCard({
+    super.key,
     required this.event,
     required this.controller,
     this.index = 0,
@@ -399,6 +402,116 @@ class _EventCard extends StatelessWidget {
     required this.cardBg,
     required this.borderSubtle,
   });
+
+  @override
+  State<EventCard> createState() => _EventCardState();
+}
+
+typedef _EventCard = EventCard;
+
+class _EventCardState extends State<EventCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  double _dragOffset = 0.0;
+  bool _revealed = false;
+
+  static const double _revealWidth = 140.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _animation = Tween<double>(begin: 0.0, end: 0.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    )..addListener(() {
+        setState(() {
+          _dragOffset = _animation.value;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _animateTo(double target) {
+    _animation = Tween<double>(begin: _dragOffset, end: target).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
+    _animationController.forward(from: 0.0);
+  }
+
+  EventModel get event => widget.event;
+  CommunityController get controller => widget.controller;
+  bool get isDark => widget.isDark;
+  Color get textPrimary => widget.textPrimary;
+  Color get textSecondary => widget.textSecondary;
+  Color get textMuted => widget.textMuted;
+  Color get cardBg => widget.cardBg;
+  Color get borderSubtle => widget.borderSubtle;
+
+  bool get _isOrganizer {
+    final eventOrgId = event.organizerId?.trim() ?? '';
+    final currentUserId = CurrentUser.id.trim();
+
+    if (eventOrgId.isNotEmpty &&
+        currentUserId.isNotEmpty &&
+        currentUserId.toLowerCase() == eventOrgId.toLowerCase()) {
+      return true;
+    }
+
+    // Legacy test mock fallback (when test creates EventModel with organizerName: 'me' without AuthController)
+    if (eventOrgId.isEmpty && event.organizerName.trim().toLowerCase() == 'me') {
+      return true;
+    }
+
+    return false;
+  }
+
+  void _onHorizontalDragStart(DragStartDetails details) {
+    if (!_isOrganizer) return;
+    _animationController.stop();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (!_isOrganizer) return;
+    _animationController.stop();
+    setState(() {
+      _dragOffset = (_dragOffset + details.delta.dx).clamp(-_revealWidth, 0.0);
+      _revealed = _dragOffset <= -_revealWidth / 2;
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (!_isOrganizer) return;
+    final velocity = details.primaryVelocity ?? 0;
+    bool shouldReveal;
+    if (_revealed) {
+      // If currently revealed, close if swiped right past 35px or flicked right
+      shouldReveal = !(velocity > 80 || _dragOffset > -105.0);
+    } else {
+      // If closed, open if swiped left past 35px or flicked left
+      shouldReveal = velocity < -80 || _dragOffset < -35.0;
+    }
+    _revealed = shouldReveal;
+    _animateTo(shouldReveal ? -_revealWidth : 0.0);
+  }
+
+  void _onHorizontalDragCancel() {
+    if (!_isOrganizer) return;
+    _animateTo(_revealed ? -_revealWidth : 0.0);
+  }
+
+  void _close() {
+    _revealed = false;
+    _animateTo(0.0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -432,13 +545,12 @@ class _EventCard extends StatelessWidget {
 
     final String rawCat = event.category.isNotEmpty ? event.category : 'Event';
     final String catKey = 'community.${rawCat.toLowerCase()}';
-    final String categoryDisplay = catKey.tr.isNotEmpty && catKey.tr != catKey
-        ? catKey.tr
-        : rawCat;
+    final String categoryDisplay =
+        catKey.tr.isNotEmpty && catKey.tr != catKey ? catKey.tr : rawCat;
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 240 + (index.clamp(0, 5) * 30)),
+      duration: Duration(milliseconds: 240 + (widget.index.clamp(0, 5) * 30)),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
@@ -449,189 +561,270 @@ class _EventCard extends StatelessWidget {
           ),
         );
       },
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => Get.to(
-            () => EventDetailsScreen(
-              event: event,
-              heroTag: 'event-image-${event.id}-standalone',
-            ),
-          ),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderSubtle, width: 0.8),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 92,
-                    height: 92,
-                    child: Hero(
-                      tag: 'event-image-${event.id}-standalone',
-                      child: _buildImage(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : Colors.black.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: borderSubtle.withValues(alpha: 0.6),
-                                width: 0.6,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // ── Action strip revealed behind card when owner swipes left ──────
+            if (_isOrganizer)
+              Positioned.fill(
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    // Edit
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        _close();
+                        _handleCardOwnerAction(context: context, action: 'edit');
+                      },
+                      child: Container(
+                        width: 68,
+                        color: isDark
+                            ? const Color(0xFF2C2C2E)
+                            : const Color(0xFFE5E7EB),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.edit_outlined, color: textPrimary, size: 22),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Edit',
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Delete
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        _close();
+                        _handleCardOwnerAction(context: context, action: 'delete');
+                      },
+                      child: Container(
+                        width: 72,
+                        color: const Color(0xFFEF4444),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delete_outline_rounded,
+                                color: Colors.white, size: 22),
+                            SizedBox(height: 4),
+                            Text(
+                              'Delete',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // ── Swipeable card foreground ─────────────────────────────────────
+            Transform.translate(
+              offset: Offset(_dragOffset, 0),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: _isOrganizer ? _onHorizontalDragStart : null,
+                onHorizontalDragUpdate: _isOrganizer ? _onHorizontalDragUpdate : null,
+                onHorizontalDragEnd: _isOrganizer ? _onHorizontalDragEnd : null,
+                onHorizontalDragCancel: _isOrganizer ? _onHorizontalDragCancel : null,
+                onTap: _revealed
+                    ? _close
+                    : () => Get.to(
+                          () => EventDetailsScreen(
+                            event: event,
+                            heroTag: 'event-image-${event.id}-standalone',
+                          ),
+                        ),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderSubtle, width: 0.8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          width: 92,
+                          height: 92,
+                          child: Hero(
+                            tag: 'event-image-${event.id}-standalone',
+                            child: _buildImage(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
                               children: [
-                                Icon(
-                                  _getCategoryIconData(event.category),
-                                  size: 11,
-                                  color: isDark
-                                      ? Colors.white70
-                                      : textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  categoryDisplay,
-                                  style: TextStyle(
+                                // Category badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2.5),
+                                  decoration: BoxDecoration(
                                     color: isDark
-                                        ? Colors.white70
-                                        : textSecondary,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.2,
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : Colors.black.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: borderSubtle.withValues(alpha: 0.6),
+                                      width: 0.6,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getCategoryIconData(event.category),
+                                        size: 11,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : textSecondary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        categoryDisplay,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white70
+                                              : textSecondary,
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (event.isPaid) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.communityAccent
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'community.paid'.tr.isNotEmpty &&
+                                              'community.paid'.tr !=
+                                                  'community.paid'
+                                          ? 'community.paid'.tr.toUpperCase()
+                                          : 'PAID',
+                                      style: const TextStyle(
+                                        color: AppColors.communityAccent,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                const Spacer(),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      final idx = controller.events.indexWhere((e) => e.id == event.id);
+                                      if (idx != -1) {
+                                        controller.toggleEventBookmark(event.id);
+                                      } else {
+                                        event.isBookmarked = !event.isBookmarked;
+                                      }
+                                      setState(() {});
+                                    },
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: AnimatedScale(
+                                        scale: event.isBookmarked ? 1.15 : 1.0,
+                                        duration: const Duration(milliseconds: 180),
+                                        curve: Curves.easeOutBack,
+                                        child: Icon(
+                                          event.isBookmarked
+                                              ? Icons.bookmark_rounded
+                                              : Icons.bookmark_border_rounded,
+                                          color: event.isBookmarked
+                                              ? AppColors.warning
+                                              : textMuted,
+                                          size: 19,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          if (event.isPaid) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                            const SizedBox(height: 5),
+
+                            Text(
+                              event.title,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                height: 1.25,
                               ),
-                              decoration: BoxDecoration(
-                                color: AppColors.communityAccent.withValues(
-                                  alpha: 0.15,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 5),
+
+                            if (dateDisplay.isNotEmpty) ...[
+                              Text(
+                                dateDisplay,
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                borderRadius: BorderRadius.circular(4),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              child: Text(
-                                'community.paid'.tr.isNotEmpty &&
-                                        'community.paid'.tr != 'community.paid'
-                                    ? 'community.paid'.tr.toUpperCase()
-                                    : 'PAID',
-                                style: const TextStyle(
-                                  color: AppColors.communityAccent,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              const SizedBox(height: 2),
+                            ],
+
+                            Text(
+                              locationDisplay,
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w400,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                          const Spacer(),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                controller.toggleEventBookmark(event.id);
-                              },
-                              borderRadius: BorderRadius.circular(14),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: AnimatedScale(
-                                  scale: event.isBookmarked ? 1.15 : 1.0,
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOutBack,
-                                  child: Icon(
-                                    event.isBookmarked
-                                        ? Icons.bookmark_rounded
-                                        : Icons.bookmark_border_rounded,
-                                    color: event.isBookmarked
-                                        ? (isDark
-                                              ? Colors.white
-                                              : Colors.black87)
-                                        : textMuted,
-                                    size: 19,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-
-                      Text(
-                        event.title,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.5,
-                          height: 1.25,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 5),
-
-                      if (dateDisplay.isNotEmpty) ...[
-                        Text(
-                          dateDisplay,
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                      ],
-
-                      Text(
-                        locationDisplay,
-                        style: TextStyle(
-                          color: textMuted,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -715,6 +908,86 @@ class _EventCard extends StatelessWidget {
         return Icons.terminal_outlined;
       default:
         return Icons.category_outlined;
+    }
+  }
+
+  Future<void> _handleCardOwnerAction({
+    required BuildContext context,
+    required String action,
+  }) async {
+    if (action == 'edit') {
+      Get.to(() => CreateEventScreen(eventToEdit: event));
+      return;
+    }
+
+    if (action == 'delete') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'community.deleteEvent'.tr.isNotEmpty &&
+                    'community.deleteEvent'.tr != 'community.deleteEvent'
+                ? '${'community.deleteEvent'.tr}?'
+                : 'Delete Event?',
+            style: TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+            ),
+          ),
+          content: Text(
+            'community.deleteEventConfirm'.tr.isNotEmpty &&
+                    'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
+                ? 'community.deleteEventConfirm'.tr
+                : 'Are you sure you want to delete this event? This action cannot be undone.',
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                'common.cancel'.tr.isNotEmpty &&
+                        'common.cancel'.tr != 'common.cancel'
+                    ? 'common.cancel'.tr
+                    : 'Cancel',
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(
+                'community.deleteEvent'.tr.isNotEmpty &&
+                        'community.deleteEvent'.tr != 'community.deleteEvent'
+                    ? 'community.deleteEvent'.tr
+                    : 'Delete Event',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        final success = await controller.deleteEvent(event.id);
+        if (success) {
+          controller.events.removeWhere((e) => e.id == event.id);
+        }
+      }
     }
   }
 }

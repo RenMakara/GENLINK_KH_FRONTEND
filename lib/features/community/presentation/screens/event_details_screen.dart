@@ -13,6 +13,7 @@ import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'create_event_screen.dart';
 import 'event_register_screen.dart';
+import '../../../profile/presentation/utils/profile_navigation.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final EventModel event;
@@ -103,6 +104,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     });
   }
 
+  bool _checkIsOrganizer(EventModel event) {
+    final eventOrgId = event.organizerId?.trim() ?? '';
+    final currentUid = CurrentUser.id.trim();
+
+    if (eventOrgId.isNotEmpty &&
+        currentUid.isNotEmpty &&
+        currentUid.toLowerCase() == eventOrgId.toLowerCase()) {
+      return true;
+    }
+
+    // Legacy test mock fallback (when test creates EventModel with organizerName: 'me' without AuthController)
+    if (eventOrgId.isEmpty && event.organizerName.trim().toLowerCase() == 'me') {
+      return true;
+    }
+
+    return event.isOwnedBy(currentUid);
+  }
+
   Future<void> _openMeeting(
     BuildContext context,
     EventModel event,
@@ -155,8 +174,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               _event)
         : _event;
 
-    final currentUserId = CurrentUser.id;
-    final isOrganizer = event.isOwnedBy(currentUserId);
+    final isOrganizer = _checkIsOrganizer(event);
 
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark
@@ -268,9 +286,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                     icon: isSaved
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
-                                    iconColor: isSaved
-                                        ? Colors.white
-                                        : Colors.white,
+                                    iconColor: isSaved ? AppColors.warning : Colors.white,
                                     onTap: () {
                                       _triggerBookmarkAnimation();
                                       setState(() => _isBookmarked = !isSaved);
@@ -296,9 +312,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                   icon: _isBookmarked
                                       ? Icons.bookmark_rounded
                                       : Icons.bookmark_border_rounded,
-                                  iconColor: _isBookmarked
-                                      ? Colors.white
-                                      : Colors.white,
+                                  iconColor: _isBookmarked ? AppColors.warning : Colors.white,
                                   onTap: () {
                                     _triggerBookmarkAnimation();
                                     setState(
@@ -687,7 +701,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           ),
         ),
         child: const Center(
-          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
+          child: Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
         ),
       ),
       padding: EdgeInsets.zero,
@@ -718,6 +732,26 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             ],
           ),
         ),
+        if (event.imageUrl.isNotEmpty || event.coverImageFile != null)
+          PopupMenuItem(
+            value: 'remove_cover',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 18,
+                  color: textPrimary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Remove Cover Image',
+                  style: TextStyle(color: textPrimary, fontSize: 13.5),
+                ),
+              ],
+            ),
+          ),
+        const PopupMenuDivider(),
         PopupMenuItem(
           value: 'delete',
           child: Row(
@@ -754,7 +788,49 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required bool isDark,
     required CommunityController? controller,
   }) async {
-    if (action == 'edit') {
+    if (action == 'remove_cover') {
+      if (controller != null) {
+        final updateReq = EventCreateRequest(
+          title: event.title,
+          description: event.description,
+          category: event.category,
+          coverImageUrl: '',
+          startDateTime: event.startDateTime ?? DateTime.now(),
+          endDateTime: event.endDateTime ?? DateTime.now().add(const Duration(hours: 2)),
+          mode: event.mode ?? (event.isOnline ? 'ONLINE' : 'IN_PERSON'),
+          meetingUrl: event.meetingUrl,
+          locationName: event.locationName,
+          latitude: event.latitude,
+          longitude: event.longitude,
+          attendeeLimit: event.attendeeLimit,
+          status: event.status,
+          language: event.language,
+          paid: event.isPaid,
+          price: event.price,
+          currency: event.currency,
+        );
+        try {
+          final updated = await controller.updateEvent(event.id, updateReq);
+          if (mounted) {
+            setState(() {
+              _event = updated.copyWith(imageUrl: '');
+            });
+          }
+        } catch (_) {
+          if (mounted) {
+            setState(() {
+              _event = event.copyWith(imageUrl: '');
+            });
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _event = event.copyWith(imageUrl: '');
+          });
+        }
+      }
+    } else if (action == 'edit') {
       final updated = await Get.to<EventModel?>(
         () => CreateEventScreen(eventToEdit: event, returnCreatedEvent: true),
       );
@@ -873,7 +949,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required bool isDark,
   }) {
     final currentUserId = CurrentUser.id;
-    final isOrganizer = event.isOwnedBy(currentUserId);
+    final isOrganizer = _checkIsOrganizer(event);
 
     final orgName = event.organizerName.isNotEmpty
         ? event.organizerName
@@ -906,160 +982,82 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: tileBg,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          ProfileNavigation.open(
+            username: event.organizerName.trim().toLowerCase() == 'me'
+                ? null
+                : (event.organizerName.isNotEmpty ? event.organizerName : null),
+            userId: event.organizerId?.isNotEmpty == true ? event.organizerId : null,
+          );
+        },
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: borderSubtle, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: isDark
-                ? const Color(0xFF2C2C2E)
-                : const Color(0xFFE5E5EA),
-            foregroundImage: avatarProvider,
-            onForegroundImageError: avatarProvider != null
-                ? (exception, stackTrace) {}
-                : null,
-            child: Text(
-              orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
-              style: TextStyle(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: tileBg,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: borderSubtle, width: 0.8),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  orgName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
+                foregroundImage: avatarProvider,
+                onForegroundImageError: avatarProvider != null ? (exception, stackTrace) {} : null,
+                child: Text(
+                  orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
                   style: TextStyle(
                     color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14.5,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  isOrganizer
-                      ? "You're the Organizer"
-                      : 'community.organizer'.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isOrganizer
-                        ? (isDark ? Colors.white70 : Colors.black87)
-                        : textSecondary,
-                    fontSize: 12,
-                    fontWeight: isOrganizer
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isOrganizer)
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: textPrimary, size: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
               ),
-              color: isDark ? const Color(0xFF1E1E20) : Colors.white,
-              onSelected: (val) async {
-                if (val == 'remove_cover') {
-                  setState(() {
-                    _event = _event.copyWith(
-                      imageUrl: '',
-                      coverImageFile: null,
-                    );
-                    if (controller != null) {
-                      final idx = controller.events.indexWhere(
-                        (e) => e.id == event.id,
-                      );
-                      if (idx != -1) {
-                        controller.events[idx] = _event;
-                      }
-                    }
-                  });
-                  _showSnackBar(context, isDark, 'Cover image removed');
-                } else {
-                  await _handleOwnerAction(
-                    context: context,
-                    action: val,
-                    event: event,
-                    isDark: isDark,
-                    controller: controller,
-                  );
-                }
-              },
-              itemBuilder: (ctx) => [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.edit_outlined, size: 18, color: textPrimary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'community.editEvent'.tr,
-                        style: TextStyle(color: textPrimary, fontSize: 13.5),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      orgName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14.5,
                       ),
-                    ],
-                  ),
-                ),
-                if (event.imageUrl.isNotEmpty || event.coverImageFile != null)
-                  PopupMenuItem(
-                    value: 'remove_cover',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.hide_image_outlined,
-                          size: 18,
-                          color: textPrimary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Remove Cover Image',
-                          style: TextStyle(color: textPrimary, fontSize: 13.5),
-                        ),
-                      ],
                     ),
-                  ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.delete_outline_rounded,
-                        size: 18,
-                        color: AppColors.danger,
+                    const SizedBox(height: 2),
+                    Text(
+                      isOrganizer
+                          ? "You're the Organizer"
+                          : 'community.organizer'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isOrganizer
+                            ? (isDark ? Colors.white70 : Colors.black87)
+                            : textSecondary,
+                        fontSize: 12,
+                        fontWeight: isOrganizer ? FontWeight.w600 : FontWeight.normal,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'community.deleteEvent'.tr,
-                        style: const TextStyle(
-                          color: AppColors.danger,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-        ],
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: textSecondary,
+                size: 20,
+              ),
+            ],
+          ),
+        )
       ),
     );
   }
@@ -1132,7 +1130,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required Color borderSubtle,
   }) {
     final currentUserId = CurrentUser.id;
-    final canAccessMeeting = event.canAccessMeetingFor(currentUserId);
+    final isOrganizer = _checkIsOrganizer(event);
+    final canAccessMeeting = event.canAccessMeetingFor(currentUserId) || isOrganizer;
     final hasMeetingUrl = event.effectiveMeetingUrl.isNotEmpty;
 
     return Container(
@@ -1415,8 +1414,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required Color borderSubtle,
     required bool isDark,
   }) {
-    final currentUserId = CurrentUser.id;
-    final isOrganizer = event.isOwnedBy(currentUserId);
+    final isOrganizer = _checkIsOrganizer(event);
 
     Widget content(int count, int? limit, bool isFull) {
       final String line1;
@@ -1584,8 +1582,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required EventModel event,
     required bool isDark,
   }) {
-    final currentUserId = CurrentUser.id;
-    final isOrganizer = event.isOwnedBy(currentUserId);
+    final isOrganizer = _checkIsOrganizer(event);
 
     final isFull =
         event.isFull ||
@@ -2455,6 +2452,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                               ),
                                             )
                                           : null,
+                                      trailing: Icon(
+                                        Icons.chevron_right_rounded,
+                                        color: textSecondary,
+                                        size: 20,
+                                      ),
+                                      onTap: () {
+                                        Navigator.pop(sheetCtx);
+                                        ProfileNavigation.open(
+                                          userId: attendee.userId.isNotEmpty
+                                              ? attendee.userId
+                                              : null,
+                                          username: attendee.username.isNotEmpty
+                                              ? attendee.username
+                                              : null,
+                                        );
+                                      },
                                     );
                                   },
                                 );

@@ -2018,7 +2018,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               title: "Public",
               subtitle: "Anyone on GenLink can see this",
               icon: Icons.public,
-              isSelected: story.settings.visibility == StoryPrivacy.public,
+              isSelected: story.settings.visibility == StoryPrivacy.public ||
+                  story.visibility == 'Public' ||
+                  story.visibility.toUpperCase() == 'PUBLIC',
               onTap: () {
                 Get.find<StoryController>().updateStoryPrivacy(story.id, "Public");
                 Navigator.pop(ctx);
@@ -2029,7 +2031,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               title: "Friends",
               subtitle: "Only your friends can see this",
               icon: Icons.group,
-              isSelected: story.settings.visibility == StoryPrivacy.friends,
+              isSelected: story.settings.visibility == StoryPrivacy.friends ||
+                  story.visibility == 'Friends' ||
+                  story.visibility.toUpperCase() == 'FRIENDS',
               onTap: () {
                 Get.find<StoryController>().updateStoryPrivacy(story.id, "Friends");
                 Navigator.pop(ctx);
@@ -2040,7 +2044,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               title: "Only Me",
               subtitle: "Only you can see this",
               icon: Icons.lock,
-              isSelected: story.settings.visibility == StoryPrivacy.onlyMe,
+              isSelected: story.settings.visibility == StoryPrivacy.onlyMe ||
+                  story.visibility == 'Only Me' ||
+                  story.visibility.toUpperCase() == 'ONLY_ME',
               onTap: () {
                 Get.find<StoryController>().updateStoryPrivacy(story.id, "Only Me");
                 Navigator.pop(ctx);
@@ -3626,9 +3632,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                     ),
                                     const SizedBox(width: 5),
                                     Icon(
-                                      story.visibility == 'Only Me'
+                                      (story.settings.visibility == StoryPrivacy.onlyMe ||
+                                              story.visibility == 'Only Me' ||
+                                              story.visibility.toUpperCase() == 'ONLY_ME')
                                           ? Icons.lock_rounded
-                                          : (story.visibility == 'Friends'
+                                          : ((story.settings.visibility == StoryPrivacy.friends ||
+                                                  story.visibility == 'Friends' ||
+                                                  story.visibility.toUpperCase() == 'FRIENDS')
                                                 ? Icons.people_alt_rounded
                                                 : Icons.public_rounded),
                                       size: 12,

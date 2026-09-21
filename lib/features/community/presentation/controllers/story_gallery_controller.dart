@@ -177,7 +177,36 @@ class StoryGalleryController extends GetxController {
       isLoading.value = true;
     }
     try {
-      final PermissionState ps = await PhotoManager.requestPermissionExtend();
+      PermissionState ps = await PhotoManager.requestPermissionExtend();
+
+      // On Android, if photo_manager returned denied, verify / request via permission_handler as fallback
+      if (!ps.hasAccess && Platform.isAndroid && !Get.testMode) {
+        try {
+          final androidInfo = await DeviceInfoPlugin().androidInfo;
+          if (androidInfo.version.sdkInt >= 33) {
+            final statuses = await [
+              Permission.photos,
+              Permission.videos,
+            ].request();
+            final photosStatus = statuses[Permission.photos];
+            final videosStatus = statuses[Permission.videos];
+            if (photosStatus?.isGranted == true ||
+                photosStatus?.isLimited == true ||
+                videosStatus?.isGranted == true ||
+                videosStatus?.isLimited == true) {
+              ps = await PhotoManager.requestPermissionExtend();
+            }
+          } else {
+            final status = await Permission.storage.request();
+            if (status.isGranted || status.isLimited) {
+              ps = await PhotoManager.requestPermissionExtend();
+            }
+          }
+        } catch (e) {
+          debugPrint('[StoryGalleryController] permission_handler fallback error: $e');
+        }
+      }
+
       if (ps.isAuth || ps.hasAccess) {
         hasPermission.value = true;
         isPermanentlyDenied.value = false;
@@ -188,7 +217,8 @@ class StoryGalleryController extends GetxController {
         isPermanentlyDenied.value = permDenied;
         isLoading.value = false;
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[StoryGalleryController] checkAndRequestPermission error: $e');
       hasPermission.value = false;
       isPermanentlyDenied.value = false;
       isLoading.value = false;
@@ -208,7 +238,9 @@ class StoryGalleryController extends GetxController {
         if (androidInfo.version.sdkInt >= 33) {
           final isPhotosPermanentlyDenied =
               await Permission.photos.isPermanentlyDenied;
-          return isPhotosPermanentlyDenied;
+          final isVideosPermanentlyDenied =
+              await Permission.videos.isPermanentlyDenied;
+          return isPhotosPermanentlyDenied && isVideosPermanentlyDenied;
         } else {
           return await Permission.storage.isPermanentlyDenied;
         }
@@ -245,12 +277,38 @@ class StoryGalleryController extends GetxController {
     try {
       final isTemplate = selectedTemplate.value != null || requiredPhotosCount.value > 0;
       final requestType = isTemplate ? RequestType.image : RequestType.common;
-      final List<AssetPathEntity> fetchedAlbums =
-          await PhotoManager.getAssetPathList(
+      List<AssetPathEntity> fetchedAlbums = [];
+      try {
+        fetchedAlbums = await PhotoManager.getAssetPathList(
+          type: requestType,
+          onlyAll: false,
+          filterOption: storyFilter,
+        );
+      } catch (e) {
+        debugPrint('[StoryGalleryController] storyFilter error: $e, falling back to FilterOptionGroup');
+        try {
+          fetchedAlbums = await PhotoManager.getAssetPathList(
             type: requestType,
             onlyAll: false,
-            filterOption: storyFilter,
+            filterOption: storyFilterOptionGroup,
           );
+        } catch (e2) {
+          debugPrint('[StoryGalleryController] FilterOptionGroup error: $e2');
+        }
+      }
+
+      if (fetchedAlbums.isEmpty) {
+        try {
+          fetchedAlbums = await PhotoManager.getAssetPathList(
+            type: requestType,
+            onlyAll: true,
+            filterOption: storyFilterOptionGroup,
+          );
+        } catch (e3) {
+          debugPrint('[StoryGalleryController] onlyAll fallback error: $e3');
+        }
+      }
+
       albums.assignAll(fetchedAlbums);
 
       if (fetchedAlbums.isNotEmpty) {
@@ -270,7 +328,8 @@ class StoryGalleryController extends GetxController {
         mediaAssets.clear();
         hasMore.value = false;
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[StoryGalleryController] fetchAlbumsAndMedia error: $e');
       mediaAssets.clear();
       hasMore.value = false;
     } finally {

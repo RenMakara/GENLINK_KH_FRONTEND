@@ -60,6 +60,35 @@ class PollOptionModel {
   };
 }
 
+enum PostMediaType { image, video }
+
+class PostMediaItem {
+  final String url;
+  final PostMediaType type;
+
+  const PostMediaItem({
+    required this.url,
+    required this.type,
+  });
+
+  bool get isVideo => type == PostMediaType.video;
+  bool get isImage => type == PostMediaType.image;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PostMediaItem &&
+          runtimeType == other.runtimeType &&
+          url == other.url &&
+          type == other.type;
+
+  @override
+  int get hashCode => Object.hash(url, type);
+
+  @override
+  String toString() => 'PostMediaItem(url: $url, type: $type)';
+}
+
 class CommunityPostModel {
   final String id;
   final String userId;
@@ -106,8 +135,69 @@ class CommunityPostModel {
   final String? discussionTitle;
   final String? category;
   final String? videoUrl;
+  final List<String>? mediaUrls;
 
-  bool get isVideoPost => videoUrl != null && videoUrl!.isNotEmpty;
+  static bool isVideoUrl(String url) {
+    final clean = url.trim().toLowerCase().split('?').first.split('#').first;
+    return clean.endsWith('.mp4') ||
+        clean.endsWith('.mov') ||
+        clean.endsWith('.webm') ||
+        clean.endsWith('.avi') ||
+        clean.endsWith('.mkv') ||
+        clean.endsWith('.3gp') ||
+        clean.endsWith('.m4v');
+  }
+
+  bool isVideoItem(String url) {
+    final trimmed = url.trim();
+    if (videoUrl != null && videoUrl!.trim().isNotEmpty && trimmed == videoUrl!.trim()) {
+      return true;
+    }
+    return isVideoUrl(trimmed);
+  }
+
+  /// Returns the ordered list of media items (both images and videos) for this post.
+  List<PostMediaItem> get mediaItems {
+    final urls = <String>[];
+
+    if (mediaUrls != null && mediaUrls!.isNotEmpty) {
+      urls.addAll(mediaUrls!.where((u) => u.trim().isNotEmpty));
+    } else {
+      final hasVideo = videoUrl != null && videoUrl!.trim().isNotEmpty;
+      final trimmedVideo = hasVideo ? videoUrl!.trim() : null;
+
+      final normalizedImages = imageUrls
+          .map((u) => u.trim())
+          .where((u) => u.isNotEmpty)
+          .toList();
+
+      if (trimmedVideo != null && normalizedImages.contains(trimmedVideo)) {
+        urls.addAll(normalizedImages);
+      } else if (trimmedVideo != null && normalizedImages.isNotEmpty) {
+        urls.add(trimmedVideo);
+        urls.addAll(normalizedImages);
+      } else if (trimmedVideo != null) {
+        urls.add(trimmedVideo);
+      } else {
+        urls.addAll(normalizedImages);
+      }
+    }
+
+    return urls.map((url) {
+      final isVid = isVideoItem(url);
+      return PostMediaItem(
+        url: url,
+        type: isVid ? PostMediaType.video : PostMediaType.image,
+      );
+    }).toList();
+  }
+
+  bool get isVideoPost =>
+      (videoUrl != null && videoUrl!.isNotEmpty) ||
+      mediaItems.any((m) => m.isVideo);
+
+  bool get isMixedMediaPost =>
+      mediaItems.any((m) => m.isVideo) && mediaItems.any((m) => m.isImage);
 
   bool get isEventPost =>
       (postType?.toLowerCase() == 'event') ||
@@ -165,6 +255,7 @@ class CommunityPostModel {
     this.discussionTitle,
     this.category,
     this.videoUrl,
+    this.mediaUrls,
   });
 
   bool checkIsOwner(String? currentUserId) {
@@ -219,6 +310,7 @@ class CommunityPostModel {
     String? discussionTitle,
     String? category,
     String? videoUrl,
+    List<String>? mediaUrls,
   }) {
     return CommunityPostModel(
       id: id ?? this.id,
@@ -268,6 +360,7 @@ class CommunityPostModel {
       discussionTitle: discussionTitle ?? this.discussionTitle,
       category: category ?? this.category,
       videoUrl: videoUrl ?? this.videoUrl,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
     );
   }
 
@@ -354,6 +447,81 @@ class CommunityPostModel {
             .toList();
       } else {
         imagesList = [raw];
+      }
+    }
+
+    List<String>? parsedMediaUrls;
+    if (json['mediaUrls'] is List) {
+      parsedMediaUrls = (json['mediaUrls'] as List)
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else if (json['media'] is List) {
+      parsedMediaUrls = (json['media'] as List)
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else if (json['orderedMedia'] is List) {
+      parsedMediaUrls = (json['orderedMedia'] as List)
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else if (json['mediaUrls'] is String &&
+        (json['mediaUrls'] as String).trim().isNotEmpty) {
+      final raw = (json['mediaUrls'] as String).trim();
+      if (raw.startsWith('[') && raw.endsWith(']')) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is List) {
+            parsedMediaUrls = decoded
+                .map((e) => e.toString().trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          }
+        } catch (_) {}
+      } else if (raw.contains(',')) {
+        parsedMediaUrls = raw
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      } else {
+        parsedMediaUrls = [raw];
+      }
+    }
+
+    String? parsedVideoUrl = json['videoUrl'] as String?;
+    if (parsedVideoUrl == null || parsedVideoUrl.trim().isEmpty) {
+      if (parsedMediaUrls != null) {
+        for (final u in parsedMediaUrls) {
+          if (CommunityPostModel.isVideoUrl(u)) {
+            parsedVideoUrl = u;
+            break;
+          }
+        }
+      }
+      if (parsedVideoUrl == null) {
+        for (final u in imagesList) {
+          if (CommunityPostModel.isVideoUrl(u)) {
+            parsedVideoUrl = u;
+            break;
+          }
+        }
+      }
+    }
+
+    if (parsedMediaUrls == null) {
+      final hasVideo =
+          parsedVideoUrl != null && parsedVideoUrl.trim().isNotEmpty;
+      final trimmedVid = hasVideo ? parsedVideoUrl.trim() : null;
+      if (trimmedVid != null && imagesList.contains(trimmedVid)) {
+        parsedMediaUrls = List.from(imagesList);
+      } else if (trimmedVid != null && imagesList.isNotEmpty) {
+        parsedMediaUrls = [trimmedVid, ...imagesList];
+      } else if (trimmedVid != null) {
+        parsedMediaUrls = [trimmedVid];
+      } else if (imagesList.isNotEmpty) {
+        parsedMediaUrls = List.from(imagesList);
       }
     }
 
@@ -510,7 +678,8 @@ class CommunityPostModel {
       discussionTitle:
           json['discussionTitle'] as String? ?? json['title'] as String?,
       category: json['category'] as String?,
-      videoUrl: json['videoUrl'] as String?,
+      videoUrl: parsedVideoUrl,
+      mediaUrls: parsedMediaUrls,
       attachedEvent: parsedEvent,
       eventId: rawEventId ?? parsedEvent?.id,
       pollId: parsedPollId,
@@ -569,6 +738,7 @@ class CommunityPostModel {
       'discussionTitle': discussionTitle,
       'category': category,
       'videoUrl': videoUrl,
+      if (mediaUrls != null) 'mediaUrls': mediaUrls,
       'eventId': eventId,
       if (location != null) 'location': location,
       if (attachedEvent != null) 'attachedEvent': attachedEvent!.toJson(),

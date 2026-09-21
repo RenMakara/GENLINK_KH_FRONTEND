@@ -343,6 +343,8 @@ class EventAttendeeModel {
     this.joinedAt,
   });
 
+  String get userId => id;
+
   factory EventAttendeeModel.fromJson(Map<String, dynamic> json) {
     final userObj = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>

@@ -1030,24 +1030,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
           const SizedBox(height: 8),
 
-          // ─── Step 3B-Frontend: Video rendering ───────────────────────
-          // isVideoPost is true only when videoUrl != null && non-empty.
-          // This fires ONLY for VIDEO posts. Image/text posts unaffected.
-          if (widget.post.isVideoPost)
-            VideoPostMedia(
-              key: ValueKey('video_${widget.post.id}_${widget.post.videoUrl}'),
-              videoUrl: widget.post.videoUrl!,
-            ),
-          // Integration point for Step 3B-Backend:
-          // When backend returns videoUrl in PostResponse, it will be parsed
-          // into CommunityPostModel.videoUrl and rendered here automatically.
+          // ─── Unified Media Rendering (Single or Carousel) ───────────
+          _buildPostMedia(context, resolvedEvent),
           // ─────────────────────────────────────────────────────────────
-
-          if (widget.post.imageUrls.isNotEmpty &&
-              !(resolvedEvent != null &&
-                  widget.post.imageUrls.length == 1 &&
-                  widget.post.imageUrls.first == resolvedEvent.imageUrl))
-            _buildImageCarousel(widget.post.imageUrls),
 
           if (widget.post.pollQuestion != null && widget.post.pollOptions != null)
             PollWidget(
@@ -1172,6 +1157,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 const SizedBox(width: 4),
 
                 InkWell(
+                  key: Key('post_comment_button_${widget.post.id}'),
                   onTap: () {
                     showModalBottomSheet(
                        context: context,
@@ -1203,6 +1189,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 const SizedBox(width: 4),
 
                 InkWell(
+                  key: Key('post_repost_button_${widget.post.id}'),
                   onTap: _isOwnPost
                       ? () {
                           AppNotificationBanner.showWarning(
@@ -1266,6 +1253,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   final isBookmarked = livePost?.isBookmarked ?? widget.post.isBookmarked;
 
                   return IconButton(
+                    key: Key('post_bookmark_button_${widget.post.id}'),
                     onPressed: () {
                       _bookmarkAnimController.forward(from: 0.0);
                       widget.controller.toggleBookmark(widget.post.id);
@@ -1283,6 +1271,24 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     tooltip: isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
                   );
                 }),
+
+                IconButton(
+                  key: Key('post_share_button_${widget.post.id}'),
+                  onPressed: () {
+                    AppNotificationBanner.showInfo(
+                      context: context,
+                      title: "Share",
+                      message: "Post link copied to clipboard.",
+                      icon: Icons.ios_share_rounded,
+                    );
+                  },
+                  icon: Icon(
+                    Icons.ios_share_rounded,
+                    color: actionIconColor,
+                    size: 18,
+                  ),
+                  tooltip: 'Share',
+                ),
               ],
             ),
           ),
@@ -1291,28 +1297,55 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
-  Widget _buildImageCarousel(List<String> images) {
-    final count = images.length;
-    if (count == 0) return const SizedBox.shrink();
+  Widget _buildPostMedia(BuildContext context, EventModel? resolvedEvent) {
+    final media = widget.post.mediaItems;
+    if (media.isEmpty) return const SizedBox.shrink();
 
-    if (count == 1) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-          child: _FeedPostImageView(
-            url: images[0],
-            index: 0,
-            allImages: images,
-            postId: widget.post.id,
-            isSingle: true,
-            onTap: () => _openFullScreenViewer(0, images),
-          ),
-        ),
-      );
+    // Suppress single post image if identical to attached event image to avoid visual duplication
+    if (resolvedEvent != null &&
+        media.length == 1 &&
+        !media.first.isVideo &&
+        media.first.url == resolvedEvent.imageUrl) {
+      return const SizedBox.shrink();
     }
 
+    // Single media item: render standalone without carousel counter
+    if (media.length == 1) {
+      final single = media.first;
+      if (single.isVideo) {
+        return VideoPostMedia(
+          key: ValueKey('video_${widget.post.id}_${single.url}'),
+          videoUrl: single.url,
+        );
+      } else {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.lg - 2),
+            child: _FeedPostImageView(
+              url: single.url,
+              index: 0,
+              allImages: [single.url],
+              postId: widget.post.id,
+              isSingle: true,
+              onTap: () => _openFullScreenViewer(0, [single.url]),
+            ),
+          ),
+        );
+      }
+    }
+
+    // 2 or more media items: unified carousel
+    return _buildMediaCarousel(media);
+  }
+
+  Widget _buildMediaCarousel(List<PostMediaItem> media) {
+    final count = media.length;
+    if (count == 0) return const SizedBox.shrink();
+
     final activeIndex = _currentImageIndex.clamp(0, count - 1);
+    final allImageUrls =
+        media.where((m) => !m.isVideo).map((m) => m.url).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1324,6 +1357,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             fit: StackFit.expand,
             children: [
               PageView.builder(
+                key: ValueKey('carousel_${widget.post.id}'),
                 physics: const BouncingScrollPhysics(),
                 itemCount: count,
                 onPageChanged: (idx) {
@@ -1332,14 +1366,33 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   });
                 },
                 itemBuilder: (context, idx) {
-                  return _FeedPostImageView(
-                    url: images[idx],
-                    index: idx,
-                    allImages: images,
-                    postId: widget.post.id,
-                    isSingle: false,
-                    onTap: () => _openFullScreenViewer(idx, images),
-                  );
+                  final item = media[idx];
+                  if (item.isVideo) {
+                    return VideoPostMedia(
+                      key: ValueKey(
+                        'carousel_video_${widget.post.id}_${item.url}_$idx',
+                      ),
+                      videoUrl: item.url,
+                      isInCarousel: true,
+                      isCurrentPage: activeIndex == idx,
+                    );
+                  } else {
+                    final imgIndex = allImageUrls.indexOf(item.url);
+                    return _FeedPostImageView(
+                      key: ValueKey(
+                        'carousel_img_${widget.post.id}_${item.url}_$idx',
+                      ),
+                      url: item.url,
+                      index: imgIndex >= 0 ? imgIndex : idx,
+                      allImages: allImageUrls,
+                      postId: widget.post.id,
+                      isSingle: false,
+                      onTap: () => _openFullScreenViewer(
+                        imgIndex >= 0 ? imgIndex : 0,
+                        allImageUrls,
+                      ),
+                    );
+                  }
                 },
               ),
               // Subtle top-right index counter badge (e.g. "1/3")
@@ -1347,7 +1400,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 top: 10,
                 right: 10,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(12),
@@ -1370,7 +1424,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(10),
@@ -2002,19 +2057,30 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 ///   When backend starts returning videoUrl, [CommunityPostModel.videoUrl] will be
 ///   non-null and this widget will auto-render without any further PostCard changes.
 class VideoPostMedia extends StatefulWidget {
-  const VideoPostMedia({super.key, required this.videoUrl});
+  const VideoPostMedia({
+    super.key,
+    required this.videoUrl,
+    this.isInCarousel = false,
+    this.isCurrentPage = true,
+  });
 
   final String videoUrl;
+  final bool isInCarousel;
+  final bool isCurrentPage;
 
   @override
   State<VideoPostMedia> createState() => _VideoPostMediaState();
 }
 
-class _VideoPostMediaState extends State<VideoPostMedia> {
+class _VideoPostMediaState extends State<VideoPostMedia>
+    with AutomaticKeepAliveClientMixin {
   VideoPlayerController? _ctrl;
   bool _initialized = false;
   bool _error = false;
   int _initToken = 0;
+
+  @override
+  bool get wantKeepAlive => widget.isInCarousel;
 
   @override
   void initState() {
@@ -2027,6 +2093,8 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoUrl != widget.videoUrl) {
       _initController(widget.videoUrl);
+    } else if (oldWidget.isCurrentPage && !widget.isCurrentPage) {
+      _ctrl?.pause();
     }
   }
 
@@ -2075,6 +2143,9 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
         return;
       }
       debugPrint('[VideoPostMedia] Controller initialized successfully: size=${ctrl.value.size}, duration=${ctrl.value.duration}');
+      if (!widget.isCurrentPage) {
+        ctrl.pause();
+      }
       setState(() {
         _initialized = true;
       });
@@ -2120,6 +2191,7 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ctrl = _ctrl;
     final hasControllerError = ctrl != null && ctrl.value.hasError;
@@ -2127,6 +2199,87 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
     final isInitialized = ctrl != null && _initialized && !isErrorState;
     final isBuffering = ctrl != null && ctrl.value.isBuffering;
     final isPlaying = ctrl != null && ctrl.value.isPlaying;
+
+    final videoSurface = Stack(
+      alignment: Alignment.center,
+      children: [
+        // Video surface or placeholder background
+        if (isInitialized)
+          Center(
+            child: AspectRatio(
+              aspectRatio: ctrl.value.aspectRatio > 0
+                  ? ctrl.value.aspectRatio
+                  : 16 / 9,
+              child: VideoPlayer(ctrl),
+            ),
+          )
+        else
+          Container(
+            color: isDark ? const Color(0xFF0C0E12) : const Color(0xFF14161A),
+          ),
+
+        // Loading or buffering
+        if (!isErrorState && (!_initialized || isBuffering))
+          const CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+
+        // Error
+        if (isErrorState)
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 28),
+              const SizedBox(height: 4),
+              Text(
+                'community.videoLoadError'.tr != 'community.videoLoadError'
+                    ? 'community.videoLoadError'.tr
+                    : 'Unable to play video',
+                style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+              ),
+            ],
+          ),
+
+        // Play / pause overlay
+        if (isInitialized)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                if (ctrl.value.isPlaying) {
+                  ctrl.pause();
+                } else {
+                  ctrl.play();
+                }
+              },
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: isPlaying ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0x88000000),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    if (widget.isInCarousel) {
+      return Container(
+        color: isDark ? const Color(0xFF0C0E12) : const Color(0xFF14161A),
+        alignment: Alignment.center,
+        child: videoSurface,
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
@@ -2136,71 +2289,7 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
           aspectRatio: isInitialized && ctrl.value.aspectRatio > 0
               ? ctrl.value.aspectRatio
               : 16 / 9,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Video surface or placeholder background
-              if (isInitialized)
-                VideoPlayer(ctrl)
-              else
-                Container(
-                  color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE0E0E0),
-                ),
-
-              // Loading or buffering
-              if (!isErrorState && (!_initialized || isBuffering))
-                const CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
-
-              // Error
-              if (isErrorState)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 28),
-                    const SizedBox(height: 4),
-                    Text(
-                      'community.videoLoadError'.tr != 'community.videoLoadError'
-                          ? 'community.videoLoadError'.tr
-                          : 'Unable to play video',
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 11),
-                    ),
-                  ],
-                ),
-
-              // Play / pause overlay
-              if (isInitialized)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (ctrl.value.isPlaying) {
-                        ctrl.pause();
-                      } else {
-                        ctrl.play();
-                      }
-                    },
-                    child: Center(
-                      child: AnimatedOpacity(
-                        opacity: isPlaying ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0x88000000),
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          child: Icon(
-                            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          child: videoSurface,
         ),
       ),
     );
@@ -2217,6 +2306,7 @@ class _FeedPostImageView extends StatefulWidget {
   final VoidCallback onTap;
 
   const _FeedPostImageView({
+    super.key,
     required this.url,
     required this.index,
     required this.allImages,

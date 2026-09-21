@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -19,6 +19,7 @@ import 'package:genlink_frontend/features/community/presentation/screens/event_d
 import 'package:genlink_frontend/features/community/presentation/screens/event_register_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/events_screen.dart';
 import 'package:genlink_frontend/features/notification/domain/models/notification_model.dart';
+import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
 
 class _TestHttpOverrides extends HttpOverrides {
   @override
@@ -348,7 +349,7 @@ void main() {
       final bookmarkIconDark = find.byIcon(Icons.bookmark_rounded);
       expect(bookmarkIconDark, findsOneWidget);
       final iconDark = tester.widget<Icon>(bookmarkIconDark);
-      expect(iconDark.color, equals(Colors.white));
+      expect(iconDark.color, equals(AppColors.warning));
       expect(iconDark.color, isNot(equals(AppColors.communityAccent)));
       expect(iconDark.color, isNot(equals(Colors.blue)));
 
@@ -368,7 +369,7 @@ void main() {
       final bookmarkIconLight = find.byIcon(Icons.bookmark_rounded);
       expect(bookmarkIconLight, findsOneWidget);
       final iconLight = tester.widget<Icon>(bookmarkIconLight);
-      expect(iconLight.color, equals(Colors.black87));
+      expect(iconLight.color, equals(AppColors.warning));
       expect(iconLight.color, isNot(equals(AppColors.communityAccent)));
       expect(iconLight.color, isNot(equals(Colors.blue)));
     });
@@ -456,7 +457,7 @@ void main() {
       final savedFinder = find.byIcon(Icons.bookmark_rounded);
       expect(savedFinder, findsOneWidget);
       final savedIcon = tester.widget<Icon>(savedFinder);
-      expect(savedIcon.color, equals(Colors.white));
+      expect(savedIcon.color, equals(AppColors.warning));
       expect(savedIcon.color, isNot(equals(Colors.blue)));
     });
   });
@@ -746,8 +747,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Owner should see the top more_horiz_rounded button
-      final moreButton = find.byIcon(Icons.more_horiz_rounded);
+      // Owner should see the top more_vert_rounded button
+      final moreButton = find.byIcon(Icons.more_vert_rounded);
       expect(moreButton, findsOneWidget);
 
       // Tap the More button to open popup menu
@@ -805,7 +806,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Top more_horiz_rounded button MUST NOT exist for non-owners
-      expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
     });
   });
 
@@ -1025,6 +1026,516 @@ void main() {
 
       expect(notif.type, equals(NotificationType.eventRsvp));
       expect(notif.category, equals(NotificationCategory.events));
+    });
+  });
+
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // NEW: Swipe-to-Reveal, Organizer Card, Attendee Row, Bookmark Tests
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('Issue 9: Owner Event Card Swipe-to-Reveal Tests', () {
+    testWidgets('Owner event card has Edit and Delete action labels behind card', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      authController.currentUser.value = _makeTestUser(
+        id: 'user_owner_swipe',
+        fullName: 'Swipe Owner',
+        username: 'swipeowner',
+      );
+
+      final ownedEvent = EventModel(
+        id: 'ev_swipe_owner',
+        title: 'Owner Swipe Event',
+        organizerId: 'user_owner_swipe',
+        organizerName: 'Swipe Owner',
+        eventType: 'In person',
+        location: 'Main Hall',
+        dateString: 'Jan 10',
+        timeString: '9:00 AM',
+        category: 'Workshop',
+      );
+      communityController.events.assignAll([ownedEvent]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Owner Swipe Event'), findsOneWidget);
+
+      // Action strip behind card — Edit and Delete buttons are present in tree
+      expect(find.text('Edit'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+
+      // No three-dot popup button on the card
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+    });
+
+    testWidgets('Non-owner event card does NOT render Edit/Delete action strip', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      authController.currentUser.value = _makeTestUser(
+        id: 'user_guest_swipe',
+        fullName: 'Guest User',
+        username: 'guestswipe',
+      );
+
+      final otherEvent = EventModel(
+        id: 'ev_swipe_other',
+        title: 'Guest User Event',
+        organizerId: 'someone_else_entirely',
+        organizerName: 'Someone Else',
+        eventType: 'In person',
+        location: 'Room B',
+        dateString: 'Jan 15',
+        timeString: '2:00 PM',
+        category: 'Seminar',
+      );
+      communityController.events.assignAll([otherEvent]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Guest User Event'), findsOneWidget);
+
+      // Non-owner must NOT see Edit/Delete action strip
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.byIcon(Icons.edit_outlined), findsNothing);
+      expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+    });
+
+    testWidgets('Event card has no PopupMenuButton in event list', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final event = EventModel(
+        id: 'ev_no_popup',
+        title: 'Clean Card Event',
+        organizerName: 'Tech Hub',
+        eventType: 'In person',
+        location: 'Hall C',
+        dateString: 'Feb 01',
+        timeString: '11:00 AM',
+        category: 'Technology',
+      );
+      communityController.events.assignAll([event]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PopupMenuButton), findsNothing);
+    });
+
+    testWidgets('Owner can tap Delete to show confirmation dialog with Cancel and Delete Event buttons', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      authController.currentUser.value = _makeTestUser(
+        id: 'user_owner_del',
+        fullName: 'Del Owner',
+        username: 'delowner',
+      );
+
+      final ownedEvent = EventModel(
+        id: 'ev_del_confirm',
+        title: 'Delete Me Event',
+        organizerId: 'user_owner_del',
+        organizerName: 'Del Owner',
+        eventType: 'In person',
+        location: 'Main Hall',
+        dateString: 'Jan 10',
+        timeString: '9:00 AM',
+        category: 'Workshop',
+      );
+      communityController.events.assignAll([ownedEvent]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Swipe left
+      await tester.drag(find.text('Delete Me Event'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      // Tap Delete
+      final deleteBtn = find.text('Delete');
+      expect(deleteBtn, findsOneWidget);
+      await tester.tap(deleteBtn);
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog should appear
+      expect(find.text('Delete Event?'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Delete Event'), findsOneWidget);
+
+      // Tap Cancel dismisses dialog without deleting
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete Event?'), findsNothing);
+      expect(communityController.events.any((e) => e.id == 'ev_del_confirm'), isTrue);
+    });
+
+    testWidgets('Normal tap on closed card navigates to EventDetailsScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final event = EventModel(
+        id: 'ev_normal_tap',
+        title: 'Tap to Details Event',
+        organizerName: 'Tech Hub',
+        eventType: 'In person',
+        location: 'Hall C',
+        dateString: 'Feb 01',
+        timeString: '11:00 AM',
+        category: 'Technology',
+      );
+      communityController.events.assignAll([event]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tap to Details Event'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EventDetailsScreen), findsOneWidget);
+    });
+  });
+
+  group('Issue 10: Organizer Card - Tappable, Chevron, No Separate Popup', () {
+    testWidgets('Non-owner: organizer card has trailing chevron', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      authController.currentUser.value = _makeTestUser(
+        id: 'user_viewer',
+        fullName: 'Viewer User',
+        username: 'viewer',
+      );
+
+      final event = EventModel(
+        id: 'ev_org_card',
+        title: 'Organizer Card Event',
+        organizerId: 'org_card_user_id',
+        organizerName: 'GenLink Cambodia',
+        organizerAvatar: null,
+        eventType: 'In person',
+        location: 'Phnom Penh',
+        dateString: 'Mar 01',
+        timeString: '10:00 AM',
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: EventDetailsScreen(event: event),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The organizer card has a chevron_right_rounded icon
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.text('GenLink Cambodia'), findsOneWidget);
+    });
+
+    testWidgets('Owner: organizer card shows You are the Organizer and has chevron', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      authController.currentUser.value = _makeTestUser(
+        id: 'owner_org_id',
+        fullName: 'Design Guild',
+        username: 'designguild',
+      );
+
+      final myEvent = EventModel(
+        id: 'ev_owner_org',
+        title: 'My Organized Event',
+        organizerId: 'owner_org_id',
+        organizerName: 'Design Guild',
+        eventType: 'Online',
+        location: '',
+        dateString: 'Mar 15',
+        timeString: '3:00 PM',
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: EventDetailsScreen(event: myEvent),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Owner should see organizer label and chevron (card is still tappable)
+      expect(find.textContaining("Organizer"), findsWidgets);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsAtLeastNWidgets(1));
+    });
+  });
+
+  group('Issue 11: Attendee Model - Correct ID and Username for Routing', () {
+    test('EventAttendeeModel has id, fullName, and username fields for ProfileNavigation', () {
+      const attendee = EventAttendeeModel(
+        id: 'real_attendee_id_xyz',
+        fullName: 'Ren Makara',
+        username: 'makara001',
+        avatarUrl: null,
+      );
+
+      expect(attendee.id, equals('real_attendee_id_xyz'));
+      expect(attendee.fullName, equals('Ren Makara'));
+      expect(attendee.username, equals('makara001'));
+    });
+
+    test('ProfileNavigation.ownerAwareUsername returns attendee username for non-current-user attendee', () {
+      final resolved = ProfileNavigation.ownerAwareUsername(
+        username: 'makara001',
+        userId: 'attendee_id_xyz',
+      );
+      expect(resolved, equals('makara001'));
+    });
+
+    test('EventAttendeeModel.fromJson parses id, fullName, username correctly', () {
+      final json = {
+        'user': {
+          'id': 'parsed_attendee_id',
+          'fullName': 'Sokny Nat',
+          'username': 'soknynat',
+          'avatarUrl': null,
+        },
+        'joinedAt': '2026-09-20T05:30:00Z',
+        'role': 'ATTENDEE',
+      };
+      final attendee = EventAttendeeModel.fromJson(json);
+      expect(attendee.id, equals('parsed_attendee_id'));
+      expect(attendee.fullName, equals('Sokny Nat'));
+      expect(attendee.username, equals('soknynat'));
+      expect(attendee.joinedAt, isNotNull);
+    });
+  });
+
+  group('Issue 12: Bookmark Yellow Saved State - Event Surfaces', () {
+    testWidgets('Event list card: saved bookmark uses AppColors.warning (yellow)', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final savedEvent = EventModel(
+        id: 'ev_bm_yellow',
+        title: 'Yellow Bookmark Event',
+        organizerName: 'Bookmark Org',
+        eventType: 'In person',
+        location: 'BKK1',
+        dateString: 'Apr 10',
+        timeString: '9:00 AM',
+        category: 'Social',
+        isBookmarked: true,
+      );
+      communityController.events.assignAll([savedEvent]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.bookmark_rounded));
+      expect(icon.color, equals(AppColors.warning));
+      expect(icon.color, isNot(equals(Colors.blue)));
+    });
+
+    testWidgets('Event list card: unsaved bookmark uses neutral color, not yellow, not blue', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final unsavedEvent = EventModel(
+        id: 'ev_bm_neutral',
+        title: 'Neutral Bookmark Event',
+        organizerName: 'Neutral Org',
+        eventType: 'In person',
+        location: 'Toul Tom Pong',
+        dateString: 'Apr 15',
+        timeString: '1:00 PM',
+        category: 'Education',
+        isBookmarked: false,
+      );
+      communityController.events.assignAll([unsavedEvent]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const Scaffold(body: EventsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final outlineIcon = find.byIcon(Icons.bookmark_border_rounded);
+      expect(outlineIcon, findsOneWidget);
+      final icon = tester.widget<Icon>(outlineIcon);
+      expect(icon.color, isNot(equals(AppColors.warning)));
+      expect(icon.color, isNot(equals(Colors.blue)));
+      expect(icon.color, isNot(equals(AppColors.communityAccent)));
+    });
+
+    testWidgets('EventDetailsScreen: saved bookmark uses AppColors.warning', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final savedEvent = EventModel(
+        id: 'ev_detail_bm',
+        title: 'Detail Screen Yellow Bookmark',
+        organizerName: 'Detail Org',
+        eventType: 'In person',
+        location: 'Phnom Penh',
+        dateString: 'May 01',
+        timeString: '10:00 AM',
+        isBookmarked: true,
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: EventDetailsScreen(event: savedEvent),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final savedBookmarks = find.byIcon(Icons.bookmark_rounded);
+      expect(savedBookmarks, findsAtLeastNWidgets(1));
+      final icon = tester.widget<Icon>(savedBookmarks.first);
+      expect(icon.color, equals(AppColors.warning));
+      expect(icon.color, isNot(equals(Colors.blue)));
+    });
+
+    testWidgets('CommunityScreen Events Tab: saved bookmark uses AppColors.warning', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final savedEvent = EventModel(
+        id: 'ev_comm_yellow',
+        title: 'Community Tab Yellow Event',
+        organizerName: 'Community Org',
+        eventType: 'In person',
+        location: 'Phnom Penh',
+        dateString: 'Oct 25',
+        timeString: '3:00 PM',
+        category: 'Conference',
+        isBookmarked: true,
+      );
+      communityController.events.assignAll([savedEvent]);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          themeMode: ThemeMode.dark,
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Event Tab
+      final eventTab = find.text('Event');
+      expect(eventTab, findsOneWidget);
+      await tester.tap(eventTab);
+      await tester.pumpAndSettle();
+
+      final bookmarkIcon = find.byIcon(Icons.bookmark_rounded);
+      expect(bookmarkIcon, findsOneWidget);
+      final iconWidget = tester.widget<Icon>(bookmarkIcon);
+      expect(iconWidget.color, equals(AppColors.warning));
     });
   });
 }

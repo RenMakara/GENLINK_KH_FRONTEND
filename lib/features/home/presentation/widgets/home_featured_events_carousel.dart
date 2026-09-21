@@ -53,8 +53,10 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
     final borderSubtle = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
-
-    final sectionTitle = 'home.featuredEvents'.tr;
+    final sectionTitle = ('home.suggestedEvent'.tr.isNotEmpty &&
+            'home.suggestedEvent'.tr != 'home.suggestedEvent')
+        ? 'home.suggestedEvent'.tr
+        : 'Suggested Event';
 
     if (upcomingEvent != null) {
       final adapted = _convertLegacyUpcomingEvent(upcomingEvent!);
@@ -136,10 +138,10 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              sectionTitle,
+              sectionTitle.toUpperCase(),
               style: TextStyle(
-                color: textPrimary,
-                fontSize: 13.5,
+                color: textSecondary,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
               ),
@@ -158,7 +160,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
+        const SizedBox(height: AppSpacing.sm),
         if (event == null)
           _buildEmptyState(
             isDark: isDark,
@@ -197,75 +199,75 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          sectionTitle,
+          sectionTitle.toUpperCase(),
           style: TextStyle(
             color: textPrimary,
-            fontSize: 13.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
+        const SizedBox(height: AppSpacing.sm),
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
             color: cardSurface,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: borderSubtle, width: 0.8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 155,
+                height: 100,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: shimmerBase,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.xl),
+                    top: Radius.circular(AppRadius.lg),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      height: 16,
-                      width: 220,
+                      height: 14,
+                      width: 200,
+                      decoration: BoxDecoration(
+                        color: shimmerBase,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 11,
+                      width: 140,
                       decoration: BoxDecoration(
                         color: shimmerBase,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      height: 12,
-                      width: 160,
-                      decoration: BoxDecoration(
-                        color: shimmerBase,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          height: 12,
-                          width: 100,
+                          height: 11,
+                          width: 90,
                           decoration: BoxDecoration(
                             color: shimmerBase,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                         Container(
-                          height: 24,
-                          width: 80,
+                          height: 18,
+                          width: 70,
                           decoration: BoxDecoration(
                             color: shimmerBase,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ],
@@ -376,7 +378,10 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
 
     final String locationDisplay;
     if (isOnline) {
-      locationDisplay = 'home.onlineEvent'.tr;
+      locationDisplay = 'home.onlineEvent'.tr.isNotEmpty &&
+              'home.onlineEvent'.tr != 'home.onlineEvent'
+          ? 'home.onlineEvent'.tr
+          : 'Online Event';
     } else if (event.location.trim().isNotEmpty) {
       locationDisplay = event.location.trim();
     } else if (event.locationName != null &&
@@ -392,360 +397,198 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       event.startDateTime,
     );
 
-    final String categoryDisplay;
-    if (event.category.trim().isNotEmpty) {
-      categoryDisplay = event.category.trim().toUpperCase();
-    } else {
-      categoryDisplay = 'GenLink Event';
-    }
+    final categoryDisplay = event.category.trim().isNotEmpty
+        ? event.category.trim().toUpperCase()
+        : '';
 
-    final viewEventLabel = 'home.viewEvent'.tr;
+    final viewEventLabel = ('home.viewEvent'.tr.isNotEmpty &&
+            'home.viewEvent'.tr != 'home.viewEvent')
+        ? 'home.viewEvent'.tr
+        : 'View Event';
 
     final descriptionText = event.subtitle.trim().isNotEmpty
         ? event.subtitle.trim()
         : event.description.trim();
 
-    final isJoined =
-        event.isRsvped ||
-        event.myRsvpStatus?.toUpperCase() == 'GOING' ||
-        event.myRsvpStatus?.toUpperCase() == 'REGISTERED';
-
-    final participantCount = event.attendeesCount;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      builder: (context, animValue, child) {
-        return Opacity(
-          opacity: animValue,
-          child: Transform.translate(
-            offset: Offset(0, 8 * (1.0 - animValue)),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardSurface,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: borderSubtle, width: 0.8),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _navigateToDetails(event, heroTag),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    children: [
-                      SizedBox(
-                        height: 155,
-                        width: double.infinity,
-                        child: Hero(
-                          tag: heroTag,
-                          child: _buildCoverImage(
-                            event.imageUrl,
-                            isDark,
-                            textMuted,
-                          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: cardSurface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: borderSubtle, width: 0.8),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _navigateToDetails(event, heroTag),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  children: [
+                    SizedBox(
+                      height: 110,
+                      width: double.infinity,
+                      child: Hero(
+                        tag: heroTag,
+                        child: _buildCoverImage(
+                          event.imageUrl,
+                          isDark,
+                          textMuted,
                         ),
                       ),
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.35),
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.45),
-                              ],
-                              stops: const [0.0, 0.45, 1.0],
-                            ),
-                          ),
-                        ),
-                      ),
+                    ),
+                    if (categoryDisplay.isNotEmpty)
                       Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.82),
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.18),
-                                  width: 0.6,
-                                ),
-                              ),
-                              child: Text(
-                                Get.locale?.languageCode == 'km'
-                                    ? ('community.featuredEvents'.tr.isNotEmpty &&
-                                            'community.featuredEvents'.tr != 'community.featuredEvents'
-                                        ? 'community.featuredEvents'.tr
-                                        : 'ព្រឹត្តិការណ៍លេចធ្លោ')
-                                    : 'Featured Event',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              width: 0.5,
                             ),
-                            if (categoryDisplay.isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 4.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.65),
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    width: 0.6,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _getCategoryIconData(event.category),
-                                      size: 11,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      categoryDisplay,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      if (isJoined)
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 4.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 0.7,
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 11.5,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Joined',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                          ),
+                          child: Text(
+                            categoryDisplay,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.0,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                      ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        event.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                          height: 1.2,
+                        ),
+                      ),
+                      if (descriptionText.isNotEmpty) ...[
+                        const SizedBox(height: 3),
                         Text(
-                          event.title,
-                          maxLines: 2,
+                          descriptionText,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            height: 1.25,
+                            color: textSecondary,
+                            fontSize: 12,
+                            height: 1.3,
                           ),
                         ),
-                        if (descriptionText.isNotEmpty) ...[
-                          const SizedBox(height: 5),
-                          Text(
-                            descriptionText,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: textSecondary,
-                              fontSize: 12,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        if (dateTimeDisplay.isNotEmpty) ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_outlined,
-                                size: 12.5,
-                                color: textSecondary,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  dateTimeDisplay,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                        ],
+                      ],
+                      const SizedBox(height: 6),
+                      if (dateTimeDisplay.isNotEmpty) ...[
                         Row(
                           children: [
                             Icon(
-                              isOnline
-                                  ? Icons.language_outlined
-                                  : Icons.location_on_outlined,
-                              size: 13,
-                              color: textMuted,
+                              Icons.calendar_today_outlined,
+                              size: 12,
+                              color: textSecondary,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 5),
                             Expanded(
                               child: Text(
-                                locationDisplay,
+                                dateTimeDisplay,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
+                                  color: textSecondary,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (participantCount > 0)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.people_outline_rounded,
-                                    size: 13.5,
-                                    color: textMuted,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    '$participantCount',
-                                    style: TextStyle(
-                                      color: textMuted,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              const SizedBox.shrink(),
-                            Material(
-                              color: isDark ? Colors.white : Colors.black,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              child: InkWell(
-                                onTap: () => _navigateToDetails(event, heroTag),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.md,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        viewEventLabel,
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? Colors.black
-                                              : Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.arrow_forward_rounded,
-                                        size: 13,
-                                        color: isDark
-                                            ? Colors.black
-                                            : Colors.white,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 3),
                       ],
-                    ),
+                      Row(
+                        children: [
+                          Icon(
+                            isOnline
+                                ? Icons.language_outlined
+                                : Icons.location_on_outlined,
+                            size: 12.5,
+                            color: textMuted,
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              locationDisplay,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                viewEventLabel,
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 12,
+                                color: textPrimary,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -765,7 +608,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
           trimmed,
           fit: BoxFit.cover,
           width: double.infinity,
-          height: 155,
+          height: 110,
           errorBuilder: (context, error, stackTrace) =>
               _buildPlaceholder(isDark, textMuted),
         );
@@ -774,7 +617,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
         trimmed,
         fit: BoxFit.cover,
         width: double.infinity,
-        height: 155,
+        height: 110,
         errorBuilder: (context, error, stackTrace) =>
             _buildPlaceholder(isDark, textMuted),
         loadingBuilder: (context, child, loadingProgress) {
@@ -920,39 +763,5 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       return base;
     }
     return t;
-  }
-
-  static IconData _getCategoryIconData(String cat) {
-    switch (cat.toLowerCase()) {
-      case 'technology':
-        return Icons.computer_outlined;
-      case 'design':
-      case 'arts':
-      case 'art':
-        return Icons.palette_outlined;
-      case 'business':
-        return Icons.business_center_outlined;
-      case 'career':
-        return Icons.work_outline_rounded;
-      case 'education':
-        return Icons.school_outlined;
-      case 'workshop':
-        return Icons.build_outlined;
-      case 'competition':
-        return Icons.emoji_events_outlined;
-      case 'sports':
-      case 'sport':
-        return Icons.sports_soccer_outlined;
-      case 'social':
-        return Icons.people_outline_rounded;
-      case 'entertainment':
-        return Icons.movie_outlined;
-      case 'seminar':
-        return Icons.groups_outlined;
-      case 'hackathon':
-        return Icons.terminal_outlined;
-      default:
-        return Icons.category_outlined;
-    }
   }
 }

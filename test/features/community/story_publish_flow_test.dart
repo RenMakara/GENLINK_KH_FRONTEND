@@ -906,5 +906,179 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
     });
+
+    testWidgets('Test 24: Story with Only Me privacy preserves ONLY_ME, displays Lock icon in StoryViewerScreen, and never Public globe icon', (tester) async {
+      fakeApiClient.returnedStoryId = 'story_only_me_24';
+      final controller = Get.put(StoryController());
+      await controller.fetchStories();
+
+      const onlyMeSettings = StorySettings(
+        visibility: StoryPrivacy.onlyMe,
+        replyPermission: StoryReplyPermission.everyone,
+        allowReactions: true,
+      );
+
+      final success = await controller.publishStory(
+        type: StoryType.photo,
+        mediaUrl: 'assets/images/user_profile.png',
+        textContent: 'Private personal story',
+        storySettings: onlyMeSettings,
+        visibility: 'Only Me',
+      );
+
+      expect(success, isTrue);
+      expect(fakeApiClient.lastPostBody!['visibility'], 'ONLY_ME');
+
+      final ownerStories = controller.storyGroups.firstWhere((g) => g.isOwner).stories;
+      final createdStory = ownerStories.first;
+      expect(createdStory.settings.visibility, StoryPrivacy.onlyMe);
+      expect(createdStory.visibility, 'Only Me');
+      expect(createdStory.storyPrivacy, StoryPrivacy.onlyMe);
+
+      final ownerGroup = StoryGroupModel(
+        userId: 'owner_user_24',
+        userName: 'Sokny Enat',
+        userAvatar: 'assets/images/user_profile.png',
+        isOwner: true,
+        stories: [createdStory],
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: StoryViewerScreen(
+            initialGroupIndex: 0,
+            groups: [ownerGroup],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(StoryViewerScreen), findsOneWidget);
+      expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.public_rounded), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
+    });
+
+    testWidgets('Test 25: All 3 privacy tiers (PUBLIC, FRIENDS, ONLY_ME) render distinct header icons without cross-contamination', (tester) async {
+      final publicStory = StoryItemModel(
+        id: 'story_pub_25',
+        type: StoryType.photo,
+        mediaUrl: 'https://cdn.genlink.com/stories/pub.jpg',
+        timeAgo: 'Just now',
+        createdAt: DateTime.now(),
+        settings: const StorySettings(visibility: StoryPrivacy.public),
+      );
+
+      final friendsStory = StoryItemModel(
+        id: 'story_friends_25',
+        type: StoryType.photo,
+        mediaUrl: 'https://cdn.genlink.com/stories/friends.jpg',
+        timeAgo: 'Just now',
+        createdAt: DateTime.now(),
+        settings: const StorySettings(visibility: StoryPrivacy.friends),
+      );
+
+      final onlyMeStory = StoryItemModel(
+        id: 'story_only_me_25',
+        type: StoryType.photo,
+        mediaUrl: 'https://cdn.genlink.com/stories/only_me.jpg',
+        timeAgo: 'Just now',
+        createdAt: DateTime.now(),
+        settings: const StorySettings(visibility: StoryPrivacy.onlyMe),
+      );
+
+      // Verify Public story shows public_rounded
+      final pubGroup = StoryGroupModel(
+        userId: 'user_pub',
+        userName: 'User Public',
+        userAvatar: '',
+        isOwner: true,
+        stories: [publicStory],
+      );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: StoryViewerScreen(
+            initialGroupIndex: 0,
+            groups: [pubGroup],
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.public_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.lock_rounded), findsNothing);
+      expect(find.byIcon(Icons.people_alt_rounded), findsNothing);
+
+      // Verify Friends story shows people_alt_rounded
+      final friendsGroup = StoryGroupModel(
+        userId: 'user_friends',
+        userName: 'User Friends',
+        userAvatar: '',
+        isOwner: true,
+        stories: [friendsStory],
+      );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: StoryViewerScreen(
+            initialGroupIndex: 0,
+            groups: [friendsGroup],
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.people_alt_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.lock_rounded), findsNothing);
+      expect(find.byIcon(Icons.public_rounded), findsNothing);
+
+      // Verify Only Me story shows lock_rounded
+      final onlyMeGroup = StoryGroupModel(
+        userId: 'user_only_me',
+        userName: 'User Only Me',
+        userAvatar: '',
+        isOwner: true,
+        stories: [onlyMeStory],
+      );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: StoryViewerScreen(
+            initialGroupIndex: 0,
+            groups: [onlyMeGroup],
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.public_rounded), findsNothing);
+      expect(find.byIcon(Icons.people_alt_rounded), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
+    });
+
+    test('Test 26: createStory preserves user Only Me selection even if backend response omits visibility', () async {
+      final repository = StoryRepositoryImpl(
+        apiClient: fakeApiClient,
+        mediaUploadService: fakeUploadService,
+      );
+
+      fakeApiClient.returnedStoryId = 'story_fallback_omitted_26';
+      // Post with custom settings
+      const userSettings = StorySettings(
+        visibility: StoryPrivacy.onlyMe,
+        replyPermission: StoryReplyPermission.everyone,
+        allowReactions: true,
+      );
+
+      final created = await repository.createStory(
+        type: StoryType.photo,
+        mediaUrl: 'assets/images/user_profile.png',
+        settings: userSettings,
+      );
+
+      expect(created.settings.visibility, StoryPrivacy.onlyMe);
+      expect(created.visibility, 'Only Me');
+      expect(created.storyPrivacy, StoryPrivacy.onlyMe);
+    });
   });
 }

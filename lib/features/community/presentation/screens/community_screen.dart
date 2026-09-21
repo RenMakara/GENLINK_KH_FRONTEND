@@ -1962,9 +1962,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
                                     color: ev.isBookmarked
-                                        ? (isDark
-                                              ? Colors.white
-                                              : Colors.black87)
+                                        ? AppColors.warning
                                         : textMuted,
                                     size: 19,
                                   ),
@@ -2079,6 +2077,40 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
+  static IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
+  }
+
   /// Event tab empty state — shown when backend returns 0 events.
   Widget _buildEventEmptyState(
     BuildContext context,
@@ -2132,40 +2164,6 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
       ),
     );
-  }
-
-  IconData _getCategoryIconData(String cat) {
-    switch (cat.toLowerCase()) {
-      case 'technology':
-        return Icons.computer_outlined;
-      case 'design':
-      case 'arts':
-      case 'art':
-        return Icons.palette_outlined;
-      case 'business':
-        return Icons.business_center_outlined;
-      case 'career':
-        return Icons.work_outline_rounded;
-      case 'education':
-        return Icons.school_outlined;
-      case 'workshop':
-        return Icons.build_outlined;
-      case 'competition':
-        return Icons.emoji_events_outlined;
-      case 'sports':
-      case 'sport':
-        return Icons.sports_soccer_outlined;
-      case 'social':
-        return Icons.people_outline_rounded;
-      case 'entertainment':
-        return Icons.movie_outlined;
-      case 'seminar':
-        return Icons.groups_outlined;
-      case 'hackathon':
-        return Icons.terminal_outlined;
-      default:
-        return Icons.category_outlined;
-    }
   }
 }
 

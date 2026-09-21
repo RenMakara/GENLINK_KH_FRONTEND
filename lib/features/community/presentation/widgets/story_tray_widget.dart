@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -11,6 +13,29 @@ import 'demo_stories_data.dart';
 import 'story_creation_picker_sheet.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 
+// ---------------------------------------------------------------------------
+// Story gradient ring colors — used for unviewed story ring
+// ---------------------------------------------------------------------------
+const _kStoryGradientColors = [
+  Color(0xFFE040FB), // Purple-pink
+  Color(0xFFFF6B35), // Orange
+  Color(0xFFFFD600), // Yellow
+];
+
+
+
+// Viewed story ring
+const _kStoryViewedRingLight = Color(0xFFCBCDD1);
+const _kStoryViewedRingDark = Color(0xFF4A4C50);
+
+// "+" badge background
+const _kPlusBadgeBg = Color(0xFF1F6FEB); // AppColors.brandPrimary
+
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Main widget
+// ---------------------------------------------------------------------------
 class StoryTrayWidget extends StatefulWidget {
   const StoryTrayWidget({super.key});
 
@@ -42,9 +67,6 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
     final bgPrimary = theme.scaffoldBackgroundColor;
-    final border = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
     final skeletonColor = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightBgSecondary;
@@ -52,20 +74,22 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
     return Obx(() {
       if (controller.isLoading.value && controller.storyGroups.isEmpty) {
         return SizedBox(
-          height: 100,
+          height: 96,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             itemCount: 5,
             itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.only(right: 14),
+              padding: const EdgeInsets.only(right: 12),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(radius: 28, backgroundColor: skeletonColor),
+                  const SizedBox(height: 3),
+                  CircleAvatar(radius: 29, backgroundColor: skeletonColor),
                   const SizedBox(height: 6),
                   Container(
                     width: 48,
-                    height: 10,
+                    height: 8,
                     decoration: BoxDecoration(
                       color: skeletonColor,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -82,10 +106,17 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       final currentUserId = CurrentUser.id;
       final currentUserAvatar = CurrentUser.avatarUrl;
       final rawOwnerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+      final ownerName = CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+          ? CurrentUser.name
+          : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'You');
       final ownerGroup = rawOwnerGroup != null
           ? StoryGroupModel(
               userId: rawOwnerGroup.userId,
-              userName: rawOwnerGroup.userName,
+              userName: rawOwnerGroup.userName.isNotEmpty &&
+                      rawOwnerGroup.userName != 'community.yourStory'.tr &&
+                      rawOwnerGroup.userName != 'Your Story'
+                  ? rawOwnerGroup.userName
+                  : ownerName,
               userAvatar: (currentUserAvatar?.isNotEmpty == true)
                   ? currentUserAvatar!
                   : rawOwnerGroup.userAvatar,
@@ -94,7 +125,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
             )
           : StoryGroupModel(
               userId: currentUserId.isNotEmpty ? currentUserId : 'current_user',
-              userName: 'community.yourStory'.tr,
+              userName: ownerName,
               userAvatar: currentUserAvatar ?? '',
               isOwner: true,
               stories: [],
@@ -107,9 +138,6 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         return 0;
       });
 
-      // Keep the create-story affordance separate from the owner's story.
-      // This lets the owner appear as a normal story profile after publishing
-      // while the first slot remains available for adding another story.
       final demoGroups = getDemoStoryGroups();
       final displayGroups = <StoryGroupModel>[
         if (ownerGroup.stories.isNotEmpty) ownerGroup,
@@ -118,7 +146,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       ];
 
       return SizedBox(
-        height: 100,
+        height: 96,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -133,7 +161,6 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
               allGroups: displayGroups,
               isCreateStory: isCreateStory,
               bgPrimary: bgPrimary,
-              border: border,
               textPrimary: textPrimary,
               textMuted: textMuted,
               theme: theme,
@@ -145,13 +172,15 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Individual tray item
+// ---------------------------------------------------------------------------
 class _StoryTrayItem extends StatefulWidget {
   final StoryGroupModel group;
   final int index;
   final List<StoryGroupModel> allGroups;
   final bool isCreateStory;
   final Color bgPrimary;
-  final Color border;
   final Color textPrimary;
   final Color textMuted;
   final ThemeData theme;
@@ -162,7 +191,6 @@ class _StoryTrayItem extends StatefulWidget {
     required this.allGroups,
     required this.isCreateStory,
     required this.bgPrimary,
-    required this.border,
     required this.textPrimary,
     required this.textMuted,
     required this.theme,
@@ -231,57 +259,257 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
   Widget build(BuildContext context) {
     final group = widget.group;
     final bgPrimary = widget.bgPrimary;
-    final border = widget.border;
+    final textMuted = widget.textMuted;
+    final theme = widget.theme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (widget.isCreateStory) {
+      return _buildCreateStoryItem(context, isDark, group, textMuted);
+    }
+
+    return _buildStoryItem(context, isDark, group, bgPrimary);
+  }
+
+  // -------------------------------------------------------------------------
+  // Create Story item: avatar + blue "+" badge + "Your Story" label
+  // -------------------------------------------------------------------------
+  Widget _buildCreateStoryItem(
+    BuildContext context,
+    bool isDark,
+    StoryGroupModel group,
+    Color textMuted,
+  ) {
+    const double avatarSize = 58.0;
+    const double badgeSize = 22.0;
+
+    // "Your Story" label with localization
+    final yourStoryLabel =
+        'community.yourStory'.tr.isNotEmpty &&
+                'community.yourStory'.tr != 'community.yourStory'
+            ? 'community.yourStory'.tr
+            : 'Your Story';
+    final isKhmer = _containsKhmer(yourStoryLabel);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: _onStoryTap,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.95 : 1.0,
+          duration: const Duration(milliseconds: 130),
+          curve: Curves.easeOutCubic,
+          child: SizedBox(
+            width: 64,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 3),
+                // Avatar + "+" badge stack
+                SizedBox(
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Main avatar circle
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.14)
+                                  : Colors.black.withValues(alpha: 0.10),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: AppAvatar(
+                              imageUrl: group.userAvatar,
+                              name: group.userName,
+                              size: avatarSize,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Blue "+" badge at bottom-right
+                      Positioned(
+                        bottom: -1,
+                        right: -1,
+                        child: Container(
+                          width: badgeSize,
+                          height: badgeSize,
+                          decoration: BoxDecoration(
+                            color: _kPlusBadgeBg,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBgPrimary
+                                  : AppColors.lightSurfacePrimary,
+                              width: 2.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _kPlusBadgeBg.withValues(alpha: 0.35),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1.5),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // "Your Story" label
+                Text(
+                  yourStoryLabel,
+                  style: widget.theme.textTheme.labelSmall?.copyWith(
+                        color: textMuted,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 10.5,
+                        fontFamily: isKhmer ? 'KantumruyPro' : null,
+                        fontFamilyFallback: const ['KantumruyPro', 'Sora'],
+                      ) ??
+                      TextStyle(
+                        color: textMuted,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: isKhmer ? 'KantumruyPro' : null,
+                        fontFamilyFallback: const ['KantumruyPro', 'Sora'],
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Normal story item: gradient ring (unseen) or neutral ring (seen) + label
+  // -------------------------------------------------------------------------
+  Widget _buildStoryItem(
+    BuildContext context,
+    bool isDark,
+    StoryGroupModel group,
+    Color bgPrimary,
+  ) {
     final textPrimary = widget.textPrimary;
     final textMuted = widget.textMuted;
     final theme = widget.theme;
 
-    if (widget.isCreateStory) {
-      return Padding(
-        padding: const EdgeInsets.only(right: 12),
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          onTap: _onStoryTap,
-          child: AnimatedScale(
-            scale: _isPressed ? 0.96 : 1.0,
-            duration: const Duration(milliseconds: 140),
-            curve: Curves.easeOutCubic,
+    // Ring dimensions
+    const double avatarSize = 52.0;
+    const double ringStroke = 2.5;
+    const double ringGap = 2.5; // gap between ring and avatar edge
+    // Total container size = avatarSize + 2*ringStroke + 2*ringGap
+    const double outerSize = avatarSize + (ringStroke + ringGap) * 2;
+
+    final isKhmer = _containsKhmer(group.userName);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: _onStoryTap,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.95 : 1.0,
+          duration: const Duration(milliseconds: 130),
+          curve: Curves.easeOutCubic,
+          child: SizedBox(
+            width: 64,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                CustomPaint(
-                  size: const Size.square(64),
-                  painter: _DashedCirclePainter(
-                    color: AppColors.communityAccent,
-                  ),
-                  child: const SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: Center(
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: AppColors.communityAccent,
-                        size: 28,
+                const SizedBox(height: 3),
+                SizedBox(
+                  width: outerSize,
+                  height: outerSize,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Ring layer
+                      Positioned.fill(
+                        child: group.hasUnseen
+                            ? _GradientRingWidget(
+                                size: outerSize,
+                                strokeWidth: ringStroke,
+                                gapWidth: ringGap,
+                                bgColor: bgPrimary,
+                                colors: _kStoryGradientColors,
+                              )
+                            : _NeutralRingWidget(
+                                size: outerSize,
+                                strokeWidth: ringStroke,
+                                gapWidth: ringGap,
+                                bgColor: bgPrimary,
+                                ringColor: isDark
+                                    ? _kStoryViewedRingDark
+                                    : _kStoryViewedRingLight,
+                              ),
                       ),
-                    ),
+                      // Avatar
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: group.hasUnseen ? 1.0 : 0.80,
+                        child: Hero(
+                          tag: 'story_avatar_${group.userId}',
+                          child: ClipOval(
+                            child: SizedBox(
+                              width: avatarSize,
+                              height: avatarSize,
+                              child: AppAvatar(
+                                imageUrl: group.userAvatar,
+                                name: group.userName,
+                                size: avatarSize,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 6),
                 SizedBox(
-                  width: 72,
+                  width: 64,
                   child: Text(
-                    'community.yourStory'.tr,
-                    style:
-                        theme.textTheme.labelSmall?.copyWith(
+                    group.userName,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                          color: group.hasUnseen ? textPrimary : textMuted,
+                          fontWeight: group.hasUnseen
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                           fontSize: 10.5,
-                          color: textPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontFamily: isKhmer ? 'KantumruyPro' : null,
+                          fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                         ) ??
                         TextStyle(
-                          color: textPrimary,
+                          color: group.hasUnseen ? textPrimary : textMuted,
                           fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: group.hasUnseen
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          fontFamily: isKhmer ? 'KantumruyPro' : null,
+                          fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -292,127 +520,170 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
             ),
           ),
         ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: _onStoryTap,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.96 : 1.0,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: Column(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                padding: const EdgeInsets.all(2.5),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: group.hasUnseen
-                      ? const LinearGradient(
-                          colors: [
-                            AppColors.communityAccent,
-                            AppColors.accentPremium,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  border: !group.hasUnseen
-                      ? Border.all(color: border, width: 1.5)
-                      : null,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: bgPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: group.hasUnseen ? 1.0 : 0.80,
-                    child: Hero(
-                      tag: 'story_avatar_${group.userId}',
-                      child: AppAvatar(
-                        imageUrl: group.userAvatar,
-                        name: group.userName,
-                        size: 56,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: 72,
-                child: Text(
-                  group.userName,
-                  style:
-                      theme.textTheme.labelSmall?.copyWith(
-                        color: group.hasUnseen ? textPrimary : textMuted,
-                        fontWeight: group.hasUnseen
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontFamily: _containsKhmer(group.userName)
-                            ? 'KantumruyPro'
-                            : null,
-                        fontFamilyFallback: const ['KantumruyPro', 'Sora'],
-                      ) ??
-                      TextStyle(
-                        color: group.hasUnseen ? textPrimary : textMuted,
-                        fontSize: 11,
-                        fontWeight: group.hasUnseen
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontFamily: _containsKhmer(group.userName)
-                            ? 'KantumruyPro'
-                            : null,
-                        fontFamilyFallback: const ['KantumruyPro', 'Sora'],
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 }
 
-class _DashedCirclePainter extends CustomPainter {
-  const _DashedCirclePainter({required this.color});
+// ---------------------------------------------------------------------------
+// Gradient ring (unviewed) — uses a CustomPaint approach with a gap ring
+// drawn at background color so the avatar appears cleanly separated.
+// ---------------------------------------------------------------------------
+class _GradientRingWidget extends StatelessWidget {
+  final double size;
+  final double strokeWidth;
+  final double gapWidth;
+  final Color bgColor;
+  final List<Color> colors;
 
-  final Color color;
+  const _GradientRingWidget({
+    required this.size,
+    required this.strokeWidth,
+    required this.gapWidth,
+    required this.bgColor,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _GradientRingFullPainter(
+        colors: colors,
+        strokeWidth: strokeWidth,
+        gapWidth: gapWidth,
+        bgColor: bgColor,
+      ),
+    );
+  }
+}
+
+class _GradientRingFullPainter extends CustomPainter {
+  final List<Color> colors;
+  final double strokeWidth;
+  final double gapWidth;
+  final Color bgColor;
+
+  const _GradientRingFullPainter({
+    required this.colors,
+    required this.strokeWidth,
+    required this.gapWidth,
+    required this.bgColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
-    final radius = (size.shortestSide - paint.strokeWidth) / 2;
     final center = Offset(size.width / 2, size.height / 2);
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    const dashSweep = 0.22;
-    const gapSweep = 0.17;
-    var start = -0.5 * 3.141592653589793;
-    while (start < 2 * 3.141592653589793) {
-      canvas.drawArc(rect, start, dashSweep, false, paint);
-      start += dashSweep + gapSweep;
-    }
+    final outerRadius = size.width / 2;
+
+    // Gradient ring
+    final gradientRadius = outerRadius - strokeWidth / 2;
+    final shader = ui.Gradient.sweep(
+      center,
+      colors,
+      List.generate(colors.length, (i) => i / (colors.length - 1)),
+      TileMode.clamp,
+      -0.5, // offset so gradient starts from top-ish
+      (2 * 3.14159265) - 0.5,
+    );
+    final ringPaint = Paint()
+      ..shader = shader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..isAntiAlias = true;
+    canvas.drawCircle(center, gradientRadius, ringPaint);
+
+    // White/bg gap ring to separate gradient ring from avatar
+    final gapRadius = gradientRadius - strokeWidth / 2 - gapWidth / 2;
+    final gapPaint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = gapWidth
+      ..isAntiAlias = true;
+    canvas.drawCircle(center, gapRadius, gapPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _DashedCirclePainter oldDelegate) {
-    return oldDelegate.color != color;
+  bool shouldRepaint(_GradientRingFullPainter old) =>
+      old.colors != colors ||
+      old.strokeWidth != strokeWidth ||
+      old.gapWidth != gapWidth ||
+      old.bgColor != bgColor;
+}
+
+// ---------------------------------------------------------------------------
+// Neutral ring (viewed)
+// ---------------------------------------------------------------------------
+class _NeutralRingWidget extends StatelessWidget {
+  final double size;
+  final double strokeWidth;
+  final double gapWidth;
+  final Color bgColor;
+  final Color ringColor;
+
+  const _NeutralRingWidget({
+    required this.size,
+    required this.strokeWidth,
+    required this.gapWidth,
+    required this.bgColor,
+    required this.ringColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _NeutralRingPainter(
+        ringColor: ringColor,
+        strokeWidth: strokeWidth,
+        gapWidth: gapWidth,
+        bgColor: bgColor,
+      ),
+    );
   }
+}
+
+class _NeutralRingPainter extends CustomPainter {
+  final Color ringColor;
+  final double strokeWidth;
+  final double gapWidth;
+  final Color bgColor;
+
+  const _NeutralRingPainter({
+    required this.ringColor,
+    required this.strokeWidth,
+    required this.gapWidth,
+    required this.bgColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = size.width / 2;
+
+    // Neutral ring
+    final ringRadius = outerRadius - strokeWidth / 2;
+    final ringPaint = Paint()
+      ..color = ringColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..isAntiAlias = true;
+    canvas.drawCircle(center, ringRadius, ringPaint);
+
+    // Gap ring
+    final gapRadius = ringRadius - strokeWidth / 2 - gapWidth / 2;
+    final gapPaint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = gapWidth
+      ..isAntiAlias = true;
+    canvas.drawCircle(center, gapRadius, gapPaint);
+  }
+
+  @override
+  bool shouldRepaint(_NeutralRingPainter old) =>
+      old.ringColor != ringColor ||
+      old.strokeWidth != strokeWidth ||
+      old.gapWidth != gapWidth ||
+      old.bgColor != bgColor;
 }

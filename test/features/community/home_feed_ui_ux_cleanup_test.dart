@@ -112,7 +112,7 @@ void main() {
       expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
     });
 
-    testWidgets('2. Story tray Create Story button has avatar, blue "+" badge, and "Your Story" label', (tester) async {
+    testWidgets('2. Story tray Create Story button has real avatar and neutral "+" badge (no bright blue)', (tester) async {
       final storyController = StoryController();
       storyController.isLoading.value = false;
       Get.put<StoryController>(storyController);
@@ -129,11 +129,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The "+" icon is present for creating a story (as a badge on the avatar)
+      // The "+" icon is present for creating a story (as a neutral badge on the avatar)
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
 
-      // Verify that "Your Story" label IS now shown (Telegram-style redesign)
-      expect(find.text('Your Story'), findsOneWidget);
+      // "Your Story" label is intentionally removed — keeps tray clean and uncluttered
+      expect(find.text('Your Story'), findsNothing);
 
       // Verify the "+" badge container is circular
       final addIcon = find.byIcon(Icons.add_rounded);
@@ -143,6 +143,10 @@ void main() {
       final container = tester.widget<Container>(containerFinder.first);
       final dec = container.decoration as BoxDecoration?;
       expect(dec?.shape, equals(BoxShape.circle), reason: 'Story + badge must be circular');
+
+      // Badge must NOT use the bright brand-blue color (GenLink neutral system)
+      expect(dec?.color, isNot(equals(const Color(0xFF1F6FEB))),
+          reason: 'Story badge must not use bright blue — use neutral dark/light adaptive color');
     });
 
     testWidgets('3. Quick Create Post Card is simplified to avatar + prompt without action icon row', (tester) async {

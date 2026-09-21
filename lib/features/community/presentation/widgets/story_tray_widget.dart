@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -9,29 +7,28 @@ import '../../domain/models/story_model.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
-import 'demo_stories_data.dart';
 import 'story_creation_picker_sheet.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 
 // ---------------------------------------------------------------------------
-// Story gradient ring colors — used for unviewed story ring
+// Story ring colors — GenLink neutral system (no bright colors)
 // ---------------------------------------------------------------------------
-const _kStoryGradientColors = [
-  Color(0xFFE040FB), // Purple-pink
-  Color(0xFFFF6B35), // Orange
-  Color(0xFFFFD600), // Yellow
-];
 
+// Unviewed story ring — charcoal (dark mode) / near-black (light mode)
+// Subtle but clearly indicates "new content" without Instagram-style gradient
+const _kStoryUnseenRingLight = Color(0xFF1C1C1E);   // near-black
+const _kStoryUnseenRingDark  = Color(0xFFF2F2F7);   // near-white
 
-
-// Viewed story ring
+// Viewed story ring — muted gray
 const _kStoryViewedRingLight = Color(0xFFCBCDD1);
-const _kStoryViewedRingDark = Color(0xFF4A4C50);
+const _kStoryViewedRingDark  = Color(0xFF4A4C50);
 
-// "+" badge background
-const _kPlusBadgeBg = Color(0xFF1F6FEB); // AppColors.brandPrimary
-
-// ---------------------------------------------------------------------------
+// "+" badge — adaptive: dark bg with white icon in light mode,
+//             white bg with dark icon in dark mode
+const _kPlusBadgeLightBg  = Color(0xFF1C1C1E);   // near-black in light mode
+const _kPlusBadgeDarkBg   = Color(0xFFF2F2F7);   // near-white in dark mode
+const _kPlusBadgeLightIcon = Colors.white;
+const _kPlusBadgeDarkIcon  = Color(0xFF1C1C1E);
 
 // ---------------------------------------------------------------------------
 // Main widget
@@ -102,13 +99,23 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         );
       }
 
+      // -----------------------------------------------------------------------
+      // Build display list from REAL backend data only — NO demo/mock injection
+      // -----------------------------------------------------------------------
       final allGroups = List<StoryGroupModel>.from(controller.storyGroups);
       final currentUserId = CurrentUser.id;
       final currentUserAvatar = CurrentUser.avatarUrl;
-      final rawOwnerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+
+      // Determine the owner's display name from real auth data
       final ownerName = CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
           ? CurrentUser.name
           : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'You');
+
+      // Find the owner group (marked by backend isOwner flag or matching userId)
+      final rawOwnerGroup = allGroups.firstWhereOrNull(
+          (g) => g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
+
+      // Merge real avatar from auth into owner group so it always shows correctly
       final ownerGroup = rawOwnerGroup != null
           ? StoryGroupModel(
               userId: rawOwnerGroup.userId,
@@ -130,18 +137,29 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
               isOwner: true,
               stories: [],
             );
-      final otherGroups = allGroups.where((g) => !g.isOwner).toList();
 
+      // Other users' stories — real backend data only, no demo injection
+      final otherGroups = allGroups
+          .where((g) =>
+              !g.isOwner &&
+              (currentUserId.isEmpty || g.userId != currentUserId) &&
+              // Guard: skip any accidentally-injected demo/mock data
+              !g.userId.startsWith('demo_') &&
+              !g.userId.startsWith('mock_'))
+          .toList();
+
+      // Sort: unseen first
       otherGroups.sort((a, b) {
         if (a.hasUnseen && !b.hasUnseen) return -1;
         if (!a.hasUnseen && b.hasUnseen) return 1;
         return 0;
       });
 
-      final demoGroups = getDemoStoryGroups();
+      // Final display list — owner with stories first, then others
+      // index 0 in the ListView is always the "Create Story" button (ownerGroup)
+      // index 1..n maps to displayGroups[0..n-1]
       final displayGroups = <StoryGroupModel>[
         if (ownerGroup.stories.isNotEmpty) ownerGroup,
-        ...demoGroups,
         ...otherGroups,
       ];
 
@@ -151,12 +169,13 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          itemCount: displayGroups.length + 1,
+          itemCount: displayGroups.length + 1, // +1 for Create Story at idx 0
           itemBuilder: (context, idx) {
             final isCreateStory = idx == 0;
             final group = isCreateStory ? ownerGroup : displayGroups[idx - 1];
             return _StoryTrayItem(
               group: group,
+              // Viewer index: maps into displayGroups (idx-1 when not create)
               index: isCreateStory ? -1 : idx - 1,
               allGroups: displayGroups,
               isCreateStory: isCreateStory,
@@ -209,6 +228,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
       return;
     }
 
+    // Pass the real displayGroups and the correct index within that list
     Navigator.of(context)
         .push(
           PageRouteBuilder(
@@ -271,7 +291,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
   }
 
   // -------------------------------------------------------------------------
-  // Create Story item: avatar + blue "+" badge + "Your Story" label
+  // Create Story item: real user avatar + neutral "+" badge
+  // No "Your Story" label — the "+" badge makes purpose clear, keeps tray clean
   // -------------------------------------------------------------------------
   Widget _buildCreateStoryItem(
     BuildContext context,
@@ -280,15 +301,11 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     Color textMuted,
   ) {
     const double avatarSize = 58.0;
-    const double badgeSize = 22.0;
+    const double badgeSize = 20.0;
 
-    // "Your Story" label with localization
-    final yourStoryLabel =
-        'community.yourStory'.tr.isNotEmpty &&
-                'community.yourStory'.tr != 'community.yourStory'
-            ? 'community.yourStory'.tr
-            : 'Your Story';
-    final isKhmer = _containsKhmer(yourStoryLabel);
+    // Adaptive badge colors: dark on light bg, light on dark bg
+    final badgeBg   = isDark ? _kPlusBadgeDarkBg   : _kPlusBadgeLightBg;
+    final badgeIcon = isDark ? _kPlusBadgeDarkIcon  : _kPlusBadgeLightIcon;
 
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -314,7 +331,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // Main avatar circle
+                      // Main avatar circle with subtle border
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
@@ -335,7 +352,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                           ),
                         ),
                       ),
-                      // Blue "+" badge at bottom-right
+                      // Neutral "+" badge at bottom-right
                       Positioned(
                         bottom: -1,
                         right: -1,
@@ -343,7 +360,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                           width: badgeSize,
                           height: badgeSize,
                           decoration: BoxDecoration(
-                            color: _kPlusBadgeBg,
+                            color: badgeBg,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isDark
@@ -351,19 +368,12 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                                   : AppColors.lightSurfacePrimary,
                               width: 2.0,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _kPlusBadgeBg.withValues(alpha: 0.35),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1.5),
-                              ),
-                            ],
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Icon(
                               Icons.add_rounded,
-                              color: Colors.white,
-                              size: 14,
+                              color: badgeIcon,
+                              size: 13,
                             ),
                           ),
                         ),
@@ -372,21 +382,19 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                // "Your Story" label
+                // Small "You" label — minimal, just enough to identify this slot
                 Text(
-                  yourStoryLabel,
+                  _shortOwnerLabel(group.userName),
                   style: widget.theme.textTheme.labelSmall?.copyWith(
                         color: textMuted,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                         fontSize: 10.5,
-                        fontFamily: isKhmer ? 'KantumruyPro' : null,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ) ??
                       TextStyle(
                         color: textMuted,
                         fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: isKhmer ? 'KantumruyPro' : null,
+                        fontWeight: FontWeight.w400,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ),
                   maxLines: 1,
@@ -401,8 +409,19 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     );
   }
 
+  /// Returns a short label for the owner slot.
+  /// Uses the first name only (e.g. "Nat" from "Nat Enat") to keep it compact.
+  /// Falls back to "You" if name is not available.
+  String _shortOwnerLabel(String fullName) {
+    final name = fullName.trim();
+    if (name.isEmpty || name == 'Guest' || name == 'User') return 'You';
+    // Use first word (first name) to keep label short
+    return name.split(' ').first;
+  }
+
   // -------------------------------------------------------------------------
-  // Normal story item: gradient ring (unseen) or neutral ring (seen) + label
+  // Normal story item: neutral ring (unseen = dark/light solid, seen = gray)
+  // No bright gradient — clean black/white/neutral system
   // -------------------------------------------------------------------------
   Widget _buildStoryItem(
     BuildContext context,
@@ -417,11 +436,14 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     // Ring dimensions
     const double avatarSize = 52.0;
     const double ringStroke = 2.5;
-    const double ringGap = 2.5; // gap between ring and avatar edge
-    // Total container size = avatarSize + 2*ringStroke + 2*ringGap
+    const double ringGap = 2.5;
     const double outerSize = avatarSize + (ringStroke + ringGap) * 2;
 
     final isKhmer = _containsKhmer(group.userName);
+
+    // Unseen ring color: near-black in light mode, near-white in dark mode
+    final unseenRingColor = isDark ? _kStoryUnseenRingDark : _kStoryUnseenRingLight;
+    final viewedRingColor = isDark ? _kStoryViewedRingDark : _kStoryViewedRingLight;
 
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -446,25 +468,15 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Ring layer
+                      // Ring layer — neutral solid ring (no gradient)
                       Positioned.fill(
-                        child: group.hasUnseen
-                            ? _GradientRingWidget(
-                                size: outerSize,
-                                strokeWidth: ringStroke,
-                                gapWidth: ringGap,
-                                bgColor: bgPrimary,
-                                colors: _kStoryGradientColors,
-                              )
-                            : _NeutralRingWidget(
-                                size: outerSize,
-                                strokeWidth: ringStroke,
-                                gapWidth: ringGap,
-                                bgColor: bgPrimary,
-                                ringColor: isDark
-                                    ? _kStoryViewedRingDark
-                                    : _kStoryViewedRingLight,
-                              ),
+                        child: _NeutralRingWidget(
+                          size: outerSize,
+                          strokeWidth: ringStroke,
+                          gapWidth: ringGap,
+                          bgColor: bgPrimary,
+                          ringColor: group.hasUnseen ? unseenRingColor : viewedRingColor,
+                        ),
                       ),
                       // Avatar
                       AnimatedOpacity(
@@ -526,93 +538,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
 }
 
 // ---------------------------------------------------------------------------
-// Gradient ring (unviewed) — uses a CustomPaint approach with a gap ring
-// drawn at background color so the avatar appears cleanly separated.
-// ---------------------------------------------------------------------------
-class _GradientRingWidget extends StatelessWidget {
-  final double size;
-  final double strokeWidth;
-  final double gapWidth;
-  final Color bgColor;
-  final List<Color> colors;
-
-  const _GradientRingWidget({
-    required this.size,
-    required this.strokeWidth,
-    required this.gapWidth,
-    required this.bgColor,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _GradientRingFullPainter(
-        colors: colors,
-        strokeWidth: strokeWidth,
-        gapWidth: gapWidth,
-        bgColor: bgColor,
-      ),
-    );
-  }
-}
-
-class _GradientRingFullPainter extends CustomPainter {
-  final List<Color> colors;
-  final double strokeWidth;
-  final double gapWidth;
-  final Color bgColor;
-
-  const _GradientRingFullPainter({
-    required this.colors,
-    required this.strokeWidth,
-    required this.gapWidth,
-    required this.bgColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = size.width / 2;
-
-    // Gradient ring
-    final gradientRadius = outerRadius - strokeWidth / 2;
-    final shader = ui.Gradient.sweep(
-      center,
-      colors,
-      List.generate(colors.length, (i) => i / (colors.length - 1)),
-      TileMode.clamp,
-      -0.5, // offset so gradient starts from top-ish
-      (2 * 3.14159265) - 0.5,
-    );
-    final ringPaint = Paint()
-      ..shader = shader
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..isAntiAlias = true;
-    canvas.drawCircle(center, gradientRadius, ringPaint);
-
-    // White/bg gap ring to separate gradient ring from avatar
-    final gapRadius = gradientRadius - strokeWidth / 2 - gapWidth / 2;
-    final gapPaint = Paint()
-      ..color = bgColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = gapWidth
-      ..isAntiAlias = true;
-    canvas.drawCircle(center, gapRadius, gapPaint);
-  }
-
-  @override
-  bool shouldRepaint(_GradientRingFullPainter old) =>
-      old.colors != colors ||
-      old.strokeWidth != strokeWidth ||
-      old.gapWidth != gapWidth ||
-      old.bgColor != bgColor;
-}
-
-// ---------------------------------------------------------------------------
-// Neutral ring (viewed)
+// Neutral ring (both viewed and unviewed) — solid color + bg gap ring
 // ---------------------------------------------------------------------------
 class _NeutralRingWidget extends StatelessWidget {
   final double size;
@@ -661,7 +587,7 @@ class _NeutralRingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final outerRadius = size.width / 2;
 
-    // Neutral ring
+    // Solid neutral ring
     final ringRadius = outerRadius - strokeWidth / 2;
     final ringPaint = Paint()
       ..color = ringColor
@@ -670,7 +596,7 @@ class _NeutralRingPainter extends CustomPainter {
       ..isAntiAlias = true;
     canvas.drawCircle(center, ringRadius, ringPaint);
 
-    // Gap ring
+    // Background gap ring — separates ring from avatar edge cleanly
     final gapRadius = ringRadius - strokeWidth / 2 - gapWidth / 2;
     final gapPaint = Paint()
       ..color = bgColor

@@ -29,8 +29,7 @@ class ThemeController extends GetxController {
       if (stored != null) {
         themeMode.value = _toThemeMode(stored);
       }
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Future<void> applyBackendTheme(String theme) async {
@@ -52,9 +51,11 @@ class ThemeController extends GetxController {
     await setThemeMode(effectiveDark ? ThemeMode.light : ThemeMode.dark);
   }
 
-  static ThemeMode _toThemeMode(String backendValue) => switch (backendValue) {
-    themeLight => ThemeMode.light,
-    themeDark => ThemeMode.dark,
-    _ => ThemeMode.system,
-  };
+  static ThemeMode _toThemeMode(String backendValue) {
+    return switch (backendValue.trim().toUpperCase()) {
+      themeLight => ThemeMode.light,
+      themeDark => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
 }

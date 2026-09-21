@@ -9,10 +9,12 @@ import '../../../../core/errors/app_error.dart';
 import '../../../../core/localization/localization_service.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/services/google_auth_service.dart';
+import '../../../settings/domain/repositories/settings_repository.dart';
 
 /// Reactive auth state controller.
 ///
@@ -26,6 +28,8 @@ class AuthController extends GetxController {
     required this._authRepository,
     required SecureStorage secureStorage,
     required this._localization,
+    this.settingsRepository,
+    this.themeController,
     this.localStorage,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
     this.mobilePushRegistrationService,
@@ -38,6 +42,8 @@ class AuthController extends GetxController {
   final SecureStorage _storage;
   final LocalStorage? localStorage;
   final LocalizationService _localization;
+  final SettingsRepository? settingsRepository;
+  final ThemeController? themeController;
   final GoogleAuthService _google;
   final MobilePushRegistrationService? mobilePushRegistrationService;
   final void Function()? onSessionCleared;
@@ -45,6 +51,7 @@ class AuthController extends GetxController {
 
   /// Seconds a user must wait before requesting another OTP.
   static const resendCooldownSeconds = 60;
+  static const _accountSettingsSyncTimeout = Duration(seconds: 2);
 
   // ── Observable State ──────────────────────────────────────────────────
 
@@ -102,6 +109,7 @@ class AuthController extends GetxController {
       // Sync, not setLanguage: adopting the account value must not lock
       // the language against device-following.
       _localization.syncFromAccount(user.preferredLanguage);
+      await _syncAccountSettings();
       onSessionEstablished?.call();
       unawaited(_registerMobilePushDevice());
       return true;
@@ -435,6 +443,38 @@ class AuthController extends GetxController {
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
+  /// Load account-owned preferences before the app enters the authenticated
+  /// area. Local storage remains the immediate fallback, but the server is
+  /// authoritative once a session exists.
+  ///
+  /// This is deliberately best effort: an unavailable settings endpoint must
+  /// never turn a successful login into a failed login or clear credentials.
+  Future<void> _syncAccountSettings() async {
+    final repository = settingsRepository;
+    if (repository == null) return;
+
+    try {
+      final accountSettings = await repository.getSettings().timeout(
+        _accountSettingsSyncTimeout,
+      );
+
+      final theme = themeController;
+      if (theme != null) {
+        try {
+          await theme.applyBackendTheme(accountSettings.theme);
+        } catch (error, stackTrace) {
+          debugPrint(
+            '[AUTH] Theme preference sync failed: $error\n$stackTrace',
+          );
+        }
+      }
+
+      _localization.syncFromAccount(accountSettings.language);
+    } catch (error, stackTrace) {
+      debugPrint('[AUTH] Account settings sync skipped: $error\n$stackTrace');
+    }
+  }
+
   /// Runs [action] with loading + error handling, returning `false` on
   /// any failure.
   Future<bool> _run(Future<bool> Function() action) async {
@@ -496,11 +536,12 @@ class AuthController extends GetxController {
       currentUser.value = session.user;
       isAuthenticated.value = true;
       pendingEmail.value = '';
-      onSessionEstablished?.call();
       // Adopt the account's language so system content comes back localized —
       // as a sync, so device-following keeps working for users who never
       // explicitly chose.
       _localization.syncFromAccount(session.user.preferredLanguage);
+      await _syncAccountSettings();
+      onSessionEstablished?.call();
       unawaited(_registerMobilePushDevice());
     } finally {
       _sessionPersistenceInProgress = false;

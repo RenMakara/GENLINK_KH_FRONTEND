@@ -3,12 +3,15 @@ import 'package:genlink_frontend/core/errors/app_error.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/core/storage/secure_storage.dart';
+import 'package:genlink_frontend/core/theme/theme_controller.dart';
 import 'package:genlink_frontend/features/auth/domain/entities/auth_session.dart';
 import 'package:genlink_frontend/features/auth/domain/entities/user_entity.dart';
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/domain/services/google_auth_service.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:genlink_frontend/features/notification/domain/mobile_push_registration_service.dart';
+import 'package:genlink_frontend/features/settings/domain/entities/user_settings_entity.dart';
+import 'package:genlink_frontend/features/settings/domain/repositories/settings_repository.dart';
 import 'package:genlink_frontend/main_controller.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,6 +24,10 @@ class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
 
 class _MockMobilePushRegistrationService extends Mock
     implements MobilePushRegistrationService {}
+
+class _MockSettingsRepository extends Mock implements SettingsRepository {}
+
+class _MockThemeController extends Mock implements ThemeController {}
 
 class _PromptLocalStorage extends LocalStorage {
   bool dismissed = false;
@@ -154,6 +161,42 @@ void main() {
   });
 
   group('Session restoration', () {
+    test('synchronizes backend theme before restoring the session', () async {
+      final settingsRepository = _MockSettingsRepository();
+      final themeController = _MockThemeController();
+      final localization = LocalizationService(localStorage: LocalStorage());
+      final syncedController = AuthController(
+        authRepository: repository,
+        secureStorage: storage,
+        localization: localization,
+        settingsRepository: settingsRepository,
+        themeController: themeController,
+      );
+
+      when(
+        () => storage.readAccessToken(),
+      ).thenAnswer((_) async => 'stored-access-token');
+      when(() => repository.getCurrentUser()).thenAnswer((_) async => _user);
+      when(() => settingsRepository.getSettings()).thenAnswer(
+        (_) async => const UserSettingsEntity(
+          language: UserSettingsEntity.languageKhmer,
+          theme: UserSettingsEntity.themeDark,
+        ),
+      );
+      when(
+        () => themeController.applyBackendTheme(UserSettingsEntity.themeDark),
+      ).thenAnswer((_) async {});
+
+      final result = await syncedController.restoreSession();
+
+      expect(result, isTrue);
+      expect(syncedController.isAuthenticated.value, isTrue);
+      expect(localization.language.value, LocalizationService.khmer);
+      verify(
+        () => themeController.applyBackendTheme(UserSettingsEntity.themeDark),
+      ).called(1);
+    });
+
     test(
       'preserves stored credentials during a transient network failure',
       () async {

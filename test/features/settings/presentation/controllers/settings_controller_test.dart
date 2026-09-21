@@ -112,6 +112,29 @@ void main() {
     },
   );
 
+  test('applies backend SYSTEM_DEFAULT instead of stale local theme', () async {
+    controller.settings.value = const UserSettingsEntity(
+      language: UserSettingsEntity.languageEnglish,
+      theme: UserSettingsEntity.themeDark,
+    );
+    when(() => repository.getSettings()).thenAnswer(
+      (_) async => const UserSettingsEntity(
+        language: UserSettingsEntity.languageEnglish,
+        theme: UserSettingsEntity.themeSystem,
+      ),
+    );
+    when(
+      () => themeController.applyBackendTheme(UserSettingsEntity.themeSystem),
+    ).thenAnswer((_) async {});
+
+    await controller.load();
+
+    expect(controller.settings.value.theme, UserSettingsEntity.themeSystem);
+    verify(
+      () => themeController.applyBackendTheme(UserSettingsEntity.themeSystem),
+    ).called(1);
+  });
+
   test('successful theme persistence keeps server response', () async {
     const saved = UserSettingsEntity(
       language: UserSettingsEntity.languageEnglish,

@@ -45,20 +45,15 @@ class SettingsController extends GetxController {
       final loaded = await _repository.getSettings();
       final current = settings.value;
 
-      final merged = loaded.copyWith(
-        theme: loaded.theme == UserSettingsEntity.themeSystem
-            ? current.theme
-            : loaded.theme,
-        language: loaded.language,
-      );
+      // The backend owns the account preference. In particular, SYSTEM_DEFAULT
+      // must not be replaced with the stale locally cached theme.
+      settings.value = loaded;
 
-      settings.value = merged;
-
-      if (merged.theme != current.theme) {
-        await _theme.applyBackendTheme(merged.theme);
+      if (loaded.theme != current.theme) {
+        await _theme.applyBackendTheme(loaded.theme);
       }
-      if (merged.language != current.language) {
-        _localization.syncFromAccount(merged.language);
+      if (loaded.language != current.language) {
+        _localization.syncFromAccount(loaded.language);
       }
     } on AppError catch (e) {
       errorMessage.value = e.message;

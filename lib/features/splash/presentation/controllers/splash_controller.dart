@@ -33,7 +33,10 @@ class SplashController extends GetxController {
     try {
       debugPrint('[SPLASH] Restoring token...');
       restored = await _auth.restoreSession().timeout(
-        const Duration(seconds: 5),
+        // Session restoration also synchronizes account-owned theme/language
+        // before Home is shown. Allow that short sync window without making a
+        // healthy session look like a logged-out session.
+        const Duration(seconds: 8),
       );
       debugPrint('[SPLASH] Token restore completed: restored=$restored');
 

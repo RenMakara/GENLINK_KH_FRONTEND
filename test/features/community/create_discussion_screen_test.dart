@@ -73,6 +73,7 @@ class _FakeCommunityRepository implements CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async {
     final updated = ForumTopicModel(
       id: discussionId,

@@ -89,7 +89,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   void dispose() {
-    GlobalCreateSheet.closeComposerPopup();
     _textController.dispose();
     _editorFocusNode.dispose();
     _previewVideoController?.dispose(); // Step 3B: no controller leak
@@ -1400,8 +1399,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _onBackPress() {
-    if (GlobalCreateSheet.isComposerPopupOpen) {
-      GlobalCreateSheet.closeComposerPopup();
+    if (_isInnerPopupOpen) {
+      setState(() => _isInnerPopupOpen = false);
       return;
     }
     if (_canPost) {
@@ -1580,7 +1579,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final charCount = _textController.text.length;
 
     return PopScope(
-      canPop: (!_canPost || _isSubmitting) && !GlobalCreateSheet.isComposerPopupOpen,
+      canPop: (!_canPost || _isSubmitting) && !_isInnerPopupOpen,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           _onBackPress();
@@ -2108,19 +2107,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               canRequestFocus: false,
                               onTap: () async {
                                 HapticFeedback.lightImpact();
-                                if (GlobalCreateSheet.isComposerPopupOpen) {
-                                  GlobalCreateSheet.closeComposerPopup();
-                                  if (mounted) {
-                                    setState(() {
-                                      _isInnerPopupOpen = false;
-                                    });
-                                  }
-                                  return;
-                                }
-                                final renderBox = btnContext.findRenderObject() as RenderBox?;
-                                final anchorRect = renderBox != null
-                                    ? (renderBox.localToGlobal(Offset.zero) & renderBox.size)
-                                    : null;
                                 setState(() {
                                   _isInnerPopupOpen = true;
                                 });
@@ -2128,8 +2114,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                   await GlobalCreateSheet.show(
                                     context,
                                     fromPostComposer: true,
-                                    anchorRect: anchorRect,
-                                    focusNode: _editorFocusNode,
                                     onSelectMedia: _pickGalleryMedia,
                                     onSelectPoll: _showPollCreatorSheet,
                                     onSelectCelebration: () {

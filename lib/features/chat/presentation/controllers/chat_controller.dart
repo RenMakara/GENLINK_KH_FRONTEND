@@ -540,6 +540,38 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  /// Sends text initiated outside the chat composer, such as a Community
+  /// discussion share, using the backend's normal TEXT message contract.
+  Future<void> sendSharedText(
+    ChatConversationModel conv,
+    String content,
+  ) async {
+    final text = content.trim();
+    if (text.isEmpty) return;
+
+    isSendingMessage.value = true;
+    try {
+      final newMsg = await repository.sendMessage(
+        conv.id,
+        text,
+        messageType: 'text',
+      );
+      final currentRoom = activeRoomId.value ?? activeConversation.value?.id;
+      if (currentRoom == conv.id &&
+          !activeMessages.any((message) => message.id == newMsg.id)) {
+        activeMessages.add(newMsg);
+      }
+      conv.lastMessage = newMsg.content;
+      conv.lastMessageTime = 'Just now';
+      conv.unreadCount = 0;
+      _moveConversationToTop(conv);
+      conversations.refresh();
+      _scrollToBottom();
+    } finally {
+      isSendingMessage.value = false;
+    }
+  }
+
   Future<bool> deleteMessage(String messageId) async {
     final conv = activeConversation.value;
     if (conv == null) return false;

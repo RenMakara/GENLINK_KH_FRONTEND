@@ -59,14 +59,22 @@ void main() {
     await dataSource.finishMatch('match-1');
     await dataSource.unsubscribeMatch('match-1');
 
-    expect(realtime.sentMessages, [
-      (destination: '/app/quiz/matchmake/quiz-1', body: null),
-      (
-        destination: '/app/quiz/match/match-1/submit',
-        body: {'questionId': 'question-1', 'optionId': 'option-1'},
-      ),
-      (destination: '/app/quiz/match/match-1/finish', body: null),
-    ]);
+    expect(realtime.sentMessages.length, 3);
+    expect(realtime.sentMessages[0].destination, '/app/quiz/matchmake/quiz-1');
+    expect(realtime.sentMessages[0].body, isNull);
+    expect(
+      realtime.sentMessages[1].destination,
+      '/app/quiz/match/match-1/submit',
+    );
+    expect(realtime.sentMessages[1].body, {
+      'questionId': 'question-1',
+      'optionId': 'option-1',
+    });
+    expect(
+      realtime.sentMessages[2].destination,
+      '/app/quiz/match/match-1/finish',
+    );
+    expect(realtime.sentMessages[2].body, isNull);
     expect(realtime.subscribedMatchIds, ['match-1']);
     expect(realtime.unsubscribedMatchIds, ['match-1']);
   });

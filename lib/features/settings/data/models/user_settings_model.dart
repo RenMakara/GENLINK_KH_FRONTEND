@@ -36,3 +36,18 @@ abstract final class UserSettingsMapper {
     }..removeWhere((_, value) => value == null);
   }
 }
+
+abstract final class NotificationPreferenceMapper {
+  static NotificationPreferenceEntity fromJson(Map<String, dynamic> json) {
+    return NotificationPreferenceEntity(
+      preferenceId: json['preferenceId'] as String?,
+      notificationType: json['notificationType'] as String? ?? '',
+      // A missing explicit override means the backend policy allows delivery.
+      enabled: json['enabled'] as bool? ?? true,
+    );
+  }
+
+  static Map<String, dynamic> updateBody({required bool enabled}) {
+    return <String, dynamic>{'enabled': enabled};
+  }
+}

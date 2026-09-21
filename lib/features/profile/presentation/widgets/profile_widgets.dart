@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
@@ -504,60 +505,73 @@ class SavedItemCard extends StatelessWidget {
       );
     }
 
+    final canOpen =
+        item.itemType == 'SHORT_CONTENT' && item.itemId.trim().isNotEmpty;
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: SizedBox(
-        width: 150,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-              Image.network(
-                item.imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    ColoredBox(color: scheme.surfaceContainerHighest),
-              )
-            else
-              ColoredBox(color: scheme.surfaceContainerHighest),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.center,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.72),
-                  ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canOpen
+              ? () => Get.toNamed(
+                  AppRoutes.shortContentDetail,
+                  arguments: item.itemId,
+                )
+              : null,
+          child: SizedBox(
+            width: 150,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                  Image.network(
+                    item.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        ColoredBox(color: scheme.surfaceContainerHighest),
+                  )
+                else
+                  ColoredBox(color: scheme.surfaceContainerHighest),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.center,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.72),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm + 2),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.itemType.replaceAll('_', ' '),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.76),
-                      letterSpacing: 0.6,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm + 2),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.itemType.replaceAll('_', ' '),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.76),
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.title ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.title ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

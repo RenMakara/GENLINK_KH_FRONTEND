@@ -2,40 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
-import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../controllers/quiz_controller.dart';
 import '../controllers/quiz_match_controller.dart';
-import '../quiz_colors.dart';
-import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
-import '../widgets/quiz_icon_container.dart';
-import '../widgets/quiz_option_tile.dart';
+import '../widgets/quiz_multiplayer_widgets.dart';
 
-class MultiplayerQuizScreen extends GetView<QuizMatchController> {
+class MultiplayerQuizScreen extends StatefulWidget {
   const MultiplayerQuizScreen({super.key});
 
   @override
+  State<MultiplayerQuizScreen> createState() => _MultiplayerQuizScreenState();
+}
+
+class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
+  final QuizMatchController controller = Get.find<QuizMatchController>();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _selectedCategoryId = 'ALL';
+  String? _localSelectedOptionId;
+  String? _lastQuestionId;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final semantic = context.semanticColors;
     return Scaffold(
-      backgroundColor: QuizThemeColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.md),
-          child: Center(
-            child: AppBackButton(onPressed: _leave),
-          ),
-        ),
-        leadingWidth: 74,
-        title: Text(
-          'quiz.multiplayerQuiz'.tr,
-          style: TextStyle(color: QuizThemeColors.heading),
-        ),
+      backgroundColor: semantic.background,
+      body: SafeArea(
+        child: Obx(() => _buildBody(context, controller.phase.value)),
       ),
-      body: Obx(() => _buildBody(context, controller.phase.value)),
     );
   }
 
@@ -60,12 +64,14 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
 
   Widget _buildQuizSelection(BuildContext context) {
     final quizController = Get.find<QuizController>();
+    final semantic = context.semanticColors;
+
     return Obx(() {
-      final quizzes = quizController.quizzes;
-      if (quizController.isQuizListLoading.value && quizzes.isEmpty) {
+      final allQuizzes = quizController.quizzes;
+      if (quizController.isQuizListLoading.value && allQuizzes.isEmpty) {
         return _centeredLoader('quiz.loadingMultiplayer'.tr);
       }
-      if (quizzes.isEmpty) {
+      if (allQuizzes.isEmpty) {
         return _emptyState(
           context,
           icon: Icons.quiz_outlined,
@@ -80,115 +86,280 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
         );
       }
 
+      // Filter quizzes by category and search query
+      final filteredQuizzes = allQuizzes.where((q) {
+        final matchesCategory = _selectedCategoryId.toUpperCase() == 'ALL' ||
+            (q.category ?? '').toUpperCase() == _selectedCategoryId.toUpperCase();
+        if (!matchesCategory) return false;
+
+        final query = _searchQuery.trim().toLowerCase();
+        if (query.isEmpty) return true;
+
+        final titleMatch = q.title.toLowerCase().contains(query);
+        final categoryMatch = (q.category ?? '').toLowerCase().contains(query);
+        return titleMatch || categoryMatch;
+      }).toList();
+
       return ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.sm,
-          AppSpacing.lg,
-          AppSpacing.xl,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         children: [
+          MultiplayerHeader(
+            onBack: _leave,
+            title: 'quiz.multiplayerQuiz'.tr,
+            subtitle: 'quiz.multiplayerSubtitle'.tr,
+          ),
+          const SizedBox(height: 12),
           Text(
             'quiz.chooseMultiplayerQuiz'.tr,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: QuizThemeColors.heading,
-              fontWeight: FontWeight.w700,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: semantic.primaryText,
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 4),
           Text(
             'quiz.chooseMultiplayerQuizDescription'.tr,
-            style: TextStyle(color: QuizThemeColors.body, height: 1.4),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          for (final quiz in quizzes) ...[
-            QuizCustomCard(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              onTap: () => controller.startMatch(quiz.quizId),
-              child: Row(
-                children: [
-                  QuizIconContainer(
-                    icon: Icons.people_alt_outlined,
-                    accentColor: QuizThemeColors.primary,
-                    size: 46,
-                    iconSize: 24,
-                    borderRadius: AppRadius.lg,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          quiz.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: QuizThemeColors.heading,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${quiz.questionCount} · ${quiz.xpReward} XP',
-                          style: TextStyle(color: QuizThemeColors.body),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: QuizThemeColors.muted,
-                  ),
-                ],
-              ),
+            style: TextStyle(
+              fontSize: 12.5,
+              color: semantic.secondaryText,
+              height: 1.35,
             ),
-            const SizedBox(height: AppSpacing.md),
+          ),
+          const SizedBox(height: 16),
+          MultiplayerQuizSearchBar(
+            controller: _searchController,
+            onChanged: (val) => setState(() => _searchQuery = val),
+            onClear: () {
+              setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+              });
+            },
+          ),
+          const SizedBox(height: 14),
+          MultiplayerCategoryFilterChips(
+            categories: quizController.categories,
+            selectedCategoryId: _selectedCategoryId,
+            onCategorySelected: (catId) =>
+                setState(() => _selectedCategoryId = catId),
+          ),
+          const SizedBox(height: 16),
+          if (filteredQuizzes.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.search_off_rounded,
+                      size: 44,
+                      color: semantic.textMuted,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'quiz.noMatchingQuizzes'.tr,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: semantic.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            for (final quiz in filteredQuizzes) ...[
+              MultiplayerQuizCard(
+                quiz: quiz,
+                onTap: () => controller.startMatch(quiz.quizId),
+              ),
+              const SizedBox(height: 12),
+            ],
           ],
+          const SizedBox(height: 8),
+          const MultiplayerDiscoveryCard(),
+          const SizedBox(height: 32),
         ],
       );
     });
   }
 
   Widget _buildMatchmaking(BuildContext context, QuizMatchPhase phase) {
-    final message = switch (phase) {
+    final semantic = context.semanticColors;
+    final authController =
+        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
+    final currentUser = authController?.currentUser.value;
+
+    final title = switch (phase) {
       QuizMatchPhase.connecting => 'quiz.connectingToMatch'.tr,
       QuizMatchPhase.matchmaking => 'quiz.findingOpponent'.tr,
       _ => 'quiz.waitingForOpponent'.tr,
     };
-    return _centeredLoader(message, showCancel: true);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  MultiplayerHeader(
+                    onBack: _leave,
+                    title: 'quiz.multiplayerQuiz'.tr,
+                    showTrophy: false,
+                  ),
+                  const SizedBox(height: 8),
+                  MultiplayerMatchupHero(
+                    currentUser: currentUser,
+                    opponent: controller.opponent,
+                    isSearching: true,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: semantic.primaryText,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'quiz.matchmakingSubtitle'.tr,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: semantic.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const MultiplayerFeatureHighlightsRow(),
+                  const SizedBox(height: 14),
+                  const MultiplayerDidYouKnowCard(),
+                  const Spacer(),
+                  const SizedBox(height: 16),
+                  CancelMatchButton(onCancel: _leave),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildLoadingMatch(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        _buildOpponentCard(context),
-        const SizedBox(height: AppSpacing.xl),
-        _centeredLoader('quiz.loadingMatchQuestions'.tr),
-      ],
+    final semantic = context.semanticColors;
+    final authController =
+        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
+    final currentUser = authController?.currentUser.value;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  MultiplayerHeader(
+                    onBack: _leave,
+                    title: 'quiz.multiplayerQuiz'.tr,
+                    showTrophy: false,
+                  ),
+                  const SizedBox(height: 8),
+                  MultiplayerMatchupHero(
+                    currentUser: currentUser,
+                    opponent: controller.opponent,
+                    isSearching: false,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'quiz.opponentFound'.tr,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: semantic.primaryText,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'quiz.preparingMatch'.tr,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: semantic.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  CircularProgressIndicator(color: semantic.primary),
+                  const Spacer(),
+                  const SizedBox(height: 16),
+                  CancelMatchButton(onCancel: _leave),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildPlaying(BuildContext context, QuizMatchPhase phase) {
     final question = controller.currentQuestion;
     if (question == null) return _centeredLoader('common.loading'.tr);
-    final selected = controller.selectedOptionId.value;
+
+    // Reset local selection when moving to a new question
+    if (question.id != _lastQuestionId) {
+      _lastQuestionId = question.id;
+      _localSelectedOptionId = null;
+    }
+
+    final authController =
+        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
+    final currentUser = authController?.currentUser.value;
+    final quizController =
+        Get.isRegistered<QuizController>() ? Get.find<QuizController>() : null;
+    final currentQuiz = quizController?.quizzes.firstWhereOrNull(
+      (q) => q.quizId == controller.quizId.value,
+    );
+    final categoryName = currentQuiz?.title ?? currentQuiz?.category;
+
     final isSubmitting = phase == QuizMatchPhase.submitting;
     final isTimeout = phase == QuizMatchPhase.timeout;
+    final selectedOptionId = isSubmitting || isTimeout
+        ? controller.selectedOptionId.value ?? _localSelectedOptionId
+        : _localSelectedOptionId;
 
     return Column(
       children: [
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          subtitle: 'quiz.multiplayerGameplaySubtitle'.tr,
+          showTrophy: false,
+        ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.sm,
-            AppSpacing.lg,
-            0,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: MultiplayerScoreboard(
+            currentUser: currentUser,
+            playerScore: controller.playerScore,
+            opponent: controller.opponent,
+            opponentScore: controller.opponentScore,
           ),
-          child: _buildScoreBar(context),
         ),
         if (controller.opponentAnswered.value)
           Padding(
@@ -202,68 +373,78 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
               context,
               icon: Icons.bolt_outlined,
               text: 'quiz.opponentAnswered'.tr,
-              color: QuizThemeColors.gold,
+              color: AppColors.growthAccent,
             ),
           ),
+        const SizedBox(height: 12),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'quiz.questionOfTotal'.trParams({
-                        'current': '${controller.currentQuestionIndex.value + 1}',
-                        'total': '${controller.questions.length}',
-                      }),
-                      style: TextStyle(
-                        color: QuizThemeColors.heading,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  _buildTimer(context),
-                ],
+              MultiplayerProgressAndTimer(
+                currentIndex: controller.currentQuestionIndex.value,
+                totalQuestions: controller.questions.length,
+                timeRemaining: controller.timeRemaining.value,
+                totalDuration:
+                    QuizMatchController.defaultQuestionDurationSeconds,
               ),
-              const SizedBox(height: AppSpacing.md),
-              QuizCustomCard(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  question.question,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: QuizThemeColors.heading,
-                    height: 1.4,
-                  ),
-                ),
+              const SizedBox(height: 14),
+              MultiplayerQuestionCard(
+                category: categoryName,
+                question: question.question,
+                hint: 'quiz.chooseCorrectAnswer'.tr,
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: 16),
               for (var index = 0; index < question.options.length; index++)
-                QuizOptionTile(
+                MultiplayerOptionTile(
                   label: question.options[index].text,
                   index: index,
-                  isSelected: selected == question.options[index].id,
-                  onTap: isSubmitting || isTimeout
-                      ? null
-                      : () => controller.selectAnswer(
-                          question.options[index].id,
-                        ),
+                  isSelected: selectedOptionId == question.options[index].id,
+                  isDisabled: isSubmitting || isTimeout,
+                  onTap: () {
+                    setState(() {
+                      _localSelectedOptionId = question.options[index].id;
+                    });
+                  },
                 ),
-              if (isTimeout)
+              if (isTimeout) ...[
+                const SizedBox(height: 8),
                 _statusBanner(
                   context,
                   icon: Icons.timer_off_outlined,
                   text: 'quiz.answerTimedOut'.tr,
-                  color: QuizThemeColors.incorrect,
+                  color: AppColors.danger,
                 ),
-              if (isSubmitting)
+              ],
+              if (isSubmitting) ...[
+                const SizedBox(height: 8),
                 _statusBanner(
                   context,
                   icon: Icons.check_circle_outline,
                   text: 'quiz.answerSubmitted'.tr,
-                  color: QuizThemeColors.correct,
+                  color: AppColors.success,
                 ),
+              ],
+              const SizedBox(height: 16),
             ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            8,
+            AppSpacing.lg,
+            12,
+          ),
+          child: MultiplayerSubmitButton(
+            isEnabled:
+                _localSelectedOptionId != null && !isSubmitting && !isTimeout,
+            isSubmitting: isSubmitting,
+            onSubmit: () {
+              if (_localSelectedOptionId != null) {
+                controller.selectAnswer(_localSelectedOptionId!);
+              }
+            },
           ),
         ),
       ],
@@ -271,12 +452,29 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
   }
 
   Widget _buildFinishing(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    final authController =
+        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
+    final currentUser = authController?.currentUser.value;
+
+    return Column(
       children: [
-        _buildOpponentCard(context),
-        const SizedBox(height: AppSpacing.xl),
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: MultiplayerScoreboard(
+            currentUser: currentUser,
+            playerScore: controller.playerScore,
+            opponent: controller.opponent,
+            opponentScore: controller.opponentScore,
+          ),
+        ),
+        const Spacer(),
         _centeredLoader('quiz.calculatingResult'.tr),
+        const Spacer(),
       ],
     );
   }
@@ -288,64 +486,57 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
     final isTie = winnerId == null;
     final isWinner = !isTie && userId != null && winnerId == userId;
     final reward = isTie ? 20 : isWinner ? 50 : 0;
-    final title = isTie
-        ? 'quiz.matchTie'.tr
-        : isWinner
-        ? 'quiz.matchWon'.tr
-        : 'quiz.matchLost'.tr;
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    final authController =
+        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
+    final currentUser = authController?.currentUser.value;
+
+    return Column(
       children: [
-        Icon(
-          isTie || isWinner ? Icons.emoji_events_outlined : Icons.flag_outlined,
-          size: 64,
-          color: isTie || isWinner
-              ? QuizThemeColors.gold
-              : QuizThemeColors.muted,
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
         ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: QuizThemeColors.heading,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _buildScoreBar(context),
-        const SizedBox(height: AppSpacing.lg),
-        QuizCustomCard(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             children: [
-              Text(
-                'quiz.xpEarned'.tr,
-                style: TextStyle(color: QuizThemeColors.body),
+              const SizedBox(height: 6),
+              MultiplayerResultBanner(
+                isWinner: isWinner,
+                isTie: isTie,
               ),
-              const SizedBox(height: 8),
-              Text(
-                '+$reward XP',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: QuizThemeColors.primary,
-                  fontWeight: FontWeight.w800,
-                ),
+              const SizedBox(height: 18),
+              MultiplayerScoreboard(
+                currentUser: currentUser,
+                playerScore: controller.playerScore,
+                opponent: controller.opponent,
+                opponentScore: controller.opponentScore,
+                highlightWinner: true,
+                isWinner: isWinner,
+                isTie: isTie,
               ),
+              const SizedBox(height: 14),
+              MultiplayerXpCard(xp: reward),
+              const SizedBox(height: 14),
+              const MultiplayerMotivationalCard(),
+              const SizedBox(height: 22),
+              QuizGradientButton(
+                label: 'quiz.playAgain'.tr,
+                icon: Icons.replay_rounded,
+                onPressed: controller.retry,
+              ),
+              const SizedBox(height: 10),
+              QuizGradientButton(
+                label: 'quiz.backToDashboard'.tr,
+                icon: Icons.home_rounded,
+                isOutlined: true,
+                onPressed: () => Get.offNamed(AppRoutes.quizDashboard),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        QuizGradientButton(
-          label: 'quiz.playAgain'.tr,
-          icon: Icons.replay_rounded,
-          onPressed: controller.retry,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        QuizGradientButton(
-          label: 'quiz.backToDashboard'.tr,
-          isOutlined: true,
-          onPressed: () => Get.offNamed(AppRoutes.quizDashboard),
         ),
       ],
     );
@@ -394,133 +585,6 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
     );
   }
 
-  Widget _buildOpponentCard(BuildContext context) {
-    final opponent = controller.opponent;
-    return QuizCustomCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: QuizThemeColors.primaryLight,
-            child: Icon(Icons.person_outline, color: QuizThemeColors.primary),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'quiz.opponent'.tr,
-                  style: TextStyle(color: QuizThemeColors.muted, fontSize: 12),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  opponent?.name?.trim().isNotEmpty == true
-                      ? opponent!.name!
-                      : 'quiz.waitingForOpponent'.tr,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: QuizThemeColors.heading,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${controller.opponentScore}',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: QuizThemeColors.primary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreBar(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _scoreItem(
-            context,
-            label: 'quiz.you'.tr,
-            score: controller.playerScore,
-            color: QuizThemeColors.primary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _scoreItem(
-            context,
-            label: controller.opponent?.name ?? 'quiz.opponent'.tr,
-            score: controller.opponentScore,
-            color: QuizThemeColors.gold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _scoreItem(
-    BuildContext context, {
-    required String label,
-    required int score,
-    required Color color,
-  }) {
-    return QuizCustomCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: QuizThemeColors.body, fontSize: 12),
-            ),
-          ),
-          Text(
-            '$score',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimer(BuildContext context) {
-    final seconds = controller.timeRemaining.value;
-    final isLow = seconds <= 5;
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isLow
-            ? QuizThemeColors.incorrectSoft
-            : QuizThemeColors.primaryLight,
-        border: Border.all(
-          color: isLow ? QuizThemeColors.incorrect : QuizThemeColors.primary,
-          width: 3,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          'quiz.secondsShort'.trParams({'seconds': '$seconds'}),
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: isLow ? QuizThemeColors.incorrect : QuizThemeColors.primary,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _statusBanner(
     BuildContext context, {
     required IconData icon,
@@ -550,19 +614,20 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
   }
 
   Widget _centeredLoader(String message, {bool showCancel = false}) {
+    final semantic = context.semanticColors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: QuizThemeColors.primary),
+            CircularProgressIndicator(color: semantic.primary),
             const SizedBox(height: AppSpacing.lg),
             Text(
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: QuizThemeColors.heading,
+                color: semantic.primaryText,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -583,19 +648,20 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
     required String message,
     required Widget action,
   }) {
+    final semantic = context.semanticColors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 54, color: QuizThemeColors.muted),
+            Icon(icon, size: 54, color: semantic.textMuted),
             const SizedBox(height: AppSpacing.md),
             Text(
               title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: QuizThemeColors.heading,
+                color: semantic.primaryText,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -603,7 +669,7 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: QuizThemeColors.body, height: 1.4),
+              style: TextStyle(color: semantic.secondaryText, height: 1.4),
             ),
             const SizedBox(height: AppSpacing.lg),
             action,
@@ -624,3 +690,4 @@ class MultiplayerQuizScreen extends GetView<QuizMatchController> {
     controller.leaveMatch().whenComplete(() => Get.back());
   }
 }
+

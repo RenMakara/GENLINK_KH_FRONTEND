@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/errors/app_error.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
@@ -111,5 +113,91 @@ void main() {
     ).called(1);
     verify(() => themeController.backendTheme).called(1);
     verifyNoMoreInteractions(themeController);
+  });
+
+  test('loads the backend productivity notification preferences', () async {
+    when(() => repository.getNotificationPreferences()).thenAnswer(
+      (_) async => const [
+        NotificationPreferenceEntity(
+          notificationType: 'PRODUCTIVITY_TASK',
+          enabled: false,
+        ),
+      ],
+    );
+
+    await controller.loadNotificationPreferences();
+
+    expect(
+      controller.notificationPreferenceEnabled('PRODUCTIVITY_TASK'),
+      isFalse,
+    );
+    // The backend stores only explicit overrides; absent types remain enabled.
+    expect(
+      controller.notificationPreferenceEnabled('PRODUCTIVITY_HABIT'),
+      isTrue,
+    );
+  });
+
+  test(
+    'duplicate preference updates are ignored while the first is pending',
+    () async {
+      final response = Completer<NotificationPreferenceEntity>();
+      when(
+        () => repository.updateNotificationPreference(
+          notificationType: 'PRODUCTIVITY_TASK',
+          enabled: false,
+        ),
+      ).thenAnswer((_) => response.future);
+
+      final first = controller.setNotificationPreference(
+        'PRODUCTIVITY_TASK',
+        false,
+      );
+      await Future<void>.delayed(Duration.zero);
+      await controller.setNotificationPreference('PRODUCTIVITY_TASK', true);
+
+      verify(
+        () => repository.updateNotificationPreference(
+          notificationType: 'PRODUCTIVITY_TASK',
+          enabled: false,
+        ),
+      ).called(1);
+      expect(
+        controller.notificationPreferenceEnabled('PRODUCTIVITY_TASK'),
+        isFalse,
+      );
+
+      response.complete(
+        const NotificationPreferenceEntity(
+          notificationType: 'PRODUCTIVITY_TASK',
+          enabled: false,
+        ),
+      );
+      await first;
+      expect(
+        controller.isNotificationPreferenceBusy('PRODUCTIVITY_TASK'),
+        isFalse,
+      );
+    },
+  );
+
+  test('failed preference update restores the previous value', () async {
+    when(
+      () => repository.updateNotificationPreference(
+        notificationType: 'PRODUCTIVITY_HABIT',
+        enabled: false,
+      ),
+    ).thenThrow(_persistenceError);
+
+    await controller.setNotificationPreference('PRODUCTIVITY_HABIT', false);
+
+    expect(
+      controller.notificationPreferenceEnabled('PRODUCTIVITY_HABIT'),
+      isTrue,
+    );
+    expect(
+      controller.notificationPreferencesError.value,
+      _persistenceError.message,
+    );
   });
 }

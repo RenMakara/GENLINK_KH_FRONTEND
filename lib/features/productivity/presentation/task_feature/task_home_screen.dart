@@ -18,7 +18,7 @@ class _TasksPageState extends State<TasksPage> {
   final _searchController = TextEditingController();
   ProductivityController? _controller;
   String _search = '';
-  _TaskFilter _filter = _TaskFilter.all;
+  ProductivityTaskFilter _filter = ProductivityTaskFilter.all;
 
   @override
   void initState() {
@@ -81,38 +81,6 @@ class _TasksPageState extends State<TasksPage> {
     }
   }
 
-  List<ProductivityTask> _filtered(List<ProductivityTask> tasks) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final query = _search.trim().toLowerCase();
-
-    return tasks
-        .where((task) {
-          if (query.isNotEmpty &&
-              !task.title.toLowerCase().contains(query) &&
-              !(task.description ?? '').toLowerCase().contains(query)) {
-            return false;
-          }
-
-          final due = task.dueDate?.toLocal();
-          switch (_filter) {
-            case _TaskFilter.all:
-              return true;
-            case _TaskFilter.today:
-              return !task.completed &&
-                  due != null &&
-                  due.isAfter(today.subtract(const Duration(seconds: 1))) &&
-                  due.isBefore(tomorrow);
-            case _TaskFilter.upcoming:
-              return !task.completed && due != null && !due.isBefore(tomorrow);
-            case _TaskFilter.completed:
-              return task.completed;
-          }
-        })
-        .toList(growable: false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
@@ -123,7 +91,11 @@ class _TasksPageState extends State<TasksPage> {
       if (controller.isLoading.value && controller.tasks.isEmpty) {
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
-      final tasks = _filtered(controller.tasks.toList(growable: false));
+      final tasks = filterProductivityTasks(
+        controller.tasks,
+        filter: _filter,
+        search: _search,
+      );
       return Scaffold(
         backgroundColor: colors.background,
         appBar: AppBar(
@@ -213,26 +185,27 @@ class _TasksPageState extends State<TasksPage> {
   }
 }
 
-enum _TaskFilter { all, today, upcoming, completed }
+enum ProductivityTaskFilter { all, today, upcoming, overdue, completed }
 
 class _FilterBar extends StatelessWidget {
   const _FilterBar({required this.selected, required this.onChanged});
 
-  final _TaskFilter selected;
-  final ValueChanged<_TaskFilter> onChanged;
+  final ProductivityTaskFilter selected;
+  final ValueChanged<ProductivityTaskFilter> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final labels = {
-      _TaskFilter.all: 'All',
-      _TaskFilter.today: 'Today',
-      _TaskFilter.upcoming: 'Upcoming',
-      _TaskFilter.completed: 'Completed',
+      ProductivityTaskFilter.all: 'All',
+      ProductivityTaskFilter.today: 'Today',
+      ProductivityTaskFilter.upcoming: 'Upcoming',
+      ProductivityTaskFilter.overdue: 'Overdue',
+      ProductivityTaskFilter.completed: 'Completed',
     };
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: _TaskFilter.values
+        children: ProductivityTaskFilter.values
             .map((filter) {
               final isSelected = filter == selected;
               return Padding(
@@ -420,3 +393,42 @@ String _taskSubtitle(ProductivityTask task) {
 
 String _errorText(Object error) =>
     error.toString().replaceFirst('AppError(', '').split('):').last.trim();
+
+List<ProductivityTask> filterProductivityTasks(
+  Iterable<ProductivityTask> tasks, {
+  required ProductivityTaskFilter filter,
+  String search = '',
+  DateTime? now,
+}) {
+  final current = now ?? DateTime.now();
+  final today = DateTime(current.year, current.month, current.day);
+  final tomorrow = today.add(const Duration(days: 1));
+  final query = search.trim().toLowerCase();
+
+  return tasks
+      .where((task) {
+        if (query.isNotEmpty &&
+            !task.title.toLowerCase().contains(query) &&
+            !(task.description ?? '').toLowerCase().contains(query)) {
+          return false;
+        }
+
+        final due = task.dueDate?.toLocal();
+        switch (filter) {
+          case ProductivityTaskFilter.all:
+            return true;
+          case ProductivityTaskFilter.today:
+            return !task.completed &&
+                due != null &&
+                !due.isBefore(today) &&
+                due.isBefore(tomorrow);
+          case ProductivityTaskFilter.upcoming:
+            return !task.completed && due != null && !due.isBefore(tomorrow);
+          case ProductivityTaskFilter.overdue:
+            return !task.completed && task.overdue;
+          case ProductivityTaskFilter.completed:
+            return task.completed;
+        }
+      })
+      .toList(growable: false);
+}

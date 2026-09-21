@@ -30,6 +30,13 @@ abstract final class AppRoutes {
   static const quizReview = '/quiz/review';
   static const quizResult = '/quiz/result';
 
+  static const shortContent = '/short-content';
+  static const shortContentDetail = '/short-content/detail';
+  static const shortContentCreate = '/short-content/create';
+
+  static const challengeList = '/challenges';
+  static const challengeDetail = '/challenges/detail';
+
   static const leaderboard = '/leaderboard';
   static const leaderboardRanking = '/leaderboard/ranking';
   static const leaderboardProfile = '/leaderboard/profile';
@@ -43,6 +50,7 @@ abstract final class AppRoutes {
   static const profilePortfolio = '/profile/portfolio';
   static const profileInterests = '/profile/interests';
   static const settings = '/settings';
+  static const settingsNotifications = '/settings/notifications';
   static const settingsLanguage = '/settings/language';
   static const settingsAppearance = '/settings/appearance';
   static const settingsPrivacy = '/settings/privacy';

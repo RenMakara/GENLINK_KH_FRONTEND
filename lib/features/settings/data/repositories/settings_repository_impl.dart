@@ -33,4 +33,17 @@ class SettingsRepositoryImpl implements SettingsRepository {
       ),
     );
   }
+
+  @override
+  Future<List<NotificationPreferenceEntity>> getNotificationPreferences() =>
+      _remote.getNotificationPreferences();
+
+  @override
+  Future<NotificationPreferenceEntity> updateNotificationPreference({
+    required String notificationType,
+    required bool enabled,
+  }) => _remote.updateNotificationPreference(
+    notificationType: notificationType,
+    enabled: enabled,
+  );
 }

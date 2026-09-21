@@ -26,6 +26,7 @@ import '../../features/settings/presentation/screens/appearance_settings_screen.
 import '../../features/settings/presentation/screens/language_settings_screen.dart';
 import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/settings/presentation/screens/notification_preferences_screen.dart';
 import '../../features/chat/chat_feature.dart';
 import '../../features/community/presentation/screens/friend_requests_screen.dart';
 import '../../features/notification/notification_feature.dart';
@@ -36,13 +37,17 @@ import '../../features/quiz/presentation/screens/multiplayer_quiz_screen.dart';
 import '../../features/quiz/presentation/screens/quiz_in_progress_screen.dart';
 import '../../features/quiz/presentation/screens/review_submit_screen.dart';
 import '../../features/quiz/presentation/screens/result_screen.dart';
+import '../../features/short_content/presentation/bindings/short_content_binding.dart';
+import '../../features/short_content/presentation/screens/short_content_create_screen.dart';
+import '../../features/short_content/presentation/screens/short_content_feed_screen.dart';
+import '../../features/challenge/presentation/bindings/challenge_binding.dart';
+import '../../features/challenge/presentation/screens/challenge_detail_screen.dart';
+import '../../features/challenge/presentation/screens/challenge_list_screen.dart';
 import '../../features/leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../features/leaderboard/presentation/screens/full_ranking_screen.dart';
 import '../../features/leaderboard/presentation/screens/top_rank_detail_screen.dart'
     as lb_detail;
-import '../../features/leaderboard/presentation/screens/achievements_screen.dart'
-    as lb_achievements;
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/splash/presentation/screens/welcome_screen.dart';
@@ -173,6 +178,37 @@ abstract final class AppPages {
       middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
+      name: AppRoutes.shortContent,
+      page: () => const ShortContentFeedScreen(),
+      binding: ShortContentBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.shortContentDetail,
+      page: () => const ShortContentDetailScreen(),
+      binding: ShortContentDetailBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.shortContentCreate,
+      page: () => const ShortContentCreateScreen(),
+      binding: ShortContentBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.challengeList,
+      page: () => const ChallengeListScreen(),
+      binding: ChallengeBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.challengeDetail,
+      page: () =>
+          ChallengeDetailScreen(challengeId: Get.arguments?.toString() ?? ''),
+      binding: ChallengeBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
       name: AppRoutes.leaderboard,
       page: () => const LeaderboardHomeScreen(),
       binding: LeaderboardBinding(),
@@ -192,8 +228,11 @@ abstract final class AppPages {
     ),
     GetPage<dynamic>(
       name: AppRoutes.leaderboardAchievements,
-      page: () => const lb_achievements.AchievementsScreen(),
-      binding: LeaderboardBinding(),
+      // Badges are the backend-supported achievement catalog. Keep the legacy
+      // leaderboard URL, but render the functional profile experience so the
+      // app does not expose a placeholder screen.
+      page: () => const AchievementsScreen(),
+      binding: ProfileBinding(),
       middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
@@ -241,6 +280,12 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.settings,
       page: () => const SettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsNotifications,
+      page: () => const NotificationPreferencesScreen(),
       binding: SettingsBinding(),
       middlewares: [AuthMiddleware()],
     ),

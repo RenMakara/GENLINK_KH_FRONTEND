@@ -127,6 +127,7 @@ class _MockCommunityRepository implements CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async => throw UnimplementedError();
 
   @override
@@ -319,6 +320,40 @@ void main() {
 
       final padding = feedScrollView.padding as EdgeInsets;
       expect(padding.bottom, greaterThanOrEqualTo(120.0));
+    });
+
+    testWidgets('shared Community scroll controller tolerates multiple clients', (tester) async {
+      final controller = CommunityController(repository: _MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: controller.scrollController,
+                    child: const SizedBox(height: 2000),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: controller.scrollController,
+                    child: const SizedBox(height: 2000),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      controller.scrollController.jumpTo(2000);
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

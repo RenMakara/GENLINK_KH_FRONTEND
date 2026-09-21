@@ -35,6 +35,8 @@ class ProfileController extends GetxController {
   final portfolio = <PortfolioItemEntity>[].obs;
   final socialLinks = <SocialLinkEntity>[].obs;
   final badges = <BadgeEntity>[].obs;
+  final isBadgesLoading = false.obs;
+  final badgesErrorMessage = RxnString();
   final savedItems = <SavedItemEntity>[].obs;
   final followStats = Rxn<FollowStatsEntity>();
   final isRelationshipSaving = false.obs;
@@ -102,7 +104,7 @@ class ProfileController extends GetxController {
       _loadSection(
         () async => socialLinks.value = await _repository.getSocialLinks(),
       ),
-      _loadSection(() async => badges.value = await _repository.getBadges()),
+      _loadSection(loadBadges),
       _loadSection(
         () async => savedItems.value = await _repository.getSavedItems(),
       ),
@@ -110,6 +112,32 @@ class ProfileController extends GetxController {
   }
 
   Future<void> reload() => load();
+
+  Future<void> reloadSavedItems() async {
+    await _loadSection(
+      () async => savedItems.value = await _repository.getSavedItems(),
+    );
+  }
+
+  /// Loads the backend badge catalog, including both earned and locked badges.
+  ///
+  /// Badge loading has its own state because the profile endpoint and the badge
+  /// catalog are separate backend resources. A catalog failure must not be
+  /// rendered as a truthful-looking "no badges" state.
+  Future<void> loadBadges() async {
+    if (!isOwner) return;
+    isBadgesLoading.value = true;
+    badgesErrorMessage.value = null;
+    try {
+      badges.assignAll(await _repository.getBadges());
+    } on AppError catch (e) {
+      badgesErrorMessage.value = e.message;
+    } catch (_) {
+      badgesErrorMessage.value = 'common.error'.tr;
+    } finally {
+      isBadgesLoading.value = false;
+    }
+  }
 
   Future<bool> updateProfile({
     String? fullName,

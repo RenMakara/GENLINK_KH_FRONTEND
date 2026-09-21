@@ -33,6 +33,12 @@ class _MockChatRepository implements ChatRepositoryImpl {
   Future<List<ChatMessageModel>> getMessages(String conversationId) async => [];
 
   @override
+  Future<bool> markConversationRead(String conversationId) async => true;
+
+  @override
+  Future<int> getUnreadCount() async => 0;
+
+  @override
   Future<ChatMessageModel> sendMessage(
     String conversationId,
     String content, {
@@ -628,7 +634,7 @@ void main() {
       expect(mockRepo.bookmarkedDiscussionIds.contains('disc_bookmark_real'), isFalse);
     });
 
-    testWidgets('CRITERION 14: Real "Share to Chat" flow opens ForumShareToChatSheet and sends shared_discussion', (tester) async {
+    testWidgets('CRITERION 14: Real "Share to Chat" flow opens ForumShareToChatSheet and sends a text message', (tester) async {
       final topic = ForumTopicModel(
         id: 'disc_share_test',
         title: 'Learn Flutter in Cambodia',
@@ -668,8 +674,8 @@ void main() {
       final mockChat = Get.find<ChatController>().repository as _MockChatRepository;
       expect(mockChat.sentMessages.isNotEmpty, isTrue);
       expect(mockChat.sentMessages.first['conversationId'], 'conv_1');
-      expect(mockChat.sentMessages.first['messageType'], 'shared_discussion');
-      expect(mockChat.sentMessages.first['content'], 'Learn Flutter in Cambodia');
+      expect(mockChat.sentMessages.first['messageType'], 'text');
+      expect(mockChat.sentMessages.first['content'], 'Learn Flutter in Cambodia\n\nFlutter tutorial discussion');
     });
   });
 }

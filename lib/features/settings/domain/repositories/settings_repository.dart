@@ -12,4 +12,11 @@ abstract interface class SettingsRepository {
     bool? allowFollowRequest,
     bool? biometricEnabled,
   });
+
+  Future<List<NotificationPreferenceEntity>> getNotificationPreferences();
+
+  Future<NotificationPreferenceEntity> updateNotificationPreference({
+    required String notificationType,
+    required bool enabled,
+  });
 }

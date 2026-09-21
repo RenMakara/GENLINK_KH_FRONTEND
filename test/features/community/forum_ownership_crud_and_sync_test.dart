@@ -71,6 +71,7 @@ class _MockTestCommunityRepository implements CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async {
     final index = discussions.indexWhere((d) => d.id == discussionId);
     if (index != -1) {

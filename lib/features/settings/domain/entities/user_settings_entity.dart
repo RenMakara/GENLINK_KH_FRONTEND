@@ -73,13 +73,25 @@ class UserSettingsEntity {
 
   @override
   int get hashCode => Object.hash(
-        settingsId,
-        language,
-        theme,
-        notificationEnabled,
-        privacyProfile,
-        allowMessages,
-        allowFollowRequest,
-        biometricEnabled,
-      );
+    settingsId,
+    language,
+    theme,
+    notificationEnabled,
+    privacyProfile,
+    allowMessages,
+    allowFollowRequest,
+    biometricEnabled,
+  );
+}
+
+class NotificationPreferenceEntity {
+  const NotificationPreferenceEntity({
+    this.preferenceId,
+    required this.notificationType,
+    required this.enabled,
+  });
+
+  final String? preferenceId;
+  final String notificationType;
+  final bool enabled;
 }

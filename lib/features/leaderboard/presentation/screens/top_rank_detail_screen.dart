@@ -1,28 +1,107 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/network/api_client.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
-import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../profile/data/datasources/profile_remote_datasource.dart';
+import '../../../profile/data/repositories/profile_repository_impl.dart';
+import '../../../profile/domain/entities/profile_entity.dart';
+import '../../../profile/domain/repositories/profile_repository.dart';
+import '../../../profile/presentation/controllers/profile_controller.dart';
 import '../../domain/models/leaderboard_models.dart';
+import '../widgets/leaderboard_profile_widgets.dart';
 
-class TopRankDetailScreen extends StatelessWidget {
+class TopRankDetailScreen extends StatefulWidget {
   const TopRankDetailScreen({super.key});
 
   @override
+  State<TopRankDetailScreen> createState() => _TopRankDetailScreenState();
+}
+
+class _TopRankDetailScreenState extends State<TopRankDetailScreen> {
+  List<BadgeEntity> _badges = const [];
+  bool _isLoadingBadges = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBadges();
+  }
+
+  Future<void> _loadBadges() async {
+    // If ProfileController already loaded badges, reuse them instantly
+    if (Get.isRegistered<ProfileController>()) {
+      final profileCtrl = Get.find<ProfileController>();
+      if (profileCtrl.badges.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _badges = profileCtrl.badges.toList();
+            _isLoadingBadges = false;
+          });
+        }
+        return;
+      }
+    }
+
+    try {
+      final repo = _resolveRepository();
+      final loaded = await repo.getBadges();
+      if (mounted) {
+        setState(() {
+          _badges = loaded;
+          _isLoadingBadges = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingBadges = false;
+        });
+      }
+    }
+  }
+
+  ProfileRepository _resolveRepository() {
+    if (Get.isRegistered<ProfileRepository>()) {
+      return Get.find<ProfileRepository>();
+    }
+    if (Get.isRegistered<ApiClient>()) {
+      final repo = ProfileRepositoryImpl(
+        ProfileRemoteDatasource(Get.find<ApiClient>()),
+      );
+      Get.put<ProfileRepository>(repo, permanent: true);
+      return repo;
+    }
+    throw StateError('ApiClient is not registered');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final semantic = context.semanticColors;
     final entry = Get.arguments is LeaderboardEntry
         ? Get.arguments as LeaderboardEntry
         : null;
 
     return Scaffold(
-      backgroundColor: scheme.surface,
+      backgroundColor: semantic.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        leadingWidth: 72,
+        leading: const Center(
+          child: AppBackButton(),
+        ),
+        titleSpacing: 0,
         title: Text(
           'leaderboard.profile'.tr,
-          style: TextStyle(color: scheme.onSurface),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: semantic.primaryText,
+          ),
         ),
       ),
       body: entry == null
@@ -32,105 +111,49 @@ class TopRankDetailScreen extends StatelessWidget {
                 child: Text(
                   'leaderboard.profileUnavailable'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: scheme.onSurfaceVariant),
+                  style: TextStyle(color: semantic.secondaryText),
                 ),
               ),
             )
-          : ListView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              children: [
-                Card(
-                  elevation: 0,
-                  color: scheme.primaryContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        AppAvatar(
-                          imageUrl: entry.avatarUrl,
-                          name: entry.name,
-                          size: 88,
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          entry.name,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(color: scheme.onPrimaryContainer),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'leaderboard.rankValue'.trParams({
-                            'rank': '${entry.rank}',
-                          }),
-                          style: TextStyle(color: scheme.onPrimaryContainer),
-                        ),
-                      ],
-                    ),
-                  ),
+          : SafeArea(
+              child: ListView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _metric(
-                        context,
-                        scheme,
-                        '${entry.points}',
-                        'leaderboard.points'.tr,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _metric(
-                        context,
-                        scheme,
-                        '${entry.level}',
-                        'leaderboard.level'.tr,
-                      ),
-                    ),
-                  ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
                 ),
-              ],
-            ),
-    );
-  }
+                children: [
+                  // 1. Profile Hero Card
+                  LeaderboardProfileHero(entry: entry),
+                  const SizedBox(height: AppSpacing.md),
 
-  Widget _metric(
-    BuildContext context,
-    ColorScheme scheme,
-    String value,
-    String label,
-  ) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: scheme.primary,
-                fontWeight: FontWeight.w800,
+                  // 2. Profile Statistics (Points, Global Rank, Level)
+                  LeaderboardProfileStatsRow(entry: entry),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 3. Level & XP Progress Card
+                  LeaderboardXpProgressCard(entry: entry),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // 4. Achievements Section
+                  LeaderboardAchievementsSection(
+                    badges: _badges,
+                    isLoading: _isLoadingBadges,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 5. View Ranking Action Card
+                  LeaderboardActionCard(entry: entry),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 6. Motivational Bottom Card
+                  const LeaderboardMotivationalCard(),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

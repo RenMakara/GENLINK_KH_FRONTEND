@@ -90,17 +90,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
     bool isDark,
   ) {
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
-    final titleText = 'notification.title'.tr.isNotEmpty &&
+    final titleText =
+        'notification.title'.tr.isNotEmpty &&
             'notification.title'.tr != 'notification.title'
         ? 'notification.title'.tr
         : 'Notifications';
 
-    final markAllText = 'notification.markAllRead'.tr.isNotEmpty &&
+    final markAllText =
+        'notification.markAllRead'.tr.isNotEmpty &&
             'notification.markAllRead'.tr != 'notification.markAllRead'
         ? 'notification.markAllRead'.tr
         : 'Mark all read';
@@ -147,16 +151,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
             child: TextButton.icon(
               onPressed: notifController.markAllAsRead,
               style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              icon: Icon(
-                Icons.done_all_rounded,
-                size: 16,
-                color: textMuted,
-              ),
+              icon: Icon(Icons.done_all_rounded, size: 16, color: textMuted),
               label: Text(
                 markAllText,
                 style: TextStyle(
@@ -217,8 +219,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeInOut,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? activeBg : inactiveBg,
                   borderRadius: BorderRadius.circular(20),
@@ -250,10 +254,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
     NotificationController notifController,
     bool isDark,
   ) {
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final refreshBg =
-        isDark ? const Color(0xFF1C1C1C) : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final refreshBg = isDark
+        ? const Color(0xFF1C1C1C)
+        : AppColors.lightSurfacePrimary;
 
     return Obx(() {
       if (notifController.isLoading.value &&
@@ -302,15 +308,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
         }
       }
 
-      final todayLabel = 'notification.today'.tr.isNotEmpty &&
+      final todayLabel =
+          'notification.today'.tr.isNotEmpty &&
               'notification.today'.tr != 'notification.today'
           ? 'notification.today'.tr
           : 'TODAY';
-      final yesterdayLabel = 'notification.yesterday'.tr.isNotEmpty &&
+      final yesterdayLabel =
+          'notification.yesterday'.tr.isNotEmpty &&
               'notification.yesterday'.tr != 'notification.yesterday'
           ? 'notification.yesterday'.tr
           : 'YESTERDAY';
-      final earlierLabel = 'notification.earlier'.tr.isNotEmpty &&
+      final earlierLabel =
+          'notification.earlier'.tr.isNotEmpty &&
               'notification.earlier'.tr != 'notification.earlier'
           ? 'notification.earlier'.tr
           : 'Earlier';
@@ -414,27 +423,34 @@ class _NotificationCardState extends State<_NotificationCard> {
 
       final titleColor = isDark
           ? (isRead ? AppColors.darkTextSecondary : AppColors.darkTextPrimary)
-          : (isRead ? AppColors.lightTextSecondary : AppColors.lightTextPrimary);
+          : (isRead
+                ? AppColors.lightTextSecondary
+                : AppColors.lightTextPrimary);
 
-      final contextColor =
-          isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+      final contextColor = isDark
+          ? AppColors.darkTextSecondary
+          : AppColors.lightTextSecondary;
 
-      final timeColor =
-          isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+      final timeColor = isDark
+          ? AppColors.darkTextMuted
+          : AppColors.lightTextMuted;
 
-      final dotColor =
-          isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111111);
+      final dotColor = isDark
+          ? const Color(0xFFFFFFFF)
+          : const Color(0xFF111111);
 
-      final dismissBg =
-          isDark ? const Color(0xFF351616) : const Color(0xFFFEE2E2);
-      final dismissIconColor =
-          isDark ? const Color(0xFFEF6A6A) : const Color(0xFFDC2626);
+      final dismissBg = isDark
+          ? const Color(0xFF351616)
+          : const Color(0xFFFEE2E2);
+      final dismissIconColor = isDark
+          ? const Color(0xFFEF6A6A)
+          : const Color(0xFFDC2626);
 
       final shortContext = notif.contextText?.isNotEmpty == true
           ? notif.contextText!
           : (notif.body.isNotEmpty && notif.body != notif.title
-              ? notif.body
-              : null);
+                ? notif.body
+                : null);
 
       return Dismissible(
         key: Key('notif_${notif.id}'),
@@ -574,7 +590,8 @@ class _LeadingVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSocial = notif.category == NotificationCategory.social ||
+    final isSocial =
+        notif.category == NotificationCategory.social ||
         notif.type == NotificationType.like ||
         notif.type == NotificationType.comment ||
         notif.type == NotificationType.reply ||
@@ -584,7 +601,8 @@ class _LeadingVisual extends StatelessWidget {
         notif.type == NotificationType.chat ||
         notif.type == NotificationType.group;
 
-    final hasActorInfo = (notif.senderAvatar != null && notif.senderAvatar!.isNotEmpty) ||
+    final hasActorInfo =
+        (notif.senderAvatar != null && notif.senderAvatar!.isNotEmpty) ||
         (notif.senderName.isNotEmpty &&
             notif.senderName != 'GenLink KH' &&
             notif.senderName != 'Community Member');
@@ -624,11 +642,7 @@ class _LeadingVisual extends StatelessWidget {
                     ],
                   ),
                   child: Center(
-                    child: Icon(
-                      badgeIcon,
-                      size: 9.5,
-                      color: badgeColor,
-                    ),
+                    child: Icon(badgeIcon, size: 9.5, color: badgeColor),
                   ),
                 ),
               ),
@@ -640,7 +654,12 @@ class _LeadingVisual extends StatelessWidget {
     // SYSTEM / FEATURE CATEGORIES -> Beautiful Category Icon
     final iconData = _resolveCategoryIcon(notif.type, notif.category);
     final iconColor = _resolveCategoryColor(notif.type, notif.category, isDark);
-    final iconBg = _resolveCategoryBackground(notif.type, notif.category, isDark, isRead);
+    final iconBg = _resolveCategoryBackground(
+      notif.type,
+      notif.category,
+      isDark,
+      isRead,
+    );
     final iconBorder = isDark
         ? (isRead ? const Color(0xFF262626) : const Color(0xFF333333))
         : (isRead ? const Color(0xFFE5E5DF) : const Color(0xFFDDDDDA));
@@ -653,13 +672,7 @@ class _LeadingVisual extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: iconBorder, width: 0.8),
       ),
-      child: Center(
-        child: Icon(
-          iconData,
-          size: 20,
-          color: iconColor,
-        ),
-      ),
+      child: Center(child: Icon(iconData, size: 20, color: iconColor)),
     );
   }
 
@@ -733,11 +746,18 @@ class _LeadingVisual extends StatelessWidget {
       case NotificationType.taskReminder:
         return Icons.check_circle_rounded;
       case NotificationType.goalReminder:
+      case NotificationType.goalMilestone:
         return Icons.flag_rounded;
 
       // Quiz & Achievement
       case NotificationType.quizResult:
         return Icons.quiz_rounded;
+      case NotificationType.challengeReward:
+        return Icons.emoji_events_rounded;
+      case NotificationType.badgeAwarded:
+        return Icons.workspace_premium_rounded;
+      case NotificationType.levelUp:
+        return Icons.stars_rounded;
       case NotificationType.achievement:
         return Icons.emoji_events_rounded;
 
@@ -792,6 +812,9 @@ class _LeadingVisual extends StatelessWidget {
       return const Color(0xFFEC4899); // Rose/Pink
     }
     if (type == NotificationType.quizResult ||
+        type == NotificationType.challengeReward ||
+        type == NotificationType.badgeAwarded ||
+        type == NotificationType.levelUp ||
         type == NotificationType.achievement) {
       return const Color(0xFFF59E0B); // Amber
     }
@@ -825,8 +848,9 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4, top: 4, left: 4),
@@ -851,21 +875,25 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextPrimary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextSecondary;
 
     String title;
     String desc;
 
     if (category == 'All') {
-      title = 'notification.emptyAllTitle'.tr.isNotEmpty &&
+      title =
+          'notification.emptyAllTitle'.tr.isNotEmpty &&
               'notification.emptyAllTitle'.tr != 'notification.emptyAllTitle'
           ? 'notification.emptyAllTitle'.tr
           : 'No notifications yet';
 
-      desc = 'notification.emptyAllDesc'.tr.isNotEmpty &&
+      desc =
+          'notification.emptyAllDesc'.tr.isNotEmpty &&
               'notification.emptyAllDesc'.tr != 'notification.emptyAllDesc'
           ? 'notification.emptyAllDesc'.tr
           : "You're all caught up!";
@@ -873,17 +901,20 @@ class _EmptyState extends StatelessWidget {
       final categoryKey = 'notification.category$category';
       final localizedCategory =
           categoryKey.tr.isNotEmpty && categoryKey.tr != categoryKey
-              ? categoryKey.tr
-              : category;
+          ? categoryKey.tr
+          : category;
 
-      title = 'notification.emptyCategoryTitle'.tr.isNotEmpty &&
+      title =
+          'notification.emptyCategoryTitle'.tr.isNotEmpty &&
               'notification.emptyCategoryTitle'.tr !=
                   'notification.emptyCategoryTitle'
-          ? 'notification.emptyCategoryTitle'
-              .trParams({'category': localizedCategory})
+          ? 'notification.emptyCategoryTitle'.trParams({
+              'category': localizedCategory,
+            })
           : 'No $category notifications';
 
-      desc = 'notification.emptyCategoryDesc'.tr.isNotEmpty &&
+      desc =
+          'notification.emptyCategoryDesc'.tr.isNotEmpty &&
               'notification.emptyCategoryDesc'.tr !=
                   'notification.emptyCategoryDesc'
           ? 'notification.emptyCategoryDesc'.tr
@@ -915,11 +946,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               desc,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 13,
-                height: 1.4,
-              ),
+              style: TextStyle(color: textMuted, fontSize: 13, height: 1.4),
               textAlign: TextAlign.center,
             ),
           ],
@@ -937,22 +964,27 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
-    final errorTitle = 'notification.errorTitle'.tr.isNotEmpty &&
+    final errorTitle =
+        'notification.errorTitle'.tr.isNotEmpty &&
             'notification.errorTitle'.tr != 'notification.errorTitle'
         ? 'notification.errorTitle'.tr
         : 'Something went wrong';
 
-    final errorDesc = 'notification.errorDesc'.tr.isNotEmpty &&
+    final errorDesc =
+        'notification.errorDesc'.tr.isNotEmpty &&
             'notification.errorDesc'.tr != 'notification.errorDesc'
         ? 'notification.errorDesc'.tr
         : 'Unable to load notifications. Please check your connection and try again.';
 
-    final retryText = 'notification.retry'.tr.isNotEmpty &&
+    final retryText =
+        'notification.retry'.tr.isNotEmpty &&
             'notification.retry'.tr != 'notification.retry'
         ? 'notification.retry'.tr
         : 'Retry';
@@ -985,11 +1017,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               errorDesc,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 13,
-                height: 1.4,
-              ),
+              style: TextStyle(color: textMuted, fontSize: 13, height: 1.4),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -999,8 +1027,10 @@ class _ErrorState extends StatelessWidget {
                 backgroundColor: btnBg,
                 foregroundColor: btnText,
                 elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -1027,12 +1057,15 @@ class _LoadingSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardBg = isDark ? const Color(0xFF161616) : const Color(0xFFF2F2EF);
-    final cardBorder =
-        isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E8E4);
-    final placeholder1 =
-        isDark ? const Color(0xFF242424) : const Color(0xFFE0E0DC);
-    final placeholder2 =
-        isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E8E4);
+    final cardBorder = isDark
+        ? const Color(0xFF1E1E1E)
+        : const Color(0xFFE8E8E4);
+    final placeholder1 = isDark
+        ? const Color(0xFF242424)
+        : const Color(0xFFE0E0DC);
+    final placeholder2 = isDark
+        ? const Color(0xFF1E1E1E)
+        : const Color(0xFFE8E8E4);
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

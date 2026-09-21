@@ -73,30 +73,33 @@ void main() {
       );
     });
 
-    test('does not refresh an authenticated logout request after 401', () async {
-      final storage = _FakeSecureStorage(accessToken: 'real-access-token');
-      final auth = _FakeAuthRepository();
-      final adapter = _RecordingAdapter(statusCode: 401);
-      var expiredCalls = 0;
-      final dio = _dioWith(
-        storage: storage,
-        authRepository: auth,
-        adapter: adapter,
-        onSessionExpired: () => expiredCalls++,
-      );
+    test(
+      'does not refresh an authenticated logout request after 401',
+      () async {
+        final storage = _FakeSecureStorage(accessToken: 'real-access-token');
+        final auth = _FakeAuthRepository();
+        final adapter = _RecordingAdapter(statusCode: 401);
+        var expiredCalls = 0;
+        final dio = _dioWith(
+          storage: storage,
+          authRepository: auth,
+          adapter: adapter,
+          onSessionExpired: () => expiredCalls++,
+        );
 
-      final error = await _captureDioError(
-        () => dio.post<dynamic>('/api/v1/auth/logout'),
-      );
+        final error = await _captureDioError(
+          () => dio.post<dynamic>('/api/v1/auth/logout'),
+        );
 
-      expect(error.response?.statusCode, 401);
-      expect(adapter.calls, 1);
-      expect(
-        adapter.lastOptions?.headers['Authorization'],
-        'Bearer real-access-token',
-      );
-      expect(expiredCalls, 0);
-    });
+        expect(error.response?.statusCode, 401);
+        expect(adapter.calls, 1);
+        expect(
+          adapter.lastOptions?.headers['Authorization'],
+          'Bearer real-access-token',
+        );
+        expect(expiredCalls, 0);
+      },
+    );
 
     test('does not expire the session for a push registration 401', () async {
       final storage = _FakeSecureStorage(accessToken: 'real-access-token');
@@ -260,6 +263,19 @@ class _FakeAuthRepository implements AuthRepository {
   Future<void> resetPassword({
     required String email,
     required String otp,
+    required String newPassword,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> setPassword({required String password}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
     required String newPassword,
   }) {
     throw UnimplementedError();

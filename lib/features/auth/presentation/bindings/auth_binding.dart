@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/features/notification/domain/mobile_push_registration_service.dart';
 
 import '../../../../core/localization/localization_service.dart';
+import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -11,9 +12,14 @@ import '../../domain/repositories/auth_repository.dart';
 import '../controllers/auth_controller.dart';
 
 class AuthBinding extends Bindings {
-  AuthBinding({this.onSessionCleared, this.mobilePushRegistrationService});
+  AuthBinding({
+    this.onSessionCleared,
+    this.onSessionEstablished,
+    this.mobilePushRegistrationService,
+  });
 
   final void Function()? onSessionCleared;
+  final void Function()? onSessionEstablished;
   final MobilePushRegistrationService? mobilePushRegistrationService;
 
   @override
@@ -27,9 +33,11 @@ class AuthBinding extends Bindings {
         authRepository: authRepository,
         secureStorage: Get.find<SecureStorage>(),
         localization: Get.find<LocalizationService>(),
+        localStorage: Get.find<LocalStorage>(),
         googleAuthService: GoogleAuthServiceImpl(),
         mobilePushRegistrationService: mobilePushRegistrationService,
         onSessionCleared: onSessionCleared,
+        onSessionEstablished: onSessionEstablished,
       ),
       permanent: true,
     );

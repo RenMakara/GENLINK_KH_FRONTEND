@@ -56,8 +56,7 @@ abstract class CommunityRepository {
     String postId, {
     int page = 0,
     int size = 20,
-  }) =>
-      Future.value([]);
+  }) => Future.value([]);
 
   Future<bool> toggleBookmark(String postId);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
@@ -113,8 +112,7 @@ abstract class CommunityRepository {
   Future<bool> toggleDiscussionBookmark(
     String discussionId, {
     required bool isCurrentlyBookmarked,
-  }) =>
-      Future.value(!isCurrentlyBookmarked);
+  }) => Future.value(!isCurrentlyBookmarked);
 
   Future<bool> isDiscussionBookmarked(String discussionId) =>
       Future.value(false);
@@ -140,8 +138,7 @@ abstract class CommunityRepository {
     String discussionId, {
     int page = 0,
     int size = 20,
-  }) =>
-      Future.value([]);
+  }) => Future.value([]);
 
   Future<CommentModel> updateDiscussionComment(
     String commentId,
@@ -180,6 +177,19 @@ abstract class CommunityRepository {
     int limit = 50,
   }) async => const [];
 
+  Future<EventPageModel<EventAttendeeModel>> getEventAttendeesPage(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final content = await getEventAttendees(eventId, page: page, limit: limit);
+    return EventPageModel<EventAttendeeModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+    );
+  }
+
   Future<bool> toggleEventBookmark(
     String eventId, {
     required bool isCurrentlyBookmarked,
@@ -191,8 +201,39 @@ abstract class CommunityRepository {
     int page = 1,
     int limit = 20,
     String? category,
-    String? status,
   }) async => const [];
+
+  Future<EventPageModel<EventModel>> getEventsPage({
+    int page = 1,
+    int limit = 20,
+    String? category,
+  }) async {
+    final content = await getEvents(
+      page: page,
+      limit: limit,
+      category: category,
+    );
+    return EventPageModel<EventModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+    );
+  }
+
+  Future<List<EventModel>> getMyEvents({int page = 1, int limit = 20}) async =>
+      const [];
+
+  Future<EventPageModel<EventModel>> getMyEventsPage({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final content = await getMyEvents(page: page, limit: limit);
+    return EventPageModel<EventModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+    );
+  }
 
   Future<EventModel> getEventDetails(String eventId);
 }

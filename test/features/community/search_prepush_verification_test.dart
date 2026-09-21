@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,9 +11,6 @@ import 'package:genlink_frontend/features/community/domain/models/search_models.
 import 'package:genlink_frontend/features/community/domain/repositories/search_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_search_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/community_search_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/screens/event_details_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/screens/forum_discussion_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/widgets/comments_bottom_sheet.dart';
 
 class ComprehensiveMockSearchRepository implements SearchRepository {
   final List<UserSearchResultModel> realUsers = [

@@ -25,6 +25,8 @@ import '../../features/settings/presentation/bindings/settings_binding.dart';
 import '../../features/settings/presentation/screens/appearance_settings_screen.dart';
 import '../../features/settings/presentation/screens/language_settings_screen.dart';
 import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
+import '../../features/settings/presentation/screens/security_settings_screen.dart';
+import '../../features/settings/presentation/screens/password_setup_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/notification_preferences_screen.dart';
 import '../../features/chat/chat_feature.dart';
@@ -109,6 +111,16 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.resetPassword,
       page: () => const ResetPasswordScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.setPassword,
+      page: () => PasswordSetupScreen(
+        optionalPrompt:
+            Get.arguments is Map &&
+            (Get.arguments as Map)['optionalPrompt'] == true,
+      ),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
     ),
 
     GetPage<dynamic>(
@@ -304,6 +316,22 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.settingsPrivacy,
       page: () => const PrivacySettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsSecurity,
+      page: () => const SecuritySettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.passwordSetup,
+      page: () => PasswordSetupScreen(
+        optionalPrompt:
+            Get.arguments is Map &&
+            (Get.arguments as Map)['optionalPrompt'] == true,
+      ),
       binding: SettingsBinding(),
       middlewares: [AuthMiddleware()],
     ),

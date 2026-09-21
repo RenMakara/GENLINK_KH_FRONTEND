@@ -138,6 +138,13 @@ class SettingsScreen extends GetView<SettingsController> {
                     onChanged: controller.setBiometricEnabled,
                   ),
                 ),
+                _SettingsRow(
+                  icon: Icons.shield_outlined,
+                  accent: AppColors.brandPrimary,
+                  title: 'settings.security'.tr,
+                  subtitle: 'settings.securityHint'.tr,
+                  onTap: () => Get.toNamed<void>(AppRoutes.settingsSecurity),
+                ),
               ],
             ),
 

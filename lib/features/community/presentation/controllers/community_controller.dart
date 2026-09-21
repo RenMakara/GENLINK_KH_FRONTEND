@@ -126,7 +126,30 @@ class CommunityController extends GetxController {
   final isRefreshingEvents = false.obs;
   final hasEventsError = false.obs;
   final eventsErrorMessage = ''.obs;
+  final isLoadingMoreEvents = false.obs;
+  final hasMoreEvents = true.obs;
+  final currentEventsPage = 1.obs;
 
+  final myEvents = <EventModel>[].obs;
+  final isLoadingMyEvents = false.obs;
+  final isRefreshingMyEvents = false.obs;
+  final hasMyEventsError = false.obs;
+  final myEventsErrorMessage = ''.obs;
+  final isLoadingMoreMyEvents = false.obs;
+  final hasMoreMyEvents = true.obs;
+  final currentMyEventsPage = 1.obs;
+
+  final eventBookmarkLoadingIds = <String>{}.obs;
+
+  void _upsertEvent(RxList<EventModel> collection, EventModel event) {
+    final index = collection.indexWhere((item) => item.id == event.id);
+    if (index == -1) {
+      collection.insert(0, event);
+    } else {
+      collection[index] = event;
+    }
+    collection.refresh();
+  }
 
   final isCreatingEvent = false.obs;
 
@@ -177,69 +200,21 @@ class CommunityController extends GetxController {
         currency: request.currency,
       );
 
-      EventModel createdEvent;
-      try {
-        createdEvent = await repository.createEvent(finalRequest);
-      } on UnimplementedError {
-        // Keep repository test doubles/local-only flows usable while the
-        // production repository performs the real request above.
-        createdEvent = EventModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: finalRequest.title,
-          description: finalRequest.description ?? '',
-          category: finalRequest.category ?? '',
-          eventType: finalRequest.mode == 'ONLINE' ? 'Online' : 'In person',
-          mode: finalRequest.mode,
-          location: finalRequest.locationName ?? '',
-          locationName: finalRequest.locationName,
-          onlineLink: finalRequest.meetingUrl ?? '',
-          meetingUrl: finalRequest.meetingUrl,
-          startDateTime: finalRequest.startDateTime,
-          endDateTime: finalRequest.endDateTime,
-          isPaid: finalRequest.paid,
-          price: finalRequest.price,
-          currency: finalRequest.currency,
-          imageUrl: finalRequest.coverImageUrl ?? '',
-          attendeesCount: 0,
-        );
-      } on NoSuchMethodError {
-        createdEvent = EventModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: finalRequest.title,
-          description: finalRequest.description ?? '',
-          category: finalRequest.category ?? '',
-          eventType: finalRequest.mode == 'ONLINE' ? 'Online' : 'In person',
-          mode: finalRequest.mode,
-          location: finalRequest.locationName ?? '',
-          locationName: finalRequest.locationName,
-          onlineLink: finalRequest.meetingUrl ?? '',
-          meetingUrl: finalRequest.meetingUrl,
-          startDateTime: finalRequest.startDateTime,
-          endDateTime: finalRequest.endDateTime,
-          isPaid: finalRequest.paid,
-          price: finalRequest.price,
-          currency: finalRequest.currency,
-          imageUrl: finalRequest.coverImageUrl ?? '',
-          attendeesCount: 0,
-        );
-      }
+      final createdEvent = await repository.createEvent(finalRequest);
 
       final eventToStore =
           coverImageFile != null && createdEvent.coverImageFile == null
           ? createdEvent.copyWith(coverImageFile: coverImageFile)
           : createdEvent;
-      final existingIndex = events.indexWhere((item) => item.id == eventToStore.id);
-      if (existingIndex == -1) {
-        events.insert(0, eventToStore);
-      } else {
-        events[existingIndex] = eventToStore;
+      if (eventToStore.isPublished) {
+        _upsertEvent(events, eventToStore);
       }
-      events.refresh();
+      _upsertEvent(myEvents, eventToStore);
 
       // Refresh events from backend to ensure synchronization
       try {
         await refreshEvents();
-        if (coverImageFile != null) {
+        if (coverImageFile != null && eventToStore.isPublished) {
           final idx = events.indexWhere((e) => e.id == eventToStore.id);
           if (idx != -1 && events[idx].coverImageFile == null) {
             events[idx] = events[idx].copyWith(coverImageFile: coverImageFile);
@@ -250,42 +225,44 @@ class CommunityController extends GetxController {
         // If refresh fails, eventToStore is already present in events
       }
 
-      final currentUid = CurrentUser.id;
-      final currentName = CurrentUser.name;
-      final currentAvatar = CurrentUser.avatarUrl;
-      final currentUsername = CurrentUser.username;
-      final eventPost = CommunityPostModel(
-        id: 'post_event_${eventToStore.id}',
-        userId: currentUid.isNotEmpty
-            ? currentUid
-            : (eventToStore.organizerId ?? 'user_1'),
-        authorName: eventToStore.organizerName.isNotEmpty
-            ? eventToStore.organizerName
-            : (currentName.isNotEmpty && currentName != 'Guest'
-                  ? currentName
-                  : 'Organizer'),
-        authorTag: currentUsername.isNotEmpty
-            ? '@$currentUsername'
-            : '@organizer',
-        authorAvatar: eventToStore.organizerAvatar?.isNotEmpty == true
-            ? eventToStore.organizerAvatar!
-            : (currentAvatar?.isNotEmpty == true ? currentAvatar! : ''),
-        timeAgo: 'Just now',
-        content: eventToStore.description.isNotEmpty
-            ? eventToStore.description
-            : eventToStore.title,
-        postType: 'event',
-        attachedEvent: eventToStore,
-        isOwner: true,
-      );
-      final existingPostIdx = posts.indexWhere(
-        (post) =>
-            post.attachedEvent?.id == eventToStore.id ||
-            post.id == eventPost.id,
-      );
-      if (existingPostIdx == -1) {
-        posts.insert(0, eventPost);
-        posts.refresh();
+      if (eventToStore.isPublished) {
+        final currentUid = CurrentUser.id;
+        final currentName = CurrentUser.name;
+        final currentAvatar = CurrentUser.avatarUrl;
+        final currentUsername = CurrentUser.username;
+        final eventPost = CommunityPostModel(
+          id: 'post_event_${eventToStore.id}',
+          userId: currentUid.isNotEmpty
+              ? currentUid
+              : (eventToStore.organizerId ?? 'user_1'),
+          authorName: eventToStore.organizerName.isNotEmpty
+              ? eventToStore.organizerName
+              : (currentName.isNotEmpty && currentName != 'Guest'
+                    ? currentName
+                    : 'Organizer'),
+          authorTag: currentUsername.isNotEmpty
+              ? '@$currentUsername'
+              : '@organizer',
+          authorAvatar: eventToStore.organizerAvatar?.isNotEmpty == true
+              ? eventToStore.organizerAvatar!
+              : (currentAvatar?.isNotEmpty == true ? currentAvatar! : ''),
+          timeAgo: 'Just now',
+          content: eventToStore.description.isNotEmpty
+              ? eventToStore.description
+              : eventToStore.title,
+          postType: 'event',
+          attachedEvent: eventToStore,
+          isOwner: true,
+        );
+        final existingPostIdx = posts.indexWhere(
+          (post) =>
+              post.attachedEvent?.id == eventToStore.id ||
+              post.id == eventPost.id,
+        );
+        if (existingPostIdx == -1) {
+          posts.insert(0, eventPost);
+          posts.refresh();
+        }
       }
 
       return eventToStore;
@@ -453,10 +430,12 @@ class CommunityController extends GetxController {
       final success = await repository.deleteEvent(eventId);
       if (success) {
         events.removeWhere((e) => e.id == eventId);
+        myEvents.removeWhere((e) => e.id == eventId);
         posts.removeWhere(
           (p) => p.eventId == eventId || p.attachedEvent?.id == eventId,
         );
         events.refresh();
+        myEvents.refresh();
         posts.refresh();
       }
       return success;
@@ -472,41 +451,24 @@ class CommunityController extends GetxController {
   }) async {
     isUpdatingEvent.value = true;
     try {
-      EventModel updatedEvent;
-      try {
-        updatedEvent = await repository.updateEvent(eventId, request);
-      } on UnimplementedError {
-        final existing = events.firstWhereOrNull((e) => e.id == eventId);
-        updatedEvent = (existing ?? EventModel(id: eventId, title: request.title)).copyWith(
-          title: request.title,
-          description: request.description ?? '',
-          category: request.category ?? '',
-          mode: request.mode,
-          meetingUrl: request.meetingUrl,
-          locationName: request.locationName,
-          startDateTime: request.startDateTime,
-          endDateTime: request.endDateTime,
-          isPaid: request.paid,
-          price: request.price,
-          currency: request.currency,
-          attendeeLimit: request.attendeeLimit,
-        );
-      }
+      final updatedEvent = await repository.updateEvent(eventId, request);
 
-      final eventToStore = coverImageFile != null && updatedEvent.coverImageFile == null
+      final eventToStore =
+          coverImageFile != null && updatedEvent.coverImageFile == null
           ? updatedEvent.copyWith(coverImageFile: coverImageFile)
           : updatedEvent;
 
-      final idx = events.indexWhere((e) => e.id == eventId);
-      if (idx != -1) {
-        events[idx] = eventToStore;
+      if (eventToStore.isPublished) {
+        _upsertEvent(events, eventToStore);
       } else {
-        events.insert(0, eventToStore);
+        events.removeWhere((event) => event.id == eventId);
+        events.refresh();
       }
-      events.refresh();
+      _upsertEvent(myEvents, eventToStore);
 
       for (int i = 0; i < posts.length; i++) {
-        if (posts[i].eventId == eventId || posts[i].attachedEvent?.id == eventId) {
+        if (posts[i].eventId == eventId ||
+            posts[i].attachedEvent?.id == eventId) {
           posts[i] = posts[i].copyWith(
             attachedEvent: eventToStore,
             content: eventToStore.description.isNotEmpty
@@ -523,19 +485,63 @@ class CommunityController extends GetxController {
     }
   }
 
-  Future<List<EventAttendeeModel>> fetchEventAttendees(String eventId) async {
-    return repository.getEventAttendees(eventId);
+  Future<EventPageModel<EventAttendeeModel>> fetchEventAttendeesPage(
+    String eventId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      return await repository.getEventAttendeesPage(
+        eventId,
+        page: page,
+        limit: limit,
+      );
+    } on UnimplementedError {
+      return EventPageModel<EventAttendeeModel>.fromContent(
+        await repository.getEventAttendees(eventId, page: page, limit: limit),
+        page: page - 1,
+        size: limit,
+      );
+    } on NoSuchMethodError {
+      return EventPageModel<EventAttendeeModel>.fromContent(
+        await repository.getEventAttendees(eventId, page: page, limit: limit),
+        page: page - 1,
+        size: limit,
+      );
+    }
+  }
+
+  Future<List<EventAttendeeModel>> fetchEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final result = await fetchEventAttendeesPage(
+      eventId,
+      page: page,
+      limit: limit,
+    );
+    return result.content;
   }
 
   Future<bool> toggleEventBookmark(String eventId) async {
-    final idx = events.indexWhere((e) => e.id == eventId);
-    if (idx == -1) return false;
-    final ev = events[idx];
+    if (eventBookmarkLoadingIds.contains(eventId)) return false;
+    final eventIndex = events.indexWhere((e) => e.id == eventId);
+    final myEventIndex = myEvents.indexWhere((e) => e.id == eventId);
+    if (eventIndex == -1 && myEventIndex == -1) return false;
+    final ev = eventIndex != -1 ? events[eventIndex] : myEvents[myEventIndex];
     final wasBookmarked = ev.isBookmarked;
     final nextBookmarked = !wasBookmarked;
+    eventBookmarkLoadingIds.add(eventId);
 
-    ev.isBookmarked = nextBookmarked;
-    events.refresh();
+    void setBookmark(bool value) {
+      if (eventIndex != -1) events[eventIndex].isBookmarked = value;
+      if (myEventIndex != -1) myEvents[myEventIndex].isBookmarked = value;
+      if (eventIndex != -1) events.refresh();
+      if (myEventIndex != -1) myEvents.refresh();
+    }
+
+    setBookmark(nextBookmarked);
 
     for (int i = 0; i < posts.length; i++) {
       if (posts[i].attachedEvent?.id == eventId) {
@@ -555,8 +561,7 @@ class CommunityController extends GetxController {
       );
       return success;
     } catch (e) {
-      ev.isBookmarked = wasBookmarked;
-      events.refresh();
+      setBookmark(wasBookmarked);
       for (int i = 0; i < posts.length; i++) {
         if (posts[i].attachedEvent?.id == eventId) {
           posts[i] = posts[i].copyWith(
@@ -568,6 +573,8 @@ class CommunityController extends GetxController {
       }
       posts.refresh();
       return false;
+    } finally {
+      eventBookmarkLoadingIds.remove(eventId);
     }
   }
 
@@ -579,17 +586,18 @@ class CommunityController extends GetxController {
         event = event.copyWith(isBookmarked: true);
       }
     } catch (_) {}
-    final idx = events.indexWhere((e) => e.id == event.id);
-    if (idx != -1) {
-      events[idx] = event;
+    if (event.isPublished) {
+      _upsertEvent(events, event);
     } else {
-      events.add(event);
+      events.removeWhere((item) => item.id == event.id);
+      events.refresh();
     }
-    events.refresh();
+    _upsertEvent(myEvents, event);
     return event;
   }
 
   Future<void> fetchEvents({bool isRefresh = false}) async {
+    if (isLoadingEvents.value || isRefreshingEvents.value) return;
     if (isRefresh) {
       isRefreshingEvents.value = true;
     } else {
@@ -599,7 +607,8 @@ class CommunityController extends GetxController {
     eventsErrorMessage.value = '';
 
     try {
-      final fetched = await repository.getEvents();
+      final fetchedPage = await _getEventsPage(page: 1, limit: 20);
+      final fetched = fetchedPage.content;
       try {
         final savedIds = await repository.getSavedEventIds();
         if (savedIds.isNotEmpty) {
@@ -611,17 +620,15 @@ class CommunityController extends GetxController {
         }
       } catch (_) {}
       events.assignAll(fetched);
+      currentEventsPage.value = 1;
+      hasMoreEvents.value = fetchedPage.hasNext;
       hasEventsError.value = false;
       eventsErrorMessage.value = '';
-    } on UnimplementedError {
-      // Allow test doubles that don't implement getEvents
-    } on NoSuchMethodError {
-      // Allow test doubles with noSuchMethod
     } catch (e) {
-      events.clear();
       hasEventsError.value = true;
-      eventsErrorMessage.value =
-          e is AppError ? e.message : 'Unable to load events';
+      eventsErrorMessage.value = e is AppError
+          ? e.message
+          : 'Unable to load events';
     } finally {
       if (isRefresh) {
         isRefreshingEvents.value = false;
@@ -630,6 +637,154 @@ class CommunityController extends GetxController {
       }
       events.refresh();
     }
+  }
+
+  Future<void> loadMoreEvents() async {
+    if (isLoadingMoreEvents.value ||
+        !hasMoreEvents.value ||
+        isLoadingEvents.value ||
+        isRefreshingEvents.value) {
+      return;
+    }
+
+    isLoadingMoreEvents.value = true;
+    try {
+      final nextPage = currentEventsPage.value + 1;
+      final fetchedPage = await _getEventsPage(page: nextPage, limit: 20);
+      final savedIds = await repository.getSavedEventIds();
+      for (final event in fetchedPage.content) {
+        event.isBookmarked = savedIds.contains(event.id);
+        final existing = events.indexWhere((item) => item.id == event.id);
+        if (existing == -1) {
+          events.add(event);
+        } else {
+          events[existing] = event;
+        }
+      }
+      currentEventsPage.value = nextPage;
+      hasMoreEvents.value = fetchedPage.hasNext;
+      events.refresh();
+    } catch (_) {
+      // Keep the already loaded list visible; a later scroll can retry.
+    } finally {
+      isLoadingMoreEvents.value = false;
+    }
+  }
+
+  Future<void> fetchMyEvents({bool isRefresh = false}) async {
+    if (isLoadingMyEvents.value || isRefreshingMyEvents.value) return;
+    if (isRefresh) {
+      isRefreshingMyEvents.value = true;
+    } else {
+      isLoadingMyEvents.value = true;
+    }
+    hasMyEventsError.value = false;
+    myEventsErrorMessage.value = '';
+
+    try {
+      final fetchedPage = await _getMyEventsPage(page: 1, limit: 20);
+      final savedIds = await repository.getSavedEventIds();
+      for (final event in fetchedPage.content) {
+        event.isBookmarked = savedIds.contains(event.id);
+      }
+      myEvents.assignAll(fetchedPage.content);
+      currentMyEventsPage.value = 1;
+      hasMoreMyEvents.value = fetchedPage.hasNext;
+    } catch (e) {
+      myEvents.clear();
+      hasMyEventsError.value = true;
+      myEventsErrorMessage.value = e is AppError
+          ? e.message
+          : 'Unable to load your events';
+    } finally {
+      isLoadingMyEvents.value = false;
+      isRefreshingMyEvents.value = false;
+      myEvents.refresh();
+    }
+  }
+
+  Future<void> loadMoreMyEvents() async {
+    if (isLoadingMoreMyEvents.value ||
+        !hasMoreMyEvents.value ||
+        isLoadingMyEvents.value ||
+        isRefreshingMyEvents.value) {
+      return;
+    }
+
+    isLoadingMoreMyEvents.value = true;
+    try {
+      final nextPage = currentMyEventsPage.value + 1;
+      final fetchedPage = await _getMyEventsPage(page: nextPage, limit: 20);
+      for (final event in fetchedPage.content) {
+        final existing = myEvents.indexWhere((item) => item.id == event.id);
+        if (existing == -1) {
+          myEvents.add(event);
+        } else {
+          myEvents[existing] = event;
+        }
+      }
+      currentMyEventsPage.value = nextPage;
+      hasMoreMyEvents.value = fetchedPage.hasNext;
+      myEvents.refresh();
+    } catch (_) {
+      // Keep already loaded owner events visible.
+    } finally {
+      isLoadingMoreMyEvents.value = false;
+    }
+  }
+
+  Future<EventPageModel<EventModel>> _getEventsPage({
+    required int page,
+    required int limit,
+  }) async {
+    try {
+      return await repository.getEventsPage(page: page, limit: limit);
+    } on UnimplementedError {
+      return _legacyEventPage(
+        await repository.getEvents(page: page, limit: limit),
+        page: page,
+        limit: limit,
+      );
+    } on NoSuchMethodError {
+      return _legacyEventPage(
+        await repository.getEvents(page: page, limit: limit),
+        page: page,
+        limit: limit,
+      );
+    }
+  }
+
+  Future<EventPageModel<EventModel>> _getMyEventsPage({
+    required int page,
+    required int limit,
+  }) async {
+    try {
+      return await repository.getMyEventsPage(page: page, limit: limit);
+    } on UnimplementedError {
+      return _legacyEventPage(
+        await repository.getMyEvents(page: page, limit: limit),
+        page: page,
+        limit: limit,
+      );
+    } on NoSuchMethodError {
+      return _legacyEventPage(
+        await repository.getMyEvents(page: page, limit: limit),
+        page: page,
+        limit: limit,
+      );
+    }
+  }
+
+  EventPageModel<EventModel> _legacyEventPage(
+    List<EventModel> content, {
+    required int page,
+    required int limit,
+  }) {
+    return EventPageModel<EventModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+    );
   }
 
   Future<void> refreshEvents() async {
@@ -799,15 +954,18 @@ class CommunityController extends GetxController {
       discussionLikers[discussionId] = mergedLikers;
       discussionLikers.refresh();
 
-      final latestIdx =
-          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      final latestIdx = forumLatestDiscussions.indexWhere(
+        (d) => d.id == discussionId,
+      );
       if (latestIdx != -1) {
         final topic = forumLatestDiscussions[latestIdx];
         // If page 0 returned less than size items, mergedLikers contains all real likers.
         // Sync upvotes with real backend reactions so count and list never mismatch.
         final alignedUpvotes = (page == 0 && likers.length < size)
             ? mergedLikers.length
-            : (mergedLikers.length > topic.upvotes ? mergedLikers.length : topic.upvotes);
+            : (mergedLikers.length > topic.upvotes
+                  ? mergedLikers.length
+                  : topic.upvotes);
         forumLatestDiscussions[latestIdx] = topic.copyWith(
           likers: mergedLikers,
           upvotes: alignedUpvotes,
@@ -892,14 +1050,24 @@ class CommunityController extends GetxController {
         isCurrentlyLiked: prevLiked,
       );
       if (!success) {
-        _rollbackDiscussionLike(discussionId, prevLiked, prevUpvotes, prevLikers);
+        _rollbackDiscussionLike(
+          discussionId,
+          prevLiked,
+          prevUpvotes,
+          prevLikers,
+        );
       } else {
         // Fetch authentic backend reactions and populate real likers ONLY if current user is owner
-        final discussion = forumLatestDiscussions.firstWhereOrNull((d) => d.id == discussionId);
-        final isOwner = discussion?.isOwner ?? (discussion?.checkIsOwner(currentUserId) ?? false);
+        final discussion = forumLatestDiscussions.firstWhereOrNull(
+          (d) => d.id == discussionId,
+        );
+        final isOwner =
+            discussion?.isOwner ??
+            (discussion?.checkIsOwner(currentUserId) ?? false);
         if (isOwner) {
-          await fetchDiscussionLikers(discussionId)
-              .catchError((_) => <ForumLikerModel>[]);
+          await fetchDiscussionLikers(
+            discussionId,
+          ).catchError((_) => <ForumLikerModel>[]);
         }
       }
       return success;
@@ -941,8 +1109,9 @@ class CommunityController extends GetxController {
     if (discussionBookmarks.containsKey(discussionId)) {
       return discussionBookmarks[discussionId]!;
     }
-    final item =
-        forumLatestDiscussions.firstWhereOrNull((d) => d.id == discussionId);
+    final item = forumLatestDiscussions.firstWhereOrNull(
+      (d) => d.id == discussionId,
+    );
     return item?.isBookmarked ?? false;
   }
 
@@ -950,11 +1119,13 @@ class CommunityController extends GetxController {
     try {
       final saved = await repository.isDiscussionBookmarked(discussionId);
       discussionBookmarks[discussionId] = saved;
-      final idx =
-          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      final idx = forumLatestDiscussions.indexWhere(
+        (d) => d.id == discussionId,
+      );
       if (idx != -1) {
-        forumLatestDiscussions[idx] =
-            forumLatestDiscussions[idx].copyWith(isBookmarked: saved);
+        forumLatestDiscussions[idx] = forumLatestDiscussions[idx].copyWith(
+          isBookmarked: saved,
+        );
         forumLatestDiscussions.refresh();
       }
       return saved;
@@ -978,8 +1149,9 @@ class CommunityController extends GetxController {
 
     final idx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
     if (idx != -1) {
-      forumLatestDiscussions[idx] =
-          forumLatestDiscussions[idx].copyWith(isBookmarked: newStatus);
+      forumLatestDiscussions[idx] = forumLatestDiscussions[idx].copyWith(
+        isBookmarked: newStatus,
+      );
       forumLatestDiscussions.refresh();
     }
 
@@ -1007,14 +1179,19 @@ class CommunityController extends GetxController {
     discussionBookmarks[discussionId] = prevBookmarked;
     discussionBookmarks.refresh();
     if (idx != -1) {
-      forumLatestDiscussions[idx] =
-          forumLatestDiscussions[idx].copyWith(isBookmarked: prevBookmarked);
+      forumLatestDiscussions[idx] = forumLatestDiscussions[idx].copyWith(
+        isBookmarked: prevBookmarked,
+      );
       forumLatestDiscussions.refresh();
     }
   }
 
-  Future<bool> repostDiscussion(ForumTopicModel discussion, {String? caption}) async {
-    final effectiveUserId = currentUserId ?? (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
+  Future<bool> repostDiscussion(
+    ForumTopicModel discussion, {
+    String? caption,
+  }) async {
+    final effectiveUserId =
+        currentUserId ?? (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     if (discussion.checkIsOwner(effectiveUserId)) {
       return false;
     }
@@ -1023,15 +1200,16 @@ class CommunityController extends GetxController {
     }
     inFlightDiscussionReposts.add(discussion.id);
 
-    final effectiveReposterId = (effectiveUserId != null && effectiveUserId.isNotEmpty)
+    final effectiveReposterId =
+        (effectiveUserId != null && effectiveUserId.isNotEmpty)
         ? effectiveUserId
         : 'current_user';
     final effectiveReposterName =
         (currentUserName.isNotEmpty && currentUserName != 'Guest')
-            ? currentUserName
-            : (CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
-                ? CurrentUser.name
-                : 'You');
+        ? currentUserName
+        : (CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+              ? CurrentUser.name
+              : 'You');
 
     final idx = posts.indexWhere((p) => p.id == discussion.id);
     CommunityPostModel? originalPost;
@@ -1049,19 +1227,25 @@ class CommunityController extends GetxController {
       );
       posts.refresh();
     } else {
-      final isAnonDiscussion = discussion.isAnonymous ||
+      final isAnonDiscussion =
+          discussion.isAnonymous ||
           discussion.authorName.trim().toLowerCase() == 'anonymous' ||
           ('community.anonymous'.tr.isNotEmpty &&
               discussion.authorName.trim().toLowerCase() ==
                   'community.anonymous'.tr.toLowerCase());
       newlyCreatedPost = CommunityPostModel(
         id: 'repost_${DateTime.now().millisecondsSinceEpoch}',
-        userId: isAnonDiscussion ? 'anonymous' : (discussion.authorId ?? 'unknown'),
+        userId: isAnonDiscussion
+            ? 'anonymous'
+            : (discussion.authorId ?? 'unknown'),
         authorName: isAnonDiscussion ? 'Anonymous' : discussion.authorName,
-        authorTag: isAnonDiscussion ? 'anonymous' : discussion.authorName.replaceAll('@', ''),
+        authorTag: isAnonDiscussion
+            ? 'anonymous'
+            : discussion.authorName.replaceAll('@', ''),
         authorAvatar: isAnonDiscussion ? '' : discussion.authorAvatar,
         timeAgo: 'Just now',
-        content: discussion.title +
+        content:
+            discussion.title +
             (discussion.content.isNotEmpty ? '\n${discussion.content}' : ''),
         community: discussion.category,
         sharesCount: 1,
@@ -1266,8 +1450,7 @@ class CommunityController extends GetxController {
   void _onScrollListener() {
     if (!scrollController.hasClients ||
         !scrollController.positions.any(
-          (position) =>
-              position.pixels >= position.maxScrollExtent - 200,
+          (position) => position.pixels >= position.maxScrollExtent - 200,
         ) ||
         isLoadingMore.value ||
         isLoadingFeed.value ||
@@ -1431,14 +1614,18 @@ class CommunityController extends GetxController {
     try {
       final file = File(rawUrl);
       if (!await file.exists()) {
-        debugPrint('[CommunityController] Video file does not exist at path: $rawUrl');
+        debugPrint(
+          '[CommunityController] Video file does not exist at path: $rawUrl',
+        );
         throw AppError(
           message: 'Video file not found at $rawUrl',
           errorCode: 'MEDIA_FILE_NOT_FOUND',
         );
       }
 
-      debugPrint('[CommunityController] Uploading video from local path: $rawUrl, purpose: ${MediaPurpose.post}');
+      debugPrint(
+        '[CommunityController] Uploading video from local path: $rawUrl, purpose: ${MediaPurpose.post}',
+      );
       final bytes = await file.readAsBytes();
       final path = rawUrl.toLowerCase();
       final contentType = path.endsWith('.mov')
@@ -1447,7 +1634,9 @@ class CommunityController extends GetxController {
           ? 'video/webm'
           : 'video/mp4';
       if (!Get.isRegistered<MediaUploadService>()) {
-        debugPrint('[CommunityController] MediaUploadService not registered; aborting video upload');
+        debugPrint(
+          '[CommunityController] MediaUploadService not registered; aborting video upload',
+        );
         throw const AppError(
           message: 'Media upload service is unavailable',
           errorCode: 'MEDIA_SERVICE_UNAVAILABLE',
@@ -1466,7 +1655,9 @@ class CommunityController extends GetxController {
       debugPrint('[CommunityController] Video upload succeeded: ${media.url}');
       return media.url;
     } catch (e) {
-      debugPrint('[CommunityController] Video upload failed for path: $rawUrl. Error: $e');
+      debugPrint(
+        '[CommunityController] Video upload failed for path: $rawUrl. Error: $e',
+      );
       rethrow;
     }
   }
@@ -1678,13 +1869,13 @@ class CommunityController extends GetxController {
       final previousCount = p.likesCount;
 
       final nextState = !previousState;
-      final nextCount = (previousCount + (nextState ? 1 : -1)).clamp(0, 9999999);
+      final nextCount = (previousCount + (nextState ? 1 : -1)).clamp(
+        0,
+        9999999,
+      );
       p.isLiked = nextState;
       p.likesCount = nextCount;
-      posts[idx] = p.copyWith(
-        isLiked: nextState,
-        likesCount: nextCount,
-      );
+      posts[idx] = p.copyWith(isLiked: nextState, likesCount: nextCount);
       posts.refresh();
       postLikers.remove(postId);
 
@@ -2303,7 +2494,10 @@ class CommunityController extends GetxController {
     return false;
   }
 
-  CommentModel _removeCommentFromReplies(CommentModel comment, String targetId) {
+  CommentModel _removeCommentFromReplies(
+    CommentModel comment,
+    String targetId,
+  ) {
     if (comment.replies.isEmpty) return comment;
     final updated = comment.replies
         .where((r) => r.id != targetId)
@@ -2355,7 +2549,9 @@ class CommunityController extends GetxController {
         bool attached = false;
         for (int i = 0; i < activeComments.length; i++) {
           final root = activeComments[i];
-          if (_attachReplyToTree(root, effectiveParentId, comment, (updatedRoot) {
+          if (_attachReplyToTree(root, effectiveParentId, comment, (
+            updatedRoot,
+          ) {
             activeComments[i] = updatedRoot;
           })) {
             attached = true;

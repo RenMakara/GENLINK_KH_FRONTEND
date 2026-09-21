@@ -49,9 +49,7 @@ class SettingsController extends GetxController {
         theme: loaded.theme == UserSettingsEntity.themeSystem
             ? current.theme
             : loaded.theme,
-        language: loaded.language == UserSettingsEntity.languageEnglish
-            ? current.language
-            : loaded.language,
+        language: loaded.language,
       );
 
       settings.value = merged;

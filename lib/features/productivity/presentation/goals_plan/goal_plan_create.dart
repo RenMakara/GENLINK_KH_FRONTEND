@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../design_system/colors/app_colors.dart';
-import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
+import '../widgets/creation_form_components.dart';
+import '../widgets/productivity_illustrations.dart';
 
 class CreateGoalScreen extends StatefulWidget {
   const CreateGoalScreen({super.key});
@@ -17,10 +17,12 @@ class CreateGoalScreen extends StatefulWidget {
 class _CreateGoalScreenState extends State<CreateGoalScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _targetController = TextEditingController();
   ProductivityController? _controller;
   String _goalType = 'PERSONAL';
   DateTime? _deadline;
   bool _saving = false;
+  final List<String> _pendingMilestones = [];
 
   static const _goalTypes = ['PERSONAL', 'CAREER', 'SKILL', 'FINANCE'];
 
@@ -34,13 +36,14 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _targetController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      _showMessage('Please enter a goal title.');
+      _showMessage('goals.create.validationTitle'.tr);
       return;
     }
 
@@ -52,12 +55,32 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
     setState(() => _saving = true);
     try {
-      await controller.createGoal(
+      String? description = _optionalText(_descriptionController.text);
+      final target = _optionalText(_targetController.text);
+      if (target != null) {
+        description = description == null
+            ? 'Target: $target'
+            : '$description\nTarget: $target';
+      }
+
+      final goal = await controller.createGoal(
         title: title,
-        description: _optionalText(_descriptionController.text),
+        description: description,
         goalType: _goalType,
         deadline: _deadline,
       );
+
+      for (final milestone in _pendingMilestones) {
+        try {
+          await controller.addMilestone(
+            goalId: goal.goalId,
+            title: milestone,
+          );
+        } catch (_) {
+          // Continue adding remaining milestones if one fails
+        }
+      }
+
       if (mounted) Get.back(result: true);
     } catch (error) {
       _showMessage(_errorText(error));
@@ -77,6 +100,164 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     if (picked != null) setState(() => _deadline = picked);
   }
 
+  Future<void> _pickTarget() async {
+    final controller = TextEditingController(text: _targetController.text);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final colors = FormThemeColors(ctx);
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'goals.create.target'.tr,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: TextStyle(color: colors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'goals.create.targetHint'.tr,
+              hintStyle: TextStyle(color: colors.textMuted),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: Color(0xFF22C55E),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'common.cancel'.tr,
+                style: TextStyle(color: colors.textSecondary),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.ctaBackground,
+                foregroundColor: colors.ctaForeground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text('common.save'.tr),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() => _targetController.text = result);
+    }
+  }
+
+  Future<void> _showAddMilestoneDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final colors = FormThemeColors(ctx);
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'goals.create.milestoneDialogTitle'.tr,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'goals.create.milestoneNotice'.tr,
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'goals.create.milestoneDialogHint'.tr,
+                  hintStyle: TextStyle(color: colors.textMuted),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF9333EA),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'common.cancel'.tr,
+                style: TextStyle(color: colors.textSecondary),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF9333EA),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text('common.add'.tr),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() => _pendingMilestones.add(result));
+    }
+  }
+
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(
@@ -84,175 +265,233 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String _goalTypeLabel(String type) {
+    switch (type) {
+      case 'PERSONAL':
+        return 'goals.type.personal'.tr;
+      case 'CAREER':
+        return 'goals.type.career'.tr;
+      case 'SKILL':
+        return 'goals.type.skill'.tr;
+      case 'FINANCE':
+        return 'goals.type.finance'.tr;
+      default:
+        return type;
+    }
+  }
+
+  Widget _goalTypeIcon(String type, bool isSelected) {
+    switch (type) {
+      case 'PERSONAL':
+        return Icon(
+          Icons.person_rounded,
+          color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF10B981),
+          size: 26,
+        );
+      case 'CAREER':
+        return Icon(
+          Icons.work_rounded,
+          color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF3B82F6),
+          size: 26,
+        );
+      case 'SKILL':
+        return Icon(
+          Icons.insights_rounded,
+          color: isSelected ? const Color(0xFF16A34A) : const Color(0xFF8B5CF6),
+          size: 26,
+        );
+      case 'FINANCE':
+        return Icon(
+          Icons.monetization_on_rounded,
+          color: isSelected ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+          size: 26,
+        );
+      default:
+        return const Icon(Icons.star_rounded, size: 26);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = _GoalFormColors(context);
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        backgroundColor: colors.surface,
-        foregroundColor: colors.textPrimary,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(Icons.close_rounded),
+    return CreationFormScaffold(
+      header: CreationFormHeader(
+        title: 'goals.create.title'.tr,
+        subtitle: 'goals.create.subtitle'.tr,
+        onSave: _save,
+        isSaving: _saving,
+      ),
+      bottomBar: CreationPrimaryButton(
+        label: 'goals.create.saveGoal'.tr,
+        onPressed: _save,
+        isLoading: _saving,
+      ),
+      children: [
+        // Hero Card (Mint/Green gradient with 3D Goal Mound)
+        CreationHeroCard(
+          illustration: const Soft3DGoalMoundWidget(width: 76, height: 56),
+          quote: 'goals.create.heroQuote'.tr,
+          gradientColors: const [Color(0xFFE6FBF0), Color(0xFFCCFBE0)],
+          quoteColor: const Color(0xFF047857),
+          sparkleColor: const Color(0xFF10B981),
         ),
-        title: const Text('New Goal'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
-            child: FilledButton(
-              onPressed: _saving ? null : _save,
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.textPrimary,
-                foregroundColor: colors.inverseText,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.squircle),
-                ),
-              ),
-              child: _saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save'),
+
+        // Goal Title Field
+        CreationTextField(
+          controller: _titleController,
+          label: 'goals.create.goalTitle'.tr,
+          isRequired: true,
+          hintText: 'goals.create.titleHint'.tr,
+          autofocus: true,
+          textInputAction: TextInputAction.next,
+          accentColor: const Color(0xFF22C55E),
+          leadingIcon: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0F2FE),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.edit_note_rounded,
+              color: Color(0xFF0284C7),
+              size: 20,
             ),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // Description Field
+        CreationTextField(
+          controller: _descriptionController,
+          label: 'goals.create.descriptionOptional'.tr,
+          hintText: 'goals.create.descriptionHint'.tr,
+          maxLines: 3,
+          maxLength: 200,
+          textInputAction: TextInputAction.done,
+          accentColor: const Color(0xFF22C55E),
+          leadingIcon: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.article_outlined,
+              color: Color(0xFF64748B),
+              size: 18,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Goal Type Selector (4 Card options in a row)
+        CreationSectionLabel(label: 'goals.create.type'.tr),
+        Row(
+          children: _goalTypes.map((type) {
+            final isSelected = _goalType == type;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: SelectionOptionCard(
+                  label: _goalTypeLabel(type),
+                  isSelected: isSelected,
+                  accentColor: const Color(0xFF22C55E),
+                  icon: _goalTypeIcon(type, isSelected),
+                  onTap: () => setState(() => _goalType = type),
+                ),
+              ),
+            );
+          }).toList(growable: false),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Target & Deadline (Dual compact cards)
+        CreationSectionLabel(label: 'goals.create.targetAndDeadline'.tr),
+        Row(
           children: [
-            TextField(
-              controller: _titleController,
-              autofocus: true,
-              textInputAction: TextInputAction.next,
-              style: TextStyle(color: colors.textPrimary),
-              decoration: _decoration(
-                colors,
-                hintText: 'What do you want to achieve?',
+            // Target Card
+            Expanded(
+              child: CreationPickerCard(
+                leadingIcon: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3E8FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.adjust_rounded,
+                    color: Color(0xFF9333EA),
+                    size: 20,
+                  ),
+                ),
+                title: 'goals.create.target'.tr,
+                subtitle: _targetController.text.trim().isEmpty
+                    ? 'goals.create.targetHint'.tr
+                    : _targetController.text.trim(),
+                onTap: _pickTarget,
+                showTrailingArrow: false,
+                onClear: _targetController.text.trim().isNotEmpty
+                    ? () => setState(() => _targetController.clear())
+                    : null,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 4,
-              style: TextStyle(color: colors.textPrimary),
-              decoration: _decoration(
-                colors,
-                hintText: 'Describe the outcome (optional)',
+            const SizedBox(width: 10),
+
+            // Deadline Card
+            Expanded(
+              child: CreationPickerCard(
+                leadingIcon: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 19,
+                  ),
+                ),
+                title: 'goals.create.deadline'.tr,
+                subtitle: _deadline == null
+                    ? 'goals.create.noDeadline'.tr
+                    : _formatDate(_deadline!),
+                onTap: _pickDeadline,
+                showTrailingArrow: false,
+                onClear: _deadline != null
+                    ? () => setState(() => _deadline = null)
+                    : null,
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Goal type',
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _goalTypes
-                  .map((value) {
-                    final selected = _goalType == value;
-                    return ChoiceChip(
-                      label: Text(value),
-                      selected: selected,
-                      onSelected: (_) => setState(() => _goalType = value),
-                      selectedColor: AppColors.productivityAccent,
-                      labelStyle: TextStyle(
-                        color: selected ? Colors.white : colors.textSecondary,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    );
-                  })
-                  .toList(growable: false),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-              tileColor: colors.surfaceSecondary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                side: BorderSide(color: colors.border),
-              ),
-              leading: const Icon(
-                Icons.event_available_rounded,
-                color: AppColors.productivityAccent,
-              ),
-              title: Text(
-                _deadline == null ? 'No deadline' : _formatDate(_deadline!),
-                style: TextStyle(color: colors.textPrimary),
-              ),
-              trailing: _deadline == null
-                  ? const Icon(Icons.chevron_right_rounded)
-                  : IconButton(
-                      onPressed: () => setState(() => _deadline = null),
-                      icon: const Icon(Icons.clear_rounded),
-                    ),
-              onTap: _pickDeadline,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Milestones can be added after the goal is created.',
-              style: TextStyle(color: colors.textMuted, fontSize: 12),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Milestones Card
+        CreationMilestonesCard(
+          milestones: _pendingMilestones,
+          onAddMilestone: _showAddMilestoneDialog,
+          onRemoveMilestone: (index) =>
+              setState(() => _pendingMilestones.removeAt(index)),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // Motivation Card
+        CreationMotivationCard(
+          title: 'goals.create.motivationTitle'.tr,
+          subtitle: 'goals.create.motivationSubtitle'.tr,
+          isGreen: true,
+        ),
+      ],
     );
   }
-
-  InputDecoration _decoration(
-    _GoalFormColors colors, {
-    required String hintText,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: colors.textMuted),
-      filled: true,
-      fillColor: colors.surfaceSecondary,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: colors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: colors.border),
-      ),
-    );
-  }
-}
-
-class _GoalFormColors {
-  _GoalFormColors(BuildContext context)
-    : isDark = Theme.of(context).brightness == Brightness.dark;
-
-  final bool isDark;
-
-  Color get background =>
-      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-  Color get surface =>
-      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-  Color get surfaceSecondary =>
-      isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
-  Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-  Color get textSecondary =>
-      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-  Color get textMuted =>
-      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-  Color get inverseText =>
-      isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
-  Color get border =>
-      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
 String? _optionalText(String value) {

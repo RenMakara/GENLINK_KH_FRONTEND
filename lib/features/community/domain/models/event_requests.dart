@@ -150,7 +150,7 @@ class EventRegistrationRequest {
   final String phoneNumber;
   final String university;
   final String faculty;
-  final String studyYear;
+  final String? studyYear;
   final bool termsAccepted;
 
   const EventRegistrationRequest({
@@ -159,7 +159,7 @@ class EventRegistrationRequest {
     required this.phoneNumber,
     required this.university,
     required this.faculty,
-    required this.studyYear,
+    this.studyYear,
     this.termsAccepted = true,
   });
 
@@ -182,8 +182,93 @@ class EventRegistrationRequest {
       phoneNumber: json['phoneNumber'] as String? ?? '',
       university: json['university'] as String? ?? '',
       faculty: json['faculty'] as String? ?? '',
-      studyYear: json['studyYear'] as String? ?? '',
+      studyYear: json['studyYear'] as String?,
       termsAccepted: json['termsAccepted'] as bool? ?? false,
+    );
+  }
+}
+
+/// Stable pagination envelope used by the Event endpoints.
+///
+/// The backend wraps Spring pages with `content`, `page`, `size`,
+/// `totalElements`, `totalPages`, and `hasNext`. Keeping the metadata here
+/// lets the UI request the next page without changing the existing list-based
+/// repository methods used by older callers and test doubles.
+class EventPageModel<T> {
+  final List<T> content;
+  final int page;
+  final int size;
+  final int totalElements;
+  final int totalPages;
+  final bool hasNext;
+
+  const EventPageModel({
+    this.content = const [],
+    this.page = 0,
+    this.size = 0,
+    this.totalElements = 0,
+    this.totalPages = 0,
+    this.hasNext = false,
+  });
+
+  factory EventPageModel.fromJson(
+    dynamic raw,
+    T Function(Map<String, dynamic>) mapper,
+  ) {
+    if (raw is List) {
+      return EventPageModel<T>(
+        content: raw
+            .whereType<Map<String, dynamic>>()
+            .map(mapper)
+            .toList(growable: false),
+      );
+    }
+
+    if (raw is! Map<String, dynamic>) {
+      return EventPageModel<T>();
+    }
+
+    int asInt(dynamic value, [int fallback = 0]) {
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
+
+    final rawContent = raw['content'];
+    final content = rawContent is List
+        ? rawContent
+              .whereType<Map<String, dynamic>>()
+              .map(mapper)
+              .toList(growable: false)
+        : <T>[];
+    final page = asInt(raw['page']);
+    final totalPages = asInt(raw['totalPages']);
+
+    return EventPageModel<T>(
+      content: content,
+      page: page,
+      size: asInt(raw['size']),
+      totalElements: asInt(raw['totalElements']),
+      totalPages: totalPages,
+      hasNext: raw['hasNext'] is bool
+          ? raw['hasNext'] as bool
+          : page + 1 < totalPages,
+    );
+  }
+
+  factory EventPageModel.fromContent(
+    List<T> content, {
+    int page = 0,
+    int size = 0,
+    bool? hasNext,
+  }) {
+    return EventPageModel<T>(
+      content: List<T>.unmodifiable(content),
+      page: page,
+      size: size == 0 ? content.length : size,
+      totalElements: content.length,
+      totalPages: content.isEmpty ? 0 : 1,
+      hasNext: hasNext ?? false,
     );
   }
 }
@@ -265,7 +350,8 @@ class EventAttendeeModel {
     final joinedAtStr = json['joinedAt'] as String?;
     return EventAttendeeModel(
       id: userObj['id']?.toString() ?? userObj['userId']?.toString() ?? '',
-      fullName: userObj['fullName'] as String? ??
+      fullName:
+          userObj['fullName'] as String? ??
           userObj['username'] as String? ??
           'Attendee',
       username: userObj['username'] as String? ?? '',

@@ -284,4 +284,104 @@ void main() {
     expect(controller.focusHistory.single.completed, isTrue);
     expect(controller.focusStats.value?.totalXp, 5);
   });
+
+  test('active focus session is restored into controller state', () async {
+    final active = const ProductivityFocusSession(
+      sessionId: 'session-active',
+      mode: 'POMODORO',
+      durationMinutes: 25,
+      status: 'ACTIVE',
+      focusedSeconds: 120,
+      remainingSeconds: 1380,
+    );
+    when(
+      () => repository.getActiveFocusSession(),
+    ).thenAnswer((_) async => active);
+
+    final result = await controller.loadActiveFocusSession();
+
+    expect(result, active);
+    expect(controller.activeFocusSession.value, active);
+  });
+
+  test(
+    'focus start is locally idempotent and lifecycle actions sync state',
+    () async {
+      final started = const ProductivityFocusSession(
+        sessionId: 'session-1',
+        mode: 'POMODORO',
+        durationMinutes: 25,
+        status: 'ACTIVE',
+      );
+      final paused = const ProductivityFocusSession(
+        sessionId: 'session-1',
+        mode: 'POMODORO',
+        durationMinutes: 25,
+        status: 'PAUSED',
+        focusedSeconds: 60,
+        remainingSeconds: 1440,
+      );
+      final resumed = const ProductivityFocusSession(
+        sessionId: 'session-1',
+        mode: 'POMODORO',
+        durationMinutes: 25,
+        status: 'ACTIVE',
+        focusedSeconds: 60,
+        remainingSeconds: 1440,
+      );
+      final abandoned = const ProductivityFocusSession(
+        sessionId: 'session-1',
+        mode: 'POMODORO',
+        durationMinutes: 25,
+        status: 'ABANDONED',
+      );
+
+      when(
+        () => repository.startFocusSession(
+          mode: 'POMODORO',
+          durationMinutes: 25,
+          ambientSound: null,
+        ),
+      ).thenAnswer((_) async => started);
+      when(
+        () => repository.pauseFocusSession('session-1'),
+      ).thenAnswer((_) async => paused);
+      when(
+        () => repository.resumeFocusSession('session-1'),
+      ).thenAnswer((_) async => resumed);
+      when(
+        () => repository.abandonFocusSession('session-1'),
+      ).thenAnswer((_) async => abandoned);
+
+      expect(
+        await controller.startFocusSession(
+          mode: 'POMODORO',
+          durationMinutes: 25,
+        ),
+        started,
+      );
+      expect(
+        await controller.startFocusSession(
+          mode: 'POMODORO',
+          durationMinutes: 25,
+        ),
+        started,
+      );
+      verify(
+        () => repository.startFocusSession(
+          mode: 'POMODORO',
+          durationMinutes: 25,
+          ambientSound: null,
+        ),
+      ).called(1);
+
+      await controller.pauseFocusSession('session-1');
+      expect(controller.activeFocusSession.value?.isPaused, isTrue);
+      await controller.resumeFocusSession('session-1');
+      expect(controller.activeFocusSession.value?.isActive, isTrue);
+      await controller.abandonFocusSession('session-1');
+      expect(controller.activeFocusSession.value, isNull);
+      expect(controller.focusHistory, isEmpty);
+    },
+  );
 }

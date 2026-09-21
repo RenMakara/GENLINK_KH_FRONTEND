@@ -92,6 +92,26 @@ void main() {
     ]);
   });
 
+  test(
+    'uses backend English instead of treating it as a missing value',
+    () async {
+      controller.settings.value = const UserSettingsEntity(
+        language: UserSettingsEntity.languageKhmer,
+        theme: UserSettingsEntity.themeLight,
+      );
+      when(
+        () => repository.getSettings(),
+      ).thenAnswer((_) async => _initialSettings);
+
+      await controller.load();
+
+      expect(
+        controller.settings.value.language,
+        UserSettingsEntity.languageEnglish,
+      );
+    },
+  );
+
   test('successful theme persistence keeps server response', () async {
     const saved = UserSettingsEntity(
       language: UserSettingsEntity.languageEnglish,

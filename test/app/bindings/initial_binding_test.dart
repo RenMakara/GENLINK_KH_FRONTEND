@@ -8,6 +8,7 @@ import 'package:genlink_frontend/core/storage/secure_storage.dart';
 import 'package:genlink_frontend/core/theme/theme_controller.dart';
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:genlink_frontend/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:genlink_frontend/features/media/domain/media_upload_service.dart';
 import 'package:genlink_frontend/features/media/presentation/media_picker.dart';
 import 'package:genlink_frontend/features/profile/domain/repositories/profile_repository.dart';
@@ -35,6 +36,11 @@ void main() {
     expect(Get.isRegistered<MediaPicker>(), isTrue);
     expect(Get.isRegistered<AuthRepository>(), isTrue);
     expect(Get.isRegistered<AuthController>(), isTrue);
+    expect(
+      Get.isRegistered<ChatController>(),
+      isFalse,
+      reason: 'Chat must not fetch protected data before authentication.',
+    );
   });
 
   test('Settings binding owns a repository independent from Profile', () {

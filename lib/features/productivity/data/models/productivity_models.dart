@@ -127,9 +127,17 @@ abstract final class ProductivityMapper {
       mode: _nullableString(json['mode']),
       durationMinutes: _int(json['durationMinutes']),
       ambientSound: _nullableString(json['ambientSound']),
+      status: _string(
+        json['status'],
+        fallback: json['completed'] == true ? 'COMPLETED' : 'ACTIVE',
+      ),
       completed: _bool(json['completed']),
       xpEarned: _int(json['xpEarned']),
+      focusedSeconds: _int(json['focusedSeconds']),
+      remainingSeconds: _int(json['remainingSeconds']),
       startedAt: _date(json['startedAt']),
+      activeStartedAt: _date(json['activeStartedAt']),
+      pausedAt: _date(json['pausedAt']),
       endedAt: _date(json['endedAt']),
     );
   }

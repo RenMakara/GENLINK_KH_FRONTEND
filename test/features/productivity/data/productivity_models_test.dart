@@ -59,7 +59,9 @@ void main() {
           'sessionId': 'session-1',
           'mode': 'POMODORO',
           'durationMinutes': '25',
+          'status': 'COMPLETED',
           'completed': true,
+          'focusedSeconds': 1500,
         },
       ],
       'page': 0,
@@ -73,6 +75,8 @@ void main() {
     expect(goal.milestones.single.completed, isTrue);
     expect(page.content.single.durationMinutes, 25);
     expect(page.content.single.completed, isTrue);
+    expect(page.content.single.status, 'COMPLETED');
+    expect(page.content.single.focusedSeconds, 1500);
   });
 
   test(

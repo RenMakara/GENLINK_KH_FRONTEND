@@ -5,12 +5,13 @@ import '../../../../core/network/api_endpoints.dart';
 import '../models/api_response_model.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_response_model.dart';
+import '../models/change_password_request_model.dart';
+import '../models/set_password_request_model.dart';
 
 class AuthRemoteDatasource {
   AuthRemoteDatasource(this._dio);
 
   final Dio _dio;
-
 
   Future<AuthResponseModel> login({
     required String email,
@@ -22,7 +23,6 @@ class AuthRemoteDatasource {
     );
     return _parseAuthResponse(response);
   }
-
 
   Future<String> register({
     required String fullName,
@@ -50,7 +50,6 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
-
   Future<AuthResponseModel> googleLogin({required String idToken}) async {
     final response = await _post(
       ApiEndpoints.googleLogin,
@@ -58,7 +57,6 @@ class AuthRemoteDatasource {
     );
     return _parseAuthResponse(response);
   }
-
 
   Future<AuthResponseModel> verifyEmail({
     required String email,
@@ -82,7 +80,6 @@ class AuthRemoteDatasource {
     return _parseAuthResponse(response);
   }
 
-
   Future<String> resendOtp({required String email}) async {
     final response = await _post(
       ApiEndpoints.resendOtp,
@@ -98,7 +95,6 @@ class AuthRemoteDatasource {
     );
     return _parseMessage(response);
   }
-
 
   Future<String> forgotPassword({required String email}) async {
     final response = await _post(
@@ -131,6 +127,27 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
+  Future<bool> setPassword({required String password}) async {
+    final response = await _post(
+      ApiEndpoints.setPassword,
+      data: SetPasswordRequestModel(password: password).toJson(),
+    );
+    return _parsePasswordStatus(response);
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _post(
+      ApiEndpoints.changePassword,
+      data: ChangePasswordRequestModel(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      ).toJson(),
+    );
+    _parseMessage(response);
+  }
 
   Future<AuthResponseModel> refreshToken({required String refreshToken}) async {
     final response = await _post(
@@ -139,7 +156,6 @@ class AuthRemoteDatasource {
     );
     return _parseAuthResponse(response);
   }
-
 
   Future<UserResponseModel> getCurrentUser() async {
     final response = await _get(ApiEndpoints.me);
@@ -155,11 +171,9 @@ class AuthRemoteDatasource {
     return UserResponseModel.fromJson(api.data as Map<String, dynamic>);
   }
 
-
   Future<void> logout() async {
     await _post(ApiEndpoints.logout);
   }
-
 
   Future<Response<dynamic>> _post(String path, {Object? data}) =>
       guardDio(() => _dio.post<dynamic>(path, data: data));
@@ -194,5 +208,20 @@ class AuthRemoteDatasource {
       );
     }
     return api.message ?? '';
+  }
+
+  bool _parsePasswordStatus(Response<dynamic> response) {
+    final body = response.data as Map<String, dynamic>;
+    final api = ApiResponseModel<dynamic>.fromJson(body, null);
+    if (!api.success) {
+      throw AppError(
+        message: api.message ?? 'Request failed',
+        errorCode: api.errorCode ?? 'API_ERROR',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final data = api.data;
+    return data is Map && data['hasPassword'] == true;
   }
 }

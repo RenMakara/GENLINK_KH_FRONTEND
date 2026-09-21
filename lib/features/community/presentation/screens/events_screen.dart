@@ -6,6 +6,7 @@ import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_creation_flow.dart';
 import 'event_details_screen.dart';
+import 'my_events_screen.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -25,7 +26,9 @@ class _EventsScreenState extends State<EventsScreen> {
     super.initState();
     _controller = Get.find<CommunityController>();
     _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+      setState(
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      );
     });
   }
 
@@ -40,10 +43,16 @@ class _EventsScreenState extends State<EventsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? Colors.black : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFFA6A6A6) : const Color(0xFF666666);
-    final textMuted = isDark ? const Color(0xFF666666) : const Color(0xFF999999);
+    final textSecondary = isDark
+        ? const Color(0xFFA6A6A6)
+        : const Color(0xFF666666);
+    final textMuted = isDark
+        ? const Color(0xFF666666)
+        : const Color(0xFF999999);
     final cardBg = isDark ? const Color(0xFF181818) : const Color(0xFFF7F7F7);
-    final borderSubtle = isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0);
+    final borderSubtle = isDark
+        ? const Color(0xFF303030)
+        : const Color(0xFFE0E0E0);
     final inputBg = isDark ? const Color(0xFF181818) : const Color(0xFFF2F2F2);
 
     return Scaffold(
@@ -60,27 +69,44 @@ class _EventsScreenState extends State<EventsScreen> {
                       controller: _searchController,
                       style: TextStyle(color: textPrimary, fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'community.searchEvents'.tr.isNotEmpty &&
-                                'community.searchEvents'.tr != 'community.searchEvents'
+                        hintText:
+                            'community.searchEvents'.tr.isNotEmpty &&
+                                'community.searchEvents'.tr !=
+                                    'community.searchEvents'
                             ? 'community.searchEvents'.tr
                             : 'Search events...',
                         hintStyle: TextStyle(color: textMuted, fontSize: 15),
-                        prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: textMuted,
+                          size: 20,
+                        ),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear_rounded, color: textMuted, size: 18),
+                                icon: Icon(
+                                  Icons.clear_rounded,
+                                  color: textMuted,
+                                  size: 18,
+                                ),
                                 onPressed: () => _searchController.clear(),
                               )
                             : null,
                         filled: true,
                         fillColor: inputBg,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
                       ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'community.myEvents'.tr,
+                    onPressed: () => Get.to(() => const MyEventsScreen()),
+                    icon: Icon(Icons.event_note_outlined, color: textPrimary),
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
@@ -157,11 +183,13 @@ class _EventsScreenState extends State<EventsScreen> {
                           Text(
                             _controller.eventsErrorMessage.value.isNotEmpty
                                 ? _controller.eventsErrorMessage.value
-                                : ('community.unableToLoadEvents'.tr.isNotEmpty &&
-                                        'community.unableToLoadEvents'.tr !=
-                                            'community.unableToLoadEvents'
-                                    ? 'community.unableToLoadEvents'.tr
-                                    : 'Unable to load events'),
+                                : ('community.unableToLoadEvents'
+                                              .tr
+                                              .isNotEmpty &&
+                                          'community.unableToLoadEvents'.tr !=
+                                              'community.unableToLoadEvents'
+                                      ? 'community.unableToLoadEvents'.tr
+                                      : 'Unable to load events'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: textPrimary,
@@ -173,10 +201,12 @@ class _EventsScreenState extends State<EventsScreen> {
                           ElevatedButton(
                             onPressed: () => _controller.fetchEvents(),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  isDark ? Colors.white : Colors.black87,
-                              foregroundColor:
-                                  isDark ? Colors.black87 : Colors.white,
+                              backgroundColor: isDark
+                                  ? Colors.white
+                                  : Colors.black87,
+                              foregroundColor: isDark
+                                  ? Colors.black87
+                                  : Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -191,7 +221,9 @@ class _EventsScreenState extends State<EventsScreen> {
                                           'community.tryAgain'
                                   ? 'community.tryAgain'.tr
                                   : 'Retry',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -204,11 +236,15 @@ class _EventsScreenState extends State<EventsScreen> {
                 final filtered = _searchQuery.isEmpty
                     ? allEvents
                     : allEvents
-                        .where((e) =>
-                            e.title.toLowerCase().contains(_searchQuery) ||
-                            e.location.toLowerCase().contains(_searchQuery) ||
-                            e.category.toLowerCase().contains(_searchQuery))
-                        .toList();
+                          .where(
+                            (e) =>
+                                e.title.toLowerCase().contains(_searchQuery) ||
+                                e.location.toLowerCase().contains(
+                                  _searchQuery,
+                                ) ||
+                                e.category.toLowerCase().contains(_searchQuery),
+                          )
+                          .toList();
 
                 if (filtered.isEmpty) {
                   return RefreshIndicator(
@@ -236,11 +272,14 @@ class _EventsScreenState extends State<EventsScreen> {
                                   const SizedBox(height: 14),
                                   Text(
                                     _searchQuery.isEmpty
-                                        ? ('community.noUpcomingEvents'.tr.isNotEmpty &&
-                                                'community.noUpcomingEvents'.tr !=
-                                                    'community.noUpcomingEvents'
-                                            ? 'community.noUpcomingEvents'.tr
-                                            : 'No upcoming events')
+                                        ? ('community.noUpcomingEvents'
+                                                      .tr
+                                                      .isNotEmpty &&
+                                                  'community.noUpcomingEvents'
+                                                          .tr !=
+                                                      'community.noUpcomingEvents'
+                                              ? 'community.noUpcomingEvents'.tr
+                                              : 'No upcoming events')
                                         : 'No events match your search.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
@@ -252,8 +291,11 @@ class _EventsScreenState extends State<EventsScreen> {
                                   if (_searchQuery.isEmpty) ...[
                                     const SizedBox(height: 6),
                                     Text(
-                                      'community.newEventsAppearHere'.tr.isNotEmpty &&
-                                              'community.newEventsAppearHere'.tr !=
+                                      'community.newEventsAppearHere'
+                                                  .tr
+                                                  .isNotEmpty &&
+                                              'community.newEventsAppearHere'
+                                                      .tr !=
                                                   'community.newEventsAppearHere'
                                           ? 'community.newEventsAppearHere'.tr
                                           : 'New events will appear here.',
@@ -277,27 +319,53 @@ class _EventsScreenState extends State<EventsScreen> {
                 return RefreshIndicator(
                   onRefresh: () => _controller.refreshEvents(),
                   color: AppColors.communityAccent,
-                  child: ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                    itemCount: filtered.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      return _EventCard(
-                        event: filtered[index],
-                        controller: _controller,
-                        index: index,
-                        isDark: isDark,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        textMuted: textMuted,
-                        cardBg: cardBg,
-                        borderSubtle: borderSubtle,
-                      );
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification.metrics.extentAfter < 300) {
+                        _controller.loadMoreEvents();
+                      }
+                      return false;
                     },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      itemCount:
+                          filtered.length +
+                          (_controller.hasMoreEvents.value ? 1 : 0),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        if (index == filtered.length) {
+                          return Center(
+                            child: _controller.isLoadingMoreEvents.value
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox(height: 12),
+                          );
+                        }
+                        return _EventCard(
+                          event: filtered[index],
+                          controller: _controller,
+                          index: index,
+                          isDark: isDark,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          textMuted: textMuted,
+                          cardBg: cardBg,
+                          borderSubtle: borderSubtle,
+                        );
+                      },
+                    ),
                   ),
                 );
               }),
@@ -335,11 +403,13 @@ class _EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOnline = event.eventType.toLowerCase().contains('online');
-    final String onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
+    final String onlineLabel =
+        'community.onlineEvent'.tr.isNotEmpty &&
             'community.onlineEvent'.tr != 'community.onlineEvent'
         ? 'community.onlineEvent'.tr
         : 'Online Event';
-    final String inPersonLabel = 'community.inPerson'.tr.isNotEmpty &&
+    final String inPersonLabel =
+        'community.inPerson'.tr.isNotEmpty &&
             'community.inPerson'.tr != 'community.inPerson'
         ? 'community.inPerson'.tr
         : 'In Person';
@@ -348,8 +418,10 @@ class _EventCard extends StatelessWidget {
         : '📍 ${event.effectiveLocationName.isNotEmpty ? event.effectiveLocationName : (event.location.isNotEmpty ? event.location : inPersonLabel)}';
 
     String dateDisplay = '';
-    if (event.formattedDateRange.isNotEmpty && event.formattedTimeRange.isNotEmpty) {
-      dateDisplay = '📅 ${event.formattedDateRange} · ${event.formattedTimeRange}';
+    if (event.formattedDateRange.isNotEmpty &&
+        event.formattedTimeRange.isNotEmpty) {
+      dateDisplay =
+          '📅 ${event.formattedDateRange} · ${event.formattedTimeRange}';
     } else if (event.formattedDateRange.isNotEmpty) {
       dateDisplay = '📅 ${event.formattedDateRange}';
     } else if (event.timeString.isNotEmpty && event.dateString.isNotEmpty) {
@@ -438,13 +510,17 @@ class _EventCard extends StatelessWidget {
                                 Icon(
                                   _getCategoryIconData(event.category),
                                   size: 11,
-                                  color: isDark ? Colors.white70 : textSecondary,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : textSecondary,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   categoryDisplay,
                                   style: TextStyle(
-                                    color: isDark ? Colors.white70 : textSecondary,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : textSecondary,
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.2,
@@ -461,8 +537,9 @@ class _EventCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.communityAccent
-                                    .withValues(alpha: 0.15),
+                                color: AppColors.communityAccent.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -498,7 +575,9 @@ class _EventCard extends StatelessWidget {
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
                                     color: event.isBookmarked
-                                        ? (isDark ? Colors.white : Colors.black87)
+                                        ? (isDark
+                                              ? Colors.white
+                                              : Colors.black87)
                                         : textMuted,
                                     size: 19,
                                   ),

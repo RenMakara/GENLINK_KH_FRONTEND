@@ -15,6 +15,8 @@ class ProductivityController extends GetxController {
   final goals = <ProductivityGoal>[].obs;
   final focusStats = Rxn<ProductivityFocusStats>();
   final focusHistory = <ProductivityFocusSession>[].obs;
+  final activeFocusSession = Rxn<ProductivityFocusSession>();
+  final isFocusActionLoading = false.obs;
   final motivations = <ProductivityMotivation>[].obs;
   final savedMotivations = <ProductivityMotivation>[].obs;
 
@@ -110,10 +112,23 @@ class ProductivityController extends GetxController {
     isFocusHistoryLoading.value = true;
     try {
       final page = await repository.getFocusHistory();
-      focusHistory.assignAll(page.content);
+      focusHistory.assignAll(
+        page.content.where((session) => session.isCompleted),
+      );
     } finally {
       isFocusHistoryLoading.value = false;
     }
+  }
+
+  Future<ProductivityFocusSession?> loadActiveFocusSession() async {
+    final session = await repository.getActiveFocusSession();
+    if (session == null || session.isCompleted || session.isAbandoned) {
+      activeFocusSession.value = null;
+      if (session?.isCompleted == true) _upsertFocusHistory(session!);
+      return session;
+    }
+    activeFocusSession.value = session;
+    return session;
   }
 
   Future<void> loadMotivation({String? category}) async {
@@ -360,27 +375,71 @@ class ProductivityController extends GetxController {
     required String mode,
     required int durationMinutes,
     String? ambientSound,
-  }) {
-    return repository.startFocusSession(
-      mode: mode,
-      durationMinutes: durationMinutes,
-      ambientSound: ambientSound,
+  }) async {
+    final existing = activeFocusSession.value;
+    if (existing != null) return existing;
+    const busyId = 'focus:start';
+    if (!_beginBusy(busyId)) {
+      throw StateError('A focus session is already starting.');
+    }
+    isFocusActionLoading.value = true;
+    try {
+      final session = await repository.startFocusSession(
+        mode: mode,
+        durationMinutes: durationMinutes,
+        ambientSound: ambientSound,
+      );
+      if (session.isCompleted) {
+        activeFocusSession.value = null;
+        _upsertFocusHistory(session);
+      } else {
+        activeFocusSession.value = session;
+      }
+      return session;
+    } finally {
+      isFocusActionLoading.value = false;
+      _endBusy(busyId);
+    }
+  }
+
+  Future<ProductivityFocusSession> pauseFocusSession(String sessionId) async {
+    final session = await _runFocusAction(
+      'focus:pause:$sessionId',
+      () => repository.pauseFocusSession(sessionId),
     );
+    activeFocusSession.value = session;
+    return session;
+  }
+
+  Future<ProductivityFocusSession> resumeFocusSession(String sessionId) async {
+    final session = await _runFocusAction(
+      'focus:resume:$sessionId',
+      () => repository.resumeFocusSession(sessionId),
+    );
+    activeFocusSession.value = session;
+    return session;
   }
 
   Future<ProductivityFocusSession> completeFocusSession(
     String sessionId,
   ) async {
-    final session = await repository.completeFocusSession(sessionId);
-    final index = focusHistory.indexWhere(
-      (item) => item.sessionId == sessionId,
+    final session = await _runFocusAction(
+      'focus:complete:$sessionId',
+      () => repository.completeFocusSession(sessionId),
     );
-    if (index == -1) {
-      focusHistory.insert(0, session);
-    } else {
-      focusHistory[index] = session;
-    }
+    activeFocusSession.value = null;
+    _upsertFocusHistory(session);
     await refreshFocusStats();
+    return session;
+  }
+
+  Future<ProductivityFocusSession> abandonFocusSession(String sessionId) async {
+    final session = await _runFocusAction(
+      'focus:leave:$sessionId',
+      () => repository.abandonFocusSession(sessionId),
+    );
+    activeFocusSession.value = null;
+    if (session.isCompleted) _upsertFocusHistory(session);
     return session;
   }
 
@@ -403,6 +462,8 @@ class ProductivityController extends GetxController {
     goals.clear();
     focusStats.value = null;
     focusHistory.clear();
+    activeFocusSession.value = null;
+    isFocusActionLoading.value = false;
     motivations.clear();
     savedMotivations.clear();
     errorMessage.value = null;
@@ -418,6 +479,34 @@ class ProductivityController extends GetxController {
 
   void _endBusy(String id) {
     busyIds.remove(id);
+  }
+
+  Future<ProductivityFocusSession> _runFocusAction(
+    String busyId,
+    Future<ProductivityFocusSession> Function() action,
+  ) async {
+    if (!_beginBusy(busyId)) {
+      throw StateError('This focus action is already in progress.');
+    }
+    isFocusActionLoading.value = true;
+    try {
+      return await action();
+    } finally {
+      isFocusActionLoading.value = false;
+      _endBusy(busyId);
+    }
+  }
+
+  void _upsertFocusHistory(ProductivityFocusSession session) {
+    if (!session.isCompleted) return;
+    final index = focusHistory.indexWhere(
+      (item) => item.sessionId == session.sessionId,
+    );
+    if (index == -1) {
+      focusHistory.insert(0, session);
+    } else {
+      focusHistory[index] = session;
+    }
   }
 
   void _replaceHabit(ProductivityHabit habit) {

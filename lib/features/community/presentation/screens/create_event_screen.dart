@@ -33,7 +33,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _attendeeLimitController = TextEditingController();
+  final TextEditingController _attendeeLimitController =
+      TextEditingController();
 
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _descFocus = FocusNode();
@@ -65,6 +66,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   // Pricing
   bool _isPaid = false;
   String _selectedCurrency = 'USD'; // Backend Currency: 'USD' or 'KHR'
+  String _selectedStatus = 'PUBLISHED';
+
+  static const List<String> _eventStatuses = [
+    'DRAFT',
+    'PUBLISHED',
+    'CANCELLED',
+    'COMPLETED',
+  ];
 
   // Errors
   String? _titleError;
@@ -109,11 +118,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         );
       }
       if (edit.isOnline) {
-        _linkController.text = edit.meetingUrl ?? edit.onlineLink;
+        // The backend's protected field is the only source of truth for an
+        // existing meeting URL. Legacy `onlineLink` values must not be
+        // reintroduced into an edit request or displayed as a join link.
+        _linkController.text = edit.meetingUrl ?? '';
       } else {
         _locationController.text = edit.locationName ?? edit.location;
       }
       _isPaid = edit.isPaid;
+      _selectedStatus = _eventStatuses.contains(edit.normalizedStatus)
+          ? edit.normalizedStatus
+          : 'PUBLISHED';
       if (edit.currency != null && edit.currency!.isNotEmpty) {
         _selectedCurrency = edit.currency!;
       }
@@ -191,8 +206,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   String _formatDate(DateTime? dt) {
     if (dt == null) return '';
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final dayName = days[dt.weekday - 1];
@@ -216,7 +241,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _onBackPress() {
-    final hasContent = _titleController.text.trim().isNotEmpty ||
+    final hasContent =
+        _titleController.text.trim().isNotEmpty ||
         _descController.text.trim().isNotEmpty ||
         _locationController.text.trim().isNotEmpty ||
         _linkController.text.trim().isNotEmpty ||
@@ -228,7 +254,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       final dialogBg = isDark ? const Color(0xFF1E1E22) : Colors.white;
       final titleColor = isDark ? Colors.white : AppColors.lightTextPrimary;
-      final contentColor = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+      final contentColor = isDark
+          ? Colors.white70
+          : AppColors.lightTextSecondary;
 
       showDialog(
         context: context,
@@ -237,8 +265,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: isDark
-                ? BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 0.8)
-                : BorderSide(color: Colors.black.withValues(alpha: 0.08), width: 0.8),
+                ? BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 0.8,
+                  )
+                : BorderSide(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    width: 0.8,
+                  ),
           ),
           title: Text(
             'community.discardDraft'.tr.isNotEmpty &&
@@ -258,7 +292,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 : 'You have unsaved changes. Are you sure you want to discard this event?',
             style: TextStyle(color: contentColor, fontSize: 14, height: 1.4),
           ),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -282,9 +319,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFEF4444),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
               child: Text(
                 'community.discard'.tr.isNotEmpty &&
@@ -331,7 +373,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _pickDate() async {
-    final initialDate = _startDate ?? DateTime.now().add(const Duration(days: 1));
+    final initialDate =
+        _startDate ?? DateTime.now().add(const Duration(days: 1));
     final pickedDate = await _showGenLinkDatePicker(
       context,
       initialDate: initialDate,
@@ -371,7 +414,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final picked = await _showGenLinkDatePicker(
       context,
       initialDate: initial,
-      title: 'community.selectDate'.tr.isNotEmpty &&
+      title:
+          'community.selectDate'.tr.isNotEmpty &&
               'community.selectDate'.tr != 'community.selectDate'
           ? 'community.selectDate'.tr
           : 'Select date',
@@ -393,7 +437,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final picked = await _showGenLinkTimePicker(
       context,
       initialTime: initial,
-      title: 'community.selectTime'.tr.isNotEmpty &&
+      title:
+          'community.selectTime'.tr.isNotEmpty &&
               'community.selectTime'.tr != 'community.selectTime'
           ? 'community.selectTime'.tr
           : 'Select time',
@@ -411,7 +456,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _pickEndDate() async {
-    final initial = _endDate ?? _startDate ?? DateTime.now().add(const Duration(days: 1));
+    final initial =
+        _endDate ?? _startDate ?? DateTime.now().add(const Duration(days: 1));
     final picked = await _showGenLinkDatePicker(
       context,
       initialDate: initial,
@@ -426,9 +472,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _pickEndTime() async {
-    final initial = _endTime ??
+    final initial =
+        _endTime ??
         (_startTime != null
-            ? TimeOfDay(hour: (_startTime!.hour + 2) % 24, minute: _startTime!.minute)
+            ? TimeOfDay(
+                hour: (_startTime!.hour + 2) % 24,
+                minute: _startTime!.minute,
+              )
             : const TimeOfDay(hour: 11, minute: 0));
     final picked = await _showGenLinkTimePicker(
       context,
@@ -444,7 +494,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _validateStartEndTime() {
-    if (_startDate == null || _startTime == null || _endDate == null || _endTime == null) {
+    if (_startDate == null ||
+        _startTime == null ||
+        _endDate == null ||
+        _endTime == null) {
       _timeError = null;
       return;
     }
@@ -457,13 +510,81 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
+  String _statusLabel(String value) {
+    switch (value) {
+      case 'DRAFT':
+        return 'community.eventDraft'.tr;
+      case 'PUBLISHED':
+        return 'community.published'.tr;
+      case 'CANCELLED':
+        return 'community.eventCancelled'.tr;
+      case 'COMPLETED':
+        return 'community.eventCompleted'.tr;
+      default:
+        return value;
+    }
+  }
+
+  void _showStatusBottomSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF161618) : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final tileActive = isDark
+        ? const Color(0xFF222226)
+        : const Color(0xFFF3F4F6);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text(
+              'community.eventStatus'.tr,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final status in _eventStatuses)
+              ListTile(
+                title: Text(
+                  _statusLabel(status),
+                  style: TextStyle(color: textPrimary),
+                ),
+                selected: status == _selectedStatus,
+                selectedTileColor: tileActive,
+                trailing: status == _selectedStatus
+                    ? Icon(Icons.check_rounded, color: textPrimary)
+                    : null,
+                onTap: () {
+                  setState(() => _selectedStatus = status);
+                  Navigator.pop(ctx);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCategoryBottomSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF161618) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary = isDark ? Colors.white70 : Colors.black54;
     final border = isDark ? const Color(0xFF2E2E32) : const Color(0xFFE5E7EB);
-    final tileActive = isDark ? const Color(0xFF222226) : const Color(0xFFF3F4F6);
+    final tileActive = isDark
+        ? const Color(0xFF222226)
+        : const Color(0xFFF3F4F6);
 
     showModalBottomSheet(
       context: context,
@@ -492,7 +613,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -528,7 +652,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         Navigator.pop(ctx);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
+                        ),
                         color: isSelected ? tileActive : Colors.transparent,
                         child: Row(
                           children: [
@@ -544,7 +671,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 style: TextStyle(
                                   color: textPrimary,
                                   fontSize: 15,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ),
@@ -657,8 +786,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
 
     final startDateTime = _calculatedStartDateTime!;
-    final endDateTime = _calculatedEndDateTime ??
-        startDateTime.add(const Duration(hours: 2));
+    final endDateTime =
+        _calculatedEndDateTime ?? startDateTime.add(const Duration(hours: 2));
 
     if (!endDateTime.isAfter(startDateTime)) {
       setState(() => _timeError = 'End time must be after start time');
@@ -689,7 +818,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       if (uri == null ||
           (!uri.isScheme('http') && !uri.isScheme('https')) ||
           uri.host.isEmpty) {
-        setState(() => _linkError = 'Meeting URL must start with http:// or https://');
+        setState(
+          () => _linkError = 'Meeting URL must start with http:// or https://',
+        );
         AppNotificationBanner.showDanger(
           context: context,
           title: 'Validation Error',
@@ -760,7 +891,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         paid: _isPaid,
         price: _isPaid ? parsedPrice : null,
         currency: _isPaid ? _selectedCurrency : null,
-        status: 'PUBLISHED',
+        status: _selectedStatus,
       );
 
       final controller = Get.isRegistered<CommunityController>()
@@ -789,22 +920,24 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         context: context,
         title: isEditing
             ? ('community.eventUpdated'.tr.isNotEmpty &&
-                    'community.eventUpdated'.tr != 'community.eventUpdated'
-                ? 'community.eventUpdated'.tr
-                : 'Event Updated')
+                      'community.eventUpdated'.tr != 'community.eventUpdated'
+                  ? 'community.eventUpdated'.tr
+                  : 'Event Updated')
             : ('community.eventCreated'.tr.isNotEmpty &&
-                    'community.eventCreated'.tr != 'community.eventCreated'
-                ? 'community.eventCreated'.tr
-                : 'Event Created'),
+                      'community.eventCreated'.tr != 'community.eventCreated'
+                  ? 'community.eventCreated'.tr
+                  : 'Event Created'),
         message: isEditing
             ? ('community.eventUpdatedMsg'.tr.isNotEmpty &&
-                    'community.eventUpdatedMsg'.tr != 'community.eventUpdatedMsg'
-                ? 'community.eventUpdatedMsg'.tr
-                : 'Your event has been updated successfully.')
+                      'community.eventUpdatedMsg'.tr !=
+                          'community.eventUpdatedMsg'
+                  ? 'community.eventUpdatedMsg'.tr
+                  : 'Your event has been updated successfully.')
             : ('community.eventCreatedMsg'.tr.isNotEmpty &&
-                    'community.eventCreatedMsg'.tr != 'community.eventCreatedMsg'
-                ? 'community.eventCreatedMsg'.tr
-                : 'Your event has been published successfully.'),
+                      'community.eventCreatedMsg'.tr !=
+                          'community.eventCreatedMsg'
+                  ? 'community.eventCreatedMsg'.tr
+                  : 'Your event has been published successfully.'),
       );
 
       if (widget.returnCreatedEvent || isEditing) {
@@ -819,8 +952,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       final errorMsg = e is AppError
           ? e.message
           : (isEditing
-              ? 'Failed to update event. Please check your connection and try again.'
-              : 'Failed to create event. Please check your connection and try again.');
+                ? 'Failed to update event. Please check your connection and try again.'
+                : 'Failed to create event. Please check your connection and try again.');
 
       AppNotificationBanner.showDanger(
         context: context,
@@ -836,9 +969,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     final bg = isDark ? const Color(0xFF0F0F11) : Colors.white;
     final surface = isDark ? const Color(0xFF161619) : const Color(0xFFF9FAFB);
-    final cardBorder = isDark ? const Color(0xFF26262B) : const Color(0xFFE5E7EB);
+    final cardBorder = isDark
+        ? const Color(0xFF26262B)
+        : const Color(0xFFE5E7EB);
     final textPrimary = isDark ? Colors.white : const Color(0xFF111827);
-    final textMuted = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    final textMuted = isDark
+        ? const Color(0xFF9CA3AF)
+        : const Color(0xFF6B7280);
     final primaryBtnBg = isDark ? Colors.white : Colors.black;
     final primaryBtnFg = isDark ? Colors.black : Colors.white;
 
@@ -863,13 +1000,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           title: Text(
             widget.eventToEdit != null
                 ? ('community.editEvent'.tr.isNotEmpty &&
-                        'community.editEvent'.tr != 'community.editEvent'
-                    ? 'community.editEvent'.tr
-                    : 'Edit Event')
+                          'community.editEvent'.tr != 'community.editEvent'
+                      ? 'community.editEvent'.tr
+                      : 'Edit Event')
                 : ('community.createEvent'.tr.isNotEmpty &&
-                        'community.createEvent'.tr != 'community.createEvent'
-                    ? 'community.createEvent'.tr
-                    : 'Create Event'),
+                          'community.createEvent'.tr != 'community.createEvent'
+                      ? 'community.createEvent'.tr
+                      : 'Create Event'),
             style: TextStyle(
               color: textPrimary,
               fontSize: 17,
@@ -892,10 +1029,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBtnBg,
                   foregroundColor: primaryBtnFg,
-                  disabledBackgroundColor:
-                      isDark ? const Color(0xFF2A2A2E) : const Color(0xFFE5E7EB),
-                  disabledForegroundColor:
-                      isDark ? Colors.white30 : Colors.black38,
+                  disabledBackgroundColor: isDark
+                      ? const Color(0xFF2A2A2E)
+                      : const Color(0xFFE5E7EB),
+                  disabledForegroundColor: isDark
+                      ? Colors.white30
+                      : Colors.black38,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -931,20 +1070,33 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── 1. COVER IMAGE ───────────────────────────────────────────
-                _buildSectionHeader('community.coverImage'.tr.isNotEmpty &&
-                        'community.coverImage'.tr != 'community.coverImage'
-                    ? 'community.coverImage'.tr
-                    : 'EVENT COVER PHOTO', textMuted),
+                _buildSectionHeader(
+                  'community.coverImage'.tr.isNotEmpty &&
+                          'community.coverImage'.tr != 'community.coverImage'
+                      ? 'community.coverImage'.tr
+                      : 'EVENT COVER PHOTO',
+                  textMuted,
+                ),
                 const SizedBox(height: 8),
-                _buildCoverImageSection(isDark, surface, cardBorder, textPrimary, textMuted),
+                _buildCoverImageSection(
+                  isDark,
+                  surface,
+                  cardBorder,
+                  textPrimary,
+                  textMuted,
+                ),
 
                 const SizedBox(height: 24),
 
                 // ── 2. GENERAL INFO ──────────────────────────────────────────
-                _buildSectionHeader('community.eventDetails'.tr.isNotEmpty &&
-                        'community.eventDetails'.tr != 'community.eventDetails'
-                    ? 'community.eventDetails'.tr
-                    : 'EVENT DETAILS', textMuted),
+                _buildSectionHeader(
+                  'community.eventDetails'.tr.isNotEmpty &&
+                          'community.eventDetails'.tr !=
+                              'community.eventDetails'
+                      ? 'community.eventDetails'.tr
+                      : 'EVENT DETAILS',
+                  textMuted,
+                ),
                 const SizedBox(height: 12),
 
                 // Title
@@ -963,7 +1115,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     surface: surface,
                     border: cardBorder,
                     textMuted: textMuted,
-                    prefixIcon: Icon(Icons.title_rounded, color: textMuted, size: 20),
+                    prefixIcon: Icon(
+                      Icons.title_rounded,
+                      color: textMuted,
+                      size: 20,
+                    ),
                   ),
                   textInputAction: TextInputAction.next,
                 ),
@@ -971,10 +1127,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 const SizedBox(height: 16),
 
                 // Description
-                _buildFieldLabel('community.eventDescription'.tr.isNotEmpty &&
-                        'community.eventDescription'.tr != 'community.eventDescription'
-                    ? 'community.eventDescription'.tr
-                    : 'Description', textPrimary),
+                _buildFieldLabel(
+                  'community.eventDescription'.tr.isNotEmpty &&
+                          'community.eventDescription'.tr !=
+                              'community.eventDescription'
+                      ? 'community.eventDescription'.tr
+                      : 'Description',
+                  textPrimary,
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _descController,
@@ -982,7 +1142,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   minLines: 3,
                   maxLines: 6,
                   maxLength: 5000,
-                  style: TextStyle(color: textPrimary, fontSize: 15, height: 1.4),
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
                   decoration: _inputDecoration(
                     hintText: 'Tell people about your event',
                     isDark: isDark,
@@ -996,16 +1160,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 const SizedBox(height: 16),
 
                 // Category Selector
-                _buildFieldLabel('community.category'.tr.isNotEmpty &&
-                        'community.category'.tr != 'community.category'
-                    ? 'community.category'.tr
-                    : 'Category', textPrimary),
+                _buildFieldLabel(
+                  'community.category'.tr.isNotEmpty &&
+                          'community.category'.tr != 'community.category'
+                      ? 'community.category'.tr
+                      : 'Category',
+                  textPrimary,
+                ),
                 const SizedBox(height: 6),
                 InkWell(
                   onTap: _showCategoryBottomSheet,
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 13,
+                    ),
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(12),
@@ -1031,11 +1201,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 child: Text(
                                   _selectedCategory != null
                                       ? _getCategoryLabel(_selectedCategory!)
-                                      : ('community.selectCategory'.tr.isNotEmpty &&
-                                              'community.selectCategory'.tr !=
-                                                  'community.selectCategory'
-                                          ? 'community.selectCategory'.tr
-                                          : 'Select Category'),
+                                      : ('community.selectCategory'
+                                                    .tr
+                                                    .isNotEmpty &&
+                                                'community.selectCategory'.tr !=
+                                                    'community.selectCategory'
+                                            ? 'community.selectCategory'.tr
+                                            : 'Select Category'),
                                   style: TextStyle(
                                     color: _selectedCategory != null
                                         ? textPrimary
@@ -1049,6 +1221,43 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        Icon(Icons.keyboard_arrow_down, color: textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildFieldLabel('community.eventStatus'.tr, textPrimary),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: _showStatusBottomSheet,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 13,
+                    ),
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.flag_outlined, color: textMuted, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _statusLabel(_selectedStatus),
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         Icon(Icons.keyboard_arrow_down, color: textMuted),
@@ -1072,7 +1281,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       ),
                       style: TextStyle(color: textPrimary, fontSize: 15),
                       decoration: _inputDecoration(
-                        hintText: 'community.selectDateAndTime'.tr.isNotEmpty &&
+                        hintText:
+                            'community.selectDateAndTime'.tr.isNotEmpty &&
                                 'community.selectDateAndTime'.tr !=
                                     'community.selectDateAndTime'
                             ? 'community.selectDateAndTime'.tr
@@ -1082,7 +1292,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         surface: surface,
                         border: cardBorder,
                         textMuted: textMuted,
-                        prefixIcon: Icon(Icons.calendar_today_outlined, color: textMuted, size: 18),
+                        prefixIcon: Icon(
+                          Icons.calendar_today_outlined,
+                          color: textMuted,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -1090,37 +1304,51 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
                 if (_startDate != null) ...[
                   const SizedBox(height: 10),
-                  _buildScheduleChips(isDark, surface, cardBorder, textPrimary, textMuted),
+                  _buildScheduleChips(
+                    isDark,
+                    surface,
+                    cardBorder,
+                    textPrimary,
+                    textMuted,
+                  ),
                 ],
 
                 if (_timeError != null) ...[
                   const SizedBox(height: 6),
                   Text(
                     _timeError!,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
 
                 const SizedBox(height: 24),
 
                 // ── 4. EVENT TYPE ───────────────────────────────────────
-                _buildSectionHeader('community.eventType'.tr.isNotEmpty &&
-                        'community.eventType'.tr != 'community.eventType'
-                    ? 'community.eventType'.tr
-                    : 'EVENT TYPE', textMuted),
+                _buildSectionHeader(
+                  'community.eventType'.tr.isNotEmpty &&
+                          'community.eventType'.tr != 'community.eventType'
+                      ? 'community.eventType'.tr
+                      : 'EVENT TYPE',
+                  textMuted,
+                ),
                 const SizedBox(height: 12),
 
-                _buildSegmentedEventType(isDark, surface, cardBorder, textPrimary, textMuted),
+                _buildSegmentedEventType(
+                  isDark,
+                  surface,
+                  cardBorder,
+                  textPrimary,
+                  textMuted,
+                ),
 
                 const SizedBox(height: 16),
 
                 // Location / Meeting URL depending on Event Type
                 if (_eventType == 'In person') ...[
-                  Row(
-                    children: [
-                      _buildFieldLabel('Location*', textPrimary),
-                    ],
-                  ),
+                  Row(children: [_buildFieldLabel('Location*', textPrimary)]),
                   const SizedBox(height: 6),
                   TextField(
                     controller: _locationController,
@@ -1134,14 +1362,19 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       surface: surface,
                       border: cardBorder,
                       textMuted: textMuted,
-                      prefixIcon: Icon(Icons.location_on_outlined, color: textMuted, size: 20),
+                      prefixIcon: Icon(
+                        Icons.location_on_outlined,
+                        color: textMuted,
+                        size: 20,
+                      ),
                     ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 5),
                   Text(
                     'community.locationHelper'.tr.isNotEmpty &&
-                            'community.locationHelper'.tr != 'community.locationHelper'
+                            'community.locationHelper'.tr !=
+                                'community.locationHelper'
                         ? 'community.locationHelper'.tr
                         : 'Specify venue, building, room or address for in-person attendees.',
                     style: TextStyle(color: textMuted, fontSize: 12),
@@ -1162,14 +1395,19 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       surface: surface,
                       border: cardBorder,
                       textMuted: textMuted,
-                      prefixIcon: Icon(Icons.link_rounded, color: textMuted, size: 20),
+                      prefixIcon: Icon(
+                        Icons.link_rounded,
+                        color: textMuted,
+                        size: 20,
+                      ),
                     ),
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 5),
                   Text(
                     'community.onlineLinkHelper'.tr.isNotEmpty &&
-                            'community.onlineLinkHelper'.tr != 'community.onlineLinkHelper'
+                            'community.onlineLinkHelper'.tr !=
+                                'community.onlineLinkHelper'
                         ? 'community.onlineLinkHelper'.tr
                         : 'Provide a valid meeting link (Google Meet, Zoom, MS Teams, etc.).',
                     style: TextStyle(color: textMuted, fontSize: 12),
@@ -1179,15 +1417,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 const SizedBox(height: 24),
 
                 // ── 5. TICKETING & CAPACITY ──────────────────────────────
-                _buildSectionHeader('community.ticketing'.tr.isNotEmpty &&
-                        'community.ticketing'.tr != 'community.ticketing'
-                    ? 'community.ticketing'.tr
-                    : 'TICKETING & CAPACITY', textMuted),
+                _buildSectionHeader(
+                  'community.ticketing'.tr.isNotEmpty &&
+                          'community.ticketing'.tr != 'community.ticketing'
+                      ? 'community.ticketing'.tr
+                      : 'TICKETING & CAPACITY',
+                  textMuted,
+                ),
                 const SizedBox(height: 12),
 
                 // Paid toggle
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: surface,
                     borderRadius: BorderRadius.circular(12),
@@ -1200,7 +1444,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              _isPaid ? Icons.monetization_on : Icons.money_off_outlined,
+                              _isPaid
+                                  ? Icons.monetization_on
+                                  : Icons.money_off_outlined,
                               color: _isPaid
                                   ? (isDark ? Colors.white : Colors.black)
                                   : textMuted,
@@ -1213,7 +1459,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 children: [
                                   Text(
                                     'community.paidEvent'.tr.isNotEmpty &&
-                                            'community.paidEvent'.tr != 'community.paidEvent'
+                                            'community.paidEvent'.tr !=
+                                                'community.paidEvent'
                                         ? 'community.paidEvent'.tr
                                         : 'Paid Event',
                                     style: TextStyle(
@@ -1224,10 +1471,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                   ),
                                   Text(
                                     'community.paidEventDesc'.tr.isNotEmpty &&
-                                            'community.paidEventDesc'.tr != 'community.paidEventDesc'
+                                            'community.paidEventDesc'.tr !=
+                                                'community.paidEventDesc'
                                         ? 'community.paidEventDesc'.tr
                                         : 'Require ticket purchase to attend',
-                                    style: TextStyle(color: textMuted, fontSize: 12),
+                                    style: TextStyle(
+                                      color: textMuted,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1248,7 +1499,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           });
                         },
                         activeThumbColor: isDark ? Colors.white : Colors.black,
-                        activeTrackColor: isDark ? Colors.white38 : Colors.black26,
+                        activeTrackColor: isDark
+                            ? Colors.white38
+                            : Colors.black26,
                       ),
                     ],
                   ),
@@ -1265,19 +1518,30 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildFieldLabel('community.price'.tr.isNotEmpty &&
-                                    'community.price'.tr != 'community.price'
-                                ? '${'community.price'.tr}*'
-                                : 'Price*', textPrimary),
+                            _buildFieldLabel(
+                              'community.price'.tr.isNotEmpty &&
+                                      'community.price'.tr != 'community.price'
+                                  ? '${'community.price'.tr}*'
+                                  : 'Price*',
+                              textPrimary,
+                            ),
                             const SizedBox(height: 6),
                             TextField(
                               controller: _priceController,
                               focusNode: _priceFocus,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}'),
+                                ),
                               ],
-                              style: TextStyle(color: textPrimary, fontSize: 15),
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 15,
+                              ),
                               decoration: _inputDecoration(
                                 hintText: '0.00',
                                 errorText: _priceError,
@@ -1285,7 +1549,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 surface: surface,
                                 border: cardBorder,
                                 textMuted: textMuted,
-                                prefixIcon: Icon(Icons.attach_money, color: textMuted, size: 20),
+                                prefixIcon: Icon(
+                                  Icons.attach_money,
+                                  color: textMuted,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ],
@@ -1297,10 +1565,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildFieldLabel('community.currency'.tr.isNotEmpty &&
-                                    'community.currency'.tr != 'community.currency'
-                                ? 'community.currency'.tr
-                                : 'Currency', textPrimary),
+                            _buildFieldLabel(
+                              'community.currency'.tr.isNotEmpty &&
+                                      'community.currency'.tr !=
+                                          'community.currency'
+                                  ? 'community.currency'.tr
+                                  : 'Currency',
+                              textPrimary,
+                            ),
                             const SizedBox(height: 6),
                             Container(
                               height: 48,
@@ -1314,21 +1586,31 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 children: [
                                   Expanded(
                                     child: GestureDetector(
-                                      onTap: () => setState(() => _selectedCurrency = 'USD'),
+                                      onTap: () => setState(
+                                        () => _selectedCurrency = 'USD',
+                                      ),
                                       child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 150),
+                                        duration: const Duration(
+                                          milliseconds: 150,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: _selectedCurrency == 'USD'
-                                              ? (isDark ? Colors.white : Colors.black)
+                                              ? (isDark
+                                                    ? Colors.white
+                                                    : Colors.black)
                                               : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(9),
+                                          borderRadius: BorderRadius.circular(
+                                            9,
+                                          ),
                                         ),
                                         alignment: Alignment.center,
                                         child: Text(
                                           'USD',
                                           style: TextStyle(
                                             color: _selectedCurrency == 'USD'
-                                                ? (isDark ? Colors.black : Colors.white)
+                                                ? (isDark
+                                                      ? Colors.black
+                                                      : Colors.white)
                                                 : textMuted,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
@@ -1339,21 +1621,31 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                   ),
                                   Expanded(
                                     child: GestureDetector(
-                                      onTap: () => setState(() => _selectedCurrency = 'KHR'),
+                                      onTap: () => setState(
+                                        () => _selectedCurrency = 'KHR',
+                                      ),
                                       child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 150),
+                                        duration: const Duration(
+                                          milliseconds: 150,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: _selectedCurrency == 'KHR'
-                                              ? (isDark ? Colors.white : Colors.black)
+                                              ? (isDark
+                                                    ? Colors.white
+                                                    : Colors.black)
                                               : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(9),
+                                          borderRadius: BorderRadius.circular(
+                                            9,
+                                          ),
                                         ),
                                         alignment: Alignment.center,
                                         child: Text(
                                           'KHR',
                                           style: TextStyle(
                                             color: _selectedCurrency == 'KHR'
-                                                ? (isDark ? Colors.black : Colors.white)
+                                                ? (isDark
+                                                      ? Colors.black
+                                                      : Colors.white)
                                                 : textMuted,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
@@ -1373,7 +1665,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ] else ...[
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: surface,
                       borderRadius: BorderRadius.circular(12),
@@ -1381,7 +1676,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle_outline, color: textMuted, size: 18),
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: textMuted,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -1401,10 +1700,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 const SizedBox(height: 16),
 
                 // Attendee Limit (Optional)
-                _buildFieldLabel('community.rsvpLimit'.tr.isNotEmpty &&
-                        'community.rsvpLimit'.tr != 'community.rsvpLimit'
-                    ? '${'community.rsvpLimit'.tr} (Optional)'
-                    : 'Attendee Limit (Optional)', textPrimary),
+                _buildFieldLabel(
+                  'community.rsvpLimit'.tr.isNotEmpty &&
+                          'community.rsvpLimit'.tr != 'community.rsvpLimit'
+                      ? '${'community.rsvpLimit'.tr} (Optional)'
+                      : 'Attendee Limit (Optional)',
+                  textPrimary,
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _attendeeLimitController,
@@ -1418,7 +1720,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     surface: surface,
                     border: cardBorder,
                     textMuted: textMuted,
-                    prefixIcon: Icon(Icons.people_outline, color: textMuted, size: 20),
+                    prefixIcon: Icon(
+                      Icons.people_outline,
+                      color: textMuted,
+                      size: 20,
+                    ),
                   ),
                 ),
 
@@ -1461,7 +1767,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     GestureDetector(
                       onTap: _pickCoverImage,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.65),
                           borderRadius: BorderRadius.circular(20),
@@ -1492,7 +1801,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           color: Colors.black.withValues(alpha: 0.65),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -1508,7 +1821,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                          color: isDark
+                              ? Colors.white10
+                              : Colors.black.withValues(alpha: 0.05),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -1520,7 +1835,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'community.uploadCover'.tr.isNotEmpty &&
-                                'community.uploadCover'.tr != 'community.uploadCover'
+                                'community.uploadCover'.tr !=
+                                    'community.uploadCover'
                             ? 'community.uploadCover'.tr
                             : 'Upload Cover Photo',
                         style: TextStyle(
@@ -1532,13 +1848,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'community.recommendedAspect'.tr.isNotEmpty &&
-                                'community.recommendedAspect'.tr != 'community.recommendedAspect'
+                                'community.recommendedAspect'.tr !=
+                                    'community.recommendedAspect'
                             ? 'community.recommendedAspect'.tr
                             : 'Recommended 16:9 ratio',
-                        style: TextStyle(
-                          color: textMuted,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: textMuted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -1553,14 +1867,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
                         const SizedBox(height: 10),
                         Text(
                           'community.uploadingImage'.tr.isNotEmpty &&
-                                  'community.uploadingImage'.tr != 'community.uploadingImage'
+                                  'community.uploadingImage'.tr !=
+                                      'community.uploadingImage'
                               ? 'community.uploadingImage'.tr
                               : 'Uploading cover image...',
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -1748,7 +2069,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: errorText != null ? Colors.redAccent : (isDark ? Colors.white : Colors.black),
+          color: errorText != null
+              ? Colors.redAccent
+              : (isDark ? Colors.white : Colors.black),
           width: 1.5,
         ),
       ),
@@ -1802,7 +2125,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   onTap: _pickStartDate,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: chipBg,
                       borderRadius: BorderRadius.circular(8),
@@ -1822,7 +2148,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Icon(Icons.edit_calendar_outlined, size: 14, color: textMuted),
+                        Icon(
+                          Icons.edit_calendar_outlined,
+                          size: 14,
+                          color: textMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -1834,7 +2164,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 onTap: _pickStartTime,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: chipBg,
                     borderRadius: BorderRadius.circular(8),
@@ -1851,7 +2184,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.access_time_rounded, size: 14, color: textMuted),
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: textMuted,
+                      ),
                     ],
                   ),
                 ),
@@ -1879,7 +2216,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   onTap: _pickEndDate,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: chipBg,
                       borderRadius: BorderRadius.circular(8),
@@ -1899,7 +2239,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Icon(Icons.edit_calendar_outlined, size: 14, color: textMuted),
+                        Icon(
+                          Icons.edit_calendar_outlined,
+                          size: 14,
+                          color: textMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -1911,7 +2255,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 onTap: _pickEndTime,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: chipBg,
                     borderRadius: BorderRadius.circular(8),
@@ -1928,7 +2275,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.access_time_rounded, size: 14, color: textMuted),
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: textMuted,
+                      ),
                     ],
                   ),
                 ),
@@ -1953,11 +2304,13 @@ Widget _buildGenLinkWheelItem({
   final double opacity = isSelected
       ? 1.0
       : distance == 1
-          ? 0.45
-          : 0.18;
+      ? 0.45
+      : 0.18;
   final FontWeight weight = isSelected ? FontWeight.w700 : FontWeight.w500;
   final double fontSize = isSelected ? 18.0 : 15.0;
-  final color = (isDark ? Colors.white : const Color(0xFF111111)).withValues(alpha: opacity);
+  final color = (isDark ? Colors.white : const Color(0xFF111111)).withValues(
+    alpha: opacity,
+  );
 
   return GestureDetector(
     behavior: HitTestBehavior.opaque,
@@ -1999,13 +2352,11 @@ class _GenLinkDatePickerSheet extends StatefulWidget {
   final DateTime initialDate;
   final String? title;
 
-  const _GenLinkDatePickerSheet({
-    required this.initialDate,
-    this.title,
-  });
+  const _GenLinkDatePickerSheet({required this.initialDate, this.title});
 
   @override
-  State<_GenLinkDatePickerSheet> createState() => _GenLinkDatePickerSheetState();
+  State<_GenLinkDatePickerSheet> createState() =>
+      _GenLinkDatePickerSheetState();
 }
 
 class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
@@ -2033,8 +2384,12 @@ class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
     _selectedDay = widget.initialDate.day.clamp(1, maxDays);
 
     _dayController = FixedExtentScrollController(initialItem: _selectedDay - 1);
-    _monthController = FixedExtentScrollController(initialItem: _selectedMonth - 1);
-    _yearController = FixedExtentScrollController(initialItem: _selectedYear - _minYear);
+    _monthController = FixedExtentScrollController(
+      initialItem: _selectedMonth - 1,
+    );
+    _yearController = FixedExtentScrollController(
+      initialItem: _selectedYear - _minYear,
+    );
   }
 
   @override
@@ -2051,13 +2406,25 @@ class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
 
   List<String> get _monthLabels {
     final trMonths = 'date.months'.tr;
-    if (trMonths.isNotEmpty && trMonths != 'date.months' && trMonths.contains(',')) {
+    if (trMonths.isNotEmpty &&
+        trMonths != 'date.months' &&
+        trMonths.contains(',')) {
       final split = trMonths.split(',');
       if (split.length == 12) return split;
     }
     return const [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
   }
 
@@ -2102,16 +2469,24 @@ class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
     final border = isDark ? const Color(0xFF2E2E32) : const Color(0xFFE5E7EB);
     final textPrimary = isDark ? Colors.white : const Color(0xFF111111);
     final textSecondary = const Color(0xFF8E8E93);
-    final handleColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.12);
-    final selectedRowBg = isDark ? const Color(0xFF252528) : const Color(0xFFF2F2F7);
-    final selectedRowBorder = isDark ? const Color(0xFF38383D) : const Color(0xFFE5E5EA);
+    final handleColor = isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : Colors.black.withValues(alpha: 0.12);
+    final selectedRowBg = isDark
+        ? const Color(0xFF252528)
+        : const Color(0xFFF2F2F7);
+    final selectedRowBorder = isDark
+        ? const Color(0xFF38383D)
+        : const Color(0xFFE5E5EA);
 
-    final headerTitle = widget.title ??
+    final headerTitle =
+        widget.title ??
         ('community.selectDate'.tr.isNotEmpty &&
                 'community.selectDate'.tr != 'community.selectDate'
             ? 'community.selectDate'.tr
             : 'Select date');
-    final confirmLabel = 'common.confirm'.tr.isNotEmpty &&
+    final confirmLabel =
+        'common.confirm'.tr.isNotEmpty &&
             'common.confirm'.tr != 'common.confirm'
         ? 'common.confirm'.tr
         : (Get.locale?.languageCode == 'km' ? 'បញ្ជាក់' : 'Confirm');
@@ -2161,7 +2536,10 @@ class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
                   icon: const Icon(Icons.close_rounded, size: 20),
                   color: textSecondary,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
               ],
             ),
@@ -2240,7 +2618,8 @@ class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
                               if (index < 0 || index >= 12) return null;
                               final monthNum = index + 1;
                               final isSelected = monthNum == _selectedMonth;
-                              final distance = (monthNum - _selectedMonth).abs();
+                              final distance = (monthNum - _selectedMonth)
+                                  .abs();
                               return _buildGenLinkWheelItem(
                                 label: monthList[index],
                                 isSelected: isSelected,
@@ -2303,7 +2682,11 @@ class _GenLinkDatePickerSheetState extends State<_GenLinkDatePickerSheet> {
               child: ElevatedButton(
                 key: const ValueKey('confirm_date_button'),
                 onPressed: () {
-                  final result = DateTime(_selectedYear, _selectedMonth, _selectedDay);
+                  final result = DateTime(
+                    _selectedYear,
+                    _selectedMonth,
+                    _selectedDay,
+                  );
                   Navigator.pop(context, result);
                 },
                 style: ElevatedButton.styleFrom(
@@ -2341,10 +2724,8 @@ Future<TimeOfDay?> _showGenLinkTimePicker(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (ctx) => _GenLinkTimePickerSheet(
-      initialTime: initialTime,
-      title: title,
-    ),
+    builder: (ctx) =>
+        _GenLinkTimePickerSheet(initialTime: initialTime, title: title),
   );
 }
 
@@ -2352,13 +2733,11 @@ class _GenLinkTimePickerSheet extends StatefulWidget {
   final TimeOfDay initialTime;
   final String? title;
 
-  const _GenLinkTimePickerSheet({
-    required this.initialTime,
-    this.title,
-  });
+  const _GenLinkTimePickerSheet({required this.initialTime, this.title});
 
   @override
-  State<_GenLinkTimePickerSheet> createState() => _GenLinkTimePickerSheetState();
+  State<_GenLinkTimePickerSheet> createState() =>
+      _GenLinkTimePickerSheetState();
 }
 
 class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
@@ -2378,9 +2757,15 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
     _selectedMinute = widget.initialTime.minute;
     _selectedPeriodIndex = widget.initialTime.period == DayPeriod.am ? 0 : 1;
 
-    _hourController = FixedExtentScrollController(initialItem: _selectedHour12 - 1);
-    _minuteController = FixedExtentScrollController(initialItem: _selectedMinute);
-    _periodController = FixedExtentScrollController(initialItem: _selectedPeriodIndex);
+    _hourController = FixedExtentScrollController(
+      initialItem: _selectedHour12 - 1,
+    );
+    _minuteController = FixedExtentScrollController(
+      initialItem: _selectedMinute,
+    );
+    _periodController = FixedExtentScrollController(
+      initialItem: _selectedPeriodIndex,
+    );
   }
 
   @override
@@ -2408,16 +2793,24 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
     final border = isDark ? const Color(0xFF2E2E32) : const Color(0xFFE5E7EB);
     final textPrimary = isDark ? Colors.white : const Color(0xFF111111);
     final textSecondary = const Color(0xFF8E8E93);
-    final handleColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.12);
-    final selectedRowBg = isDark ? const Color(0xFF252528) : const Color(0xFFF2F2F7);
-    final selectedRowBorder = isDark ? const Color(0xFF38383D) : const Color(0xFFE5E5EA);
+    final handleColor = isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : Colors.black.withValues(alpha: 0.12);
+    final selectedRowBg = isDark
+        ? const Color(0xFF252528)
+        : const Color(0xFFF2F2F7);
+    final selectedRowBorder = isDark
+        ? const Color(0xFF38383D)
+        : const Color(0xFFE5E5EA);
 
-    final headerTitle = widget.title ??
+    final headerTitle =
+        widget.title ??
         ('community.selectTime'.tr.isNotEmpty &&
                 'community.selectTime'.tr != 'community.selectTime'
             ? 'community.selectTime'.tr
             : 'Select time');
-    final confirmLabel = 'common.confirm'.tr.isNotEmpty &&
+    final confirmLabel =
+        'common.confirm'.tr.isNotEmpty &&
             'common.confirm'.tr != 'common.confirm'
         ? 'common.confirm'.tr
         : (Get.locale?.languageCode == 'km' ? 'បញ្ជាក់' : 'Confirm');
@@ -2465,7 +2858,10 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                   icon: const Icon(Icons.close_rounded, size: 20),
                   color: textSecondary,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
               ],
             ),
@@ -2510,7 +2906,8 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                               if (index < 0 || index >= 12) return null;
                               final hourNum = index + 1;
                               final isSelected = hourNum == _selectedHour12;
-                              final distance = (hourNum - _selectedHour12).abs();
+                              final distance = (hourNum - _selectedHour12)
+                                  .abs();
                               final label = hourNum.toString().padLeft(2, '0');
                               return _buildGenLinkWheelItem(
                                 label: label,
@@ -2584,7 +2981,8 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                             builder: (context, index) {
                               if (index < 0 || index >= 2) return null;
                               final isSelected = index == _selectedPeriodIndex;
-                              final distance = (index - _selectedPeriodIndex).abs();
+                              final distance = (index - _selectedPeriodIndex)
+                                  .abs();
                               return _buildGenLinkWheelItem(
                                 label: periods[index],
                                 isSelected: isSelected,

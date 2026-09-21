@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -13,6 +14,7 @@ class AuthScaffold extends StatelessWidget {
     this.footer,
     this.showBack = true,
     this.backBottomSpacing = AppSpacing.xl,
+    this.overlay,
   });
 
   final String? title;
@@ -21,6 +23,7 @@ class AuthScaffold extends StatelessWidget {
   final Widget? footer;
   final bool showBack;
   final double backBottomSpacing;
+  final Widget? overlay;
 
   @override
   Widget build(BuildContext context) {
@@ -28,59 +31,73 @@ class AuthScaffold extends StatelessWidget {
 
     return Scaffold(
       body: AuthBackgroundShell(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (showBack) ...[
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: AppBackButton(),
-                        ),
-                        SizedBox(height: backBottomSpacing),
-                      ],
-                      if (title != null) ...[
-                        Text(title!, style: theme.textTheme.displayMedium),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            subtitle!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.65,
-                              ),
+        child: Stack(
+          children: [
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.md,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (showBack) ...[
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: AppBackButton(),
                             ),
-                          ),
+                            SizedBox(height: backBottomSpacing),
+                          ],
+                          if (title != null) ...[
+                            Text(title!, style: theme.textTheme.displayMedium),
+                            if (subtitle != null) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                subtitle!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.65,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
+                          ...children,
                         ],
-                        const SizedBox(height: AppSpacing.xl),
-                      ],
-                      ...children,
-                    ],
+                      ),
+                    ),
                   ),
+                  if (footer != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        AppSpacing.md,
+                      ),
+                      child: footer,
+                    ),
+                ],
+              ),
+            ),
+            if (overlay != null)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  bottom: false,
+                  child: overlay!,
                 ),
               ),
-              if (footer != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                  ),
-                  child: footer,
-                ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -113,9 +130,9 @@ class AuthBadgeIcon extends StatelessWidget {
 }
 
 class AuthOrDivider extends StatelessWidget {
-  const AuthOrDivider({super.key, this.label = 'or'});
+  const AuthOrDivider({super.key, this.label});
 
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +143,7 @@ class AuthOrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
-            label,
+            label ?? 'auth.orDivider'.tr,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),

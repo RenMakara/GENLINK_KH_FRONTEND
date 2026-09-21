@@ -21,6 +21,8 @@ abstract final class ApiEndpoints {
   static const forgotPassword = '$_base/auth/forgot-password';
   static const verifyResetOtp = '$_base/auth/verify-reset-otp';
   static const resetPassword = '$_base/auth/reset-password';
+  static const setPassword = '$_base/security/password/setup';
+  static const changePassword = '$_base/security/password';
   static const refreshToken = '$_base/auth/refresh-token';
   static const me = '$_base/auth/me';
   static const logout = '$_base/auth/logout';
@@ -112,8 +114,15 @@ abstract final class ApiEndpoints {
 
   static const focusSessions = '$_base/productivity/focus-sessions';
   static const focusSessionStart = '$_base/productivity/focus-sessions/start';
+  static const focusSessionActive = '$_base/productivity/focus-sessions/active';
+  static String focusSessionPause(String sessionId) =>
+      '$_base/productivity/focus-sessions/$sessionId/pause';
+  static String focusSessionResume(String sessionId) =>
+      '$_base/productivity/focus-sessions/$sessionId/resume';
   static String focusSessionComplete(String sessionId) =>
       '$_base/productivity/focus-sessions/$sessionId/complete';
+  static String focusSessionLeave(String sessionId) =>
+      '$_base/productivity/focus-sessions/$sessionId/leave';
   static const focusSessionStats = '$_base/productivity/focus-sessions/stats';
 
   static const motivation = '$_base/productivity/motivation';
@@ -241,6 +250,8 @@ abstract final class ApiEndpoints {
       communityDiscussionComment(commentId);
 
   static const communityEvents = '$_base/community/events';
+
+  static const communityMyEvents = '$_base/community/events/mine';
 
   static String communityEventDetail(String eventId) =>
       '$_base/community/events/$eventId';

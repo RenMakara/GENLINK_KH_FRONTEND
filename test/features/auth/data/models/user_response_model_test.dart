@@ -22,6 +22,7 @@ void main() {
         'preferredLanguage': 'KHMER',
         'role': 'ADMIN',
         'active': true,
+        'hasPassword': true,
       };
 
       final model = UserResponseModel.fromJson(json);
@@ -43,6 +44,7 @@ void main() {
       expect(model.preferredLanguage, 'KHMER');
       expect(model.role, 'ADMIN');
       expect(model.active, isTrue);
+      expect(model.hasPassword, isTrue);
     });
 
     test('fromJson handles null optional fields', () {
@@ -68,6 +70,7 @@ void main() {
       expect(model.universityName, isNull);
       expect(model.workStatus, isNull);
       expect(model.location, isNull);
+      expect(model.hasPassword, isFalse);
     });
 
     test('toEntity maps correctly', () {
@@ -83,6 +86,7 @@ void main() {
         'preferredLanguage': 'ENGLISH',
         'role': 'USER',
         'active': true,
+        'hasPassword': true,
       };
 
       final model = UserResponseModel.fromJson(json);
@@ -99,6 +103,7 @@ void main() {
       expect(entity.preferredLanguage, 'ENGLISH');
       expect(entity.role, 'USER');
       expect(entity.active, isTrue);
+      expect(entity.hasPassword, isTrue);
     });
   });
 }

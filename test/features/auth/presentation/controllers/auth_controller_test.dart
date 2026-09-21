@@ -22,6 +22,19 @@ class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
 class _MockMobilePushRegistrationService extends Mock
     implements MobilePushRegistrationService {}
 
+class _PromptLocalStorage extends LocalStorage {
+  bool dismissed = false;
+
+  @override
+  Future<bool> wasGooglePasswordPromptDismissed(String userId) async =>
+      dismissed;
+
+  @override
+  Future<void> markGooglePasswordPromptDismissed(String userId) async {
+    dismissed = true;
+  }
+}
+
 const _user = UserEntity(
   id: 'user-1',
   fullName: 'Sopheap Ren',
@@ -195,6 +208,45 @@ void main() {
     });
   });
 
+  test(
+    'setPassword updates the cached user without clearing the session',
+    () async {
+      controller.currentUser.value = _user;
+      controller.isAuthenticated.value = true;
+      when(
+        () => repository.setPassword(password: 'Password123'),
+      ).thenAnswer((_) async => true);
+
+      final result = await controller.setPassword(password: 'Password123');
+
+      expect(result, isTrue);
+      expect(controller.currentUser.value?.hasPassword, isTrue);
+      expect(controller.isAuthenticated.value, isTrue);
+      verifyNever(() => storage.clearAll());
+    },
+  );
+
+  test('remembers Maybe Later for the current account', () async {
+    final promptStorage = _PromptLocalStorage();
+    final promptController = AuthController(
+      authRepository: repository,
+      secureStorage: storage,
+      localization: LocalizationService(localStorage: promptStorage),
+      localStorage: promptStorage,
+      googleAuthService: google,
+      onSessionCleared: mainController.reset,
+    )..currentUser.value = _user;
+
+    expect(await promptController.shouldPromptForGooglePasswordSetup(), isTrue);
+
+    await promptController.dismissGooglePasswordPrompt();
+
+    expect(
+      await promptController.shouldPromptForGooglePasswordSetup(),
+      isFalse,
+    );
+  });
+
   test('logout resets the main navigation tab to Community', () async {
     mainController.changeIndex(3);
     when(() => google.signOut()).thenAnswer((_) async {});
@@ -207,48 +259,49 @@ void main() {
     verify(() => storage.clearAll()).called(1);
   });
 
-  test('deactivates push device before invalidating the server token', () async {
-    final push = _MockMobilePushRegistrationService();
-    final logoutController = AuthController(
-      authRepository: repository,
-      secureStorage: storage,
-      localization: LocalizationService(localStorage: LocalStorage()),
-      googleAuthService: google,
-      mobilePushRegistrationService: push,
-      onSessionCleared: mainController.reset,
-    );
+  test(
+    'deactivates push device before invalidating the server token',
+    () async {
+      final push = _MockMobilePushRegistrationService();
+      final logoutController = AuthController(
+        authRepository: repository,
+        secureStorage: storage,
+        localization: LocalizationService(localStorage: LocalStorage()),
+        googleAuthService: google,
+        mobilePushRegistrationService: push,
+        onSessionCleared: mainController.reset,
+      );
 
-    when(() => google.signOut()).thenAnswer((_) async {});
-    when(
-      () => push.deactivateCurrentDevice(
-        remote: true,
-        waitForRegistration: true,
-      ),
-    )
-        .thenAnswer((_) async {});
-    when(
-      () => push.deactivateCurrentDevice(
-        remote: false,
-        waitForRegistration: false,
-      ),
-    )
-        .thenAnswer((_) async {});
-    when(() => repository.logout()).thenAnswer((_) async {});
-    when(() => storage.clearAll()).thenAnswer((_) async {});
+      when(() => google.signOut()).thenAnswer((_) async {});
+      when(
+        () => push.deactivateCurrentDevice(
+          remote: true,
+          waitForRegistration: true,
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => push.deactivateCurrentDevice(
+          remote: false,
+          waitForRegistration: false,
+        ),
+      ).thenAnswer((_) async {});
+      when(() => repository.logout()).thenAnswer((_) async {});
+      when(() => storage.clearAll()).thenAnswer((_) async {});
 
-    await logoutController.logout();
+      await logoutController.logout();
 
-    verifyInOrder([
-      () => push.deactivateCurrentDevice(
-        remote: true,
-        waitForRegistration: true,
-      ),
-      () => repository.logout(),
-      () => push.deactivateCurrentDevice(
-        remote: false,
-        waitForRegistration: false,
-      ),
-      () => storage.clearAll(),
-    ]);
-  });
+      verifyInOrder([
+        () => push.deactivateCurrentDevice(
+          remote: true,
+          waitForRegistration: true,
+        ),
+        () => repository.logout(),
+        () => push.deactivateCurrentDevice(
+          remote: false,
+          waitForRegistration: false,
+        ),
+        () => storage.clearAll(),
+      ]);
+    },
+  );
 }

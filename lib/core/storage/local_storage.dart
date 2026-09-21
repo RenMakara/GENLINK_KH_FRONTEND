@@ -10,19 +10,18 @@ class LocalStorage {
   static const _kLanguage = 'genlink_language';
   static const _kInitialPreferencesSeen = 'genlink_initial_preferences_seen';
   static const _kOnboardingSeen = 'genlink_onboarding_seen';
-
+  static const _kGooglePasswordPromptDismissedPrefix =
+      'genlink_google_password_prompt_dismissed_';
 
   Future<String?> readThemeMode() => _storage.read(key: _kThemeMode);
 
   Future<void> saveThemeMode(String theme) =>
       _storage.write(key: _kThemeMode, value: theme);
 
-
   Future<String?> readLanguage() => _storage.read(key: _kLanguage);
 
   Future<void> saveLanguage(String language) =>
       _storage.write(key: _kLanguage, value: language);
-
 
   Future<bool> readInitialPreferencesSeen() async {
     final stored = await _storage.read(key: _kInitialPreferencesSeen);
@@ -39,6 +38,21 @@ class LocalStorage {
   Future<void> markOnboardingSeen() =>
       _storage.write(key: _kOnboardingSeen, value: 'true');
 
+  /// The server remains authoritative for [UserEntity.hasPassword]. This flag
+  /// only remembers that the optional first-login prompt was dismissed for a
+  /// specific account.
+  Future<bool> wasGooglePasswordPromptDismissed(String userId) async {
+    return await _storage.read(
+          key: '$_kGooglePasswordPromptDismissedPrefix$userId',
+        ) ==
+        'true';
+  }
+
+  Future<void> markGooglePasswordPromptDismissed(String userId) =>
+      _storage.write(
+        key: '$_kGooglePasswordPromptDismissedPrefix$userId',
+        value: 'true',
+      );
 
   static const _kStoryDraft = 'genlink_story_draft';
   static const _kRecentSearchesPrefix = 'genlink_recent_searches_';

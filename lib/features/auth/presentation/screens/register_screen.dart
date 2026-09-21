@@ -52,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _signInWithGoogle() async {
     final success = await _auth.signInWithGoogle();
-    if (success) Get.offAllNamed<void>(AppRoutes.home);
+    if (success) await _auth.continueAfterGoogleLogin();
   }
 
   @override
@@ -142,9 +142,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: AppSpacing.lg),
               const AuthOrDivider(),
               const SizedBox(height: AppSpacing.lg),
-              GoogleSignInButton(
-                semanticLabel: 'auth.continueWithGoogle'.tr,
-                onPressed: _signInWithGoogle,
+              Obx(
+                () => GoogleSignInButton(
+                  semanticLabel: 'auth.continueWithGoogle'.tr,
+                  loading: _auth.isLoading.value,
+                  onPressed: _auth.isLoading.value ? null : _signInWithGoogle,
+                ),
               ),
             ],
           ),

@@ -9,6 +9,7 @@ import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
+import '../widgets/auth_floating_error_banner.dart';
 import '../widgets/auth_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,8 +26,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
   AuthController get _auth => Get.find<AuthController>();
 
+  String? _errorMessage;
+  int _errorTriggerCount = 0;
+  Worker? _errorWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth.errorMessage.value = null;
+    _errorWorker = ever<String?>(_auth.errorMessage, (msg) {
+      if (msg != null && msg.isNotEmpty && mounted) {
+        setState(() {
+          _errorMessage = msg;
+          _errorTriggerCount++;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _errorWorker?.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -40,18 +60,49 @@ class _LoginScreenState extends State<LoginScreen> {
       email: _email.text.trim(),
       password: _password.text,
     );
-    if (success) Get.offAllNamed<void>(AppRoutes.home);
+    if (success) {
+      Get.offAllNamed<void>(AppRoutes.home);
+    } else if (mounted) {
+      setState(() {
+        _errorMessage = _auth.errorMessage.value ?? 'auth.loginErrorTitle'.tr;
+        _errorTriggerCount++;
+      });
+    }
   }
 
   Future<void> _signInWithGoogle() async {
     FocusScope.of(context).unfocus();
     final success = await _auth.signInWithGoogle();
-    if (success) Get.offAllNamed<void>(AppRoutes.home);
+    if (success) {
+      await _auth.continueAfterGoogleLogin();
+    } else if (_auth.errorMessage.value != null && mounted) {
+      setState(() {
+        _errorMessage = _auth.errorMessage.value;
+        _errorTriggerCount++;
+      });
+    }
+  }
+
+  void _dismissError() {
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+      _auth.errorMessage.value = null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
+      overlay: AuthFloatingErrorBanner(
+        key: const ValueKey('auth-floating-error-banner'),
+        message: _errorMessage,
+        triggerKey: _errorTriggerCount,
+        title: _errorMessage ?? 'auth.loginErrorTitle'.tr,
+        description: 'auth.loginErrorDescription'.tr,
+        onDismissed: _dismissError,
+      ),
       footer: Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -88,7 +139,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Obx(() => AuthErrorBanner(message: _auth.errorMessage.value)),
               AppInput.email(
                 label: 'auth.email'.tr,
                 hint: 'auth.emailHint'.tr,
@@ -122,9 +172,12 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: AppSpacing.lg),
               const AuthOrDivider(),
               const SizedBox(height: AppSpacing.lg),
-              GoogleSignInButton(
-                semanticLabel: 'auth.continueWithGoogle'.tr,
-                onPressed: _signInWithGoogle,
+              Obx(
+                () => GoogleSignInButton(
+                  semanticLabel: 'auth.continueWithGoogle'.tr,
+                  loading: _auth.isLoading.value,
+                  onPressed: _auth.isLoading.value ? null : _signInWithGoogle,
+                ),
               ),
             ],
           ),

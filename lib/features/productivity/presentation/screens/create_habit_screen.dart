@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../design_system/colors/app_colors.dart';
-import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../levelup/widget/grow_section_widget.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
+import '../widgets/creation_form_components.dart';
 
 class CreateHabitScreen extends StatefulWidget {
   const CreateHabitScreen({super.key});
@@ -46,7 +46,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      _showMessage('Please enter a habit title.');
+      _showMessage('habits.create.validationTitle'.tr);
       return;
     }
 
@@ -87,222 +87,234 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  String _categoryLabel(String item) {
+    switch (item.toUpperCase()) {
+      case 'PERSONAL':
+        return 'habits.create.category.personal'.tr;
+      case 'HEALTH':
+        return 'habits.create.category.health'.tr;
+      case 'LEARNING':
+        return 'habits.create.category.learning'.tr;
+      case 'WORK':
+        return 'habits.create.category.work'.tr;
+      case 'OTHER':
+        return 'habits.create.category.other'.tr;
+      default:
+        return item;
+    }
+  }
+
+  Widget _categoryIcon(String category, bool isSelected) {
+    Color iconColor;
+    Color bgColor;
+    IconData iconData;
+
+    switch (category.toUpperCase()) {
+      case 'PERSONAL':
+        iconColor = const Color(0xFF9333EA);
+        bgColor = const Color(0xFFF3E8FF);
+        iconData = Icons.person_rounded;
+        break;
+      case 'HEALTH':
+        iconColor = const Color(0xFFE11D48);
+        bgColor = const Color(0xFFFFE4E6);
+        iconData = Icons.favorite_rounded;
+        break;
+      case 'LEARNING':
+        iconColor = const Color(0xFFD97706);
+        bgColor = const Color(0xFFFEF3C7);
+        iconData = Icons.school_rounded;
+        break;
+      case 'WORK':
+        iconColor = const Color(0xFF2563EB);
+        bgColor = const Color(0xFFEFF6FF);
+        iconData = Icons.work_rounded;
+        break;
+      case 'OTHER':
+      default:
+        iconColor = const Color(0xFF64748B);
+        bgColor = const Color(0xFFF1F5F9);
+        iconData = Icons.category_rounded;
+        break;
+    }
+
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        iconData,
+        color: iconColor,
+        size: 19,
+      ),
+    );
+  }
+
+  String _frequencyLabel(String frequency) {
+    switch (frequency) {
+      case 'DAILY':
+        return 'habits.create.frequency.daily'.tr;
+      case 'WEEKLY':
+        return 'habits.create.frequency.weekly'.tr;
+      case 'CUSTOM':
+      default:
+        return 'habits.create.frequency.custom'.tr;
+    }
+  }
+
+  Widget _frequencyIcon(String frequency, bool isSelected) {
+    final color = isSelected ? const Color(0xFFEA580C) : const Color(0xFFF97316);
+    switch (frequency) {
+      case 'DAILY':
+        return Icon(
+          isSelected ? Icons.check_circle_rounded : Icons.today_rounded,
+          color: color,
+          size: 24,
+        );
+      case 'WEEKLY':
+        return Icon(
+          Icons.calendar_view_week_rounded,
+          color: color,
+          size: 24,
+        );
+      case 'CUSTOM':
+      default:
+        return Icon(
+          Icons.tune_rounded,
+          color: color,
+          size: 24,
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = _HabitFormColors(context);
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        backgroundColor: colors.surface,
-        foregroundColor: colors.textPrimary,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(Icons.close_rounded),
+    return CreationFormScaffold(
+      header: CreationFormHeader(
+        title: 'habits.create.title'.tr,
+        subtitle: 'habits.create.subtitle'.tr,
+        onSave: _save,
+        isSaving: _saving,
+      ),
+      bottomBar: CreationPrimaryButton(
+        label: 'habits.create.saveHabit'.tr,
+        onPressed: _save,
+        isLoading: _saving,
+      ),
+      children: [
+        // Hero Card (Orange gradient with 3D Habits Icon)
+        CreationHeroCard(
+          illustration: const Soft3DHabitsIcon(size: 46),
+          quote: 'habits.create.heroQuote'.tr,
+          gradientColors: const [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+          quoteColor: const Color(0xFFC2410C),
+          sparkleColor: const Color(0xFFF97316),
         ),
-        title: const Text('New Habit'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
-            child: FilledButton(
-              onPressed: _saving ? null : _save,
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.textPrimary,
-                foregroundColor: colors.inverseText,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.squircle),
-                ),
-              ),
-              child: _saving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save'),
+
+        // Habit Name Field
+        CreationTextField(
+          controller: _titleController,
+          label: 'habits.create.nameLabel'.tr,
+          isRequired: true,
+          hintText: 'habits.create.titleHint'.tr,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          accentColor: const Color(0xFFF97316),
+          onSubmitted: (_) => _saving ? null : _save(),
+          leadingIcon: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.bolt_rounded,
+              color: Color(0xFFF97316),
+              size: 21,
             ),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            TextField(
-              controller: _titleController,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              style: TextStyle(color: colors.textPrimary),
-              decoration: _decoration(
-                colors,
-                hintText: 'What habit do you want to build?',
-              ),
-              onSubmitted: (_) => _saving ? null : _save(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _FieldLabel(label: 'Category', color: colors.textPrimary),
-            const SizedBox(height: 8),
-            _DropdownField(
-              value: _category,
-              values: _categories,
-              colors: colors,
-              onChanged: (value) => setState(() => _category = value),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _FieldLabel(label: 'Frequency', color: colors.textPrimary),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: _frequencies
-                  .map((value) {
-                    final selected = _frequency == value;
-                    return ChoiceChip(
-                      label: Text(value),
-                      selected: selected,
-                      onSelected: (_) => setState(() => _frequency = value),
-                      selectedColor: AppColors.productivityAccent,
-                      labelStyle: TextStyle(
-                        color: selected ? Colors.white : colors.textSecondary,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    );
-                  })
-                  .toList(growable: false),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _FieldLabel(label: 'Reminder', color: colors.textPrimary),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-              tileColor: colors.surfaceSecondary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                side: BorderSide(color: colors.border),
-              ),
-              leading: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.productivityAccent,
-              ),
-              title: Text(
-                _reminderTime == null
-                    ? 'No reminder set'
-                    : _reminderTime!.format(context),
-                style: TextStyle(color: colors.textPrimary),
-              ),
-              trailing: _reminderTime == null
-                  ? const Icon(Icons.chevron_right_rounded)
-                  : IconButton(
-                      onPressed: () => setState(() => _reminderTime = null),
-                      icon: const Icon(Icons.clear_rounded),
-                    ),
-              onTap: _pickReminderTime,
-            ),
-          ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Category Dropdown Card
+        CreationDropdownCard(
+          label: 'habits.create.category'.tr,
+          sheetTitle: 'habits.create.selectCategory'.tr,
+          value: _category,
+          values: _categories,
+          accentColor: const Color(0xFFF97316),
+          leadingIcon: _categoryIcon(_category, false),
+          itemLabelBuilder: _categoryLabel,
+          itemIconBuilder: (item, isSelected) =>
+              _categoryIcon(item, isSelected),
+          onChanged: (value) => setState(() => _category = value),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Frequency Segmented Selection
+        CreationSectionLabel(label: 'habits.create.frequency'.tr),
+        Row(
+          children: _frequencies.map((frequency) {
+            final isSelected = _frequency == frequency;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: SelectionOptionCard(
+                  label: _frequencyLabel(frequency),
+                  isSelected: isSelected,
+                  accentColor: const Color(0xFFF97316),
+                  icon: _frequencyIcon(frequency, isSelected),
+                  onTap: () => setState(() => _frequency = frequency),
+                ),
+              ),
+            );
+          }).toList(growable: false),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Reminder Picker Card
+        CreationPickerCard(
+          leadingIcon: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFFF97316),
+              size: 20,
+            ),
+          ),
+          title: 'habits.create.reminderOptional'.tr,
+          subtitle: _reminderTime == null
+              ? 'habits.create.noReminder'.tr
+              : _reminderTime!.format(context),
+          onTap: _pickReminderTime,
+          showTrailingArrow: true,
+          onClear: _reminderTime != null
+              ? () => setState(() => _reminderTime = null)
+              : null,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Motivation Card
+        CreationMotivationCard(
+          title: 'habits.create.motivationTitle'.tr,
+          subtitle: 'habits.create.motivationSubtitle'.tr,
+          isGreen: false,
+        ),
+      ],
     );
   }
-
-  InputDecoration _decoration(
-    _HabitFormColors colors, {
-    required String hintText,
-  }) {
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(color: colors.textMuted),
-      filled: true,
-      fillColor: colors.surfaceSecondary,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: colors.border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: colors.border),
-      ),
-    );
-  }
-}
-
-class _DropdownField extends StatelessWidget {
-  const _DropdownField({
-    required this.value,
-    required this.values,
-    required this.colors,
-    required this.onChanged,
-  });
-
-  final String value;
-  final List<String> values;
-  final _HabitFormColors colors;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      items: values
-          .map(
-            (item) => DropdownMenuItem<String>(value: item, child: Text(item)),
-          )
-          .toList(growable: false),
-      onChanged: (item) {
-        if (item != null) onChanged(item);
-      },
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: colors.surfaceSecondary,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: BorderSide(color: colors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: BorderSide(color: colors.border),
-        ),
-      ),
-      dropdownColor: colors.surface,
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    label,
-    style: TextStyle(color: color, fontWeight: FontWeight.w700),
-  );
-}
-
-class _HabitFormColors {
-  _HabitFormColors(BuildContext context)
-    : isDark = Theme.of(context).brightness == Brightness.dark;
-
-  final bool isDark;
-
-  Color get background =>
-      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-  Color get surface =>
-      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-  Color get surfaceSecondary =>
-      isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
-  Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-  Color get textSecondary =>
-      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-  Color get textMuted =>
-      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-  Color get inverseText =>
-      isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
-  Color get border =>
-      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
 String? _formatTime(TimeOfDay? time) {

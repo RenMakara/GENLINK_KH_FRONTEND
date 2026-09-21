@@ -8,9 +8,11 @@ import 'package:genlink_frontend/features/home/data/home_repository.dart';
 import 'package:genlink_frontend/features/home/domain/entities/home_entity.dart';
 import 'package:genlink_frontend/features/home/presentation/controllers/home_controller.dart';
 import 'package:genlink_frontend/features/levelup/levelup_screen.dart';
+import 'package:genlink_frontend/features/levelup/widget/levelup_widget.dart';
 import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan.dart';
 import 'package:genlink_frontend/features/productivity/presentation/focus_feature/focus_home_screen.dart';
 import 'package:genlink_frontend/features/leaderboard/presentation/screens/leaderboard_home_screen.dart';
+import 'package:genlink_frontend/features/levelup/widget/grow_section_widget.dart';
 import 'package:get/get.dart';
 
 class _TestHttpOverrides extends HttpOverrides {
@@ -268,9 +270,9 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.text('Goals'), findsWidgets);
-      expect(find.byIcon(Icons.flag_outlined), findsWidgets);
+      expect(find.byType(Soft3DGoalsIcon), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.flag_outlined).first);
+      await tester.tap(find.byType(Soft3DGoalsIcon));
       await tester.pumpAndSettle();
 
       expect(find.byType(PlanGoalScreen), findsOneWidget);
@@ -427,12 +429,12 @@ void main() {
 
     // Tap Focus
     await tester.scrollUntilVisible(
-      find.byIcon(Icons.timer_outlined).last,
+      find.byType(Soft3DFocusIcon),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.byIcon(Icons.timer_outlined), findsWidgets);
-    await tester.tap(find.byIcon(Icons.timer_outlined).last);
+    expect(find.byType(Soft3DFocusIcon), findsWidgets);
+    await tester.tap(find.byType(Soft3DFocusIcon).last);
     await tester.pumpAndSettle();
 
     expect(find.byType(FocusPage), findsOneWidget);
@@ -461,13 +463,19 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Subtitle requirement
-      expect(find.text('What can I do today to Level Up?'), findsOneWidget);
+      // Today's Progress requirement
+      expect(find.byType(GrowthTodayProgressCard), findsOneWidget);
+      expect(find.text("TODAY'S PROGRESS"), findsOneWidget);
 
       // Saving Goal should NOT be on Level Up screen
       expect(find.text('Saving Goal Update'), findsNothing);
 
       // Daily Challenge should be present
+      await tester.scrollUntilVisible(
+        find.text('Solve 5 Math Quizzes'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Solve 5 Math Quizzes'), findsOneWidget);
       expect(find.text('+50 XP'), findsOneWidget);
 
@@ -530,17 +538,61 @@ void main() {
       // Should NOT show the old "Your day is clear"
       expect(find.text('Your day is clear'), findsNothing);
 
-      // Should show compact activity-oriented empty state
-      expect(find.text("You're all caught up"), findsOneWidget);
-      expect(
-        find.text('No habits or tasks need attention right now.'),
-        findsOneWidget,
-      );
+      // Should show compact activity-oriented summary state
+      expect(find.text('Start your day'), findsOneWidget);
+      expect(find.text('0 / 0 activities'), findsOneWidget);
+      expect(find.text('0%'), findsWidgets);
       expect(
         find.text('Habits'),
         findsWidgets,
-      ); // chip in empty state and/or GROW
+      ); // in GROW
       expect(find.text('Tasks'), findsWidgets);
     },
   );
+
+  testWidgets(
+    'GrowthDateCard expands and displays scheduled activities with categories',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final mockRepo = MockHomeRepository();
+      Get.put(HomeController(repository: mockRepo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          home: const LevelUpScreen(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the toggle button to expand day details
+      final viewDetailsFinder = find.text('View day details');
+      expect(viewDetailsFinder, findsOneWidget);
+      await tester.tap(viewDetailsFinder);
+      await tester.pumpAndSettle();
+
+      // Should now show Hide day details
+      expect(find.text('Hide day details'), findsOneWidget);
+
+      // Verify category chips and activity badges are present
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Task'), findsWidgets);
+      expect(find.text('Habit'), findsWidgets);
+      expect(find.text('Focus'), findsWidgets);
+      expect(find.text('Goal'), findsOneWidget);
+
+      // Verify scheduled activities (from MockHomeRepository: Morning Reading, Drink 2L Water, Tasks)
+      expect(find.text('Morning Reading'), findsWidgets);
+      expect(find.text('Drink 2L Water'), findsWidgets);
+    },
+  );
 }
+

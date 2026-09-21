@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/productivity/domain/entities/productivity_entities.dart';
 import 'package:genlink_frontend/features/productivity/presentation/controllers/productivity_controller.dart';
 import 'package:genlink_frontend/features/productivity/presentation/productivity_scope.dart';
-import 'package:genlink_frontend/features/productivity/presentation/focus_feature/widget/focus_home_widget.dart';
+
+import 'widget/focus_complete_dialog.dart';
+import 'widget/focus_home_view.dart';
+import 'widget/focus_leave_dialog.dart';
+import 'widget/focus_paused_view.dart';
+import 'widget/focus_running_view.dart';
+import 'widget/focus_session_summary_dialog.dart';
 
 class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
@@ -14,35 +20,108 @@ class FocusPage extends StatefulWidget {
   State<FocusPage> createState() => _FocusPageState();
 }
 
-class _FocusPageState extends State<FocusPage> {
-  int selectedMode = 0;
-  int selectedSound = 0;
+class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   ProductivityController? _controller;
-
-  static const _modeKeys = [
-    'POMODORO',
-    'STOPWATCH',
-    'DEEP_FOCUS',
-    'STUDY_CHALLENGE',
-  ];
-  static const _modeMinutes = [25, 25, 90, 45];
-  static const _soundKeys = ['NATURE', 'RAIN', 'CAFE', 'WHITE_NOISE'];
+  Timer? _ticker;
+  int selectedDuration = 25;
+  bool _loading = true;
+  bool _autoCompleting = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = ensureProductivityController();
-    _loadHistory();
+    unawaited(_bootstrap());
   }
 
-  Future<void> _loadHistory() async {
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_restoreActiveSession());
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _stopTicker();
+    }
+  }
+
+  Future<void> _bootstrap() async {
+    final controller = _controller;
+    if (controller == null) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+
+    try {
+      final active = await controller.loadActiveFocusSession();
+      await controller.loadFocusHistory();
+      _syncTicker();
+      if (active?.isCompleted == true && mounted) {
+        await _showCompletion(active!);
+      }
+    } catch (error) {
+      _showError(error);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _restoreActiveSession() async {
     final controller = _controller;
     if (controller == null) return;
     try {
-      await controller.loadFocusHistory();
+      final active = await controller.loadActiveFocusSession();
+      _syncTicker();
+      if (mounted) setState(() {});
+      if (active?.isCompleted == true && mounted) {
+        await _showCompletion(active!);
+      }
     } catch (error) {
       _showError(error);
     }
+  }
+
+  void _syncTicker() {
+    final session = _controller?.activeFocusSession.value;
+    if (session == null || !session.isActive) {
+      _stopTicker();
+      return;
+    }
+    _startTicker();
+  }
+
+  void _startTicker() {
+    if (_ticker != null) return;
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      final session = _controller?.activeFocusSession.value;
+      if (!mounted || session == null) {
+        _stopTicker();
+        return;
+      }
+      if (!session.isActive) {
+        _stopTicker();
+        setState(() {});
+        return;
+      }
+      if (_remainingSeconds(session) <= 0) {
+        unawaited(_completeExpiredSession(session));
+        return;
+      }
+      setState(() {});
+    });
+  }
+
+  void _stopTicker() {
+    _ticker?.cancel();
+    _ticker = null;
   }
 
   Future<void> _startSession() async {
@@ -50,29 +129,139 @@ class _FocusPageState extends State<FocusPage> {
     if (controller == null) return;
 
     try {
+      final mode = selectedDuration >= 50 ? 'DEEP_FOCUS' : 'POMODORO';
       final session = await controller.startFocusSession(
-        mode: _modeKeys[selectedMode],
-        durationMinutes: _modeMinutes[selectedMode],
-        ambientSound: _soundKeys[selectedSound],
+        mode: mode,
+        durationMinutes: selectedDuration,
       );
       if (!mounted) return;
+      if (session.isCompleted) {
+        await _showCompletion(session);
+      } else {
+        _syncTicker();
+        setState(() {});
+      }
+    } catch (error) {
+      _showError(error);
+    }
+  }
 
-      final complete = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => _ActiveFocusDialog(session: session),
+  Future<void> _pauseSession() async {
+    final session = _controller?.activeFocusSession.value;
+    if (session == null) return;
+    try {
+      await _controller!.pauseFocusSession(session.sessionId);
+      _stopTicker();
+      if (mounted) setState(() {});
+    } catch (error) {
+      _showError(error);
+    }
+  }
+
+  Future<void> _resumeSession() async {
+    final session = _controller?.activeFocusSession.value;
+    if (session == null) return;
+    try {
+      await _controller!.resumeFocusSession(session.sessionId);
+      _startTicker();
+      if (mounted) setState(() {});
+    } catch (error) {
+      _showError(error);
+    }
+  }
+
+  Future<void> _completeSession() async {
+    final session = _controller?.activeFocusSession.value;
+    if (session == null) return;
+    try {
+      final completed = await _controller!.completeFocusSession(
+        session.sessionId,
       );
-      if (complete != true) return;
+      _stopTicker();
+      if (mounted) await _showCompletion(completed);
+    } catch (error) {
+      _showError(error);
+    }
+  }
 
-      await controller.completeFocusSession(session.sessionId);
+  Future<void> _completeExpiredSession(ProductivityFocusSession session) async {
+    if (_autoCompleting) return;
+    _autoCompleting = true;
+    try {
+      final completed = await _controller!.completeFocusSession(
+        session.sessionId,
+      );
+      _stopTicker();
+      if (mounted) await _showCompletion(completed);
+    } catch (error) {
+      _showError(error);
+    } finally {
+      _autoCompleting = false;
+    }
+  }
+
+  Future<void> _leaveSession() async {
+    final session = _controller?.activeFocusSession.value;
+    if (session == null) {
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    final leave = await FocusLeaveDialog.show(context);
+    if (leave != true || !mounted) return;
+
+    final focusedSeconds = _focusedSeconds(session);
+    final focusedMinutes = focusedSeconds ~/ 60;
+
+    try {
+      await _controller!.abandonFocusSession(session.sessionId);
+      _stopTicker();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Focus session completed.')),
+        await FocusSessionSummaryDialog.show(
+          context,
+          focusedMinutes: focusedMinutes,
+          xpEarned: 0,
+          isAbandoned: true,
         );
       }
     } catch (error) {
       _showError(error);
     }
+  }
+
+  Future<void> _handleBack() async {
+    if (_controller?.activeFocusSession.value != null) {
+      await _leaveSession();
+    } else if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _showCompletion(ProductivityFocusSession session) async {
+    final minutes = session.durationMinutes > 0
+        ? session.durationMinutes
+        : (session.focusedSeconds ~/ 60);
+    await FocusCompleteDialog.show(
+      context,
+      focusedMinutes: minutes,
+      xpEarned: session.xpEarned,
+    );
+  }
+
+  int _focusedSeconds(ProductivityFocusSession session) {
+    var focused = session.focusedSeconds;
+    if (session.isActive) {
+      final activeStartedAt = session.activeStartedAt ?? session.startedAt;
+      if (activeStartedAt != null) {
+        focused += DateTime.now().difference(activeStartedAt).inSeconds;
+      }
+    }
+    return focused.clamp(0, session.durationMinutes * 60).toInt();
+  }
+
+  int _remainingSeconds(ProductivityFocusSession session) {
+    final planned = session.durationMinutes * 60;
+    return (planned - _focusedSeconds(session)).clamp(0, planned).toInt();
   }
 
   void _showError(Object error) {
@@ -85,293 +274,60 @@ class _FocusPageState extends State<FocusPage> {
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              FocusHeader(
-                title: 'Focus',
-                onBack: () => Navigator.of(context).pop(),
-              ),
-              const SizedBox(height: 12),
-              if (controller != null) ...[
-                _FocusStatsSummary(controller: controller),
-                const SizedBox(height: 12),
-              ],
-              FocusModes(
-                modes: [
-                  FocusModeData(
-                    icon: Icons.access_time_rounded,
-                    title: 'Pomodoro',
-                    subtitle: '25 min sessions',
-                    selected: selectedMode == 0,
-                  ),
-                  FocusModeData(
-                    icon: Icons.access_time_rounded,
-                    title: 'Stopwatch',
-                    subtitle: 'Open timer',
-                    selected: selectedMode == 1,
-                  ),
-                  FocusModeData(
-                    icon: Icons.flash_on_outlined,
-                    title: 'Deep Focus',
-                    subtitle: '90 min block',
-                    selected: selectedMode == 2,
-                  ),
-                  FocusModeData(
-                    icon: Icons.star_outline_rounded,
-                    title: 'Study Challenge',
-                    subtitle: 'Timed quiz mode',
-                    selected: selectedMode == 3,
-                  ),
-                ],
-                onSelected: (index) => setState(() => selectedMode = index),
-              ),
-              const SizedBox(height: 10),
-              const FocusSectionTitle(title: 'Ambient Sounds'),
-              const SizedBox(height: 7),
-              FocusAmbientSounds(
-                selectedIndex: selectedSound,
-                sounds: const [
-                  AmbientSoundData(
-                    icon: Icons.wb_sunny_outlined,
-                    title: 'Nature',
-                  ),
-                  AmbientSoundData(
-                    icon: Icons.water_drop_outlined,
-                    title: 'Rain',
-                  ),
-                  AmbientSoundData(
-                    icon: Icons.wb_sunny_outlined,
-                    title: 'Café',
-                  ),
-                  AmbientSoundData(
-                    icon: Icons.bolt_outlined,
-                    title: 'White Noise',
-                  ),
-                ],
-                onSelected: (index) => setState(() => selectedSound = index),
-              ),
-              const SizedBox(height: 12),
-              const FocusSectionTitle(title: 'Recent Sessions'),
-              const SizedBox(height: 7),
-              _recentSessions(controller),
-              const SizedBox(height: 10),
-              FocusStartButton(
-                text: 'Start Focus Session',
-                onTap: _startSession,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _recentSessions(ProductivityController? controller) {
     if (controller == null) {
-      return const FocusRecentSessions(sessions: _fallbackSessions);
+      return const _UnavailableView();
     }
+
     return Obx(() {
-      final sessions = controller.focusHistory
-          .map(_toSessionData)
-          .toList(growable: false);
-      if (sessions.isEmpty) {
-        return const _EmptySessions();
-      }
-      return FocusRecentSessions(sessions: sessions);
-    });
-  }
-}
-
-class _FocusStatsSummary extends StatelessWidget {
-  const _FocusStatsSummary({required this.controller});
-
-  final ProductivityController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final stats = controller.focusStats.value;
-      if (stats == null) return const SizedBox.shrink();
-      final colors = _FocusPageColors(context);
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: colors.border),
-        ),
-        child: Row(
-          children: [
-            _Stat(value: '${stats.todaySessions}', label: 'Today'),
-            _Stat(value: '${stats.todayMinutes}m', label: 'Minutes'),
-            _Stat(value: '${stats.totalXp}', label: 'XP'),
-          ],
-        ),
+      final active = controller.activeFocusSession.value;
+      return PopScope(
+        canPop: active == null,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop && controller.activeFocusSession.value != null) {
+            unawaited(_leaveSession());
+          }
+        },
+        child: active == null
+            ? FocusHomeView(
+                controller: controller,
+                selectedDuration: selectedDuration,
+                isLoading: _loading,
+                onDurationChanged: (val) =>
+                    setState(() => selectedDuration = val),
+                onStart: _startSession,
+                onBack: () => unawaited(_handleBack()),
+              )
+            : (active.isPaused
+                ? FocusPausedView(
+                    session: active,
+                    remainingSeconds: _remainingSeconds(active),
+                    actionLoading: controller.isFocusActionLoading.value,
+                    onBack: _handleBack,
+                    onResume: _resumeSession,
+                    onLeave: _leaveSession,
+                  )
+                : FocusRunningView(
+                    session: active,
+                    remainingSeconds: _remainingSeconds(active),
+                    actionLoading: controller.isFocusActionLoading.value,
+                    onBack: _handleBack,
+                    onPause: _pauseSession,
+                    onLeave: _leaveSession,
+                    onComplete: _completeSession,
+                  )),
       );
     });
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
-
-  final String value;
-  final String label;
+class _UnavailableView extends StatelessWidget {
+  const _UnavailableView();
 
   @override
   Widget build(BuildContext context) {
-    final colors = _FocusPageColors(context);
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: colors.textMuted, fontSize: 11)),
-        ],
-      ),
-    );
+    return Scaffold(body: Center(child: Text('productivity.unavailable'.tr)));
   }
-}
-
-class _EmptySessions extends StatelessWidget {
-  const _EmptySessions();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _FocusPageColors(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border),
-      ),
-      child: Text(
-        'No completed sessions yet.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: colors.textMuted),
-      ),
-    );
-  }
-}
-
-class _ActiveFocusDialog extends StatelessWidget {
-  const _ActiveFocusDialog({required this.session});
-
-  final ProductivityFocusSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Focus session started'),
-      content: Text(
-        '${_modeTitle(session.mode)} · ${_formatMinutes(session.durationMinutes)}\n\n'
-        'Stay focused, then complete the session when you are done.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Keep open'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Complete'),
-        ),
-      ],
-    );
-  }
-}
-
-FocusSessionData _toSessionData(ProductivityFocusSession session) {
-  return FocusSessionData(
-    icon: _modeIcon(session.mode),
-    title: _modeTitle(session.mode),
-    date: _sessionDate(session.endedAt ?? session.startedAt),
-    duration: _formatMinutes(session.durationMinutes),
-  );
-}
-
-IconData _modeIcon(String? mode) => switch (mode?.toUpperCase()) {
-  'DEEP_FOCUS' => Icons.flash_on_outlined,
-  'STUDY_CHALLENGE' => Icons.star_outline_rounded,
-  _ => Icons.bolt_outlined,
-};
-
-String _modeTitle(String? mode) => switch (mode?.toUpperCase()) {
-  'DEEP_FOCUS' => 'Deep Focus',
-  'STUDY_CHALLENGE' => 'Study Challenge',
-  'STOPWATCH' => 'Stopwatch',
-  _ => 'Pomodoro',
-};
-
-String _sessionDate(DateTime? value) {
-  if (value == null) return 'Recent';
-  final now = DateTime.now();
-  if (value.year == now.year &&
-      value.month == now.month &&
-      value.day == now.day) {
-    return 'Today';
-  }
-  return '${value.month}/${value.day}/${value.year}';
-}
-
-String _formatMinutes(int minutes) {
-  if (minutes < 60) return '$minutes min';
-  final hours = minutes ~/ 60;
-  final remaining = minutes % 60;
-  return remaining == 0 ? '${hours}h' : '${hours}h ${remaining}m';
 }
 
 String _errorText(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
-
-class _FocusPageColors {
-  _FocusPageColors(BuildContext context)
-    : isDark = Theme.of(context).brightness == Brightness.dark;
-
-  final bool isDark;
-
-  Color get surface =>
-      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-  Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-  Color get textMuted =>
-      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-  Color get border =>
-      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-}
-
-const _fallbackSessions = [
-  FocusSessionData(
-    icon: Icons.bolt_outlined,
-    title: 'Pomodoro',
-    date: 'Today',
-    duration: '52 min',
-  ),
-  FocusSessionData(
-    icon: Icons.bolt_outlined,
-    title: 'Deep Focus',
-    date: 'Yesterday',
-    duration: '1h 30m',
-  ),
-  FocusSessionData(
-    icon: Icons.bolt_outlined,
-    title: 'Pomodoro',
-    date: 'Jul 1',
-    duration: '25 min',
-  ),
-];

@@ -179,8 +179,24 @@ class ProductivityRepositoryImpl implements ProductivityRepository {
   );
 
   @override
+  Future<ProductivityFocusSession?> getActiveFocusSession() =>
+      _remote.getActiveFocusSession();
+
+  @override
+  Future<ProductivityFocusSession> pauseFocusSession(String sessionId) =>
+      _remote.pauseFocusSession(sessionId);
+
+  @override
+  Future<ProductivityFocusSession> resumeFocusSession(String sessionId) =>
+      _remote.resumeFocusSession(sessionId);
+
+  @override
   Future<ProductivityFocusSession> completeFocusSession(String sessionId) =>
       _remote.completeFocusSession(sessionId);
+
+  @override
+  Future<ProductivityFocusSession> abandonFocusSession(String sessionId) =>
+      _remote.abandonFocusSession(sessionId);
 
   @override
   Future<ProductivityPage<ProductivityFocusSession>> getFocusHistory({

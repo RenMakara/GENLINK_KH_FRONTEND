@@ -35,6 +35,13 @@ abstract class AuthRepository {
     required String newPassword,
   });
 
+  Future<bool> setPassword({required String password});
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   Future<AuthSession> refreshToken({required String refreshToken});
 
   Future<UserEntity> getCurrentUser();

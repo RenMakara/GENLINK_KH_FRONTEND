@@ -85,7 +85,11 @@ abstract class ProductivityRepository {
     required int durationMinutes,
     String? ambientSound,
   });
+  Future<ProductivityFocusSession?> getActiveFocusSession();
+  Future<ProductivityFocusSession> pauseFocusSession(String sessionId);
+  Future<ProductivityFocusSession> resumeFocusSession(String sessionId);
   Future<ProductivityFocusSession> completeFocusSession(String sessionId);
+  Future<ProductivityFocusSession> abandonFocusSession(String sessionId);
   Future<ProductivityPage<ProductivityFocusSession>> getFocusHistory({
     int page = 0,
     int size = 20,

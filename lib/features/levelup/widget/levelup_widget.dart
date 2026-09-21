@@ -11,11 +11,13 @@ class GrowthCategory {
     required this.label,
     required this.icon,
     required this.color,
+    this.key,
   });
 
   final String label;
   final IconData icon;
   final Color color;
+  final String? key;
 }
 
 class TimelineActivityItem {
@@ -40,8 +42,7 @@ class TimelineActivityItem {
   final String? category;
 }
 
-/// Data shape reserved for a future date-specific activity API.
-/// The current Home contract does not populate this model.
+/// Date-specific activity item with interactive tap, toggle, and category keys.
 class GrowthTimelineActivity {
   const GrowthTimelineActivity({
     required this.title,
@@ -53,6 +54,9 @@ class GrowthTimelineActivity {
     required this.icon,
     required this.color,
     required this.completed,
+    this.categoryKey,
+    this.onTap,
+    this.onToggle,
   });
 
   final String title;
@@ -64,6 +68,9 @@ class GrowthTimelineActivity {
   final IconData icon;
   final Color color;
   final bool completed;
+  final String? categoryKey;
+  final VoidCallback? onTap;
+  final VoidCallback? onToggle;
 }
 
 // HEADER ICON BUTTON
@@ -360,6 +367,9 @@ class GrowthDateCard extends StatelessWidget {
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
     return Container(
       decoration: BoxDecoration(
@@ -377,11 +387,23 @@ class GrowthDateCard extends StatelessWidget {
             onToggleDetail: onToggleDetail,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+            padding: const EdgeInsets.fromLTRB(10, 2, 10, 6),
             child: GrowthDateStrip(
               today: today,
               selectedDate: selectedDate,
               onDateSelected: onDateSelected,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'levelup.selectDateHint'.tr,
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
           AnimatedSize(
@@ -441,11 +463,17 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
+    final selectedCat = widget.categories[selectedCategory];
     final filtered = selectedCategory == 0
         ? widget.activities
-        : widget.activities
-              .where((e) => e.type == widget.categories[selectedCategory].label)
-              .toList();
+        : widget.activities.where((e) {
+            if (selectedCat.key != null && e.categoryKey != null) {
+              return e.categoryKey == selectedCat.key;
+            }
+            return e.type.toLowerCase() == selectedCat.label.toLowerCase() ||
+                e.type == selectedCat.key ||
+                (e.categoryKey != null && e.categoryKey == selectedCat.label);
+          }).toList();
     final completedCount = filtered.where((e) => e.completed).length;
 
     return Container(
@@ -678,7 +706,10 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
           ),
           const SizedBox(height: 4),
           Text(
-            'levelup.activityTimelineUnavailable'.tr,
+            'levelup.noHabitsOrTasks'.tr.isNotEmpty &&
+                    'levelup.noHabitsOrTasks'.tr != 'levelup.noHabitsOrTasks'
+                ? 'levelup.noHabitsOrTasks'.tr
+                : 'levelup.activityTimelineUnavailable'.tr,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: textSecondary,
@@ -710,87 +741,160 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: border, width: 0.7),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: activity.color.withValues(
-                      alpha: isDark ? 0.17 : 0.10,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(activity.icon, color: activity.color, size: 19),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: activity.onTap,
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              activity.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: activity.color.withValues(
+                            alpha: isDark ? 0.17 : 0.10,
                           ),
-                          if (activity.type.trim().isNotEmpty) ...[
-                            const SizedBox(width: 7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(activity.icon, color: activity.color, size: 19),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    activity.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                      decoration: activity.completed
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                                if (activity.type.trim().isNotEmpty) ...[
+                                  const SizedBox(width: 7),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: activity.color.withValues(
+                                        alpha: isDark ? 0.18 : 0.10,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      activity.type,
+                                      style: TextStyle(
+                                        color: activity.color,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (activity.xp > 0) ...[
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '+${activity.xp} XP',
+                                    style: TextStyle(
+                                      color: activity.color,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 3),
                             Text(
-                              activity.type,
+                              activity.subtitle,
                               style: TextStyle(
-                                color: activity.color,
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w700,
+                                color: textSecondary,
+                                fontSize: 10.5,
                               ),
                             ),
+                            if (activity.time.trim().isNotEmpty ||
+                                activity.endTime.trim().isNotEmpty) ...[
+                              const SizedBox(height: 5),
+                              Text(
+                                [activity.time, activity.endTime]
+                                    .where((value) => value.trim().isNotEmpty)
+                                    .join(' - '),
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 9.5,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        activity.subtitle,
-                        style: TextStyle(color: textSecondary, fontSize: 10.5),
-                      ),
-                      if (activity.time.trim().isNotEmpty ||
-                          activity.endTime.trim().isNotEmpty) ...[
-                        const SizedBox(height: 5),
-                        Text(
-                          [activity.time, activity.endTime]
-                              .where((value) => value.trim().isNotEmpty)
-                              .join(' - '),
-                          style: TextStyle(color: textSecondary, fontSize: 9.5),
+                      if (activity.onToggle != null) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: activity.onToggle,
+                          behavior: HitTestBehavior.opaque,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: activity.completed
+                                  ? activity.color
+                                  : Colors.transparent,
+                              border: Border.all(
+                                color: activity.completed
+                                    ? activity.color
+                                    : (isDark ? Colors.white38 : Colors.black26),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: activity.completed
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    size: 15,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ] else if (activity.completed) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8, top: 2),
+                          child: Icon(
+                            Icons.check_circle_rounded,
+                            size: 19,
+                            color: activity.color,
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                if (activity.completed)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, top: 2),
-                    child: Icon(
-                      Icons.check_circle_rounded,
-                      size: 17,
-                      color: activity.color,
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
       ],
@@ -858,35 +962,51 @@ class LevelProgressCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        height: 28,
-                        width: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: growthAccent.withValues(
-                            alpha: isDark ? 0.16 : 0.12,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          height: 30,
+                          width: 30,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFDF70), Color(0xFFF59E0B)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                                offset: const Offset(0, 2),
+                                blurRadius: 5,
+                              ),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(7),
+                          child: const Icon(
+                            Icons.star_rounded,
+                            size: 19,
+                            color: Colors.white,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.star_rounded,
-                          size: 18,
-                          color: growthAccent,
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            levelDisplay,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        levelDisplay,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -911,27 +1031,47 @@ class LevelProgressCard extends StatelessWidget {
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 5,
-                  backgroundColor: isDark
+                child: Container(
+                  height: 6,
+                  width: double.infinity,
+                  color: isDark
                       ? Colors.white.withValues(alpha: 0.08)
                       : Colors.black.withValues(alpha: 0.06),
-                  valueColor: const AlwaysStoppedAnimation<Color>(growthAccent),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          width: constraints.maxWidth * progress.clamp(0.0, 1.0),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFD54F), Color(0xFFF59E0B)],
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 9),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    progressCopy,
-                    style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      progressCopy,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     percentText,
                     style: const TextStyle(
@@ -946,6 +1086,232 @@ class LevelProgressCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// TODAY PROGRESS CARD (Compact Growth Dashboard Summary)
+class GrowthTodayProgressCard extends StatelessWidget {
+  const GrowthTodayProgressCard({
+    super.key,
+    required this.percentText,
+    required this.progress,
+    required this.statusMessage,
+    required this.activitiesText,
+    required this.xpText,
+    this.isCompleted = false,
+    this.onTap,
+  });
+
+  final String percentText;
+  final double progress;
+  final String statusMessage;
+  final String activitiesText;
+  final String xpText;
+  final bool isCompleted;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final Color accentColor = isCompleted
+        ? const Color(0xFF10B981)
+        : (progress > 0
+            ? const Color(0xFF3B82F6)
+            : (isDark ? Colors.white60 : AppColors.lightTextSecondary));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'levelup.todayProgress'.tr,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: isDark ? 0.16 : 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Text(
+                percentText,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Material(
+          color: cardSurface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: cardSurface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: borderSubtle, width: 0.8),
+                boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        percentText,
+                        style: TextStyle(
+                          color: isCompleted
+                              ? const Color(0xFF10B981)
+                              : (progress > 0 ? textPrimary : textSecondary),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          statusMessage,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (onTap != null)
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 11,
+                          color: textSecondary.withValues(alpha: 0.4),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              isCompleted
+                                  ? Icons.check_circle_rounded
+                                  : (progress > 0
+                                      ? Icons.schedule_rounded
+                                      : Icons.radio_button_unchecked_rounded),
+                              size: 14,
+                              color: isCompleted
+                                  ? const Color(0xFF10B981)
+                                  : (progress > 0
+                                      ? const Color(0xFF3B82F6)
+                                      : (isDark ? Colors.white38 : Colors.black38)),
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                activitiesText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.bolt_rounded,
+                            size: 15,
+                            color: Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            xpText,
+                            style: const TextStyle(
+                              color: Color(0xFFF59E0B),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: Container(
+                      height: 5.5,
+                      width: double.infinity,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.06),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              width: constraints.maxWidth * progress.clamp(0.0, 1.0),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: isCompleted
+                                      ? const [Color(0xFF34D399), Color(0xFF059669)]
+                                      : const [Color(0xFF60A5FA), Color(0xFF2563EB)],
+                                ),
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

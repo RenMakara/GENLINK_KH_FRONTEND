@@ -7,6 +7,7 @@ import 'package:genlink_frontend/features/notification/domain/mobile_push_regist
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/localization/localization_service.dart';
+import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/user_entity.dart';
@@ -25,18 +26,22 @@ class AuthController extends GetxController {
     required this._authRepository,
     required SecureStorage secureStorage,
     required this._localization,
+    this.localStorage,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
     this.mobilePushRegistrationService,
     this.onSessionCleared,
+    this.onSessionEstablished,
   }) : _storage = secureStorage,
        _google = googleAuthService;
 
   final AuthRepository _authRepository;
   final SecureStorage _storage;
+  final LocalStorage? localStorage;
   final LocalizationService _localization;
   final GoogleAuthService _google;
   final MobilePushRegistrationService? mobilePushRegistrationService;
   final void Function()? onSessionCleared;
+  final void Function()? onSessionEstablished;
 
   /// Seconds a user must wait before requesting another OTP.
   static const resendCooldownSeconds = 60;
@@ -97,6 +102,7 @@ class AuthController extends GetxController {
       // Sync, not setLanguage: adopting the account value must not lock
       // the language against device-following.
       _localization.syncFromAccount(user.preferredLanguage);
+      onSessionEstablished?.call();
       unawaited(_registerMobilePushDevice());
       return true;
     } on AppError catch (e) {
@@ -262,6 +268,77 @@ class AuthController extends GetxController {
     });
   }
 
+  /// Adds a password to an account that currently authenticates through
+  /// Google. The current Google session remains valid.
+  Future<bool> setPassword({required String password}) {
+    return _run(() async {
+      final hasPassword = await _authRepository.setPassword(password: password);
+      final user = currentUser.value;
+      if (user != null && hasPassword) {
+        currentUser.value = user.copyWith(hasPassword: true);
+      }
+      return hasPassword;
+    });
+  }
+
+  /// Uses the existing backend change-password flow. That flow revokes all
+  /// sessions, so a successful change intentionally returns the user to login.
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _run(() async {
+      await _authRepository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      await _clearSession();
+      return true;
+    });
+  }
+
+  /// Whether the optional post-Google-login prompt should be shown. This is
+  /// only a UX decision; [UserEntity.hasPassword] remains server-authoritative.
+  Future<bool> shouldPromptForGooglePasswordSetup() async {
+    final user = currentUser.value;
+    if (user == null || user.hasPassword) return false;
+
+    final storage = localStorage;
+    if (storage == null) return true;
+
+    try {
+      return !(await storage.wasGooglePasswordPromptDismissed(user.id));
+    } catch (_) {
+      // A local-storage failure must not block the authenticated user.
+      return true;
+    }
+  }
+
+  Future<void> dismissGooglePasswordPrompt() async {
+    final userId = currentUser.value?.id;
+    final storage = localStorage;
+    if (userId == null || storage == null) return;
+
+    try {
+      await storage.markGooglePasswordPromptDismissed(userId);
+    } catch (_) {
+      // Dismissal is best-effort UX state, never an authentication failure.
+    }
+  }
+
+  /// Completes any Google entry point consistently across login, register, and
+  /// the initial auth-choice screen.
+  Future<void> continueAfterGoogleLogin() async {
+    if (await shouldPromptForGooglePasswordSetup()) {
+      Get.offAllNamed<void>(
+        AppRoutes.passwordSetup,
+        arguments: const {'optionalPrompt': true},
+      );
+    } else {
+      Get.offAllNamed<void>(AppRoutes.home);
+    }
+  }
+
   // ── Logout ───────────────────────────────────────────────────────────
 
   Future<void> logout() async {
@@ -419,6 +496,7 @@ class AuthController extends GetxController {
       currentUser.value = session.user;
       isAuthenticated.value = true;
       pendingEmail.value = '';
+      onSessionEstablished?.call();
       // Adopt the account's language so system content comes back localized —
       // as a sync, so device-following keeps working for users who never
       // explicitly chose.

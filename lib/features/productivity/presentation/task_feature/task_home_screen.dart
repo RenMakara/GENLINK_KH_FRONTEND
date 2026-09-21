@@ -6,6 +6,8 @@ import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
 import '../screens/create_task_screen.dart';
+import '../widgets/productivity_illustrations.dart';
+import '../widgets/productivity_list_components.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -54,20 +56,45 @@ class _TasksPageState extends State<TasksPage> {
   Future<void> _delete(ProductivityController controller, String taskId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete task?'),
-        content: const Text('This task will be removed permanently.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        final colors = ListThemeColors(dialogContext);
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+          title: Text(
+            'tasks.deleteConfirmTitle'.tr,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ],
-      ),
+          content: Text(
+            'tasks.deleteConfirmMessage'.tr,
+            style: TextStyle(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(
+                'common.cancel'.tr,
+                style: TextStyle(color: colors.textSecondary),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text('common.delete'.tr),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
 
@@ -86,98 +113,229 @@ class _TasksPageState extends State<TasksPage> {
     final controller = _controller;
     if (controller == null) return const _UnavailableTaskView();
 
-    final colors = _TaskColors(context);
+    final colors = ListThemeColors(context);
     return Obx(() {
       if (controller.isLoading.value && controller.tasks.isEmpty) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return Scaffold(
+          backgroundColor: colors.background,
+          body: const Center(child: CircularProgressIndicator()),
+        );
       }
       final tasks = filterProductivityTasks(
         controller.tasks,
         filter: _filter,
         search: _search,
       );
+
+      final filterLabels = {
+        ProductivityTaskFilter.all: 'tasks.filter.all'.tr,
+        ProductivityTaskFilter.today: 'tasks.filter.today'.tr,
+        ProductivityTaskFilter.upcoming: 'tasks.filter.upcoming'.tr,
+        ProductivityTaskFilter.overdue: 'tasks.overdue'.tr,
+      };
+
       return Scaffold(
         backgroundColor: colors.background,
-        appBar: AppBar(
-          backgroundColor: colors.background,
-          foregroundColor: colors.textPrimary,
-          elevation: 0,
-          title: const Text('Tasks'),
-          actions: [
-            IconButton(
-              onPressed: _createTask,
-              icon: const Icon(Icons.add_rounded),
-              tooltip: 'Create task',
-            ),
-          ],
-        ),
-        body: RefreshIndicator(
-          onRefresh: controller.reload,
-          color: AppColors.productivityAccent,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            children: [
-              TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _search = value),
-                decoration: InputDecoration(
-                  hintText: 'Search tasks',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: colors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: colors.border),
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.reload,
+            color: AppColors.productivityAccent,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.only(bottom: 36),
+              children: [
+                // Top Header (Back, Title, Subtitle, + Button)
+                ListScreenHeader(
+                  title: 'tasks.title'.tr,
+                  subtitle: 'tasks.subtitle'.tr,
+                  onAdd: _createTask,
+                  addTooltip: 'task.create.title'.tr,
+                ),
+
+                // Hero Banner (Blue gradient with 3D paper clipboard)
+                ListHeroBanner(
+                  illustration: const Soft3DClipboardWidget(size: 68),
+                  title: 'tasks.heroQuote'.tr,
+                  subtitle: 'tasks.heroSub'.tr,
+                  gradientColors: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                  titleColor: Colors.white,
+                  subtitleColor: Colors.white.withValues(alpha: 0.90),
+                  shadowColor: const Color(0xFF2563EB),
+                ),
+                const SizedBox(height: 10),
+
+                // Search Bar & Filter Tune Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: colors.border),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.search_rounded,
+                                color: colors.textMuted,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  onChanged: (value) =>
+                                      setState(() => _search = value),
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: InputDecoration(
+                                    isDense: true,
+                                    hintText: 'tasks.searchHint'.tr,
+                                    hintStyle: TextStyle(
+                                      color: colors.textMuted,
+                                      fontSize: 13.5,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    errorBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
+                                    filled: false,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                              if (_search.isNotEmpty)
+                                GestureDetector(
+                                  onTap: () {
+                                    _searchController.clear();
+                                    setState(() => _search = '');
+                                  },
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    color: colors.textMuted,
+                                    size: 18,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+
+                      // Squircle Tune Button
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colors.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          onPressed: () {
+                            // Cycle filter or toggle
+                            setState(() {
+                              final nextIndex =
+                                  (_filter.index + 1) %
+                                  ProductivityTaskFilter.values.length;
+                              _filter = ProductivityTaskFilter.values[nextIndex];
+                            });
+                          },
+                          icon: Icon(
+                            Icons.tune_rounded,
+                            color: colors.textPrimary,
+                            size: 20,
+                          ),
+                          splashRadius: 22,
+                          tooltip: 'tasks.filter.title'.tr,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _FilterBar(
-                selected: _filter,
-                onChanged: (value) => setState(() => _filter = value),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'My tasks',
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(height: 10),
+
+                // Filter Tabs (Horizontal Pill Carousel)
+                PillFilterTabs<ProductivityTaskFilter>(
+                  selected: _filter,
+                  options: const [
+                    ProductivityTaskFilter.all,
+                    ProductivityTaskFilter.today,
+                    ProductivityTaskFilter.upcoming,
+                    ProductivityTaskFilter.overdue,
+                  ],
+                  labelBuilder: (filter) => filterLabels[filter] ?? '',
+                  onChanged: (filter) => setState(() => _filter = filter),
+                ),
+
+                // Section Header (My Tasks + Count)
+                ListSectionHeader(
+                  title: 'tasks.myTasks'.tr,
+                  countText: '${tasks.length}',
+                ),
+
+                // Task List Items
+                if (tasks.isEmpty)
+                  ListEncouragementCard(
+                    illustration: const Soft3DClipboardWidget(size: 64),
+                    title: 'tasks.allCaughtUp'.tr,
+                    subtitle: 'tasks.allCaughtUpSubtitle'.tr,
+                    buttonLabel: 'tasks.addTask'.tr,
+                    onAction: _createTask,
+                  )
+                else ...[
+                  ...tasks.map(
+                    (task) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 5,
+                      ),
+                      child: _TaskTile(
+                        task: task,
+                        busy: controller.isBusy(task.taskId),
+                        onToggle: () => _toggle(controller, task),
+                        onDelete: () => _delete(controller, task.taskId),
                       ),
                     ),
                   ),
-                  Text(
-                    '${tasks.length}',
-                    style: TextStyle(color: colors.textMuted),
+
+                  // Bottom Encouragement Card
+                  ListEncouragementCard(
+                    illustration: const Soft3DClipboardWidget(size: 64),
+                    title: 'tasks.allCaughtUp'.tr,
+                    subtitle: 'tasks.allCaughtUpSubtitle'.tr,
+                    buttonLabel: 'tasks.addTask'.tr,
+                    onAction: _createTask,
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              if (tasks.isEmpty)
-                _EmptyTasks(onCreate: _createTask)
-              else
-                ...tasks.map(
-                  (task) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _TaskTile(
-                      task: task,
-                      busy: controller.isBusy(task.taskId),
-                      onToggle: () => _toggle(controller, task),
-                      onDelete: () => _delete(controller, task.taskId),
-                    ),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -186,43 +344,6 @@ class _TasksPageState extends State<TasksPage> {
 }
 
 enum ProductivityTaskFilter { all, today, upcoming, overdue, completed }
-
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({required this.selected, required this.onChanged});
-
-  final ProductivityTaskFilter selected;
-  final ValueChanged<ProductivityTaskFilter> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final labels = {
-      ProductivityTaskFilter.all: 'All',
-      ProductivityTaskFilter.today: 'Today',
-      ProductivityTaskFilter.upcoming: 'Upcoming',
-      ProductivityTaskFilter.overdue: 'Overdue',
-      ProductivityTaskFilter.completed: 'Completed',
-    };
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: ProductivityTaskFilter.values
-            .map((filter) {
-              final isSelected = filter == selected;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(labels[filter]!),
-                  selected: isSelected,
-                  onSelected: (_) => onChanged(filter),
-                  selectedColor: AppColors.productivityAccent,
-                ),
-              );
-            })
-            .toList(growable: false),
-      ),
-    );
-  }
-}
 
 class _TaskTile extends StatelessWidget {
   const _TaskTile({
@@ -239,109 +360,191 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _TaskColors(context);
-    final priorityColor = switch (task.priority) {
-      'HIGH' => AppColors.danger,
-      'LOW' => AppColors.success,
-      _ => AppColors.productivityAccent,
-    };
+    final colors = ListThemeColors(context);
+
+    // Priority pill color styling
+    Color priorityBg;
+    Color priorityFg;
+    switch (task.priority?.toUpperCase()) {
+      case 'HIGH':
+        priorityBg = const Color(0xFFFEE2E2);
+        priorityFg = const Color(0xFFDC2626);
+        break;
+      case 'LOW':
+        priorityBg = const Color(0xFFDCFCE7);
+        priorityFg = const Color(0xFF16A34A);
+        break;
+      case 'MEDIUM':
+      default:
+        priorityBg = const Color(0xFFEEF2FF);
+        priorityFg = const Color(0xFF4F46E5);
+        break;
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: task.overdue
-              ? AppColors.danger.withValues(alpha: .65)
+              ? const Color(0xFFEF4444).withValues(alpha: 0.6)
               : colors.border,
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: ListTile(
-        onTap: busy ? null : onToggle,
-        leading: IconButton(
-          onPressed: busy ? null : onToggle,
-          icon: Icon(
-            task.completed
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
-            color: task.completed ? AppColors.success : colors.textMuted,
-          ),
-        ),
-        title: Text(
-          task.title,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w600,
-            decoration: task.completed ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        subtitle: Text(
-          _taskSubtitle(task),
-          style: TextStyle(
-            color: task.overdue ? AppColors.danger : colors.textMuted,
-            fontSize: 11,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (task.priority != null)
-              Text(
-                task.priority!,
-                style: TextStyle(
-                  color: priorityColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Circular Check Toggle Button
+          GestureDetector(
+            key: ValueKey('task_toggle_${task.taskId}'),
+            onTap: busy ? null : onToggle,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: task.completed
+                    ? const Color(0xFF22C55E)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: task.completed
+                      ? const Color(0xFF22C55E)
+                      : colors.border,
+                  width: task.completed ? 1.5 : 2.0,
                 ),
               ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'delete') onDelete();
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              alignment: Alignment.center,
+              child: task.completed
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    )
+                  : (busy
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.textMuted,
+                            ),
+                          ),
+                        )
+                      : null),
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // Title & Subtitle
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  task.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: task.completed
+                        ? colors.textMuted
+                        : colors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    decoration:
+                        task.completed ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _taskSubtitle(task),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: task.overdue
+                        ? const Color(0xFFEF4444)
+                        : colors.textMuted,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
+                ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyTasks extends StatelessWidget {
-  const _EmptyTasks({required this.onCreate});
-
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _TaskColors(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: colors.border),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.checklist_rounded, color: colors.textMuted, size: 30),
-          const SizedBox(height: 8),
-          Text(
-            'No tasks found',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Create a task and keep your next step visible.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+
+          // Trailing: Priority Badge + 3-dots Menu
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (task.priority != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: priorityBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    task.priority!.toUpperCase(),
+                    style: TextStyle(
+                      color: priorityFg,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: colors.textMuted,
+                  size: 20,
+                ),
+                onSelected: (value) {
+                  if (value == 'delete') onDelete();
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'common.delete'.tr,
+                          style: const TextStyle(
+                            color: Color(0xFFEF4444),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          OutlinedButton(onPressed: onCreate, child: const Text('Create task')),
         ],
       ),
     );
@@ -353,42 +556,22 @@ class _UnavailableTaskView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Sign in to manage tasks.')),
+    return Scaffold(
+      body: Center(child: Text('tasks.signInToManage'.tr)),
     );
   }
 }
 
-class _TaskColors {
-  _TaskColors(BuildContext context)
-    : isDark = Theme.of(context).brightness == Brightness.dark;
-
-  final bool isDark;
-
-  Color get background =>
-      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-  Color get surface =>
-      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-  Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-  Color get textSecondary =>
-      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-  Color get textMuted =>
-      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-  Color get border =>
-      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-}
-
 String _taskSubtitle(ProductivityTask task) {
-  final category = task.category;
+  final category = task.category?.toUpperCase() ?? 'GENERAL';
   final due = task.dueDate;
-  if (task.overdue) return '${category ?? 'Task'} · Overdue';
-  if (due == null) return category ?? 'No due date';
+  if (task.overdue) return '$category · OVERDUE';
+  if (due == null) return category;
   final local = due.toLocal();
   final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
   final minute = local.minute.toString().padLeft(2, '0');
   final period = local.hour >= 12 ? 'PM' : 'AM';
-  return '${category ?? 'Task'} · ${local.month}/${local.day} $hour:$minute $period';
+  return '$category · ${local.month}/${local.day} $hour:$minute $period';
 }
 
 String _errorText(Object error) =>

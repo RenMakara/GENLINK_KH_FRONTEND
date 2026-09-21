@@ -254,9 +254,39 @@ class ProductivityRemoteDatasource {
     );
   }
 
+  Future<ProductivityFocusSession?> getActiveFocusSession() {
+    return _client.get(
+      ApiEndpoints.focusSessionActive,
+      parse: (data) => data == null
+          ? null
+          : ProductivityMapper.focusSession(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<ProductivityFocusSession> pauseFocusSession(String sessionId) {
+    return _client.post(
+      ApiEndpoints.focusSessionPause(sessionId),
+      parse: (data) => ProductivityMapper.focusSession(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<ProductivityFocusSession> resumeFocusSession(String sessionId) {
+    return _client.post(
+      ApiEndpoints.focusSessionResume(sessionId),
+      parse: (data) => ProductivityMapper.focusSession(ApiClient.asMap(data)),
+    );
+  }
+
   Future<ProductivityFocusSession> completeFocusSession(String sessionId) {
     return _client.post(
       ApiEndpoints.focusSessionComplete(sessionId),
+      parse: (data) => ProductivityMapper.focusSession(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<ProductivityFocusSession> abandonFocusSession(String sessionId) {
+    return _client.post(
+      ApiEndpoints.focusSessionLeave(sessionId),
       parse: (data) => ProductivityMapper.focusSession(ApiClient.asMap(data)),
     );
   }

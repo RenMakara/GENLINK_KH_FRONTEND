@@ -17,7 +17,7 @@ class AuthChoiceScreen extends StatelessWidget {
   Future<void> _signInWithGoogle() async {
     final auth = Get.find<AuthController>();
     final success = await auth.signInWithGoogle();
-    if (success) Get.offAllNamed<void>(AppRoutes.home);
+    if (success) await auth.continueAfterGoogleLogin();
   }
 
   @override
@@ -85,33 +85,28 @@ class AuthChoiceScreen extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xl * 1.5),
         Obx(
-          () => GoogleSignInButton(
-            semanticLabel: 'auth.continueWithGoogle'.tr,
-            onPressed: Get.find<AuthController>().isLoading.value
-                ? null
-                : _signInWithGoogle,
-          ),
+          () {
+            final isLoading = Get.find<AuthController>().isLoading.value;
+            return GoogleSignInButton(
+              semanticLabel: 'auth.continueWithGoogle'.tr,
+              loading: isLoading,
+              onPressed: isLoading ? null : _signInWithGoogle,
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.md),
         AuthProviderButton(
           key: const ValueKey('continue-with-mail'),
           label: 'auth.continueWithMail'.tr,
+          icon: Icon(
+            Icons.mail_rounded,
+            size: 22,
+            color: theme.colorScheme.onSurface,
+          ),
           onPressed: () => Get.toNamed<void>(AppRoutes.login),
         ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                'auth.orDivider'.tr,
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
-              ),
-            ),
-            const Expanded(child: Divider()),
-          ],
-        ),
+        const SizedBox(height: AppSpacing.lg),
+        const AuthOrDivider(),
         const SizedBox(height: AppSpacing.xl),
         AppButton(
           key: const ValueKey('auth-choice-register'),

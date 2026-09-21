@@ -1,6 +1,6 @@
 abstract final class AppConfig {
   static const appName = 'GenLink KH';
-  static const tagline = 'Connect. Grow. Thrive.';
+  static const tagline = 'Connect Grow Thrive';
 
   static const apiPort = 8888;
 

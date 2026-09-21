@@ -6,6 +6,9 @@ import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
 import '../screens/create_habit_screen.dart';
+import '../widgets/creation_form_components.dart';
+import '../widgets/productivity_illustrations.dart';
+import '../widgets/productivity_list_components.dart';
 
 class HabitHomeScreen extends StatefulWidget {
   const HabitHomeScreen({super.key});
@@ -46,22 +49,45 @@ class _HabitHomeScreenState extends State<HabitHomeScreen> {
   Future<void> _delete(ProductivityController controller, String id) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete habit?'),
-        content: const Text(
-          'This will remove the habit and its future reminders.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+      builder: (dialogContext) {
+        final colors = ListThemeColors(dialogContext);
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+          title: Text(
+            'habits.deleteConfirmTitle'.tr,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ],
-      ),
+          content: Text(
+            'habits.deleteConfirmMessage'.tr,
+            style: TextStyle(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(
+                'common.cancel'.tr,
+                style: TextStyle(color: colors.textSecondary),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text('common.delete'.tr),
+            ),
+          ],
+        );
+      },
     );
     if (shouldDelete != true) return;
 
@@ -80,80 +106,104 @@ class _HabitHomeScreenState extends State<HabitHomeScreen> {
     final controller = _controller;
     if (controller == null) return const _UnavailableHabitView();
 
-    final colors = _HabitColors(context);
+    final colors = ListThemeColors(context);
     return Obx(() {
       if (controller.isLoading.value && controller.habits.isEmpty) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return Scaffold(
+          backgroundColor: colors.background,
+          body: const Center(child: CircularProgressIndicator()),
+        );
       }
 
       final completed = controller.habits
           .where((habit) => habit.checkedInToday)
           .length;
+
       return Scaffold(
         backgroundColor: colors.background,
-        appBar: AppBar(
-          backgroundColor: colors.background,
-          foregroundColor: colors.textPrimary,
-          elevation: 0,
-          title: const Text('Habits'),
-          actions: [
-            IconButton(
-              onPressed: _openCreate,
-              icon: const Icon(Icons.add_rounded),
-              tooltip: 'Create habit',
-            ),
-          ],
-        ),
-        body: RefreshIndicator(
-          onRefresh: controller.reload,
-          color: AppColors.productivityAccent,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            children: [
-              _StreakCard(
-                completed: completed,
-                total: controller.habits.length,
-                habits: controller.habits,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: controller.reload,
+            color: AppColors.productivityAccent,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Today's habits",
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
+              padding: const EdgeInsets.only(bottom: 36),
+              children: [
+                // Top Header (Back, Title, Subtitle, + Button)
+                ListScreenHeader(
+                  title: 'habits.title'.tr,
+                  subtitle: 'habits.subtitle'.tr,
+                  onAdd: _openCreate,
+                  addTooltip: 'habits.createHabit'.tr,
+                ),
+
+                // Hero Banner (Peach/Orange gradient with 3D Fire icon)
+                ListHeroBanner(
+                  illustration: const Soft3DFireWidget(size: 64),
+                  title: 'habits.heroQuote'.tr,
+                  subtitle: 'habits.heroSub'.tr,
+                  gradientColors: const [Color(0xFFFFF1EB), Color(0xFFFFDDD0)],
+                  titleColor: const Color(0xFF9A3412),
+                  subtitleColor: const Color(0xFFC2410C),
+                  shadowColor: const Color(0xFFEA580C),
+                ),
+                const SizedBox(height: 10),
+
+                // Sleek Charcoal Streak Card with Golden Progress Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _StreakCard(
+                    completed: completed,
+                    total: controller.habits.length,
+                    habits: controller.habits,
+                  ),
+                ),
+
+                // Section Header (Today's habits + Count)
+                ListSectionHeader(
+                  title: 'habits.todayHabits'.tr,
+                  countText: '$completed/${controller.habits.length}',
+                ),
+
+                // Habit List Items
+                if (controller.habits.isEmpty)
+                  ListEncouragementCard(
+                    illustration: const Soft3DSproutIcon(size: 64),
+                    title: 'habits.greatStart'.tr,
+                    subtitle: 'habits.greatStartSubtitle'.tr,
+                    buttonLabel: 'habits.addHabit'.tr,
+                    onAction: _openCreate,
+                  )
+                else ...[
+                  ...controller.habits.map(
+                    (habit) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 5,
+                      ),
+                      child: _HabitTile(
+                        habit: habit,
+                        busy: controller.isBusy(habit.habitId),
+                        onChanged: (value) =>
+                            _toggle(controller, habit.habitId, value),
+                        onDelete: () => _delete(controller, habit.habitId),
                       ),
                     ),
                   ),
-                  Text(
-                    '$completed/${controller.habits.length}',
-                    style: TextStyle(color: colors.textMuted),
+
+                  // Bottom Encouragement Card
+                  ListEncouragementCard(
+                    illustration: const Soft3DSproutIcon(size: 64),
+                    title: 'habits.greatStart'.tr,
+                    subtitle: 'habits.greatStartSubtitle'.tr,
+                    buttonLabel: 'habits.addHabit'.tr,
+                    onAction: _openCreate,
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              if (controller.habits.isEmpty)
-                _EmptyHabits(onCreate: _openCreate)
-              else
-                ...controller.habits.map(
-                  (habit) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _HabitTile(
-                      habit: habit,
-                      busy: controller.isBusy(habit.habitId),
-                      onChanged: (value) =>
-                          _toggle(controller, habit.habitId, value),
-                      onDelete: () => _delete(controller, habit.habitId),
-                    ),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       );
@@ -174,7 +224,6 @@ class _StreakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _HabitColors(context);
     final bestStreak = habits.isEmpty
         ? 0
         : habits
@@ -183,58 +232,98 @@ class _StreakCard extends StatelessWidget {
     final progress = total == 0 ? 0.0 : completed / total;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        color: colors.isDark ? const Color(0xFF171717) : Colors.black,
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF181A1F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              // Flame Badge
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(11),
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF2A2118),
+                  border: Border.all(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                  ),
                 ),
+                alignment: Alignment.center,
                 child: const Icon(
                   Icons.local_fire_department_rounded,
-                  color: Color(0xFFFFB43B),
+                  color: Color(0xFFF59E0B),
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 11),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$bestStreak-day streak',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: 12),
+
+              // Streak Count & Completed Subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'habits.dayStreak'.trParams({'count': '$bestStreak'}),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '$completed of $total completed today',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: .65),
-                      fontSize: 11,
+                    const SizedBox(height: 2),
+                    Text(
+                      'habits.completedTodayCount'.trParams({
+                        'completed': '$completed',
+                        'total': '$total',
+                      }),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+
+              // Trailing Chevron
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white.withValues(alpha: 0.50),
+                size: 22,
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // Golden Progress Bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 6,
-              backgroundColor: Colors.white.withValues(alpha: .17),
-              valueColor: const AlwaysStoppedAnimation(Colors.white),
+              minHeight: 5,
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFF59E0B),
+              ),
             ),
           ),
         ],
@@ -258,82 +347,133 @@ class _HabitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _HabitColors(context);
+    final colors = ListThemeColors(context);
     final checked = habit.checkedInToday;
+
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: colors.border),
-      ),
-      child: ListTile(
-        leading: Checkbox(
-          value: checked,
-          onChanged: busy ? null : (value) => onChanged(value ?? false),
-          activeColor: AppColors.productivityAccent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        ),
-        title: Text(
-          habit.title,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w600,
-            decoration: checked ? TextDecoration.lineThrough : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        subtitle: Text(
-          _habitSubtitle(habit),
-          style: TextStyle(color: colors.textMuted, fontSize: 11),
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(value: 'delete', child: Text('Delete')),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-}
-
-class _EmptyHabits extends StatelessWidget {
-  const _EmptyHabits({required this.onCreate});
-
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: colors.border),
-      ),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.repeat_rounded, color: colors.textMuted, size: 30),
-          const SizedBox(height: 8),
-          Text(
-            'No habits yet',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
+          // Circular Purple Check Toggle Button
+          GestureDetector(
+            key: ValueKey('habit_toggle_${habit.habitId}'),
+            onTap: busy ? null : () => onChanged(!checked),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: checked
+                    ? const Color(0xFF8B5CF6)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: checked ? const Color(0xFF8B5CF6) : colors.border,
+                  width: checked ? 1.5 : 2.0,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: checked
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    )
+                  : (busy
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              colors.textMuted,
+                            ),
+                          ),
+                        )
+                      : null),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Create a small daily routine to get started.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          const SizedBox(width: 14),
+
+          // Habit Title & Subtitle
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  habit.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: checked ? colors.textMuted : colors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    decoration: checked ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _habitSubtitle(habit),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-          OutlinedButton(
-            onPressed: onCreate,
-            child: const Text('Create habit'),
+
+          // Trailing 3-dots Menu
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: colors.textMuted,
+              size: 20,
+            ),
+            onSelected: (value) {
+              if (value == 'delete') onDelete();
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Color(0xFFEF4444),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'common.delete'.tr,
+                      style: const TextStyle(
+                        color: Color(0xFFEF4444),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -346,41 +486,23 @@ class _UnavailableHabitView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('Sign in to manage habits.')),
+    return Scaffold(
+      body: Center(child: Text('habits.signInToManage'.tr)),
     );
   }
-}
-
-class _HabitColors {
-  _HabitColors(BuildContext context)
-    : isDark = Theme.of(context).brightness == Brightness.dark;
-
-  final bool isDark;
-
-  Color get background =>
-      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-  Color get surface =>
-      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-  Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-  Color get textSecondary =>
-      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-  Color get textMuted =>
-      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-  Color get border =>
-      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
 String _habitSubtitle(ProductivityHabit habit) {
   final parts = <String>[];
   final category = habit.category;
   final frequency = habit.frequency;
-  if (category != null && category.isNotEmpty) parts.add(category);
-  if (frequency != null && frequency.isNotEmpty) parts.add(frequency);
-  parts.add('${habit.streakCount} day streak');
+  if (category != null && category.isNotEmpty) parts.add(category.toUpperCase());
+  if (frequency != null && frequency.isNotEmpty) parts.add(frequency.toUpperCase());
+  parts.add('habits.dayStreakShort'.trParams({'count': '${habit.streakCount}'}));
   final reminder = habit.reminderTime;
-  if (reminder != null && reminder.isNotEmpty) parts.add('Reminder $reminder');
+  if (reminder != null && reminder.isNotEmpty) {
+    parts.add('habits.reminder'.trParams({'time': reminder}));
+  }
   return parts.join(' · ');
 }
 

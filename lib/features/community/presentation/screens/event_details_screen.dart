@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/app_error.dart';
@@ -38,6 +39,7 @@ class EventDetailsScreen extends StatefulWidget {
 class _EventDetailsScreenState extends State<EventDetailsScreen>
     with SingleTickerProviderStateMixin {
   late EventModel _event;
+  String? _detailsErrorMessage;
   bool _isBookmarked = false;
   bool _isDescriptionExpanded = false;
   bool _isButtonPressed = false;
@@ -65,17 +67,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   Future<void> _fetchLatestEventDetails() async {
     if (_event.id.isEmpty) return;
     try {
-      if (Get.isRegistered<CommunityController>()) {
-        final ctrl = Get.find<CommunityController>();
-        final fresh = await ctrl.fetchEventDetails(_event.id);
-        if (mounted) {
-          setState(() {
-            _event = fresh;
-            _isBookmarked = fresh.isBookmarked;
-          });
-        }
+      final ctrl = Get.isRegistered<CommunityController>()
+          ? Get.find<CommunityController>()
+          : Get.put(CommunityController());
+      final fresh = await ctrl.fetchEventDetails(_event.id);
+      if (mounted) {
+        setState(() {
+          _event = fresh;
+          _isBookmarked = fresh.isBookmarked;
+        });
       }
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      // A 404/403 means the event is no longer visible to this user, so the
+      // list/search object must not remain on screen as if it were valid.
+      // For transient transport/server failures, retain the already-loaded
+      // event card instead of replacing real list data with a misleading
+      // "unavailable" state; the next explicit refresh can retry the lookup.
+      if (error is AppError &&
+          (error.isNotFound ||
+              error.isForbidden ||
+              error.errorCode == 'EVENT_NOT_FOUND' ||
+              error.errorCode == 'EVENT_UNAVAILABLE')) {
+        setState(() => _detailsErrorMessage = 'community.eventUnavailable'.tr);
+      }
+    }
   }
 
   void _triggerBookmarkAnimation() {
@@ -87,13 +103,41 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     });
   }
 
+  Future<void> _openMeeting(
+    BuildContext context,
+    EventModel event,
+    bool isDark,
+  ) async {
+    final rawUrl = event.effectiveMeetingUrl.trim();
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty) {
+      _showSnackBar(context, isDark, 'community.meetingLinkOpenFailed'.tr);
+      return;
+    }
+
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!context.mounted) return;
+      if (!opened) {
+        _showSnackBar(context, isDark, 'community.meetingLinkOpenFailed'.tr);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showSnackBar(context, isDark, 'community.meetingLinkOpenFailed'.tr);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isKhmer = Get.locale?.languageCode == 'km';
 
     // ── Error State ──────────────────────────────────────────────────────────
-    if (widget.errorMessage != null && widget.errorMessage!.isNotEmpty) {
+    if ((_detailsErrorMessage != null && _detailsErrorMessage!.isNotEmpty) ||
+        (widget.errorMessage != null && widget.errorMessage!.isNotEmpty)) {
       return _buildErrorState(context, isDark);
     }
 
@@ -107,25 +151,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         : null;
 
     final event = controller != null
-        ? (controller.events.firstWhereOrNull((e) => e.id == _event.id) ?? _event)
+        ? (controller.events.firstWhereOrNull((e) => e.id == _event.id) ??
+              _event)
         : _event;
 
     final currentUserId = CurrentUser.id;
-    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
-        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+    final isOrganizer = event.isOwnedBy(currentUserId);
 
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
     final surfacePrimary = isDark ? const Color(0xFF141414) : Colors.white;
     final tileBg = isDark ? const Color(0xFF18181A) : const Color(0xFFF6F6F8);
-    final borderSubtle = isDark ? const Color(0xFF28282A) : const Color(0xFFE6E6EA);
+    final borderSubtle = isDark
+        ? const Color(0xFF28282A)
+        : const Color(0xFFE6E6EA);
     final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
 
     final bool hasNetworkImage = event.imageUrl.isNotEmpty;
     final bool hasLocalImage = event.coverImageFile != null;
 
     final effectiveHeroTag = widget.heroTag ?? 'event-image-${event.id}';
-    final double coverHeight = (hasLocalImage || hasNetworkImage) ? 240.0 : 180.0;
+    final double coverHeight = (hasLocalImage || hasNetworkImage)
+        ? 240.0
+        : 180.0;
 
     return Scaffold(
       backgroundColor: bgPrimary,
@@ -145,22 +195,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         height: coverHeight,
                         width: double.infinity,
                         child: hasLocalImage
-                            ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
+                            ? Image.file(
+                                event.coverImageFile!,
+                                fit: BoxFit.cover,
+                              )
                             : hasNetworkImage
-                                ? (event.imageUrl.startsWith('assets/')
-                                    ? Image.asset(
-                                        event.imageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            _placeholderCover(isDark),
-                                      )
-                                    : Image.network(
-                                        event.imageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            _placeholderCover(isDark),
-                                      ))
-                                : _placeholderCover(isDark),
+                            ? (event.imageUrl.startsWith('assets/')
+                                  ? Image.asset(
+                                      event.imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              _placeholderCover(isDark),
+                                    )
+                                  : Image.network(
+                                      event.imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              _placeholderCover(isDark),
+                                    ))
+                            : _placeholderCover(isDark),
                       ),
                     ),
 
@@ -185,7 +240,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     // Top Action Bar (Back, Bookmark, Share)
                     SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: Row(
                           children: [
                             // Back Button
@@ -201,7 +259,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                 final ev = controller.events.firstWhereOrNull(
                                   (e) => e.id == event.id,
                                 );
-                                final isSaved = ev?.isBookmarked ?? _isBookmarked;
+                                final isSaved =
+                                    ev?.isBookmarked ?? _isBookmarked;
                                 return AnimatedScale(
                                   scale: _bookmarkScale,
                                   duration: const Duration(milliseconds: 140),
@@ -209,7 +268,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                     icon: isSaved
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
-                                    iconColor: isSaved ? Colors.white : Colors.white,
+                                    iconColor: isSaved
+                                        ? Colors.white
+                                        : Colors.white,
                                     onTap: () {
                                       _triggerBookmarkAnimation();
                                       setState(() => _isBookmarked = !isSaved);
@@ -220,7 +281,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                         isDark,
                                         nowSaved
                                             ? 'community.savedToBookmarks'.tr
-                                            : 'community.removedFromBookmarks'.tr,
+                                            : 'community.removedFromBookmarks'
+                                                  .tr,
                                       );
                                     },
                                   ),
@@ -234,10 +296,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                   icon: _isBookmarked
                                       ? Icons.bookmark_rounded
                                       : Icons.bookmark_border_rounded,
-                                  iconColor: _isBookmarked ? Colors.white : Colors.white,
+                                  iconColor: _isBookmarked
+                                      ? Colors.white
+                                      : Colors.white,
                                   onTap: () {
                                     _triggerBookmarkAnimation();
-                                    setState(() => _isBookmarked = !_isBookmarked);
+                                    setState(
+                                      () => _isBookmarked = !_isBookmarked,
+                                    );
                                     _showSnackBar(
                                       context,
                                       isDark,
@@ -254,7 +320,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                             _buildFrostedButton(
                               icon: Icons.share_outlined,
                               onTap: () {
-                                _showSnackBar(context, isDark, 'community.share'.tr);
+                                _showSnackBar(
+                                  context,
+                                  isDark,
+                                  'community.share'.tr,
+                                );
                               },
                             ),
                             if (isOrganizer) ...[
@@ -281,14 +351,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         children: [
                           if (event.category.isNotEmpty) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.16)
                                     : Colors.black.withValues(alpha: 0.75),
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                                 border: Border.all(
-                                  color: isDark ? Colors.white24 : Colors.transparent,
+                                  color: isDark
+                                      ? Colors.white24
+                                      : Colors.transparent,
                                   width: 0.8,
                                 ),
                               ),
@@ -302,7 +379,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
-                                    _localizedCategory(event.category).toUpperCase(),
+                                    _localizedCategory(
+                                      event.category,
+                                    ).toUpperCase(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 11,
@@ -316,11 +395,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                             const SizedBox(width: 8),
                           ],
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: event.isOnline
-                                  ? (isDark ? Colors.white.withValues(alpha: 0.22) : Colors.black)
-                                  : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFF1E1E24)),
+                                  ? (isDark
+                                        ? Colors.white.withValues(alpha: 0.22)
+                                        : Colors.black)
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.12)
+                                        : const Color(0xFF1E1E24)),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                               border: Border.all(
                                 color: isDark ? Colors.white24 : Colors.white12,
@@ -487,7 +573,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               ),
               decoration: BoxDecoration(
                 color: surfacePrimary,
-                border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
+                border: Border(
+                  top: BorderSide(color: borderSubtle, width: 0.8),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.06),
@@ -540,9 +628,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             width: 0.8,
           ),
         ),
-        child: Center(
-          child: Icon(icon, color: iconColor, size: 19),
-        ),
+        child: Center(child: Icon(icon, color: iconColor, size: 19)),
       ),
     );
   }
@@ -670,10 +756,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }) async {
     if (action == 'edit') {
       final updated = await Get.to<EventModel?>(
-        () => CreateEventScreen(
-          eventToEdit: event,
-          returnCreatedEvent: true,
-        ),
+        () => CreateEventScreen(eventToEdit: event, returnCreatedEvent: true),
       );
       if (updated != null && mounted) {
         setState(() {
@@ -688,7 +771,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         context: context,
         builder: (dialogCtx) => AlertDialog(
           backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'community.deleteEvent'.tr.isNotEmpty &&
                     'community.deleteEvent'.tr != 'community.deleteEvent'
@@ -702,7 +787,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           ),
           content: Text(
             'community.deleteEventConfirm'.tr.isNotEmpty &&
-                    'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
+                    'community.deleteEventConfirm'.tr !=
+                        'community.deleteEventConfirm'
                 ? 'community.deleteEventConfirm'.tr
                 : 'Are you sure you want to delete this event? This action cannot be undone.',
             style: TextStyle(
@@ -730,7 +816,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFEF4444),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
               child: Text(
@@ -785,14 +873,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required bool isDark,
   }) {
     final currentUserId = CurrentUser.id;
-    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
-        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+    final isOrganizer = event.isOwnedBy(currentUserId);
 
     final orgName = event.organizerName.isNotEmpty
         ? event.organizerName
         : 'GenLink Community';
 
-    String? effectiveAvatar = (event.organizerAvatar != null && event.organizerAvatar!.trim().isNotEmpty)
+    String? effectiveAvatar =
+        (event.organizerAvatar != null &&
+            event.organizerAvatar!.trim().isNotEmpty)
         ? event.organizerAvatar!.trim()
         : null;
 
@@ -828,9 +917,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
+            backgroundColor: isDark
+                ? const Color(0xFF2C2C2E)
+                : const Color(0xFFE5E5EA),
             foregroundImage: avatarProvider,
-            onForegroundImageError: avatarProvider != null ? (exception, stackTrace) {} : null,
+            onForegroundImageError: avatarProvider != null
+                ? (exception, stackTrace) {}
+                : null,
             child: Text(
               orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
               style: TextStyle(
@@ -867,7 +960,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         ? (isDark ? Colors.white70 : Colors.black87)
                         : textSecondary,
                     fontSize: 12,
-                    fontWeight: isOrganizer ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isOrganizer
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ],
@@ -875,12 +970,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           ),
           if (isOrganizer)
             PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: textPrimary,
-                size: 20,
+              icon: Icon(Icons.more_vert_rounded, color: textPrimary, size: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               color: isDark ? const Color(0xFF1E1E20) : Colors.white,
               onSelected: (val) async {
                 if (val == 'remove_cover') {
@@ -890,7 +983,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       coverImageFile: null,
                     );
                     if (controller != null) {
-                      final idx = controller.events.indexWhere((e) => e.id == event.id);
+                      final idx = controller.events.indexWhere(
+                        (e) => e.id == event.id,
+                      );
                       if (idx != -1) {
                         controller.events[idx] = _event;
                       }
@@ -928,7 +1023,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.hide_image_outlined, size: 18, color: textPrimary),
+                        Icon(
+                          Icons.hide_image_outlined,
+                          size: 18,
+                          color: textPrimary,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Remove Cover Image',
@@ -942,11 +1041,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                      const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 18,
+                        color: AppColors.danger,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'community.deleteEvent'.tr,
-                        style: const TextStyle(color: AppColors.danger, fontSize: 13.5),
+                        style: const TextStyle(
+                          color: AppColors.danger,
+                          fontSize: 13.5,
+                        ),
                       ),
                     ],
                   ),
@@ -979,7 +1085,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildIconBadge(Icons.calendar_today_rounded, textPrimary, textSecondary),
+          _buildIconBadge(
+            Icons.calendar_today_rounded,
+            textPrimary,
+            textSecondary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1022,9 +1132,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required Color borderSubtle,
   }) {
     final currentUserId = CurrentUser.id;
-    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
-        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
-    final canAccessMeeting = event.isRsvped || isOrganizer;
+    final canAccessMeeting = event.canAccessMeetingFor(currentUserId);
     final hasMeetingUrl = event.effectiveMeetingUrl.isNotEmpty;
 
     return Container(
@@ -1056,16 +1164,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 if (canAccessMeeting && hasMeetingUrl) ...[
                   const SizedBox(height: 6),
                   InkWell(
-                    onTap: () {
-                      _showSnackBar(
-                        context,
-                        isDark,
-                        'Joining ${event.title}...',
-                      );
-                    },
+                    onTap: () => _openMeeting(context, event, isDark),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.08)
@@ -1088,7 +1193,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 13, color: textPrimary),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 13,
+                            color: textPrimary,
+                          ),
                         ],
                       ),
                     ),
@@ -1098,12 +1207,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.lock_outline_rounded, size: 13, color: textSecondary),
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 13,
+                        color: textSecondary,
+                      ),
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
-                          'community.meetingLinkAfterRegistration'.tr.isNotEmpty &&
-                                  'community.meetingLinkAfterRegistration'.tr != 'community.meetingLinkAfterRegistration'
+                          'community.meetingLinkAfterRegistration'
+                                      .tr
+                                      .isNotEmpty &&
+                                  'community.meetingLinkAfterRegistration'.tr !=
+                                      'community.meetingLinkAfterRegistration'
                               ? 'community.meetingLinkAfterRegistration'.tr
                               : 'Meeting link available after registration',
                           style: TextStyle(
@@ -1149,7 +1265,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildIconBadge(Icons.location_on_rounded, textPrimary, textSecondary),
+          _buildIconBadge(
+            Icons.location_on_rounded,
+            textPrimary,
+            textSecondary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1178,7 +1298,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     onTap: () => _showMapModal(context, event, isDark),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.08)
@@ -1201,7 +1324,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 13, color: textPrimary),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 13,
+                            color: textPrimary,
+                          ),
                         ],
                       ),
                     ),
@@ -1243,7 +1370,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildIconBadge(Icons.confirmation_number_outlined, textPrimary, textSecondary),
+          _buildIconBadge(
+            Icons.confirmation_number_outlined,
+            textPrimary,
+            textSecondary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1285,8 +1416,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required bool isDark,
   }) {
     final currentUserId = CurrentUser.id;
-    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
-        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+    final isOrganizer = event.isOwnedBy(currentUserId);
 
     Widget content(int count, int? limit, bool isFull) {
       final String line1;
@@ -1314,7 +1444,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildIconBadge(Icons.people_alt_rounded, textPrimary, textSecondary),
+            _buildIconBadge(
+              Icons.people_alt_rounded,
+              textPrimary,
+              textSecondary,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1350,11 +1484,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             ),
             if (isOrganizer) ...[
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: textSecondary,
-                size: 20,
-              ),
+              Icon(Icons.chevron_right_rounded, color: textSecondary, size: 20),
             ],
           ],
         ),
@@ -1371,7 +1501,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         return content(count, limit, full);
       });
     } else {
-      cardWidget = content(event.attendeesCount, event.attendeeLimit, event.isFull);
+      cardWidget = content(
+        event.attendeesCount,
+        event.attendeeLimit,
+        event.isFull,
+      );
     }
 
     if (isOrganizer) {
@@ -1412,19 +1546,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             text,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 14,
-              height: 1.6,
-            ),
+            style: TextStyle(color: textSecondary, fontSize: 14, height: 1.6),
           ),
           secondChild: Text(
             text,
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 14,
-              height: 1.6,
-            ),
+            style: TextStyle(color: textSecondary, fontSize: 14, height: 1.6),
           ),
         ),
         if (isLong) ...[
@@ -1437,7 +1563,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text(
-                _isDescriptionExpanded ? 'community.readLess'.tr : 'community.readMore'.tr,
+                _isDescriptionExpanded
+                    ? 'community.readLess'.tr
+                    : 'community.readMore'.tr,
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.w700,
@@ -1457,18 +1585,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required bool isDark,
   }) {
     final currentUserId = CurrentUser.id;
-    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
-        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+    final isOrganizer = event.isOwnedBy(currentUserId);
 
-    final isFull = event.isFull ||
-        (event.attendeeLimit != null && event.attendeesCount >= event.attendeeLimit!);
+    final isFull =
+        event.isFull ||
+        (event.attendeeLimit != null &&
+            event.attendeesCount >= event.attendeeLimit!);
 
-    final isEnded = event.status.toUpperCase() == 'ENDED' ||
-        (event.endDateTime != null && event.endDateTime!.isBefore(DateTime.now()));
+    final isRsvpEligible = event.isRsvpEligible;
+    final isPast = event.isPast;
+    final isJoined = event.hasJoinedRsvp;
 
-    // When the user is already registered (and not the organizer or ended event),
+    // When the user is already registered (and not the organizer),
     // provide the registered status badge alongside the Cancel Registration action.
-    if (!isOrganizer && event.isRsvped && !isEnded) {
+    if (!isOrganizer && isJoined) {
       return Row(
         children: [
           Expanded(
@@ -1477,10 +1607,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               height: 52,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1B271E) : const Color(0xFFEAF7EE),
+                color: isDark
+                    ? const Color(0xFF1B271E)
+                    : const Color(0xFFEAF7EE),
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF2C4D35) : const Color(0xFFB5E2C0),
+                  color: isDark
+                      ? const Color(0xFF2C4D35)
+                      : const Color(0xFFB5E2C0),
                   width: 0.8,
                 ),
               ),
@@ -1489,7 +1623,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 children: [
                   Icon(
                     Icons.check_circle_rounded,
-                    color: isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A),
+                    color: isDark
+                        ? const Color(0xFF4ADE80)
+                        : const Color(0xFF16A34A),
                     size: 18,
                   ),
                   const SizedBox(width: 6),
@@ -1499,7 +1635,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       child: Text(
                         'community.youAreRegistered'.tr,
                         style: TextStyle(
-                          color: isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D),
+                          color: isDark
+                              ? const Color(0xFF4ADE80)
+                              : const Color(0xFF15803D),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -1522,10 +1660,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   side: BorderSide(
-                    color: isDark ? const Color(0xFF4B2323) : const Color(0xFFFCA5A5),
+                    color: isDark
+                        ? const Color(0xFF4B2323)
+                        : const Color(0xFFFCA5A5),
                     width: 0.8,
                   ),
-                  backgroundColor: isDark ? const Color(0xFF261616) : const Color(0xFFFEF2F2),
+                  backgroundColor: isDark
+                      ? const Color(0xFF261616)
+                      : const Color(0xFFFEF2F2),
                   foregroundColor: const Color(0xFFEF4444),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1537,7 +1679,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFFEF4444),
+                          ),
                         ),
                       )
                     : FittedBox(
@@ -1572,8 +1716,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       label = "You're the Organizer";
       icon = Icons.stars_rounded;
       iconColor = isDark ? Colors.white : Colors.black87;
-    } else if (isEnded) {
-      label = 'community.eventEnded'.tr;
+    } else if (!event.isPublished) {
+      label = event.isDraft
+          ? 'community.eventDraft'.tr
+          : event.isCancelled
+          ? 'community.eventCancelled'.tr
+          : event.isCompleted
+          ? 'community.eventCompleted'.tr
+          : 'community.eventUnavailable'.tr;
+      icon = Icons.schedule_rounded;
+      iconColor = textDisabled(isDark);
+    } else if (isPast || !isRsvpEligible) {
+      label = 'community.eventPast'.tr;
       icon = Icons.schedule_rounded;
       iconColor = textDisabled(isDark);
     } else if (isFull) {
@@ -1586,12 +1740,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       iconColor = null;
     }
 
-    final bool isInactive = isOrganizer || isFull || isEnded;
+    final bool isInactive = isOrganizer || isFull || !isRsvpEligible;
 
     return GestureDetector(
-      onTapDown: isInactive ? null : (_) => setState(() => _isButtonPressed = true),
-      onTapUp: isInactive ? null : (_) => setState(() => _isButtonPressed = false),
-      onTapCancel: isInactive ? null : () => setState(() => _isButtonPressed = false),
+      onTapDown: isInactive
+          ? null
+          : (_) => setState(() => _isButtonPressed = true),
+      onTapUp: isInactive
+          ? null
+          : (_) => setState(() => _isButtonPressed = false),
+      onTapCancel: isInactive
+          ? null
+          : () => setState(() => _isButtonPressed = false),
       child: AnimatedScale(
         scale: _isButtonPressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 100),
@@ -1604,9 +1764,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => EventRegisterScreen(
-                          event: event,
-                        ),
+                        builder: (_) => EventRegisterScreen(event: event),
                       ),
                     ).then((_) {
                       if (mounted) {
@@ -1618,16 +1776,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               disabledBackgroundColor: isDark
                   ? const Color(0xFF222224)
                   : const Color(0xFFEEEEF0),
-              disabledForegroundColor: isDark
-                  ? Colors.white70
-                  : Colors.black87,
+              disabledForegroundColor: isDark ? Colors.white70 : Colors.black87,
               backgroundColor: isDark ? Colors.white : Colors.black,
               foregroundColor: isDark ? Colors.black : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 side: isInactive
                     ? BorderSide(
-                        color: isDark ? const Color(0xFF333336) : const Color(0xFFDDDDE0),
+                        color: isDark
+                            ? const Color(0xFF333336)
+                            : const Color(0xFFDDDDE0),
                         width: 0.8,
                       )
                     : BorderSide.none,
@@ -1659,10 +1817,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     );
   }
 
-  Future<void> _handleCancelRegistration(
-    EventModel event,
-    bool isDark,
-  ) async {
+  Future<void> _handleCancelRegistration(EventModel event, bool isDark) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -1700,7 +1855,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               elevation: 0,
             ),
             child: Text(
@@ -1720,11 +1877,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       bool success = false;
       if (widget.onCancelRsvp != null) {
         success = await widget.onCancelRsvp!(event.id);
-      } else if (Get.isRegistered<CommunityController>()) {
-        final ctrl = Get.find<CommunityController>();
-        success = await ctrl.cancelEventRegistration(event.id);
       } else {
-        success = true;
+        final ctrl = Get.isRegistered<CommunityController>()
+            ? Get.find<CommunityController>()
+            : Get.put(CommunityController());
+        success = await ctrl.cancelEventRegistration(event.id);
       }
 
       if (!mounted) return;
@@ -1747,33 +1904,25 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           );
         }
 
-        _showSnackBar(
-          context,
-          isDark,
-          'community.registrationCancelled'.tr,
-        );
+        _showSnackBar(context, isDark, 'community.registrationCancelled'.tr);
       } else {
         setState(() => _isCancelling = false);
-        _showSnackBar(
-          context,
-          isDark,
-          'community.cancelRsvpFailed'.tr,
-        );
+        _showSnackBar(context, isDark, 'community.cancelRsvpFailed'.tr);
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isCancelling = false);
-      _showSnackBar(
-        context,
-        isDark,
-        'community.cancelRsvpFailed'.tr,
-      );
+      _showSnackBar(context, isDark, 'community.cancelRsvpFailed'.tr);
     }
   }
 
   Color textDisabled(bool isDark) => isDark ? Colors.white38 : Colors.black38;
 
-  Widget _buildIconBadge(IconData icon, Color textPrimary, Color textSecondary) {
+  Widget _buildIconBadge(
+    IconData icon,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -1826,7 +1975,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+                        color: isDark
+                            ? Colors.white12
+                            : Colors.black.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -1843,7 +1994,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                           Text(
                             locName,
                             style: TextStyle(
-                              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.lightTextPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -1852,7 +2005,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                           Text(
                             coordsText,
                             style: TextStyle(
-                              color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+                              color: isDark
+                                  ? Colors.white70
+                                  : AppColors.lightTextSecondary,
                               fontSize: 13,
                             ),
                           ),
@@ -1867,19 +2022,30 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   height: 48,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: '$locName ($coordsText)'));
+                      Clipboard.setData(
+                        ClipboardData(text: '$locName ($coordsText)'),
+                      );
                       Navigator.pop(ctx);
-                      _showSnackBar(context, isDark, 'community.copyLocation'.tr);
+                      _showSnackBar(
+                        context,
+                        isDark,
+                        'community.copyLocation'.tr,
+                      );
                     },
                     icon: const Icon(Icons.copy_rounded, size: 18),
                     label: Text(
                       'community.copyLocation'.tr,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isDark ? Colors.white : Colors.black,
                       foregroundColor: isDark ? Colors.black : Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
                   ),
@@ -1898,9 +2064,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     bool isDark,
   ) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
-    final textMuted = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
-    final borderSubtle = isDark ? const Color(0xFF28282A) : const Color(0xFFE6E6EA);
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? const Color(0xFF9CA3AF)
+        : const Color(0xFF6B7280);
+    final borderSubtle = isDark
+        ? const Color(0xFF28282A)
+        : const Color(0xFFE6E6EA);
     final bg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
 
     showModalBottomSheet(
@@ -1911,11 +2083,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) {
+        final attendees = <EventAttendeeModel>[];
+        EventPageModel<EventAttendeeModel>? attendeePage;
+        Future<EventPageModel<EventAttendeeModel>>? firstPageFuture;
+        bool initialPageLoaded = false;
+        bool loadingMore = false;
+
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             final controller = Get.isRegistered<CommunityController>()
                 ? Get.find<CommunityController>()
                 : null;
+            if (controller != null && firstPageFuture == null) {
+              firstPageFuture = controller.fetchEventAttendeesPage(
+                event.id,
+                page: 1,
+                limit: 20,
+              );
+            }
 
             return SafeArea(
               child: SizedBox(
@@ -1946,7 +2131,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                               children: [
                                 Text(
                                   'community.eventAttendees'.tr.isNotEmpty &&
-                                          'community.eventAttendees'.tr != 'community.eventAttendees'
+                                          'community.eventAttendees'.tr !=
+                                              'community.eventAttendees'
                                       ? 'community.eventAttendees'.tr
                                       : 'Event Attendees',
                                   style: TextStyle(
@@ -1967,7 +2153,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.close, color: textPrimary, size: 20),
+                            icon: Icon(
+                              Icons.close,
+                              color: textPrimary,
+                              size: 20,
+                            ),
                             onPressed: () => Navigator.pop(sheetCtx),
                           ),
                         ],
@@ -1984,10 +2174,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                 style: TextStyle(color: textSecondary),
                               ),
                             )
-                          : FutureBuilder<List<EventAttendeeModel>>(
-                              future: controller.fetchEventAttendees(event.id),
+                          : FutureBuilder<EventPageModel<EventAttendeeModel>>(
+                              future: firstPageFuture,
                               builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
                                   return Center(
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -1997,13 +2188,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                           height: 28,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.5,
-                                            color: isDark ? Colors.white : Colors.black,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black,
                                           ),
                                         ),
                                         const SizedBox(height: 12),
                                         Text(
-                                          'community.loadingAttendees'.tr.isNotEmpty &&
-                                                  'community.loadingAttendees'.tr != 'community.loadingAttendees'
+                                          'community.loadingAttendees'
+                                                      .tr
+                                                      .isNotEmpty &&
+                                                  'community.loadingAttendees'
+                                                          .tr !=
+                                                      'community.loadingAttendees'
                                               ? 'community.loadingAttendees'.tr
                                               : 'Loading attendees...',
                                           style: TextStyle(
@@ -2025,7 +2222,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                         children: [
                                           Icon(
                                             Icons.error_outline_rounded,
-                                            color: isDark ? Colors.white60 : Colors.black45,
+                                            color: isDark
+                                                ? Colors.white60
+                                                : Colors.black45,
                                             size: 40,
                                           ),
                                           const SizedBox(height: 12),
@@ -2048,12 +2247,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                           ),
                                           const SizedBox(height: 16),
                                           ElevatedButton(
-                                            onPressed: () => setSheetState(() {}),
+                                            onPressed: () =>
+                                                setSheetState(() {}),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: isDark ? Colors.white : Colors.black,
-                                              foregroundColor: isDark ? Colors.black : Colors.white,
+                                              backgroundColor: isDark
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                              foregroundColor: isDark
+                                                  ? Colors.black
+                                                  : Colors.white,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               elevation: 0,
                                             ),
@@ -2065,7 +2270,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                   );
                                 }
 
-                                final attendees = snapshot.data ?? [];
+                                if (snapshot.hasData && !initialPageLoaded) {
+                                  attendeePage = snapshot.data;
+                                  attendees.addAll(snapshot.data!.content);
+                                  initialPageLoaded = true;
+                                }
                                 if (attendees.isEmpty) {
                                   return Center(
                                     child: Padding(
@@ -2075,13 +2284,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                         children: [
                                           Icon(
                                             Icons.people_outline_rounded,
-                                            color: isDark ? Colors.white38 : Colors.black26,
+                                            color: isDark
+                                                ? Colors.white38
+                                                : Colors.black26,
                                             size: 48,
                                           ),
                                           const SizedBox(height: 12),
                                           Text(
-                                            'community.noAttendeesYet'.tr.isNotEmpty &&
-                                                    'community.noAttendeesYet'.tr != 'community.noAttendeesYet'
+                                            'community.noAttendeesYet'
+                                                        .tr
+                                                        .isNotEmpty &&
+                                                    'community.noAttendeesYet'
+                                                            .tr !=
+                                                        'community.noAttendeesYet'
                                                 ? 'community.noAttendeesYet'.tr
                                                 : 'No attendees yet',
                                             style: TextStyle(
@@ -2106,15 +2321,80 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
                                 return ListView.separated(
                                   physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  itemCount: attendees.length,
-                                  separatorBuilder: (context, index) => Divider(height: 1, color: borderSubtle),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  itemCount:
+                                      attendees.length +
+                                      (attendeePage?.hasNext == true ? 1 : 0),
+                                  separatorBuilder: (context, index) =>
+                                      Divider(height: 1, color: borderSubtle),
                                   itemBuilder: (context, index) {
+                                    if (index == attendees.length) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        child: Center(
+                                          child: loadingMore
+                                              ? const SizedBox(
+                                                  width: 22,
+                                                  height: 22,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                )
+                                              : TextButton(
+                                                  onPressed: () async {
+                                                    if (loadingMore ||
+                                                        attendeePage == null) {
+                                                      return;
+                                                    }
+                                                    setSheetState(
+                                                      () => loadingMore = true,
+                                                    );
+                                                    try {
+                                                      final next = await controller
+                                                          .fetchEventAttendeesPage(
+                                                            event.id,
+                                                            page:
+                                                                attendeePage!
+                                                                    .page +
+                                                                2,
+                                                            limit: 20,
+                                                          );
+                                                      attendees.addAll(
+                                                        next.content,
+                                                      );
+                                                      attendeePage = next;
+                                                    } finally {
+                                                      if (ctx.mounted) {
+                                                        setSheetState(
+                                                          () => loadingMore =
+                                                              false,
+                                                        );
+                                                      }
+                                                    }
+                                                  },
+                                                  child: Text(
+                                                    'community.loadMore'.tr,
+                                                  ),
+                                                ),
+                                        ),
+                                      );
+                                    }
                                     final attendee = attendees[index];
-                                    final displayName = attendee.fullName.isNotEmpty
+                                    final displayName =
+                                        attendee.fullName.isNotEmpty
                                         ? attendee.fullName
-                                        : (attendee.username.isNotEmpty ? attendee.username : 'GenLink User');
-                                    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+                                        : (attendee.username.isNotEmpty
+                                              ? attendee.username
+                                              : 'GenLink User');
+                                    final initial = displayName.isNotEmpty
+                                        ? displayName[0].toUpperCase()
+                                        : 'U';
 
                                     String joinedSubtitle = '';
                                     if (attendee.username.isNotEmpty) {
@@ -2122,21 +2402,32 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                     }
                                     if (attendee.joinedAt != null) {
                                       final jDate = attendee.joinedAt!;
-                                      final dateStr = '${jDate.day}/${jDate.month}/${jDate.year}';
+                                      final dateStr =
+                                          '${jDate.day}/${jDate.month}/${jDate.year}';
                                       joinedSubtitle = joinedSubtitle.isNotEmpty
                                           ? '$joinedSubtitle · Joined $dateStr'
                                           : 'Joined $dateStr';
                                     }
 
                                     return ListTile(
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 4,
+                                          ),
                                       leading: CircleAvatar(
                                         radius: 20,
-                                        backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
-                                        backgroundImage: (attendee.avatarUrl != null && attendee.avatarUrl!.isNotEmpty)
+                                        backgroundColor: isDark
+                                            ? const Color(0xFF2C2C2E)
+                                            : const Color(0xFFE5E5EA),
+                                        backgroundImage:
+                                            (attendee.avatarUrl != null &&
+                                                attendee.avatarUrl!.isNotEmpty)
                                             ? NetworkImage(attendee.avatarUrl!)
                                             : null,
-                                        child: (attendee.avatarUrl == null || attendee.avatarUrl!.isEmpty)
+                                        child:
+                                            (attendee.avatarUrl == null ||
+                                                attendee.avatarUrl!.isEmpty)
                                             ? Text(
                                                 initial,
                                                 style: TextStyle(
@@ -2219,7 +2510,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   // ── Error State Widget ─────────────────────────────────────────────────────
   Widget _buildErrorState(BuildContext context, bool isDark) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
 
     return Scaffold(
       appBar: AppBar(
@@ -2239,7 +2532,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+                  color: isDark
+                      ? Colors.white12
+                      : Colors.black.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -2257,10 +2552,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (widget.errorMessage != null) ...[
+              if ((_detailsErrorMessage ?? widget.errorMessage) != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  widget.errorMessage!,
+                  _detailsErrorMessage ?? widget.errorMessage!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: textSecondary,
@@ -2285,7 +2580,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     ),
                     child: Text(
                       'community.tryAgain'.tr,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -2298,9 +2596,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
   // ── Skeleton Shimmer Loading State ─────────────────────────────────────────
   Widget _buildLoadingSkeleton(BuildContext context, bool isDark) {
-    final shimmerBase = isDark ? const Color(0xFF222224) : const Color(0xFFE8E8EC);
+    final shimmerBase = isDark
+        ? const Color(0xFF222224)
+        : const Color(0xFFE8E8EC);
 
-    Widget box({required double width, required double height, double radius = 6}) {
+    Widget box({
+      required double width,
+      required double height,
+      double radius = 6,
+    }) {
       return Container(
         width: width,
         height: height,
@@ -2323,16 +2627,25 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 Container(
                   height: 290,
                   width: double.infinity,
-                  color: isDark ? const Color(0xFF1A1A1C) : const Color(0xFFDFDFE3),
+                  color: isDark
+                      ? const Color(0xFF1A1A1C)
+                      : const Color(0xFFDFDFE3),
                   child: SafeArea(
                     child: Align(
                       alignment: Alignment.topLeft,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: CircleAvatar(
                           radius: 19,
                           backgroundColor: Colors.black.withValues(alpha: 0.3),
-                          child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 19),
+                          child: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: Colors.white,
+                            size: 19,
+                          ),
                         ),
                       ),
                     ),

@@ -101,16 +101,15 @@ void main() {
       expect(event.isInPerson, isFalse);
       expect(event.eventMode, EventMode.online);
       expect(event.meetingUrl, 'https://meet.google.com/abc-defg-hij');
-      expect(event.onlineLink, 'https://meet.google.com/abc-defg-hij');
-      expect(event.effectiveLocation, 'https://meet.google.com/abc-defg-hij');
+      // A backend response that contains only meetingUrl must not be copied
+      // into the legacy/public onlineLink or location fields.
+      expect(event.onlineLink, isEmpty);
+      expect(event.effectiveLocation, isEmpty);
       expect(event.eventType, 'Online');
     });
 
     test('3. Missing startDateTime and endDateTime (null-safe)', () {
-      final json = {
-        'id': 'fallback-event',
-        'title': 'TBD Event',
-      };
+      final json = {'id': 'fallback-event', 'title': 'TBD Event'};
 
       final event = EventModel.fromJson(json);
 
@@ -479,6 +478,64 @@ void main() {
       final parsed = EventRegistrationRequest.fromJson(json);
       expect(parsed.fullName, 'Sokny Enat');
       expect(parsed.termsAccepted, isTrue);
+    });
+
+    test('Allows an omitted studyYear for a non-student request', () {
+      const reg = EventRegistrationRequest(
+        fullName: 'Sokny Enat',
+        email: 'enat@example.com',
+        phoneNumber: '012345678',
+        university: 'ACLEDA University of Business',
+        faculty: 'Computer Science',
+      );
+
+      expect(reg.studyYear, isNull);
+      expect(reg.toJson()['studyYear'], isNull);
+      expect(EventRegistrationRequest.fromJson(reg.toJson()).studyYear, isNull);
+    });
+  });
+
+  group('Event state and access mapping', () {
+    final future = DateTime.now().add(const Duration(days: 2));
+
+    test('Only published future events are RSVP eligible', () {
+      EventModel event(String status, {DateTime? start}) => EventModel(
+        id: status,
+        title: status,
+        organizerId: 'owner-1',
+        status: status,
+        startDateTime: start ?? future,
+      );
+
+      expect(event('PUBLISHED').isRsvpEligible, isTrue);
+      expect(event('DRAFT').isRsvpEligible, isFalse);
+      expect(event('CANCELLED').isRsvpEligible, isFalse);
+      expect(event('COMPLETED').isRsvpEligible, isFalse);
+      expect(
+        event(
+          'PUBLISHED',
+          start: DateTime.now().subtract(const Duration(minutes: 1)),
+        ).isRsvpEligible,
+        isFalse,
+      );
+    });
+
+    test('Meeting access requires owner or JOINED RSVP', () {
+      final event = EventModel(
+        id: 'event-1',
+        title: 'Online',
+        organizerId: 'owner-1',
+        meetingUrl: 'https://meet.example/event-1',
+        myRsvpStatus: 'JOINED',
+      );
+      expect(event.canAccessMeetingFor('owner-1'), isTrue);
+      expect(event.canAccessMeetingFor('attendee-1'), isTrue);
+      expect(
+        event
+            .copyWith(myRsvpStatus: 'CANCELLED', isRsvped: false)
+            .canAccessMeetingFor('attendee-1'),
+        isFalse,
+      );
     });
   });
 

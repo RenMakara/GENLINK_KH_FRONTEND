@@ -17,9 +17,7 @@ class AccountSettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Center(
-          child: AppBackButton(),
-        ),
+        leading: const Center(child: AppBackButton()),
         leadingWidth: 74,
         title: Text(
           'settings.accountSettings'.tr,
@@ -51,6 +49,17 @@ class AccountSettingsScreen extends StatelessWidget {
               leading: const Icon(Icons.alternate_email),
               title: Text('auth.username'.tr),
               subtitle: Text('@${user.username}'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_outline_rounded),
+              title: Text('settings.password'.tr),
+              subtitle: Text(
+                user.hasPassword
+                    ? 'settings.passwordSet'.tr
+                    : 'settings.passwordNotSet'.tr,
+              ),
+              trailing: const Icon(Icons.chevron_right, size: 20),
+              onTap: () => Get.toNamed<void>(AppRoutes.settingsSecurity),
             ),
             if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
               ListTile(

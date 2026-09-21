@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_success_screen.dart';
@@ -124,6 +125,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     super.dispose();
   }
 
+  bool get _requiresStudyYear {
+    final workStatus = CurrentUser.get()?.workStatus;
+    return workStatus?.trim().toUpperCase() == 'STUDENT';
+  }
+
   bool _validateForm() {
     setState(() {
       final name = _fullNameController.text.trim();
@@ -171,8 +177,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           ? 'community.facultyRequired'.tr
           : null;
 
-      // 6. Study Year
-      _yearError = _selectedYear == null ? 'community.yearRequired'.tr : null;
+      // 6. Study Year is conditional on the authenticated backend user.
+      _yearError = _requiresStudyYear && _selectedYear == null
+          ? 'community.yearRequired'.tr
+          : null;
 
       // 7. Terms & Conditions
       _termsError = !_agreedToTerms ? 'community.termsRequired'.tr : null;
@@ -224,7 +232,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       phoneNumber: _phoneController.text.trim(),
       university: _selectedUniversity!.trim(),
       faculty: _selectedFaculty!.trim(),
-      studyYear: _selectedYear!.trim(),
+      studyYear: _selectedYear?.trim(),
       termsAccepted: true,
     );
 
@@ -233,17 +241,6 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
       if (widget.onRegister != null) {
         rsvpResponse = await widget.onRegister!(widget.event.id, request);
-      } else if (Get.testMode && !Get.isRegistered<CommunityController>()) {
-        // Fallback for isolated widget tests running without injected controller
-        await Future.delayed(const Duration(milliseconds: 650));
-        rsvpResponse = RsvpResponseModel(
-          eventId: widget.event.id,
-          status: 'JOINED',
-          attendeeCount: widget.event.attendeesCount + 1,
-          xpAwarded: 10,
-          amountPaid: widget.event.price,
-          simulatedPayment: widget.event.isPaid,
-        );
       } else {
         // Clean architecture: Screen -> Controller -> Repository -> Remote Data Source -> API Client
         final ctrl = Get.isRegistered<CommunityController>()
@@ -458,11 +455,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       bool success = false;
       if (widget.onCancelRsvp != null) {
         success = await widget.onCancelRsvp!(widget.event.id);
-      } else if (Get.isRegistered<CommunityController>()) {
-        final ctrl = Get.find<CommunityController>();
-        success = await ctrl.cancelEventRegistration(widget.event.id);
       } else {
-        success = true;
+        final ctrl = Get.isRegistered<CommunityController>()
+            ? Get.find<CommunityController>()
+            : Get.put(CommunityController());
+        success = await ctrl.cancelEventRegistration(widget.event.id);
       }
 
       if (!mounted) return;
@@ -578,7 +575,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
         ? Colors.white70
         : AppColors.lightTextSecondary;
     final textMuted = isDark ? Colors.white38 : AppColors.lightTextMuted;
-    final borderSubtle = isDark ? const Color(0xFF28282A) : const Color(0xFFE6E6EA);
+    final borderSubtle = isDark
+        ? const Color(0xFF28282A)
+        : const Color(0xFFE6E6EA);
     final searchBg = isDark
         ? Colors.white.withValues(alpha: 0.06)
         : const Color(0xFFF4F4F5);
@@ -654,7 +653,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               size: 20,
                             ),
                             padding: const EdgeInsets.all(4),
-                            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
                             onPressed: () => Navigator.pop(ctx),
                           ),
                         ],
@@ -1112,7 +1114,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     const SizedBox(height: 14),
 
                     _buildModernSelectorTile(
-                      label: 'community.yearOfStudyReq'.tr,
+                      label: _requiresStudyYear
+                          ? 'community.yearOfStudyReq'.tr
+                          : 'community.yearOfStudyOptional'.tr,
                       placeholder: 'community.selectYear'.tr,
                       value: _selectedYear,
                       errorText: _yearError,

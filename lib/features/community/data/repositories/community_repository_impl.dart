@@ -93,18 +93,12 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Future<bool> toggleLike(String postId) {
-    return remoteDataSource.toggleLike(
-      postId,
-      isCurrentlyLiked: false,
-    );
+    return remoteDataSource.toggleLike(postId, isCurrentlyLiked: false);
   }
 
   @override
   Future<bool> unlikePost(String postId) {
-    return remoteDataSource.toggleLike(
-      postId,
-      isCurrentlyLiked: true,
-    );
+    return remoteDataSource.toggleLike(postId, isCurrentlyLiked: true);
   }
 
   @override
@@ -113,11 +107,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     int page = 0,
     int size = 20,
   }) {
-    return remoteDataSource.fetchPostLikers(
-      postId,
-      page: page,
-      size: size,
-    );
+    return remoteDataSource.fetchPostLikers(postId, page: page, size: size);
   }
 
   @override
@@ -372,14 +362,38 @@ class CommunityRepositoryImpl implements CommunityRepository {
     int page = 1,
     int limit = 20,
     String? category,
-    String? status,
   }) {
     return remoteDataSource.fetchEvents(
       page: page,
       limit: limit,
       category: category,
-      status: status,
     );
+  }
+
+  @override
+  Future<EventPageModel<EventModel>> getEventsPage({
+    int page = 1,
+    int limit = 20,
+    String? category,
+  }) {
+    return remoteDataSource.fetchEventsPage(
+      page: page,
+      limit: limit,
+      category: category,
+    );
+  }
+
+  @override
+  Future<List<EventModel>> getMyEvents({int page = 1, int limit = 20}) {
+    return remoteDataSource.fetchMyEvents(page: page, limit: limit);
+  }
+
+  @override
+  Future<EventPageModel<EventModel>> getMyEventsPage({
+    int page = 1,
+    int limit = 20,
+  }) {
+    return remoteDataSource.fetchMyEventsPage(page: page, limit: limit);
   }
 
   @override
@@ -404,6 +418,19 @@ class CommunityRepositoryImpl implements CommunityRepository {
     int limit = 50,
   }) {
     return remoteDataSource.getEventAttendees(
+      eventId,
+      page: page,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<EventPageModel<EventAttendeeModel>> getEventAttendeesPage(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) {
+    return remoteDataSource.getEventAttendeesPage(
       eventId,
       page: page,
       limit: limit,

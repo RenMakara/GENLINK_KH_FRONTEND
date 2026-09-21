@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/entities/productivity_entities.dart';
@@ -56,21 +57,21 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final title = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Add milestone'),
+        title: Text('goals.detail.addMilestone'.tr),
         content: TextField(
           controller: titleController,
           autofocus: true,
           maxLength: 160,
-          decoration: const InputDecoration(hintText: 'Milestone title'),
+          decoration: InputDecoration(hintText: 'goals.detail.milestoneHint'.tr),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text('common.cancel'.tr),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, titleController.text),
-            child: const Text('Add'),
+            child: Text('productivity.addTask'.tr.split(' ').first),
           ),
         ],
       ),
@@ -95,16 +96,17 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete milestone?'),
-        content: Text('Remove "${milestone.title}" from this goal?'),
+        title: Text('goals.detail.deleteMilestoneTitle'.tr),
+        content: Text('goals.detail.deleteMilestoneMessage'
+            .trParams({'title': milestone.title})),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('common.cancel'.tr),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+            child: Text('common.delete'.tr),
           ),
         ],
       ),
@@ -125,16 +127,16 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete goal?'),
-        content: const Text('This will also remove all of its milestones.'),
+        title: Text('goals.detail.deleteGoalTitle'.tr),
+        content: Text('goals.detail.deleteGoalMessage'.tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('common.cancel'.tr),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
+            child: Text('common.delete'.tr),
           ),
         ],
       ),
@@ -165,12 +167,12 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
         elevation: 0,
-        title: const Text('Goal detail'),
+        title: Text('goals.detail.title'.tr),
         actions: [
           IconButton(
             onPressed: _deleteGoal,
             icon: const Icon(Icons.delete_outline_rounded),
-            tooltip: 'Delete goal',
+            tooltip: 'goals.detail.deleteGoal'.tr,
           ),
         ],
       ),
@@ -233,7 +235,8 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   if (_goal.deadline != null) ...[
                     const SizedBox(height: 10),
                     Text(
-                      'Deadline ${_formatDate(_goal.deadline!)}',
+                      'goals.detail.deadline'
+                          .trParams({'date': _formatDate(_goal.deadline!)}),
                       style: TextStyle(color: colors.textMuted, fontSize: 11),
                     ),
                   ],
@@ -253,7 +256,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Milestones',
+                    'goals.detail.milestones'.tr,
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 17,
@@ -268,7 +271,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 IconButton(
                   onPressed: _addMilestone,
                   icon: const Icon(Icons.add_rounded),
-                  tooltip: 'Add milestone',
+                  tooltip: 'goals.detail.addMilestone'.tr,
                 ),
               ],
             ),
@@ -346,7 +349,7 @@ class _EmptyMilestones extends StatelessWidget {
         border: Border.all(color: colors.border),
       ),
       child: Text(
-        'Break this goal into milestones to see progress here.',
+        'goals.detail.noMilestones'.tr,
         textAlign: TextAlign.center,
         style: TextStyle(color: colors.textSecondary),
       ),

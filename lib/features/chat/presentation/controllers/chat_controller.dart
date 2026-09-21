@@ -30,10 +30,12 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   final Set<String> _recentReceivedMessageIds = <String>{};
   int _messageLoadSequence = 0;
+  bool _isDisposed = false;
 
   @override
   void onInit() {
     super.onInit();
+    _isDisposed = false;
     debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onInit');
     WidgetsBinding.instance.addObserver(this);
     fetchConversations();
@@ -48,6 +50,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   @override
   void onClose() {
+    _isDisposed = true;
     debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onClose');
     WidgetsBinding.instance.removeObserver(this);
     textController.dispose();
@@ -84,21 +87,26 @@ class ChatController extends GetxController with WidgetsBindingObserver {
   }
 
   Future<void> fetchUnreadCount() async {
+    if (_isDisposed) return;
     try {
       final count = await repository.getUnreadCount();
+      if (_isDisposed) return;
       final localCount =
           conversations.fold(0, (sum, item) => sum + item.unreadCount);
       unreadCount.value = count > localCount ? count : localCount;
     } catch (_) {
+      if (_isDisposed) return;
       unreadCount.value =
           conversations.fold(0, (sum, item) => sum + item.unreadCount);
     }
   }
 
   Future<void> fetchConversations() async {
+    if (_isDisposed) return;
     isLoadingConversations.value = true;
     try {
       final list = await repository.getConversations();
+      if (_isDisposed) return;
       conversations.assignAll(list);
       final localCount =
           conversations.fold(0, (sum, item) => sum + item.unreadCount);
@@ -106,6 +114,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         unreadCount.value = localCount;
       }
     } catch (e) {
+      if (_isDisposed) return;
       if (Get.context != null &&
           Get.isSnackbarOpen != true &&
           Get.key.currentState != null) {
@@ -116,7 +125,9 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         );
       }
     } finally {
-      isLoadingConversations.value = false;
+      if (!_isDisposed) {
+        isLoadingConversations.value = false;
+      }
     }
   }
 

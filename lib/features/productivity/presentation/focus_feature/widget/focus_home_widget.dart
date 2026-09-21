@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-
 class FocusModeData {
   final IconData icon;
   final String title;
@@ -37,7 +36,6 @@ class FocusSessionData {
   });
 }
 
-
 class _FocusColors {
   final bool isDark;
 
@@ -64,7 +62,6 @@ class _FocusColors {
   Color get border =>
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
-
 
 class FocusHeader extends StatelessWidget {
   final String title;
@@ -122,7 +119,6 @@ class FocusHeader extends StatelessWidget {
   }
 }
 
-
 class FocusSectionTitle extends StatelessWidget {
   final String title;
 
@@ -145,7 +141,6 @@ class FocusSectionTitle extends StatelessWidget {
     );
   }
 }
-
 
 class FocusModes extends StatelessWidget {
   final List<FocusModeData> modes;
@@ -331,7 +326,6 @@ class _FocusModeCardState extends State<_FocusModeCard> {
   }
 }
 
-
 class FocusAmbientSounds extends StatelessWidget {
   final List<AmbientSoundData> sounds;
   final int selectedIndex;
@@ -479,7 +473,6 @@ class _AmbientSoundItemState extends State<_AmbientSoundItem> {
   }
 }
 
-
 class FocusRecentSessions extends StatelessWidget {
   final List<FocusSessionData> sessions;
 
@@ -602,12 +595,17 @@ class _RecentSessionItem extends StatelessWidget {
   }
 }
 
-
 class FocusStartButton extends StatefulWidget {
   final String text;
   final Future<void> Function()? onTap;
+  final bool enabled;
 
-  const FocusStartButton({super.key, required this.text, this.onTap});
+  const FocusStartButton({
+    super.key,
+    required this.text,
+    this.onTap,
+    this.enabled = true,
+  });
 
   @override
   State<FocusStartButton> createState() => _FocusStartButtonState();
@@ -618,7 +616,7 @@ class _FocusStartButtonState extends State<FocusStartButton> {
   bool loading = false;
 
   Future<void> _handleTap() async {
-    if (loading) return;
+    if (loading || !widget.enabled) return;
 
     setState(() {
       pressed = true;
@@ -647,10 +645,10 @@ class _FocusStartButtonState extends State<FocusStartButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _handleTap,
+      onTap: widget.enabled ? _handleTap : null,
 
       onTapDown: (_) {
-        if (!loading) {
+        if (!loading && widget.enabled) {
           setState(() {
             pressed = true;
           });
@@ -658,7 +656,7 @@ class _FocusStartButtonState extends State<FocusStartButton> {
       },
 
       onTapUp: (_) {
-        if (!loading) {
+        if (!loading && widget.enabled) {
           setState(() {
             pressed = false;
           });
@@ -666,7 +664,7 @@ class _FocusStartButtonState extends State<FocusStartButton> {
       },
 
       onTapCancel: () {
-        if (!loading) {
+        if (!loading && widget.enabled) {
           setState(() {
             pressed = false;
           });
@@ -683,7 +681,9 @@ class _FocusStartButtonState extends State<FocusStartButton> {
           width: double.infinity,
           height: 46,
           decoration: BoxDecoration(
-            color: AppColors.productivityAccent,
+            color: widget.enabled
+                ? AppColors.productivityAccent
+                : AppColors.productivityAccent.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(12),
             boxShadow: pressed
                 ? [

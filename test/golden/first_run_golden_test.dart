@@ -57,6 +57,7 @@ void main() {
     final context = tester.element(find.byType(GetMaterialApp));
     await tester.runAsync(() async {
       for (final asset in [
+        'assets/images/welcome.png',
         'assets/images/onboard-image.png',
         AppLogoAssets.markLight,
         AppLogoAssets.markDark,

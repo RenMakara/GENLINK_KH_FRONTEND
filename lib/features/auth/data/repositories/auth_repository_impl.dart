@@ -82,7 +82,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> verifyResetOtp({required String email, required String otp}) async {
+  Future<void> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
     await _remote.verifyResetOtp(email: email, otp: otp);
   }
 
@@ -95,6 +98,22 @@ class AuthRepositoryImpl implements AuthRepository {
     await _remote.resetPassword(
       email: email,
       otp: otp,
+      newPassword: newPassword,
+    );
+  }
+
+  @override
+  Future<bool> setPassword({required String password}) {
+    return _remote.setPassword(password: password);
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _remote.changePassword(
+      currentPassword: currentPassword,
       newPassword: newPassword,
     );
   }
@@ -115,7 +134,6 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     await _remote.logout();
   }
-
 
   AuthSession _mapToSession(AuthResponseModel model) {
     return AuthSession(
@@ -145,6 +163,7 @@ class AuthRepositoryImpl implements AuthRepository {
       preferredLanguage: model.preferredLanguage,
       role: model.role,
       active: model.active,
+      hasPassword: model.hasPassword,
     );
   }
 }

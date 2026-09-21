@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
@@ -26,7 +28,6 @@ import '../../features/productivity/presentation/controllers/productivity_contro
 import '../../features/community/presentation/controllers/community_controller.dart';
 import '../../features/community/presentation/controllers/story_controller.dart';
 import 'package:flutter/painting.dart';
-import '../../features/chat/presentation/bindings/chat_binding.dart';
 import '../../features/notification/presentation/bindings/notification_binding.dart';
 import '../../features/chat/presentation/controllers/chat_controller.dart';
 import '../../features/notification/presentation/controllers/notification_controller.dart';
@@ -58,7 +59,6 @@ class InitialBinding extends Bindings {
       ..put<ApiClient>(apiClient, permanent: true);
 
     NotificationBinding().dependencies();
-    ChatBinding().dependencies();
 
     final mobilePushRegistrationService = FirebaseMobilePushRegistrationService(
       apiClient: apiClient,
@@ -119,6 +119,12 @@ class InitialBinding extends Bindings {
 
     AuthBinding(
       onSessionCleared: handleSessionCleared,
+      onSessionEstablished: () {
+        // The app may have started without a token, so the bootstrap-time
+        // realtime connection can have been skipped. Reconnect only after
+        // auth has persisted a valid session.
+        unawaited(realtimeService.connect());
+      },
       mobilePushRegistrationService: mobilePushRegistrationService,
     ).dependencies();
 

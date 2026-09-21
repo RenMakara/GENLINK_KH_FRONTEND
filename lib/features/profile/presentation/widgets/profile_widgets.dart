@@ -6,6 +6,8 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../community/domain/models/community_models.dart';
+import '../../../community/presentation/screens/event_details_screen.dart';
 import '../../domain/entities/profile_entity.dart';
 
 class RingedAvatar extends StatelessWidget {
@@ -506,17 +508,31 @@ class SavedItemCard extends StatelessWidget {
     }
 
     final canOpen =
-        item.itemType == 'SHORT_CONTENT' && item.itemId.trim().isNotEmpty;
+        (item.itemType == 'SHORT_CONTENT' || item.itemType == 'EVENT') &&
+        item.itemId.trim().isNotEmpty;
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: canOpen
-              ? () => Get.toNamed(
-                  AppRoutes.shortContentDetail,
-                  arguments: item.itemId,
-                )
+              ? () {
+                  if (item.itemType == 'EVENT') {
+                    Get.to(
+                      () => EventDetailsScreen(
+                        event: EventModel(
+                          id: item.itemId,
+                          title: item.title ?? '',
+                        ),
+                      ),
+                    );
+                  } else {
+                    Get.toNamed(
+                      AppRoutes.shortContentDetail,
+                      arguments: item.itemId,
+                    );
+                  }
+                }
               : null,
           child: SizedBox(
             width: 150,

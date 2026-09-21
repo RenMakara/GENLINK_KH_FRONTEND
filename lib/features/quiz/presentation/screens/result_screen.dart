@@ -417,22 +417,24 @@ class ResultScreen extends GetView<QuizController> {
   }
 
   Widget _buildSummaryGrid(QuizResult result) {
-    return GridView.count(
-      crossAxisCount: 2,
+    return GridView(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        mainAxisExtent: 126,
+      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.6,
       children: [
         _buildSummaryTile(
-          Icons.check_circle,
+          Icons.check_circle_rounded,
           'quiz.correct'.tr,
           '${result.correct}',
           QuizThemeColors.correct,
         ),
         _buildSummaryTile(
-          Icons.cancel,
+          Icons.cancel_rounded,
           'quiz.wrong'.tr,
           '${result.wrong}',
           QuizThemeColors.incorrect,
@@ -446,7 +448,7 @@ class ResultScreen extends GetView<QuizController> {
           QuizThemeColors.primary,
         ),
         _buildSummaryTile(
-          Icons.star,
+          Icons.star_rounded,
           'quiz.xpEarned'.tr,
           '+${result.xpEarned}',
           QuizThemeColors.primary,
@@ -462,29 +464,41 @@ class ResultScreen extends GetView<QuizController> {
     Color color,
   ) {
     return QuizCustomCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           QuizIconContainer(
             icon: icon,
             accentColor: color,
-            size: 36,
-            iconSize: 20,
+            size: 34,
+            iconSize: 18,
             borderRadius: AppRadius.md,
           ),
           const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: color,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: QuizThemeColors.body),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: QuizThemeColors.body,
+              height: 1.2,
+            ),
           ),
         ],
       ),

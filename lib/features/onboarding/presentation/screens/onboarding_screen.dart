@@ -48,8 +48,11 @@ class OnboardingScreen extends GetView<OnboardingController> {
                 controller: controller.pageController,
                 onPageChanged: controller.onPageChanged,
                 itemCount: OnboardingController.slides.length,
-                itemBuilder: (context, index) =>
-                    _Slide(slide: OnboardingController.slides[index]),
+                itemBuilder: (context, index) => _Slide(
+                  slide: OnboardingController.slides[index],
+                  index: index,
+                  pageController: controller.pageController,
+                ),
               ),
             ),
             SafeArea(
@@ -88,12 +91,51 @@ class OnboardingScreen extends GetView<OnboardingController> {
 }
 
 class _Slide extends StatelessWidget {
-  const _Slide({required this.slide});
+  const _Slide({
+    required this.slide,
+    required this.index,
+    required this.pageController,
+  });
 
   final OnboardingSlide slide;
+  final int index;
+  final PageController pageController;
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: pageController,
+      builder: (context, child) {
+        double pageOffset = 0.0;
+        if (pageController.position.haveDimensions) {
+          pageOffset =
+              (pageController.page ?? pageController.initialPage.toDouble()) -
+                  index;
+        }
+        if (pageOffset == 0.0) return child!;
+
+        final double opacity =
+            (1.0 - (pageOffset.abs() * 0.4)).clamp(0.0, 1.0);
+        final double scale =
+            (1.0 - (pageOffset.abs() * 0.04)).clamp(0.92, 1.0);
+        final double parallax = pageOffset * 24.0;
+
+        return Opacity(
+          opacity: opacity,
+          child: Transform.scale(
+            scale: scale,
+            child: Transform.translate(
+              offset: Offset(parallax, 0),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final semantic = context.semanticColors;
     final theme = Theme.of(context);
     final title = slide.titleKey.tr;
@@ -256,11 +298,25 @@ class _NetworkVisual extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(left: 16, top: 16, child: _FeaturePill(row: rows.first)),
+          Positioned(
+            left: 16,
+            top: 16,
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3000),
+              distance: 3.0,
+              initialPhase: 0.1,
+              child: _FeaturePill(row: rows.first),
+            ),
+          ),
           Positioned(
             right: 14,
             bottom: height * 0.18,
-            child: _FeaturePill(row: rows[1]),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3500),
+              distance: 4.0,
+              initialPhase: 0.5,
+              child: _FeaturePill(row: rows[1]),
+            ),
           ),
           Positioned(
             left: 18,
@@ -387,16 +443,35 @@ class _ImpactVisual extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(left: 14, top: 18, child: _FeaturePill(row: rows[0])),
+          Positioned(
+            left: 14,
+            top: 18,
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3000),
+              distance: 3.0,
+              initialPhase: 0.2,
+              child: _FeaturePill(row: rows[0]),
+            ),
+          ),
           Positioned(
             right: 12,
             top: height * 0.32,
-            child: _FeaturePill(row: rows[1]),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3600),
+              distance: 4.0,
+              initialPhase: 0.6,
+              child: _FeaturePill(row: rows[1]),
+            ),
           ),
           Positioned(
             left: 42,
             bottom: height * 0.15,
-            child: _FeaturePill(row: rows[2]),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 4000),
+              distance: 3.5,
+              initialPhase: 0.35,
+              child: _FeaturePill(row: rows[2]),
+            ),
           ),
         ],
       ),
@@ -462,25 +537,127 @@ class _FutureVisual extends StatelessWidget {
           Positioned(
             left: 24,
             top: height * 0.18,
-            child: _FloatingAvatar(accent: rows[0].accent, size: 46),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3200),
+              distance: 3.5,
+              initialPhase: 0.15,
+              child: _FloatingAvatar(accent: rows[0].accent, size: 46),
+            ),
           ),
           Positioned(
             left: 8,
             bottom: height * 0.18,
-            child: _FloatingAvatar(accent: rows[1].accent, size: 40),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3800),
+              distance: 4.5,
+              initialPhase: 0.5,
+              child: _FloatingAvatar(accent: rows[1].accent, size: 40),
+            ),
           ),
           Positioned(
             right: height * 0.56,
             bottom: height * 0.08,
-            child: _FloatingAvatar(accent: rows[2].accent, size: 38),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 3400),
+              distance: 3.0,
+              initialPhase: 0.75,
+              child: _FloatingAvatar(accent: rows[2].accent, size: 38),
+            ),
           ),
           Positioned(
             left: 18,
             bottom: 18,
-            child: _FutureBadge(label: 'onboarding.togetherWeGrow'.tr),
+            child: _FloatingFeatureWrapper(
+              duration: const Duration(milliseconds: 4200),
+              distance: 2.5,
+              initialPhase: 0.3,
+              child: _FutureBadge(label: 'onboarding.togetherWeGrow'.tr),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FloatingFeatureWrapper extends StatefulWidget {
+  const _FloatingFeatureWrapper({
+    required this.child,
+    this.distance = 3.5,
+    this.duration = const Duration(milliseconds: 3200),
+    this.initialPhase = 0.0,
+  });
+
+  final Widget child;
+  final double distance;
+  final Duration duration;
+  final double initialPhase;
+
+  @override
+  State<_FloatingFeatureWrapper> createState() =>
+      _FloatingFeatureWrapperState();
+}
+
+class _FloatingFeatureWrapperState extends State<_FloatingFeatureWrapper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+  bool? _reducedMotion;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+      value: widget.initialPhase.clamp(0.0, 1.0),
+    );
+    _animation = Tween<double>(
+      begin: -widget.distance,
+      end: widget.distance,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final media = MediaQuery.maybeOf(context);
+    final isTesting =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final shouldReduce = (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false) ||
+        !TickerMode.valuesOf(context).enabled ||
+        isTesting;
+
+    if (_reducedMotion == shouldReduce) return;
+    _reducedMotion = shouldReduce;
+
+    if (shouldReduce) {
+      _controller
+        ..stop()
+        ..value = 0.5; // Resting baseline
+    } else {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_reducedMotion == true) return widget.child;
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(0, _animation.value),
+        child: child,
+      ),
+      child: widget.child,
     );
   }
 }
@@ -823,48 +1000,83 @@ class _Dot extends StatelessWidget {
   }
 }
 
-class _OnboardingAction extends StatelessWidget {
+class _OnboardingAction extends StatefulWidget {
   const _OnboardingAction({required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback onPressed;
 
   @override
+  State<_OnboardingAction> createState() => _OnboardingActionState();
+}
+
+class _OnboardingActionState extends State<_OnboardingAction> {
+  bool _isPressed = false;
+
+  void _setPressed(bool pressed) {
+    if (_isPressed != pressed && mounted) {
+      setState(() => _isPressed = pressed);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final semantic = context.semanticColors;
     final theme = Theme.of(context);
 
-    return SizedBox(
+    final button = SizedBox(
       width: double.infinity,
       height: 58,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: semantic.primary,
-          foregroundColor: semantic.textInverse,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Listener(
+        onPointerDown: (_) => _setPressed(true),
+        onPointerUp: (_) => _setPressed(false),
+        onPointerCancel: (_) => _setPressed(false),
+        child: FilledButton(
+          onPressed: widget.onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: semantic.primary,
+            foregroundColor: semantic.textInverse,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SizedBox(width: 22),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: semantic.textInverse,
-                  fontWeight: FontWeight.w700,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const SizedBox(width: 22),
+              Flexible(
+                child: Text(
+                  widget.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: semantic.textInverse,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-            const Icon(Icons.arrow_forward_rounded, size: 22),
-          ],
+              if (_isPressed)
+                AnimatedSlide(
+                  offset: const Offset(0.14, 0),
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOutCubic,
+                  child: const Icon(Icons.arrow_forward_rounded, size: 22),
+                )
+              else
+                const Icon(Icons.arrow_forward_rounded, size: 22),
+            ],
+          ),
         ),
       ),
+    );
+
+    if (!_isPressed) return button;
+
+    return AnimatedScale(
+      scale: 0.98,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOutCubic,
+      child: button,
     );
   }
 }

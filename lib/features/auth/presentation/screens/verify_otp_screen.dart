@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/branding/app_logo.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
@@ -20,6 +23,8 @@ class VerifyOtpScreen extends StatefulWidget {
 
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   String _otp = '';
+  Worker? _errorWorker;
+  Timer? _errorDismissTimer;
 
   AuthController get _auth => Get.find<AuthController>();
 
@@ -29,14 +34,45 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
   bool get _isComplete => _otp.length == Validators.otpLength;
 
+  @override
+  void initState() {
+    super.initState();
+    _errorWorker = ever(_auth.errorMessage, (String? msg) {
+      _errorDismissTimer?.cancel();
+      if (msg != null && msg.isNotEmpty && mounted) {
+        _errorDismissTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted && _auth.errorMessage.value != null) {
+            _auth.errorMessage.value = null;
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorWorker?.dispose();
+    _errorDismissTimer?.cancel();
+    super.dispose();
+  }
+
   void _appendDigit(String digit) {
     if (_otp.length >= Validators.otpLength) return;
+    _clearError();
     setState(() => _otp += digit);
   }
 
   void _deleteDigit() {
     if (_otp.isEmpty) return;
+    _clearError();
     setState(() => _otp = _otp.substring(0, _otp.length - 1));
+  }
+
+  void _clearError() {
+    _errorDismissTimer?.cancel();
+    if (_auth.errorMessage.value != null) {
+      _auth.errorMessage.value = null;
+    }
   }
 
   Future<void> _submit() async {
@@ -53,28 +89,62 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return AuthScaffold(
       backBottomSpacing: AppSpacing.md,
       children: [
-        const AuthBrandLockup(),
-        const SizedBox(height: AppSpacing.xl),
-        Text('auth.verifyTitle'.tr, style: theme.textTheme.displayMedium),
-        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const AuthBrandLockup(markSize: 42, wordmarkHeight: 18),
+            Text(
+              'Connect.\nLearn.\nGrow.\nTogether.',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: AppColors.brandPrimary,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                fontStyle: FontStyle.italic,
+                height: 1.15,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          'auth.verifyTitle'.tr,
+          style: theme.textTheme.displayMedium?.copyWith(
+            fontSize: 36,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+            letterSpacing: -0.5,
+          ) ??
+              const TextStyle(fontSize: 36, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AppSpacing.xs),
         Text.rich(
           TextSpan(
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+              color: scheme.onSurface.withValues(alpha: 0.65),
+              fontSize: 15,
+              height: 1.4,
             ),
             children: [
-              TextSpan(text: '${'auth.verifySentTo'.tr} '),
               TextSpan(
-                text: _email,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
+                text: '${'auth.verifySentTo'.tr}${_email.isNotEmpty ? '\n' : ' '}',
               ),
+              if (_email.isNotEmpty)
+                TextSpan(
+                  text: _email,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
             ],
           ),
         ),
@@ -94,14 +164,17 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
               child: Text.rich(
                 TextSpan(
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    fontSize: 14,
                   ),
                   children: [
                     TextSpan(text: '${'auth.resendCodeIn'.tr} '),
                     TextSpan(
                       text: _formatCountdown(remaining),
                       style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.onSurface,
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -110,9 +183,22 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
             );
           }
           return Center(
-            child: AppButton.text(
-              label: 'auth.resendCode'.tr,
+            child: TextButton(
               onPressed: _resend,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.brandPrimary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+              ),
+              child: Text(
+                'auth.resendCode'.tr,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppColors.brandPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           );
         }),
@@ -120,7 +206,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
         Obx(
           () => AppButton(
             key: const ValueKey('verify-email-button'),
-            label: 'auth.verifyEmail'.tr,
+            label: 'common.continue'.tr,
             loading: _auth.isLoading.value,
             onPressed: _isComplete ? _submit : null,
           ),
@@ -137,7 +223,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
           key: const ValueKey('otp-help-text'),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+            color: scheme.onSurface.withValues(alpha: 0.55),
           ),
         ),
       ],
@@ -145,5 +231,5 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   }
 
   static String _formatCountdown(int seconds) =>
-      '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+      '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
 }

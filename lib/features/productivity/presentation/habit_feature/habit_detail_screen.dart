@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
@@ -122,7 +123,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                         // =================================================
                         // THIS WEEK
                         // =================================================
-                        _buildSectionHeader(title: 'This Week', isDark: isDark),
+                        _buildSectionHeader(
+                          title: 'productivity.thisWeek'.tr,
+                          isDark: isDark,
+                        ),
 
                         const SizedBox(height: 10),
 
@@ -134,7 +138,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                         // MONTHLY HEATMAP
                         // =================================================
                         _buildSectionHeader(
-                          title: 'Monthly Heatmap',
+                          title: 'habits.monthlyHeatmap'.tr,
                           isDark: isDark,
                         ),
 
@@ -195,7 +199,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
         Expanded(
           child: Text(
-            'Habit Detail',
+            'habits.detailTitle'.tr,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -322,7 +326,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               const SizedBox(width: 5),
 
               Text(
-                '${widget.habit.streak}-day streak',
+                'habits.dayStreak'
+                    .trParams({'count': '${widget.habit.streak}'}),
                 style: TextStyle(
                   color: inverseText,
                   fontSize: 11,
@@ -593,7 +598,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Notes',
+            'habits.notes'.tr,
             style: TextStyle(
               color: textPrimary,
               fontSize: 12,
@@ -604,8 +609,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           const SizedBox(height: 7),
 
           Text(
-            'Keep working on this habit every day.\n'
-            'Consistency is more important than perfection.',
+            'habits.notesSubtitle'.tr,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: textSecondary, fontSize: 11, height: 1.45),
@@ -683,7 +687,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _isCompletedToday ? 'Completed today' : 'Complete today',
+                    _isCompletedToday
+                        ? 'habits.completedToday'.tr
+                        : 'habits.completeToday'.tr,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -697,8 +703,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
                   Text(
                     _isCompletedToday
-                        ? 'Great job. Keep your streak alive.'
-                        : 'Tap here when you finish this habit.',
+                        ? 'habits.keepStreakAlive'.tr
+                        : 'habits.tapWhenFinished'.tr,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -758,7 +764,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               ),
             ),
             child: Text(
-              'Pause Habit',
+              'habits.pauseHabit'.tr,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -786,7 +792,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               ),
             ),
             child: Text(
-              'Edit Habit',
+              'habits.editHabit'.tr,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

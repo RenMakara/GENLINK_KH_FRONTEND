@@ -15,6 +15,7 @@ abstract final class AppRoutes {
 
   static const resetOtp = '/reset-otp';
   static const resetPassword = '/reset-password';
+  static const setPassword = '/set-password';
 
   static const home = '/home';
 
@@ -54,6 +55,8 @@ abstract final class AppRoutes {
   static const settingsLanguage = '/settings/language';
   static const settingsAppearance = '/settings/appearance';
   static const settingsPrivacy = '/settings/privacy';
+  static const settingsSecurity = '/settings/security';
+  static const passwordSetup = '/settings/security/password';
   static const settingsAccount = '/settings/account';
   static const settingsAbout = '/settings/about';
 }

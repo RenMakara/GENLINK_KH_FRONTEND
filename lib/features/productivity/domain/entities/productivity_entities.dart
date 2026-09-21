@@ -269,9 +269,14 @@ class ProductivityFocusSession {
     this.mode,
     this.durationMinutes = 0,
     this.ambientSound,
+    this.status = 'ACTIVE',
     this.completed = false,
     this.xpEarned = 0,
+    this.focusedSeconds = 0,
+    this.remainingSeconds = 0,
     this.startedAt,
+    this.activeStartedAt,
+    this.pausedAt,
     this.endedAt,
   });
 
@@ -279,10 +284,20 @@ class ProductivityFocusSession {
   final String? mode;
   final int durationMinutes;
   final String? ambientSound;
+  final String status;
   final bool completed;
   final int xpEarned;
+  final int focusedSeconds;
+  final int remainingSeconds;
   final DateTime? startedAt;
+  final DateTime? activeStartedAt;
+  final DateTime? pausedAt;
   final DateTime? endedAt;
+
+  bool get isActive => status == 'ACTIVE';
+  bool get isPaused => status == 'PAUSED';
+  bool get isCompleted => status == 'COMPLETED' || completed;
+  bool get isAbandoned => status == 'ABANDONED';
 }
 
 class ProductivityFocusStats {

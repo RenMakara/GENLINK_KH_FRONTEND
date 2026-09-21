@@ -8,6 +8,8 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
+import '../../../community/domain/models/community_models.dart';
+import '../../../community/presentation/screens/event_details_screen.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_controller.dart';
 
@@ -30,10 +32,18 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
   }
 
   Future<void> _openItem(SavedItemEntity item) async {
-    if (item.itemType != 'SHORT_CONTENT' || item.itemId.trim().isEmpty) {
+    if (item.itemId.trim().isEmpty) {
       return;
     }
-    await Get.toNamed(AppRoutes.shortContentDetail, arguments: item.itemId);
+    if (item.itemType == 'EVENT') {
+      await Get.to(
+        () => EventDetailsScreen(
+          event: EventModel(id: item.itemId, title: item.title ?? ''),
+        ),
+      );
+    } else if (item.itemType == 'SHORT_CONTENT') {
+      await Get.toNamed(AppRoutes.shortContentDetail, arguments: item.itemId);
+    }
     if (mounted) unawaited(_controller.reloadSavedItems());
   }
 
@@ -122,7 +132,10 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
                     return _SavedRow(
                       item: item,
                       theme: theme,
-                      onTap: item.available && item.itemType == 'SHORT_CONTENT'
+                      onTap:
+                          item.available &&
+                              (item.itemType == 'SHORT_CONTENT' ||
+                                  item.itemType == 'EVENT')
                           ? () => unawaited(_openItem(item))
                           : null,
                     );

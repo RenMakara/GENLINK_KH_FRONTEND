@@ -29,6 +29,7 @@ export 'presentation/screens/event_details_screen.dart';
 export 'presentation/screens/event_register_screen.dart';
 export 'presentation/screens/event_success_screen.dart';
 export 'presentation/screens/events_screen.dart';
+export 'presentation/screens/my_events_screen.dart';
 export 'presentation/screens/in_app_camera_screen.dart';
 export 'presentation/screens/story_creator_screen.dart';
 export 'presentation/screens/story_viewer_screen.dart';

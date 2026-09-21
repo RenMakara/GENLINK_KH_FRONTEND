@@ -101,7 +101,10 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthSession> verifyEmail({required String email, required String otp}) {
+  Future<AuthSession> verifyEmail({
+    required String email,
+    required String otp,
+  }) {
     throw UnimplementedError();
   }
 
@@ -134,6 +137,19 @@ class FakeAuthRepository implements AuthRepository {
   Future<void> resetPassword({
     required String email,
     required String otp,
+    required String newPassword,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> setPassword({required String password}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
     required String newPassword,
   }) {
     throw UnimplementedError();
@@ -205,19 +221,22 @@ void main() {
   });
 
   group('Step 2: Current User Identity & Consistency', () {
-    test('User A login establishes consistent identity in CurrentUser helper', () async {
-      authRepo.userToReturn = userA;
-      final success = await authController.login(
-        email: userA.email,
-        password: 'password123',
-      );
+    test(
+      'User A login establishes consistent identity in CurrentUser helper',
+      () async {
+        authRepo.userToReturn = userA;
+        final success = await authController.login(
+          email: userA.email,
+          password: 'password123',
+        );
 
-      expect(success, isTrue);
-      expect(CurrentUser.id, equals(userA.id));
-      expect(CurrentUser.name, equals(userA.fullName));
-      expect(CurrentUser.username, equals(userA.username));
-      expect(CurrentUser.avatarUrl, equals(userA.avatarUrl));
-    });
+        expect(success, isTrue);
+        expect(CurrentUser.id, equals(userA.id));
+        expect(CurrentUser.name, equals(userA.fullName));
+        expect(CurrentUser.username, equals(userA.username));
+        expect(CurrentUser.avatarUrl, equals(userA.avatarUrl));
+      },
+    );
 
     test('Profile sync updates AuthController and CurrentUser avatar', () {
       authController.updateCachedUser(userA);
@@ -239,48 +258,57 @@ void main() {
       ProfileBinding.syncCachedAuthUser(updatedProfile);
 
       expect(CurrentUser.name, equals('Nat Sok Updated'));
-      expect(CurrentUser.avatarUrl, equals('https://cdn.example.com/avatar_nat_new.jpg'));
+      expect(
+        CurrentUser.avatarUrl,
+        equals('https://cdn.example.com/avatar_nat_new.jpg'),
+      );
     });
   });
 
   group('Step 2: CommunityPostModel and Post Ownership Isolation', () {
-    test('Post parsed for CurrentUser receives correct isOwner and author details', () {
-      authController.updateCachedUser(userA);
+    test(
+      'Post parsed for CurrentUser receives correct isOwner and author details',
+      () {
+        authController.updateCachedUser(userA);
 
-      final backendPostJson = {
-        'postId': 'post_backend_101',
-        'author': {
-          'userId': userA.id,
-          'fullName': userA.fullName,
-          'username': userA.username,
-          'avatarUrl': null,
-        },
-        'contentText': 'Testing post author resolution',
-        'imageUrls': <String>[],
-        'likeCount': 0,
-        'commentCount': 0,
-        'sharesCount': 0,
-      };
+        final backendPostJson = {
+          'postId': 'post_backend_101',
+          'author': {
+            'userId': userA.id,
+            'fullName': userA.fullName,
+            'username': userA.username,
+            'avatarUrl': null,
+          },
+          'contentText': 'Testing post author resolution',
+          'imageUrls': <String>[],
+          'likeCount': 0,
+          'commentCount': 0,
+          'sharesCount': 0,
+        };
 
-      final parsed = CommunityPostModel.fromJson(backendPostJson);
+        final parsed = CommunityPostModel.fromJson(backendPostJson);
 
-      expect(parsed.id, equals('post_backend_101'));
-      expect(parsed.userId, equals(userA.id));
-      expect(parsed.authorName, equals(userA.fullName));
-      expect(parsed.authorTag, equals('@${userA.username}'));
-      expect(parsed.authorAvatar, equals(userA.avatarUrl));
-      expect(parsed.isOwner, isTrue);
-    });
+        expect(parsed.id, equals('post_backend_101'));
+        expect(parsed.userId, equals(userA.id));
+        expect(parsed.authorName, equals(userA.fullName));
+        expect(parsed.authorTag, equals('@${userA.username}'));
+        expect(parsed.authorAvatar, equals(userA.avatarUrl));
+        expect(parsed.isOwner, isTrue);
+      },
+    );
 
-    test('Demo posts have isOwner = false and belong to demo users, not CurrentUser', () {
-      authController.updateCachedUser(userA);
+    test(
+      'Demo posts have isOwner = false and belong to demo users, not CurrentUser',
+      () {
+        authController.updateCachedUser(userA);
 
-      final demoPosts = DemoCommunityDataProvider.getDay15DemoPosts();
-      for (final post in demoPosts) {
-        expect(post.isOwner, isFalse);
-        expect(post.userId, isNot(equals(userA.id)));
-      }
-    });
+        final demoPosts = DemoCommunityDataProvider.getDay15DemoPosts();
+        for (final post in demoPosts) {
+          expect(post.isOwner, isFalse);
+          expect(post.userId, isNot(equals(userA.id)));
+        }
+      },
+    );
 
     test('getUserPosts returns ONLY posts belonging to the target userId', () {
       authController.updateCachedUser(userA);
@@ -314,17 +342,25 @@ void main() {
       controller.posts.assignAll([postA1, postB1, ...demoPosts]);
 
       // When User A views User A profile posts
-      final userAPosts = controller.getUserPosts(userA.id, username: userA.fullName);
+      final userAPosts = controller.getUserPosts(
+        userA.id,
+        username: userA.fullName,
+      );
       expect(userAPosts.length, equals(1));
       expect(userAPosts.first.id, equals('post_user_a_1'));
       expect(userAPosts.first.authorName, equals(userA.fullName));
 
       // Verify Sokny Enat demo posts are NEVER returned for User A
-      final containsDemo = userAPosts.any((p) => p.authorName == 'Sokny Enat' || p.id == 'post_day15_1');
+      final containsDemo = userAPosts.any(
+        (p) => p.authorName == 'Sokny Enat' || p.id == 'post_day15_1',
+      );
       expect(containsDemo, isFalse);
 
       // When User B views User B profile posts
-      final userBPosts = controller.getUserPosts(userB.id, username: userB.fullName);
+      final userBPosts = controller.getUserPosts(
+        userB.id,
+        username: userB.fullName,
+      );
       expect(userBPosts.length, equals(1));
       expect(userBPosts.first.id, equals('post_user_b_1'));
       expect(userBPosts.first.authorName, equals(userB.fullName));

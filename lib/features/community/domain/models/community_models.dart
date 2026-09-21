@@ -124,10 +124,9 @@ class EventModel {
 
   String get effectiveLocation {
     if (isOnline) {
-      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
-        return meetingUrl!.trim();
-      }
-      return onlineLink;
+      // The backend deliberately omits meetingUrl for users who cannot access
+      // it. Never use a legacy/public link field as a fallback here.
+      return effectiveLocationName;
     } else {
       if (locationName != null && locationName!.trim().isNotEmpty) {
         return locationName!.trim();
@@ -148,9 +147,36 @@ class EventModel {
     if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
       return meetingUrl!.trim();
     }
-    if (onlineLink.isNotEmpty) return onlineLink;
     return '';
   }
+
+  String get normalizedStatus => status.trim().toUpperCase();
+
+  bool get isDraft => normalizedStatus == 'DRAFT';
+
+  bool get isPublished => normalizedStatus == 'PUBLISHED';
+
+  bool get isCancelled => normalizedStatus == 'CANCELLED';
+
+  bool get isCompleted => normalizedStatus == 'COMPLETED';
+
+  bool get hasStarted =>
+      startDateTime != null && !startDateTime!.isAfter(DateTime.now());
+
+  bool get isPast => hasStarted;
+
+  bool get isRsvpEligible =>
+      isPublished &&
+      (startDateTime == null || startDateTime!.isAfter(DateTime.now()));
+
+  bool get hasJoinedRsvp =>
+      isRsvped || myRsvpStatus?.trim().toUpperCase() == 'JOINED';
+
+  bool isOwnedBy(String? userId) =>
+      userId != null && userId.isNotEmpty && organizerId == userId;
+
+  bool canAccessMeetingFor(String? userId) =>
+      isOwnedBy(userId) || hasJoinedRsvp;
 
   static const _enMonths = [
     'Jan',
@@ -427,7 +453,9 @@ class EventModel {
     final loc = json['location'] as String? ?? locName ?? '';
 
     final meetUrl = json['meetingUrl'] as String?;
-    final onLink = json['onlineLink'] as String? ?? meetUrl ?? '';
+    // `onlineLink` is retained only for legacy local/demo objects. The real
+    // backend contract uses meetingUrl and may intentionally return null.
+    final onLink = json['onlineLink'] as String? ?? '';
 
     final isPaidVal = json['paid'] as bool? ?? json['isPaid'] as bool? ?? false;
     final parsedPrice = parseDouble(json['price']);
@@ -631,29 +659,34 @@ class ForumLikerModel {
     final userObj = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>
         : (json['author'] is Map<String, dynamic>
-            ? json['author'] as Map<String, dynamic>
-            : null);
-    final id = (json['id'] ??
-            json['userId'] ??
-            userObj?['id'] ??
-            userObj?['userId'] ??
-            '')
-        .toString();
-    final fullName = (json['fullName'] ??
-            json['name'] ??
-            userObj?['fullName'] ??
-            userObj?['name'] ??
-            'User')
-        .toString();
+              ? json['author'] as Map<String, dynamic>
+              : null);
+    final id =
+        (json['id'] ??
+                json['userId'] ??
+                userObj?['id'] ??
+                userObj?['userId'] ??
+                '')
+            .toString();
+    final fullName =
+        (json['fullName'] ??
+                json['name'] ??
+                userObj?['fullName'] ??
+                userObj?['name'] ??
+                'User')
+            .toString();
     final rawUsername = (json['username'] ?? userObj?['username'] ?? fullName)
         .toString();
-    final username = rawUsername.startsWith('@') ? rawUsername : '@$rawUsername';
-    final avatarUrl = (json['avatarUrl'] ??
-            json['avatar'] ??
-            userObj?['avatarUrl'] ??
-            userObj?['avatar'] ??
-            '')
-        .toString();
+    final username = rawUsername.startsWith('@')
+        ? rawUsername
+        : '@$rawUsername';
+    final avatarUrl =
+        (json['avatarUrl'] ??
+                json['avatar'] ??
+                userObj?['avatarUrl'] ??
+                userObj?['avatar'] ??
+                '')
+            .toString();
 
     return ForumLikerModel(
       id: id,
@@ -688,29 +721,34 @@ class PostLikerModel {
     final userObj = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>
         : (json['author'] is Map<String, dynamic>
-            ? json['author'] as Map<String, dynamic>
-            : null);
-    final id = (json['id'] ??
-            json['userId'] ??
-            userObj?['id'] ??
-            userObj?['userId'] ??
-            '')
-        .toString();
-    final fullName = (json['fullName'] ??
-            json['name'] ??
-            userObj?['fullName'] ??
-            userObj?['name'] ??
-            'User')
-        .toString();
+              ? json['author'] as Map<String, dynamic>
+              : null);
+    final id =
+        (json['id'] ??
+                json['userId'] ??
+                userObj?['id'] ??
+                userObj?['userId'] ??
+                '')
+            .toString();
+    final fullName =
+        (json['fullName'] ??
+                json['name'] ??
+                userObj?['fullName'] ??
+                userObj?['name'] ??
+                'User')
+            .toString();
     final rawUsername = (json['username'] ?? userObj?['username'] ?? fullName)
         .toString();
-    final username = rawUsername.startsWith('@') ? rawUsername : '@$rawUsername';
-    final avatarUrl = (json['avatarUrl'] ??
-            json['avatar'] ??
-            userObj?['avatarUrl'] ??
-            userObj?['avatar'] ??
-            '')
-        .toString();
+    final username = rawUsername.startsWith('@')
+        ? rawUsername
+        : '@$rawUsername';
+    final avatarUrl =
+        (json['avatarUrl'] ??
+                json['avatar'] ??
+                userObj?['avatarUrl'] ??
+                userObj?['avatar'] ??
+                '')
+            .toString();
 
     return PostLikerModel(
       id: id,
@@ -765,9 +803,9 @@ class ForumTopicModel {
     this.isAnonymous = false,
     this.isBookmarked = false,
     this.likers = const [],
-  })  : authorId = isAnonymous ? null : authorId,
-        authorName = isAnonymous ? 'Anonymous' : authorName,
-        authorAvatar = isAnonymous ? '' : authorAvatar;
+  }) : authorId = isAnonymous ? null : authorId,
+       authorName = isAnonymous ? 'Anonymous' : authorName,
+       authorAvatar = isAnonymous ? '' : authorAvatar;
 
   final bool isBookmarked;
   bool get mine => isOwner;
@@ -830,31 +868,32 @@ class ForumTopicModel {
   }
 
   factory ForumTopicModel.fromJson(Map<String, dynamic> json) {
-    final rawAnonymous = json['anonymous'] as bool? ??
-        json['isAnonymous'] as bool?;
+    final rawAnonymous =
+        json['anonymous'] as bool? ?? json['isAnonymous'] as bool?;
     final authorObj = json['author'] is Map<String, dynamic>
         ? json['author'] as Map<String, dynamic>
         : null;
-    final isAnonymous = rawAnonymous ??
+    final isAnonymous =
+        rawAnonymous ??
         (authorObj == null && json['authorName'] == 'Anonymous');
 
     final authorName = isAnonymous
         ? 'Anonymous'
         : (authorObj?['fullName'] as String? ??
-            authorObj?['username'] as String? ??
-            json['authorName'] as String? ??
-            json['username'] as String? ??
-            'User');
+              authorObj?['username'] as String? ??
+              json['authorName'] as String? ??
+              json['username'] as String? ??
+              'User');
     final authorAvatar = isAnonymous
         ? ''
         : (authorObj?['avatarUrl'] as String? ??
-            json['authorAvatar'] as String? ??
-            '');
+              json['authorAvatar'] as String? ??
+              '');
     final authorId = isAnonymous
         ? null
         : (authorObj?['userId'] as String? ??
-            json['authorId'] as String? ??
-            json['userId'] as String?);
+              json['authorId'] as String? ??
+              json['userId'] as String?);
 
     final rawDate = json['createdAt'] as String? ?? json['timeAgo'] as String?;
     final parsedUtc = CommunityDateFormatter.parseToUtc(rawDate);
@@ -862,14 +901,15 @@ class ForumTopicModel {
       parsedUtc ?? rawDate ?? 'Just now',
     );
 
-    final rawLikers = json['likers'] as List<dynamic>? ??
+    final rawLikers =
+        json['likers'] as List<dynamic>? ??
         json['recentReactions'] as List<dynamic>? ??
         json['reactions'] as List<dynamic>?;
     final parsedLikers = rawLikers != null
         ? rawLikers
-            .whereType<Map<String, dynamic>>()
-            .map(ForumLikerModel.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(ForumLikerModel.fromJson)
+              .toList()
         : <ForumLikerModel>[];
 
     return ForumTopicModel(
@@ -897,9 +937,8 @@ class ForumTopicModel {
       isPinned: json['isPinned'] as bool? ?? false,
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
       isAnonymous: isAnonymous,
-      isBookmarked: json['isBookmarked'] as bool? ??
-          json['savedByMe'] as bool? ??
-          false,
+      isBookmarked:
+          json['isBookmarked'] as bool? ?? json['savedByMe'] as bool? ?? false,
       likers: parsedLikers,
     );
   }

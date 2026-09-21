@@ -224,6 +224,26 @@ class CommunityController extends GetxController {
         );
       }
 
+      final currentUid = CurrentUser.id.isNotEmpty
+          ? CurrentUser.id
+          : (Get.isRegistered<AuthController>()
+              ? Get.find<AuthController>().currentUser.value?.id ?? ''
+              : '');
+      final currentName = CurrentUser.name;
+      final currentAvatar = CurrentUser.avatarUrl;
+
+      if (createdEvent.organizerId == null || createdEvent.organizerId!.isEmpty) {
+        if (currentUid.isNotEmpty) {
+          createdEvent = createdEvent.copyWith(
+            organizerId: currentUid,
+            organizerName: createdEvent.organizerName.isNotEmpty
+                ? createdEvent.organizerName
+                : (currentName.isNotEmpty && currentName != 'Guest' ? currentName : ''),
+            organizerAvatar: createdEvent.organizerAvatar ?? currentAvatar,
+          );
+        }
+      }
+
       final eventToStore =
           coverImageFile != null && createdEvent.coverImageFile == null
           ? createdEvent.copyWith(coverImageFile: coverImageFile)
@@ -250,9 +270,6 @@ class CommunityController extends GetxController {
         // If refresh fails, eventToStore is already present in events
       }
 
-      final currentUid = CurrentUser.id;
-      final currentName = CurrentUser.name;
-      final currentAvatar = CurrentUser.avatarUrl;
       final currentUsername = CurrentUser.username;
       final eventPost = CommunityPostModel(
         id: 'post_event_${eventToStore.id}',
@@ -295,7 +312,26 @@ class CommunityController extends GetxController {
   }
 
   void addEventLocally(EventModel event) {
-    final eventToStore = event.copyWith();
+    final currentUid = CurrentUser.id.isNotEmpty
+        ? CurrentUser.id
+        : (Get.isRegistered<AuthController>()
+            ? Get.find<AuthController>().currentUser.value?.id ?? ''
+            : '');
+    final currentName = CurrentUser.name;
+    final currentAvatar = CurrentUser.avatarUrl;
+
+    var eventToStore = event.copyWith();
+    if (eventToStore.organizerId == null || eventToStore.organizerId!.isEmpty) {
+      if (currentUid.isNotEmpty) {
+        eventToStore = eventToStore.copyWith(
+          organizerId: currentUid,
+          organizerName: eventToStore.organizerName.isNotEmpty
+              ? eventToStore.organizerName
+              : (currentName.isNotEmpty && currentName != 'Guest' ? currentName : ''),
+          organizerAvatar: eventToStore.organizerAvatar ?? currentAvatar,
+        );
+      }
+    }
     final existingEventIndex = events.indexWhere((item) => item.id == event.id);
     if (existingEventIndex == -1) {
       events.insert(0, eventToStore);

@@ -18,7 +18,7 @@ import '../widgets/story_tray_widget.dart';
 import '../widgets/community_creation_flow.dart';
 
 import 'create_discussion_screen.dart';
-import 'event_details_screen.dart';
+import 'events_screen.dart';
 import 'forum_category_screen.dart';
 import 'forum_discussion_screen.dart';
 import '../widgets/forum_share_to_chat_sheet.dart';
@@ -1349,17 +1349,17 @@ class _CommunityScreenState extends State<CommunityScreen>
                       const SizedBox(height: 10),
                   itemBuilder: (context, idx) {
                     final ev = allEvents[idx];
-                    return _buildUpcomingEventCard(
-                      context,
-                      controller,
-                      ev,
-                      idx,
-                      isDark,
-                      textPrimary,
-                      textSecondary,
-                      textMuted,
-                      surfaceSecondary,
-                      borderSubtle,
+                    return EventCard(
+                      key: ValueKey('community-event-card-${ev.id}'),
+                      event: ev,
+                      controller: controller,
+                      index: idx,
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      textMuted: textMuted,
+                      cardBg: surfaceSecondary,
+                      borderSubtle: borderSubtle,
                     );
                   },
                 ),
@@ -1735,291 +1735,6 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
-  Widget _buildUpcomingEventCard(
-    BuildContext context,
-    CommunityController controller,
-    EventModel ev,
-    int index,
-    bool isDark,
-    Color textPrimary,
-    Color textSecondary,
-    Color textMuted,
-    Color surfaceSecondary,
-    Color borderSubtle,
-  ) {
-    final isExplicitOnline =
-        ev.eventType.isNotEmpty &&
-        ev.eventType.toLowerCase().contains('online');
-    final String onlineLabel =
-        'community.onlineEvent'.tr.isNotEmpty &&
-            'community.onlineEvent'.tr != 'community.onlineEvent'
-        ? 'community.onlineEvent'.tr
-        : 'Online Event';
-    final String locationDisplay = ev.location.isNotEmpty
-        ? '📍 ${ev.location}'
-        : (isExplicitOnline ? '🌐 $onlineLabel' : '');
-
-    final String dateDisplay = ev.timeString.isNotEmpty
-        ? '📅 ${ev.dateString} · ${ev.timeString}'
-        : (ev.dateString.isNotEmpty ? '📅 ${ev.dateString}' : '');
-
-    final String rawCat = ev.category.isNotEmpty ? ev.category : 'Event';
-    final String catKey = 'community.${rawCat.toLowerCase()}';
-    final String categoryDisplay = catKey.tr.isNotEmpty && catKey.tr != catKey
-        ? catKey.tr
-        : rawCat;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 240 + (index.clamp(0, 5) * 30)),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 10 * (1.0 - value)),
-            child: child,
-          ),
-        );
-      },
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => Get.to(
-            () => EventDetailsScreen(
-              event: ev,
-              heroTag: 'event-image-${ev.id}-tab',
-            ),
-          ),
-          borderRadius: BorderRadius.circular(AppRadius.squircle),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: surfaceSecondary,
-              borderRadius: BorderRadius.circular(AppRadius.squircle),
-              border: Border.all(color: borderSubtle, width: 0.8),
-              boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 92,
-                    height: 92,
-                    child: Hero(
-                      tag: 'event-image-${ev.id}-tab',
-                      child: _buildEventImage(ev, isDark, textMuted),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.darkSurfaceSecondary
-                                  : AppColors.lightBgSecondary,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: borderSubtle.withValues(alpha: 0.6),
-                                width: 0.6,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _getCategoryIconData(ev.category),
-                                  size: 11,
-                                  color: isDark ? Colors.white70 : textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  categoryDisplay,
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white70 : textSecondary,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (ev.isPaid) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.communityAccent.withValues(
-                                  alpha: 0.15,
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'community.paid'.tr.isNotEmpty &&
-                                        'community.paid'.tr != 'community.paid'
-                                    ? 'community.paid'.tr.toUpperCase()
-                                    : 'PAID',
-                                style: const TextStyle(
-                                  color: AppColors.communityAccent,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                controller.toggleEventBookmark(ev.id);
-                              },
-                              borderRadius: BorderRadius.circular(14),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: AnimatedScale(
-                                  scale: ev.isBookmarked ? 1.15 : 1.0,
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOutBack,
-                                  child: Icon(
-                                    ev.isBookmarked
-                                        ? Icons.bookmark_rounded
-                                        : Icons.bookmark_border_rounded,
-                                    color: ev.isBookmarked
-                                        ? (isDark ? Colors.white : Colors.black87)
-                                        : textMuted,
-                                    size: 19,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-
-                      Text(
-                        ev.title,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.5,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 5),
-
-                      if (dateDisplay.isNotEmpty) ...[
-                        Text(
-                          dateDisplay,
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                      ],
-
-                      if (locationDisplay.isNotEmpty) ...[
-                        Text(
-                          locationDisplay,
-                          style: TextStyle(
-                            color: textMuted,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildEventImage(EventModel ev, bool isDark, Color textMuted) {
-    if (ev.coverImageFile != null) {
-      return Image.file(
-        ev.coverImageFile!,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _eventPlaceholder(isDark, textMuted),
-      );
-    }
-    if (ev.imageUrl.isNotEmpty) {
-      return Image.network(
-        ev.imageUrl,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: isDark
-                ? AppColors.darkSurfaceSecondary
-                : AppColors.lightBgSecondary,
-            child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.0,
-                  color: isDark ? Colors.white24 : Colors.black12,
-                ),
-              ),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) =>
-            _eventPlaceholder(isDark, textMuted),
-      );
-    }
-    return _eventPlaceholder(isDark, textMuted);
-  }
-
-  static Widget _eventPlaceholder(bool isDark, Color textMuted) {
-    return Container(
-      color: isDark
-          ? AppColors.darkSurfaceSecondary
-          : AppColors.lightBgSecondary,
-      child: Center(
-        child: Icon(
-          Icons.event_outlined,
-          color: textMuted.withValues(alpha: 0.6),
-          size: 28,
-        ),
-      ),
-    );
-  }
-
   /// Event tab empty state — shown when backend returns 0 events.
   Widget _buildEventEmptyState(
     BuildContext context,
@@ -2073,40 +1788,6 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
       ),
     );
-  }
-
-  IconData _getCategoryIconData(String cat) {
-    switch (cat.toLowerCase()) {
-      case 'technology':
-        return Icons.computer_outlined;
-      case 'design':
-      case 'arts':
-      case 'art':
-        return Icons.palette_outlined;
-      case 'business':
-        return Icons.business_center_outlined;
-      case 'career':
-        return Icons.work_outline_rounded;
-      case 'education':
-        return Icons.school_outlined;
-      case 'workshop':
-        return Icons.build_outlined;
-      case 'competition':
-        return Icons.emoji_events_outlined;
-      case 'sports':
-      case 'sport':
-        return Icons.sports_soccer_outlined;
-      case 'social':
-        return Icons.people_outline_rounded;
-      case 'entertainment':
-        return Icons.movie_outlined;
-      case 'seminar':
-        return Icons.groups_outlined;
-      case 'hackathon':
-        return Icons.terminal_outlined;
-      default:
-        return Icons.category_outlined;
-    }
   }
 }
 

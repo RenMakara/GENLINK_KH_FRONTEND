@@ -138,10 +138,10 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              sectionTitle,
+              sectionTitle.toUpperCase(),
               style: TextStyle(
-                color: textPrimary,
-                fontSize: 13.5,
+                color: textSecondary,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
               ),
@@ -160,7 +160,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
+        const SizedBox(height: AppSpacing.sm),
         if (event == null)
           _buildEmptyState(
             isDark: isDark,
@@ -199,15 +199,15 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          sectionTitle,
+          sectionTitle.toUpperCase(),
           style: TextStyle(
             color: textPrimary,
-            fontSize: 13.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
+        const SizedBox(height: AppSpacing.sm),
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -219,7 +219,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 130,
+                height: 100,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: shimmerBase,
@@ -229,45 +229,45 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      height: 16,
-                      width: 220,
+                      height: 14,
+                      width: 200,
+                      decoration: BoxDecoration(
+                        color: shimmerBase,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 11,
+                      width: 140,
                       decoration: BoxDecoration(
                         color: shimmerBase,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      height: 12,
-                      width: 160,
-                      decoration: BoxDecoration(
-                        color: shimmerBase,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          height: 12,
-                          width: 100,
+                          height: 11,
+                          width: 90,
                           decoration: BoxDecoration(
                             color: shimmerBase,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                         Container(
-                          height: 24,
-                          width: 80,
+                          height: 18,
+                          width: 70,
                           decoration: BoxDecoration(
                             color: shimmerBase,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ],
@@ -438,7 +438,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                 Stack(
                   children: [
                     SizedBox(
-                      height: 130,
+                      height: 110,
                       width: double.infinity,
                       child: Hero(
                         tag: heroTag,
@@ -455,22 +455,22 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                         left: 8,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3.5,
+                            horizontal: 7,
+                            vertical: 2.5,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.70),
+                            color: Colors.black.withValues(alpha: 0.65),
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.15),
-                              width: 0.6,
+                              width: 0.5,
                             ),
                           ),
                           child: Text(
                             categoryDisplay,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 9.5,
+                              fontSize: 9.0,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.3,
                             ),
@@ -480,46 +480,46 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         event.title,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: textPrimary,
-                          fontSize: 15,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.2,
-                          height: 1.25,
+                          height: 1.2,
                         ),
                       ),
                       if (descriptionText.isNotEmpty) ...[
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 3),
                         Text(
                           descriptionText,
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: textSecondary,
                             fontSize: 12,
-                            height: 1.35,
+                            height: 1.3,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       if (dateTimeDisplay.isNotEmpty) ...[
                         Row(
                           children: [
                             Icon(
                               Icons.calendar_today_outlined,
-                              size: 12.5,
+                              size: 12,
                               color: textSecondary,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 5),
                             Expanded(
                               child: Text(
                                 dateTimeDisplay,
@@ -534,7 +534,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                       ],
                       Row(
                         children: [
@@ -542,10 +542,10 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                             isOnline
                                 ? Icons.language_outlined
                                 : Icons.location_on_outlined,
-                            size: 13,
+                            size: 12.5,
                             color: textMuted,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Expanded(
                             child: Text(
                               locationDisplay,
@@ -560,32 +560,10 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          if (event.attendeesCount > 0)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.people_outline_rounded,
-                                  size: 13,
-                                  color: textMuted,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${event.attendeesCount}',
-                                  style: TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            const SizedBox.shrink(),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -593,14 +571,14 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                                 viewEventLabel,
                                 style: TextStyle(
                                   color: textPrimary,
-                                  fontSize: 12,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.arrow_forward_rounded,
-                                size: 13,
+                                size: 12,
                                 color: textPrimary,
                               ),
                             ],
@@ -630,7 +608,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
           trimmed,
           fit: BoxFit.cover,
           width: double.infinity,
-          height: 155,
+          height: 110,
           errorBuilder: (context, error, stackTrace) =>
               _buildPlaceholder(isDark, textMuted),
         );
@@ -639,7 +617,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
         trimmed,
         fit: BoxFit.cover,
         width: double.infinity,
-        height: 155,
+        height: 110,
         errorBuilder: (context, error, stackTrace) =>
             _buildPlaceholder(isDark, textMuted),
         loadingBuilder: (context, child, loadingProgress) {
@@ -785,39 +763,5 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       return base;
     }
     return t;
-  }
-
-  static IconData _getCategoryIconData(String cat) {
-    switch (cat.toLowerCase()) {
-      case 'technology':
-        return Icons.computer_outlined;
-      case 'design':
-      case 'arts':
-      case 'art':
-        return Icons.palette_outlined;
-      case 'business':
-        return Icons.business_center_outlined;
-      case 'career':
-        return Icons.work_outline_rounded;
-      case 'education':
-        return Icons.school_outlined;
-      case 'workshop':
-        return Icons.build_outlined;
-      case 'competition':
-        return Icons.emoji_events_outlined;
-      case 'sports':
-      case 'sport':
-        return Icons.sports_soccer_outlined;
-      case 'social':
-        return Icons.people_outline_rounded;
-      case 'entertainment':
-        return Icons.movie_outlined;
-      case 'seminar':
-        return Icons.groups_outlined;
-      case 'hackathon':
-        return Icons.terminal_outlined;
-      default:
-        return Icons.category_outlined;
-    }
   }
 }

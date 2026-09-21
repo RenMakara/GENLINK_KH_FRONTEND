@@ -60,6 +60,15 @@ abstract class CommunityRepository {
       Future.value([]);
 
   Future<bool> toggleBookmark(String postId);
+
+  Future<bool> togglePostBookmark(
+    String postId, {
+    required bool isCurrentlyBookmarked,
+  }) =>
+      Future.value(!isCurrentlyBookmarked);
+
+  Future<bool> isPostBookmarked(String postId) =>
+      Future.value(false);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});
   Future<bool> reportPost(

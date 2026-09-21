@@ -51,9 +51,9 @@ class CommunityController extends GetxController {
     return '';
   }
 
-  final selectedCategory = 'For You'.obs;
+  final selectedCategory = 'Feed'.obs;
   final selectedForumCategory = 'All'.obs;
-  final categories = ['For You', 'Feed', 'Forum', 'Event'];
+  final categories = ['Feed', 'Forum', 'Event'];
 
   final isLoadingFeed = false.obs;
   final isRefreshingFeed = false.obs;
@@ -1001,6 +1001,7 @@ class CommunityController extends GetxController {
 
   void clearBookmarkCache() {
     discussionBookmarks.clear();
+    postBookmarks.clear();
   }
 
   Future<bool> toggleDiscussionBookmark(String discussionId) async {
@@ -1308,8 +1309,7 @@ class CommunityController extends GetxController {
         isLoadingMore.value ||
         isLoadingFeed.value ||
         !hasMorePosts.value ||
-        (selectedCategory.value != 'Feed' &&
-            selectedCategory.value != 'For You')) {
+        selectedCategory.value != 'Feed') {
       return;
     }
 
@@ -1356,6 +1356,7 @@ class CommunityController extends GetxController {
       currentPage.value = 1;
       final fetched = await repository.getPosts(page: 1, limit: 10);
       posts.assignAll(fetched);
+      _syncPostBookmarks(fetched);
       _syncAttachedEventsFromPosts(fetched);
       hasMorePosts.value = fetched.length >= 10;
       _syncFollowStates(fetched);
@@ -1386,6 +1387,7 @@ class CommunityController extends GetxController {
             posts.add(item);
           }
         }
+        _syncPostBookmarks(fetched);
         _syncAttachedEventsFromPosts(fetched);
         currentPage.value = nextPage;
         hasMorePosts.value = fetched.length >= 10;
@@ -1749,34 +1751,76 @@ class CommunityController extends GetxController {
     }
   }
 
-  Future<bool> toggleBookmark(String postId) async {
-    if (postId.trim().isEmpty) return false;
-    final idx = posts.indexWhere((p) => p.id == postId);
-    if (idx == -1) return false;
+  final RxMap<String, bool> postBookmarks = <String, bool>{}.obs;
 
-    final p = posts[idx];
-    final prevBookmarked = p.isBookmarked;
-    final newStatus = !prevBookmarked;
+  bool isPostBookmarked(String postId) {
+    if (postBookmarks.containsKey(postId)) {
+      return postBookmarks[postId]!;
+    }
+    final item = posts.firstWhereOrNull((p) => p.id == postId);
+    return item?.isBookmarked ?? false;
+  }
 
-    p.isBookmarked = newStatus;
-    posts[idx] = p.copyWith(isBookmarked: newStatus);
-    posts.refresh();
-
+  Future<bool> checkPostBookmarkStatus(String postId) async {
     try {
-      final success = await repository.toggleBookmark(postId);
-      if (!success) {
-        _rollbackBookmark(postId, prevBookmarked);
-        return false;
+      final saved = await repository.isPostBookmarked(postId);
+      postBookmarks[postId] = saved;
+      final idx = posts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        posts[idx] = posts[idx].copyWith(isBookmarked: saved);
+        posts.refresh();
       }
-      return true;
+      return saved;
     } catch (_) {
-      _rollbackBookmark(postId, prevBookmarked);
       return false;
     }
   }
 
-  void _rollbackBookmark(String postId, bool prevBookmarked) {
-    final currentIdx = posts.indexWhere((item) => item.id == postId);
+  void _syncPostBookmarks(List<CommunityPostModel> items) {
+    for (final item in items) {
+      postBookmarks[item.id] = item.isBookmarked;
+    }
+  }
+
+  Future<bool> toggleBookmark(String postId) async {
+    if (postId.trim().isEmpty) return false;
+
+    final prevBookmarked = isPostBookmarked(postId);
+    final newStatus = !prevBookmarked;
+
+    postBookmarks[postId] = newStatus;
+    postBookmarks.refresh();
+
+    final idx = posts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      final p = posts[idx];
+      p.isBookmarked = newStatus;
+      posts[idx] = p.copyWith(isBookmarked: newStatus);
+      posts.refresh();
+    }
+
+    try {
+      final success = await repository.togglePostBookmark(
+        postId,
+        isCurrentlyBookmarked: prevBookmarked,
+      );
+      if (!success) {
+        _rollbackBookmark(postId, prevBookmarked, idx);
+        return false;
+      }
+      return true;
+    } catch (_) {
+      _rollbackBookmark(postId, prevBookmarked, idx);
+      return false;
+    }
+  }
+
+  void _rollbackBookmark(String postId, bool prevBookmarked, [int? idx]) {
+    postBookmarks[postId] = prevBookmarked;
+    postBookmarks.refresh();
+    final currentIdx = (idx != null && idx != -1 && idx < posts.length && posts[idx].id == postId)
+        ? idx
+        : posts.indexWhere((item) => item.id == postId);
     if (currentIdx != -1) {
       final item = posts[currentIdx];
       item.isBookmarked = prevBookmarked;

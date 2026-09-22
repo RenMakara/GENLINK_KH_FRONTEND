@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
@@ -87,82 +88,40 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
     super.dispose();
   }
 
-  void _onBackPress() {
+  Future<void> _onBackPress() async {
     if (_hasUnsavedChanges) {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final dialogBg =
-          isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-      final textPrimary =
-          isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-      final textSecondary =
-          isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+      final title = 'community.discardChanges'.tr.isNotEmpty &&
+              'community.discardChanges'.tr != 'community.discardChanges'
+          ? 'community.discardChanges'.tr
+          : ('community.discardDraft'.tr.isNotEmpty &&
+                  'community.discardDraft'.tr != 'community.discardDraft'
+              ? 'community.discardDraft'.tr
+              : 'Discard Changes?');
 
-      showDialog(
+      final message = 'community.discardChangesMsg'.tr.isNotEmpty &&
+              'community.discardChangesMsg'.tr != 'community.discardChangesMsg'
+          ? 'community.discardChangesMsg'.tr
+          : ('community.discardMessage'.tr.isNotEmpty &&
+                  'community.discardMessage'.tr != 'community.discardMessage'
+              ? 'community.discardMessage'.tr
+              : 'Your discussion has not been published yet.');
+
+      final confirmed = await GenLinkConfirmDialog.showDiscard(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: dialogBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          title: Text(
-            'community.discardChanges'.tr.isNotEmpty &&
-                    'community.discardChanges'.tr != 'community.discardChanges'
-                ? 'community.discardChanges'.tr
-                : ('community.discardDraft'.tr.isNotEmpty &&
-                        'community.discardDraft'.tr != 'community.discardDraft'
-                    ? 'community.discardDraft'.tr
-                    : 'Discard changes?'),
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'community.discardChangesMsg'.tr.isNotEmpty &&
-                    'community.discardChangesMsg'.tr !=
-                        'community.discardChangesMsg'
-                ? 'community.discardChangesMsg'.tr
-                : ('community.discardMessage'.tr.isNotEmpty &&
-                        'community.discardMessage'.tr !=
-                            'community.discardMessage'
-                    ? 'community.discardMessage'.tr
-                    : 'Your discussion has not been published yet.'),
-            style: TextStyle(color: textSecondary, fontSize: 14, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'community.keepEditing'.tr.isNotEmpty &&
-                        'community.keepEditing'.tr != 'community.keepEditing'
-                    ? 'community.keepEditing'.tr
-                    : 'Keep Editing',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: Text(
-                'community.discard'.tr.isNotEmpty &&
-                        'community.discard'.tr != 'community.discard'
-                    ? 'community.discard'.tr
-                    : 'Discard',
-                style: const TextStyle(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
+        title: title,
+        message: message,
+        confirmLabel: 'community.discard'.tr.isNotEmpty &&
+                'community.discard'.tr != 'community.discard'
+            ? 'community.discard'.tr
+            : 'Discard',
+        cancelLabel: 'community.keepEditing'.tr.isNotEmpty &&
+                'community.keepEditing'.tr != 'community.keepEditing'
+            ? 'community.keepEditing'.tr
+            : 'Keep Editing',
       );
+      if (confirmed && mounted) {
+        Navigator.pop(context);
+      }
     } else {
       Navigator.pop(context);
     }

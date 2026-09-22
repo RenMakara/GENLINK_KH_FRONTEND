@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
@@ -526,77 +527,27 @@ class _ChatListScreenState extends State<ChatListScreen> {
     ChatConversationModel conv,
     ChatController controller,
   ) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: isDark
-            ? AppColors.darkSurfacePrimary
-            : AppColors.lightSurfacePrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'chat.deleteConversationTitle'.tr.isNotEmpty &&
-                  'chat.deleteConversationTitle'.tr !=
-                      'chat.deleteConversationTitle'
-              ? 'chat.deleteConversationTitle'.tr
-              : 'Delete conversation?',
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        content: Text(
-          'chat.deleteConversationPrompt'.tr.isNotEmpty &&
-                  'chat.deleteConversationPrompt'.tr !=
-                      'chat.deleteConversationPrompt'
-              ? 'chat.deleteConversationPrompt'.tr
-              : 'This conversation will be removed from your chat list.',
-          style: TextStyle(
-            color: textSecondary,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty &&
-                      'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: TextStyle(
-                color: textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: Text(
-              'common.delete'.tr.isNotEmpty &&
-                      'common.delete'.tr != 'common.delete'
-                  ? 'common.delete'.tr
-                  : 'Delete',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'chat.deleteConversationTitle'.tr.isNotEmpty &&
+              'chat.deleteConversationTitle'.tr !=
+                  'chat.deleteConversationTitle'
+          ? 'chat.deleteConversationTitle'.tr
+          : 'Delete conversation?',
+      message: 'chat.deleteConversationPrompt'.tr.isNotEmpty &&
+              'chat.deleteConversationPrompt'.tr !=
+                  'chat.deleteConversationPrompt'
+          ? 'chat.deleteConversationPrompt'.tr
+          : 'This conversation will be removed from your chat list.',
+      confirmLabel: 'common.delete'.tr.isNotEmpty &&
+              'common.delete'.tr != 'common.delete'
+          ? 'common.delete'.tr
+          : 'Delete',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+              'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true) {

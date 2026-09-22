@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../media/domain/entities/media_entity.dart';
@@ -1193,66 +1194,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   );
   }
 
-  void _showDeleteMessageDialog(BuildContext context, ChatMessageModel msg, ChatController controller) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: surfaceColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'chat.deleteMessageTitle'.tr.isNotEmpty && 'chat.deleteMessageTitle'.tr != 'chat.deleteMessageTitle'
-              ? 'chat.deleteMessageTitle'.tr
-              : 'Delete message?',
-          style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'chat.deleteMessagePrompt'.tr.isNotEmpty && 'chat.deleteMessagePrompt'.tr != 'chat.deleteMessagePrompt'
-              ? 'chat.deleteMessagePrompt'.tr
-              : 'Are you sure you want to delete this message?',
-          style: TextStyle(color: textMuted, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: TextStyle(color: textMuted, fontWeight: FontWeight.w600),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 0,
-            ),
-            onPressed: () {
-              Get.back();
-              controller.deleteMessage(msg.id);
-              AppNotificationBanner.showInfo(
-                context: context,
-                title: 'Deleted',
-                message: 'chat.messageDeleted'.tr.isNotEmpty && 'chat.messageDeleted'.tr != 'chat.messageDeleted'
-                    ? 'chat.messageDeleted'.tr
-                    : 'This message was deleted',
-                icon: Icons.delete_outline_rounded,
-              );
-            },
-            child: Text(
-              'chat.deleteMessage'.tr.isNotEmpty && 'chat.deleteMessage'.tr != 'chat.deleteMessage'
-                ? 'chat.deleteMessage'.tr
-                : 'Delete',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteMessageDialog(BuildContext context, ChatMessageModel msg, ChatController controller) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
+      context: context,
+      title: 'chat.deleteMessageTitle'.tr.isNotEmpty && 'chat.deleteMessageTitle'.tr != 'chat.deleteMessageTitle'
+          ? 'chat.deleteMessageTitle'.tr
+          : 'Delete message?',
+      message: 'chat.deleteMessagePrompt'.tr.isNotEmpty && 'chat.deleteMessagePrompt'.tr != 'chat.deleteMessagePrompt'
+          ? 'chat.deleteMessagePrompt'.tr
+          : 'Are you sure you want to delete this message?',
+      confirmLabel: 'chat.deleteMessage'.tr.isNotEmpty && 'chat.deleteMessage'.tr != 'chat.deleteMessage'
+          ? 'chat.deleteMessage'.tr
+          : 'Delete',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
+      icon: Icons.delete_outline_rounded,
     );
+
+    if (confirmed && context.mounted) {
+      controller.deleteMessage(msg.id);
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: 'Deleted',
+        message: 'chat.messageDeleted'.tr.isNotEmpty && 'chat.messageDeleted'.tr != 'chat.messageDeleted'
+            ? 'chat.messageDeleted'.tr
+            : 'This message was deleted',
+        icon: Icons.delete_outline_rounded,
+      );
+    }
   }
 }

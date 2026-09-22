@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_creation_flow.dart';
@@ -921,65 +922,25 @@ class _EventCardState extends State<EventCard>
     }
 
     if (action == 'delete') {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await GenLinkConfirmDialog.showDanger(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'community.deleteEvent'.tr.isNotEmpty &&
-                    'community.deleteEvent'.tr != 'community.deleteEvent'
-                ? '${'community.deleteEvent'.tr}?'
-                : 'Delete Event?',
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 17,
-            ),
-          ),
-          content: Text(
-            'community.deleteEventConfirm'.tr.isNotEmpty &&
-                    'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
-                ? 'community.deleteEventConfirm'.tr
-                : 'Are you sure you want to delete this event? This action cannot be undone.',
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 14,
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(
-                'common.cancel'.tr.isNotEmpty &&
-                        'common.cancel'.tr != 'common.cancel'
-                    ? 'common.cancel'.tr
-                    : 'Cancel',
-                style: TextStyle(
-                  color: isDark ? Colors.white60 : Colors.black54,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
-              ),
-              child: Text(
-                'community.deleteEvent'.tr.isNotEmpty &&
-                        'community.deleteEvent'.tr != 'community.deleteEvent'
-                    ? 'community.deleteEvent'.tr
-                    : 'Delete Event',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
+        title: 'community.deleteEvent'.tr.isNotEmpty &&
+                'community.deleteEvent'.tr != 'community.deleteEvent'
+            ? '${'community.deleteEvent'.tr}?'
+            : 'Delete Event?',
+        message: 'community.deleteEventConfirm'.tr.isNotEmpty &&
+                'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
+            ? 'community.deleteEventConfirm'.tr
+            : 'Are you sure you want to delete this event? This action cannot be undone.',
+        confirmLabel: 'community.deleteEvent'.tr.isNotEmpty &&
+                'community.deleteEvent'.tr != 'community.deleteEvent'
+            ? 'community.deleteEvent'.tr
+            : 'Delete Event',
+        cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+                'common.cancel'.tr != 'common.cancel'
+            ? 'common.cancel'.tr
+            : 'Cancel',
+        icon: Icons.delete_outline_rounded,
       );
 
       if (confirmed == true) {

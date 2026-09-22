@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
@@ -396,55 +397,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   }
 
   Future<void> _handleCancelRegistration(bool isDark) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'community.cancelRegistrationTitle'.tr,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppColors.lightTextPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
-        content: Text(
-          'community.cancelRegistrationConfirm'.tr,
-          style: TextStyle(
-            color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text(
-              'common.cancel'.tr,
-              style: TextStyle(
-                color: isDark ? Colors.white60 : Colors.black54,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'community.confirmCancel'.tr,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'community.cancelRegistrationTitle'.tr,
+      message: 'community.cancelRegistrationConfirm'.tr,
+      cancelLabel: 'common.cancel'.tr,
+      confirmLabel: 'community.confirmCancel'.tr,
+      icon: Icons.cancel_outlined,
     );
 
     if (confirmed != true) return;

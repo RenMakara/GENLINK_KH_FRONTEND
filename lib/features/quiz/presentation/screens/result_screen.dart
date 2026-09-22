@@ -16,57 +16,64 @@ class ResultScreen extends GetView<QuizController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: QuizThemeColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Obx(() {
-            final result = controller.quizResult.value;
-            if (result == null) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 80),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(color: QuizThemeColors.primary),
-                    const SizedBox(height: 20),
-                    Text(
-                      'quiz.loadingResults'.tr,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: QuizThemeColors.body,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _returnToDashboard();
+      },
+      child: Scaffold(
+        backgroundColor: QuizThemeColors.background,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Obx(() {
+              final result = controller.quizResult.value;
+              if (result == null) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(color: QuizThemeColors.primary),
+                      const SizedBox(height: 20),
+                      Text(
+                        'quiz.loadingResults'.tr,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: QuizThemeColors.body,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }
+                    ],
+                  ),
+                );
+              }
 
-            return Column(
-              children: [
-                const SizedBox(height: 20),
-                _buildTrophyBanner(context, result),
-                const SizedBox(height: AppSpacing.md),
-                _buildScoreRing(context, result),
-                const SizedBox(height: 28),
-                _buildSummaryGrid(result),
-                const SizedBox(height: 28),
-                QuizGradientButton(
-                  label: 'quiz.reviewAnswers'.tr,
-                  icon: Icons.visibility_outlined,
-                  isOutlined: true,
-                  onPressed: () => _showAnswerBreakdown(context),
-                ),
-                const SizedBox(height: 14),
-                QuizGradientButton(
-                  label: 'quiz.backToDashboard'.tr,
-                  icon: Icons.dashboard_outlined,
-                  onPressed: _returnToDashboard,
-                ),
-                const SizedBox(height: 20),
-              ],
-            );
-          }),
+              return Column(
+                children: [
+                  const SizedBox(height: 20),
+                  _buildTrophyBanner(context, result),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildScoreRing(context, result),
+                  const SizedBox(height: 28),
+                  _buildSummaryGrid(result),
+                  const SizedBox(height: 28),
+                  QuizGradientButton(
+                    label: 'quiz.reviewAnswers'.tr,
+                    icon: Icons.visibility_outlined,
+                    isOutlined: true,
+                    onPressed: () => _showAnswerBreakdown(context),
+                  ),
+                  const SizedBox(height: 14),
+                  QuizGradientButton(
+                    label: 'quiz.backToDashboard'.tr,
+                    icon: Icons.dashboard_outlined,
+                    onPressed: _returnToDashboard,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -74,7 +81,15 @@ class ResultScreen extends GetView<QuizController> {
 
   void _returnToDashboard() {
     controller.resetQuiz();
-    Get.offNamed(AppRoutes.quizDashboard);
+    Get.until(
+      (route) =>
+          route.settings.name == AppRoutes.quizDashboard ||
+          route.settings.name == AppRoutes.home ||
+          route.isFirst,
+    );
+    if (Get.currentRoute != AppRoutes.quizDashboard) {
+      Get.offNamed(AppRoutes.quizDashboard);
+    }
   }
 
   void _showAnswerBreakdown(BuildContext context) {

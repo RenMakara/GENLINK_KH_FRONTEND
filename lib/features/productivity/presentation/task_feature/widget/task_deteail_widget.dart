@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/widget/task_home_widget.dart';
 
 // ============================================================
@@ -1698,136 +1699,15 @@ class TaskDeleteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = TaskDetailColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    return AlertDialog(
-      backgroundColor: colors.surface,
-
-      elevation: 10,
-
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-
-      titlePadding: const EdgeInsets.fromLTRB(
-        22,
-        22,
-        22,
-        8,
-      ),
-
-      contentPadding: const EdgeInsets.fromLTRB(
-        22,
-        4,
-        22,
-        8,
-      ),
-
-      actionsPadding: const EdgeInsets.fromLTRB(
-        14,
-        0,
-        14,
-        14,
-      ),
-
-      title: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-
-            decoration: BoxDecoration(
-              color: AppColors.danger.withValues(
-                alpha: .10,
-              ),
-
-              borderRadius: BorderRadius.circular(12),
-            ),
-
-            child: const Icon(
-              Icons.delete_outline_rounded,
-
-              color: AppColors.danger,
-
-              size: 20,
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Text(
-              'task.detail.deleteTitle'.tr,
-
-              style: TextStyle(
-                color: colors.textPrimary,
-
-                fontSize: 16,
-
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-
-      content: Text(
-        'task.detail.deleteMessage'.tr,
-
-        style: TextStyle(
-          color: colors.textMuted,
-
-          fontSize: 11,
-
-          height: 1.45,
-        ),
-      ),
-
-      actions: [
-        TextButton(
-          onPressed: onCancel,
-
-          child: Text(
-            'task.detail.cancel'.tr,
-
-            style: TextStyle(
-              color: colors.textSecondary,
-
-              fontSize: 10,
-
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-
-        ElevatedButton(
-          onPressed: onDelete,
-
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.danger,
-
-            foregroundColor: Colors.white,
-
-            elevation: 0,
-
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-
-          child: Text(
-            'task.detail.delete'.tr,
-
-            style: const TextStyle(
-              fontSize: 10,
-
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ],
+    return GenLinkConfirmDialog(
+      type: GenLinkDialogType.danger,
+      title: 'task.detail.deleteTitle'.tr,
+      message: 'task.detail.deleteMessage'.tr,
+      confirmLabel: 'task.detail.delete'.tr,
+      cancelLabel: 'task.detail.cancel'.tr,
+      icon: Icons.delete_outline_rounded,
+      onConfirm: onDelete,
+      onCancel: onCancel,
     );
   }
 }

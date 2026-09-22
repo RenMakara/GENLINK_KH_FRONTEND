@@ -222,7 +222,14 @@ class ReviewSubmitScreen extends GetView<QuizController> {
     if (controller.isQuizSubmitted.value) return;
     await controller.submitQuiz();
     if (controller.quizResult.value != null) {
-      Get.offAndToNamed(AppRoutes.quizResult);
+      Get.offNamedUntil(
+        AppRoutes.quizResult,
+        (route) =>
+            route.settings.name == AppRoutes.quizDashboard ||
+            route.settings.name == AppRoutes.quizCategories ||
+            route.settings.name == AppRoutes.home ||
+            route.isFirst,
+      );
     }
   }
 }

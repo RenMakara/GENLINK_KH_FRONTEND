@@ -251,18 +251,24 @@ void main() {
     );
     expect(find.text('Completed Quizzes'), findsOneWidget);
     expect(find.text('Available Quizzes'), findsOneWidget);
+    expect(find.text('+1 this week'), findsOneWidget);
+    expect(find.text('Keep learning!'), findsOneWidget);
 
     // 4. Choose Your Challenge Section
     expect(find.text('Choose Your Challenge'), findsOneWidget);
     expect(find.byType(QuizChallengeCard), findsNWidgets(4));
     expect(find.text('Single Quiz'), findsOneWidget);
     expect(find.text('Practice and learn at your own pace.'), findsOneWidget);
+    expect(find.text('Build your knowledge'), findsOneWidget);
     expect(find.text('1v1 Multiplayer Quiz'), findsOneWidget);
     expect(find.text('Find an opponent and compete live.'), findsOneWidget);
+    expect(find.text('Challenge friends'), findsOneWidget);
     expect(find.text('Short Content'), findsOneWidget);
     expect(find.text('Explore bite-sized learning and inspiration from the community.'), findsOneWidget);
+    expect(find.text('Learn something new'), findsOneWidget);
     expect(find.text('Learning Progress'), findsOneWidget);
     expect(find.text("Track your quiz history and see how you're growing."), findsOneWidget);
+    expect(find.text('See your growth'), findsOneWidget);
 
     // 5. Categories Section
     expect(find.text('Categories'), findsOneWidget);

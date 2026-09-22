@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
@@ -54,49 +55,14 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Future<void> _delete(ProductivityController controller, String taskId) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogContext) {
-        final colors = ListThemeColors(dialogContext);
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'tasks.deleteConfirmTitle'.tr,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            'tasks.deleteConfirmMessage'.tr,
-            style: TextStyle(color: colors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(
-                'common.cancel'.tr,
-                style: TextStyle(color: colors.textSecondary),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text('common.delete'.tr),
-            ),
-          ],
-        );
-      },
+      title: 'tasks.deleteConfirmTitle'.tr,
+      message: 'tasks.deleteConfirmMessage'.tr,
+      confirmLabel: 'common.delete'.tr,
+      cancelLabel: 'common.cancel'.tr,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await controller.deleteTask(taskId);

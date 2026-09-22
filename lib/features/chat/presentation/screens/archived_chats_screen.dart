@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../controllers/chat_controller.dart';
 import '../widgets/chat_list_item.dart';
@@ -163,41 +164,32 @@ class ArchivedChatsScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteDialog(
+  Future<void> _showDeleteDialog(
     BuildContext context,
     ChatController controller,
     String conversationId,
     String name,
-  ) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Delete Conversation'),
-        content: Text(
+  ) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
+      context: context,
+      title: 'Delete Conversation',
+      message:
           'Are you sure you want to permanently delete the conversation with "$name"? All message history will be cleared.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Get.back();
-              final ok = await controller.deleteConversation(conversationId);
-              if (ok && context.mounted) {
-                AppNotificationBanner.showSuccess(
-                  context: context,
-                  title: 'Deleted',
-                  message: 'Conversation has been deleted.',
-                  icon: Icons.delete_outline_rounded,
-                );
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      icon: Icons.delete_outline_rounded,
     );
+
+    if (confirmed && context.mounted) {
+      final ok = await controller.deleteConversation(conversationId);
+      if (ok && context.mounted) {
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'Deleted',
+          message: 'Conversation has been deleted.',
+          icon: Icons.delete_outline_rounded,
+        );
+      }
+    }
   }
 }

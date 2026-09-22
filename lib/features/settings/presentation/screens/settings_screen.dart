@@ -6,6 +6,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
@@ -177,65 +178,10 @@ class SettingsScreen extends GetView<SettingsController> {
 
   Future<void> _confirmLogout(BuildContext context) async {
     final auth = Get.find<AuthController>();
-    final user = auth.currentUser.value;
-    final theme = Theme.of(context);
-
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppAvatar(
-                imageUrl: user?.avatarUrl,
-                name: user?.fullName,
-                size: 56,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'auth.logoutConfirm'.tr,
-                style: theme.textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                user?.email ?? '',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    foregroundColor: theme.colorScheme.onError,
-                    minimumSize: const Size(0, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                  ),
-                  onPressed: () => Navigator.of(sheetContext).pop(true),
-                  child: Text('auth.logout'.tr),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(sheetContext).pop(false),
-                child: Text('common.cancel'.tr),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed ?? false) await auth.logout();
+    final confirmed = await GenLinkConfirmDialog.showLogout(context: context);
+    if (confirmed) {
+      await auth.logout();
+    }
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
@@ -93,25 +94,15 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Future<void> _deleteMilestone(ProductivityMilestone milestone) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('goals.detail.deleteMilestoneTitle'.tr),
-        content: Text('goals.detail.deleteMilestoneMessage'
-            .trParams({'title': milestone.title})),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('common.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('common.delete'.tr),
-          ),
-        ],
-      ),
+      title: 'goals.detail.deleteMilestoneTitle'.tr,
+      message: 'goals.detail.deleteMilestoneMessage'
+          .trParams({'title': milestone.title}),
+      confirmLabel: 'common.delete'.tr,
+      cancelLabel: 'common.cancel'.tr,
     );
-    if (confirmed != true || _controller == null) return;
+    if (!confirmed || _controller == null) return;
     try {
       final goal = await _controller!.deleteMilestone(
         goalId: _goal.goalId,
@@ -124,24 +115,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Future<void> _deleteGoal() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('goals.detail.deleteGoalTitle'.tr),
-        content: Text('goals.detail.deleteGoalMessage'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('common.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('common.delete'.tr),
-          ),
-        ],
-      ),
+      title: 'goals.detail.deleteGoalTitle'.tr,
+      message: 'goals.detail.deleteGoalMessage'.tr,
+      confirmLabel: 'common.delete'.tr,
+      cancelLabel: 'common.cancel'.tr,
     );
-    if (confirmed != true || _controller == null) return;
+    if (!confirmed || _controller == null) return;
     try {
       await _controller!.deleteGoal(_goal.goalId);
       if (mounted) Navigator.pop(context);

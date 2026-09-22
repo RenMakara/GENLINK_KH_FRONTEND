@@ -6,6 +6,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
@@ -439,120 +440,76 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   );
   }
 
-  void _showDeleteDialog() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    showDialog(
+  void _showDeleteDialog() async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: dialogBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        title: Text(
-          'community.deleteDiscussion'.tr.isNotEmpty &&
-                  'community.deleteDiscussion'.tr != 'community.deleteDiscussion'
-              ? '${'community.deleteDiscussion'.tr}?'
-              : 'Delete Discussion?',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
-                  'community.deleteDiscussionConfirm'.tr !=
-                      'community.deleteDiscussionConfirm'
-              ? 'community.deleteDiscussionConfirm'.tr
-              : 'Are you sure you want to delete this discussion? This action cannot be undone.',
-          style: TextStyle(color: textSecondary, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty &&
-                      'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: TextStyle(color: textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                final success = await _controller.deleteDiscussion(_discussion.id);
-                if (success) {
-                  Get.back();
-                  if (Get.context != null) {
-                    AppNotificationBanner.showSuccess(
-                      context: Get.context!,
-                      title: 'community.discussionDeleted'.tr.isNotEmpty &&
-                              'community.discussionDeleted'.tr !=
-                                  'community.discussionDeleted'
-                          ? 'community.discussionDeleted'.tr
-                          : 'Discussion Deleted',
-                      message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
-                              'community.discussionDeletedMsg'.tr !=
-                                  'community.discussionDeletedMsg'
-                          ? 'community.discussionDeletedMsg'.tr
-                          : 'Your discussion has been removed.',
-                    );
-                  }
-                } else if (mounted && context.mounted) {
-                  AppNotificationBanner.showError(
-                    context: context,
-                    title: 'Error',
-                    message: 'Failed to delete discussion. Please try again.',
-                  );
-                }
-              } catch (e) {
-                if (mounted && context.mounted) {
-                  String errorMsg = 'Failed to delete discussion. Please try again.';
-                  if (e is AppError) {
-                    if (e.isForbidden) {
-                      errorMsg = 'You do not have permission to delete this discussion.';
-                    } else if (e.isNotFound) {
-                      errorMsg = 'Discussion not found.';
-                    } else if (e.message.isNotEmpty) {
-                      errorMsg = e.message;
-                    }
-                  }
-                  AppNotificationBanner.showError(
-                    context: context,
-                    title: 'Error',
-                    message: errorMsg,
-                  );
-                }
-              }
-            },
-            child: Text(
-              'common.delete'.tr.isNotEmpty &&
-                      'common.delete'.tr != 'common.delete'
-                  ? 'common.delete'.tr
-                  : 'Delete',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'community.deleteDiscussion'.tr.isNotEmpty &&
+              'community.deleteDiscussion'.tr != 'community.deleteDiscussion'
+          ? '${'community.deleteDiscussion'.tr}?'
+          : 'Delete Discussion?',
+      message: 'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+              'community.deleteDiscussionConfirm'.tr !=
+                  'community.deleteDiscussionConfirm'
+          ? 'community.deleteDiscussionConfirm'.tr
+          : 'Are you sure you want to delete this discussion? This action cannot be undone.',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+              'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
+      confirmLabel: 'common.delete'.tr.isNotEmpty &&
+              'common.delete'.tr != 'common.delete'
+          ? 'common.delete'.tr
+          : 'Delete',
+      icon: Icons.delete_outline_rounded,
     );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final success = await _controller.deleteDiscussion(_discussion.id);
+      if (success) {
+        Get.back();
+        if (Get.context != null) {
+          AppNotificationBanner.showSuccess(
+            context: Get.context!,
+            title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                    'community.discussionDeleted'.tr !=
+                        'community.discussionDeleted'
+                ? 'community.discussionDeleted'.tr
+                : 'Discussion Deleted',
+            message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                    'community.discussionDeletedMsg'.tr !=
+                        'community.discussionDeletedMsg'
+                ? 'community.discussionDeletedMsg'.tr
+                : 'Your discussion has been removed.',
+          );
+        }
+      } else if (mounted && context.mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to delete discussion. Please try again.',
+        );
+      }
+    } catch (e) {
+      if (mounted && context.mounted) {
+        String errorMsg = 'Failed to delete discussion. Please try again.';
+        if (e is AppError) {
+          if (e.isForbidden) {
+            errorMsg = 'You do not have permission to delete this discussion.';
+          } else if (e.isNotFound) {
+            errorMsg = 'Discussion not found.';
+          } else if (e.message.isNotEmpty) {
+            errorMsg = e.message;
+          }
+        }
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: errorMsg,
+        );
+      }
+    }
   }
 
   void _handleRepost() {
@@ -1247,151 +1204,75 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     );
   }
 
-  void _showDeleteCommentDialog(CommentModel comment) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final dialogBg =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    bool isDeleting = false;
-
-    showDialog(
+  void _showDeleteCommentDialog(CommentModel comment) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: dialogBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          title: Text(
-            'community.deleteComment'.tr.isNotEmpty &&
-                    'community.deleteComment'.tr != 'community.deleteComment'
-                ? '${'community.deleteComment'.tr}?'
-                : 'Delete Comment?',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'community.deleteCommentConfirm'.tr.isNotEmpty &&
-                    'community.deleteCommentConfirm'.tr !=
-                        'community.deleteCommentConfirm'
-                ? 'community.deleteCommentConfirm'.tr
-                : 'Are you sure you want to delete this comment? This action cannot be undone.',
-            style: TextStyle(color: textSecondary, fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isDeleting ? null : () => Navigator.pop(ctx),
-              child: Text(
-                'common.cancel'.tr.isNotEmpty &&
-                        'common.cancel'.tr != 'common.cancel'
-                    ? 'common.cancel'.tr
-                    : 'Cancel',
-                style: TextStyle(
-                  color: isDeleting
-                      ? textSecondary.withValues(alpha: 0.5)
-                      : textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              ),
-              onPressed: isDeleting
-                  ? null
-                  : () async {
-                      setDialogState(() {
-                        isDeleting = true;
-                      });
-                      try {
-                        final success =
-                            await _controller.deleteDiscussionComment(
-                          _discussion.id,
-                          comment.id,
-                        );
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                        }
-                        if (success && mounted) {
-                          setState(() {
-                            if (_repliesCount > 0) _repliesCount--;
-                          });
-                          AppNotificationBanner.showSuccess(
-                            context: context,
-                            title: 'community.commentDeleted'.tr.isNotEmpty &&
-                                    'community.commentDeleted'.tr !=
-                                        'community.commentDeleted'
-                                ? 'community.commentDeleted'.tr
-                                : 'Deleted',
-                            message: 'Comment deleted successfully.',
-                          );
-                        } else if (mounted) {
-                          AppNotificationBanner.showError(
-                            context: context,
-                            title: 'Error',
-                            message:
-                                'Failed to delete comment. Please try again.',
-                          );
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                        }
-                        if (mounted) {
-                          String errorMsg =
-                              'Failed to delete comment. Please try again.';
-                          if (e is AppError && e.isForbidden) {
-                            errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
-                                    'community.commentPermissionError'.tr !=
-                                        'community.commentPermissionError'
-                                ? 'community.commentPermissionError'.tr
-                                : 'You do not have permission to modify this comment.';
-                          } else if (e is AppError && e.message.isNotEmpty) {
-                            errorMsg = e.message;
-                          }
-                          AppNotificationBanner.showError(
-                            context: context,
-                            title: 'Error',
-                            message: errorMsg,
-                          );
-                        }
-                      }
-                    },
-              child: isDeleting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      'common.delete'.tr.isNotEmpty &&
-                              'common.delete'.tr != 'common.delete'
-                          ? 'common.delete'.tr
-                          : 'Delete',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-            ),
-          ],
-        ),
-      ),
+      title: 'community.deleteComment'.tr.isNotEmpty &&
+              'community.deleteComment'.tr != 'community.deleteComment'
+          ? '${'community.deleteComment'.tr}?'
+          : 'Delete Comment?',
+      message: 'community.deleteCommentConfirm'.tr.isNotEmpty &&
+              'community.deleteCommentConfirm'.tr !=
+                  'community.deleteCommentConfirm'
+          ? 'community.deleteCommentConfirm'.tr
+          : 'Are you sure you want to delete this comment? This action cannot be undone.',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+              'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
+      confirmLabel: 'common.delete'.tr.isNotEmpty &&
+              'common.delete'.tr != 'common.delete'
+          ? 'common.delete'.tr
+          : 'Delete',
+      icon: Icons.delete_outline_rounded,
     );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final success = await _controller.deleteDiscussionComment(
+        _discussion.id,
+        comment.id,
+      );
+      if (success && mounted) {
+        setState(() {
+          if (_repliesCount > 0) _repliesCount--;
+        });
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'community.commentDeleted'.tr.isNotEmpty &&
+                  'community.commentDeleted'.tr !=
+                      'community.commentDeleted'
+              ? 'community.commentDeleted'.tr
+              : 'Deleted',
+          message: 'Comment deleted successfully.',
+        );
+      } else if (mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to delete comment. Please try again.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMsg = 'Failed to delete comment. Please try again.';
+        if (e is AppError && e.isForbidden) {
+          errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
+                  'community.commentPermissionError'.tr !=
+                      'community.commentPermissionError'
+              ? 'community.commentPermissionError'.tr
+              : 'You do not have permission to modify this comment.';
+        } else if (e is AppError && e.message.isNotEmpty) {
+          errorMsg = e.message;
+        }
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: errorMsg,
+        );
+      }
+    }
   }
 
   void _showEditCommentDialog(CommentModel comment) {

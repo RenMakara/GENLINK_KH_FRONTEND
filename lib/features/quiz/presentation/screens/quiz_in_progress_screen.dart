@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/typography/app_typography.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/models/quiz_models.dart';
 import '../controllers/quiz_controller.dart';
 import '../widgets/quiz_option_tile.dart';
 import '../widgets/quiz_question_card.dart';
 
-/// Redesigned Single Quiz screen adhering to modern iOS learning app UX.
-/// Features a compact iOS header with close button, question counter,
-/// and circular countdown timer; a thin horizontal progress bar;
-/// a rounded question card; stacked answer options with clear states;
-/// compact answer feedback; and a sticky bottom action bar ("មុន" & "បន្ទាប់").
+
 class QuizInProgressScreen extends GetView<QuizController> {
   const QuizInProgressScreen({super.key});
 
@@ -23,8 +21,19 @@ class QuizInProgressScreen extends GetView<QuizController> {
   Widget build(BuildContext context) {
     final semantic = context.semanticColors;
 
-    return Scaffold(
-      backgroundColor: semantic.background,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (controller.questions.isEmpty || controller.isQuizSubmitted.value) {
+          controller.resetQuiz();
+          Get.back();
+        } else {
+          _showQuitDialog(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: semantic.background,
       body: Obx(() {
         if (controller.isQuizLoading.value) {
           return Center(
@@ -107,7 +116,8 @@ class QuizInProgressScreen extends GetView<QuizController> {
           ),
         );
       }),
-    );
+    ),
+  );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -544,64 +554,29 @@ class QuizInProgressScreen extends GetView<QuizController> {
   // DIALOGS & FALLBACK VIEWS
   // ─────────────────────────────────────────────────────────────────────────
 
-  void _showQuitDialog(BuildContext context) {
-    final semantic = context.semanticColors;
-
-    showDialog(
+  Future<void> _showQuitDialog(BuildContext context) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: semantic.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.squircle),
-        ),
-        title: Text(
-          'quiz.quitQuizTitle'.tr,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: semantic.primaryText,
-          ),
-        ),
-        content: Text(
-          'quiz.quitQuizMessage'.tr,
-          style: TextStyle(
-            fontSize: 14,
-            color: semantic.secondaryText,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'common.cancel'.tr,
-              style: TextStyle(
-                color: semantic.secondaryText,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Get.until(
-                (route) =>
-                    route.settings.name == '/quiz/dashboard' ||
-                    route.settings.name == '/home',
-              );
-              controller.resetQuiz();
-            },
-            child: Text(
-              'quiz.quit'.tr,
-              style: const TextStyle(
-                color: AppColors.danger,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'quiz.quitQuizTitle'.tr,
+      message: 'quiz.quitQuizMessage'.tr,
+      confirmLabel: 'quiz.quit'.tr,
+      cancelLabel: 'common.cancel'.tr,
+      icon: Icons.logout_rounded,
     );
+
+    if (!confirmed) return;
+
+    controller.resetQuiz();
+    Get.until(
+      (route) =>
+          route.settings.name == AppRoutes.quizDashboard ||
+          route.settings.name == AppRoutes.quizCategories ||
+          route.settings.name == AppRoutes.home ||
+          route.isFirst,
+    );
+    if (Get.currentRoute == AppRoutes.quizInProgress) {
+      Get.offNamed(AppRoutes.quizDashboard);
+    }
   }
 
   Widget _buildErrorView(BuildContext context) {

@@ -11,6 +11,8 @@ import '../controllers/quiz_controller.dart';
 import '../widgets/quiz_category_widgets.dart';
 import '../widgets/quiz_section_header.dart';
 
+/// Redesigned Choose Quiz Category Screen adhering to the
+/// "Modern Gamified Soft 3D Card UI" design language.
 class CategorySelectionScreen extends StatefulWidget {
   const CategorySelectionScreen({super.key});
 
@@ -23,6 +25,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   final QuizController controller = Get.find<QuizController>();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedFilter = 'all';
 
   @override
   void dispose() {
@@ -169,7 +172,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     return Scaffold(
       backgroundColor: semantic.background,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(68),
+        preferredSize: const Size.fromHeight(72),
         child: SafeArea(
           bottom: false,
           child: Padding(
@@ -212,6 +215,8 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
+                const GraduationBooksIllustration(width: 72, height: 56),
               ],
             ),
           ),
@@ -240,13 +245,19 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         }
 
         final allCategories = controller.categories;
-        final filteredCategories = _searchQuery.trim().isEmpty
-            ? allCategories
+        var filteredCategories = _searchQuery.trim().isEmpty
+            ? allCategories.toList()
             : allCategories
                 .where((cat) => cat.name
                     .toLowerCase()
                     .contains(_searchQuery.trim().toLowerCase()))
                 .toList();
+
+        if (_selectedFilter == 'popular') {
+          filteredCategories.sort((a, b) => b.questionCount.compareTo(a.questionCount));
+        } else if (_selectedFilter == 'new') {
+          filteredCategories = filteredCategories.reversed.toList();
+        }
 
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -254,6 +265,8 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
+
+              // 1. Search Bar with Clear & Filter Sliders
               QuizCategorySearchBar(
                 controller: _searchController,
                 onChanged: (val) {
@@ -268,9 +281,24 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                   });
                 },
               ),
+              const SizedBox(height: 14),
+
+              // 2. Category Filter Chips Row ([All] [Popular] [New] [Favorites])
+              QuizCategoryFilterChips(
+                selectedFilter: _selectedFilter,
+                onFilterSelected: (val) {
+                  setState(() {
+                    _selectedFilter = val;
+                  });
+                },
+              ),
               const SizedBox(height: 16),
+
+              // 3. 2-Column Soft 3D Category Grid & Full-Width Finance Card
               _buildCategoryGrid(filteredCategories),
               const SizedBox(height: 24),
+
+              // 4. Recently Played Section
               QuizSectionHeader(
                 title: 'quiz.recentlyPlayed'.tr,
                 actionLabel: controller.recentCategories.isNotEmpty
@@ -283,6 +311,8 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
               const SizedBox(height: 12),
               _buildRecentSection(),
               const SizedBox(height: 20),
+
+              // 5. 1v1 Multiplayer Promotional Challenge Card
               const QuizMultiplayerChallengeCard(),
               const SizedBox(height: 28),
             ],
@@ -333,19 +363,53 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.search_off_rounded,
-                size: 40,
-                color: semantic.textMuted,
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: semantic.backgroundSecondary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.search_off_rounded,
+                  size: 28,
+                  color: semantic.textMuted,
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Text(
                 'quiz.noMatchingCategories'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: semantic.primaryText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'quiz.noMatchingCategoriesSubtitle'.tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
                   color: semantic.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _searchController.clear();
+                    _searchQuery = '';
+                    _selectedFilter = 'all';
+                  });
+                },
+                child: Text(
+                  'quiz.clearFilter'.tr,
+                  style: TextStyle(
+                    color: AppColors.productivityAccent,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -353,6 +417,21 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         ),
       );
     }
+
+    final financeIndex = categories.indexWhere(
+      (c) =>
+          c.id.toUpperCase().contains('FINANCE') ||
+          c.name.toUpperCase().contains('FINANCE') ||
+          c.name.contains('ហិរញ្ញ'),
+    );
+    final hasSpecialFinance = categories.length > 3 && financeIndex != -1;
+    final gridCategories = hasSpecialFinance
+        ? [
+            for (int i = 0; i < categories.length; i++)
+              if (i != financeIndex) categories[i]
+          ]
+        : categories;
+    final financeCategory = hasSpecialFinance ? categories[financeIndex] : null;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -362,29 +441,44 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         final itemWidth =
             (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
                 crossAxisCount;
-        const targetHeight = 84.0;
+        const targetHeight = 142.0;
         final childAspectRatio = itemWidth / targetHeight;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: childAspectRatio,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-          ),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final cat = categories[index];
-            return QuizCategoryCard(
-              category: cat,
-              onTap: () {
-                controller.selectCategory(cat);
-                _navigateAfterCategory();
+        return Column(
+          children: [
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: childAspectRatio,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+              ),
+              itemCount: gridCategories.length,
+              itemBuilder: (context, index) {
+                final cat = gridCategories[index];
+                return QuizCategoryCard(
+                  category: cat,
+                  onTap: () {
+                    controller.selectCategory(cat);
+                    _navigateAfterCategory();
+                  },
+                );
               },
-            );
-          },
+            ),
+            if (financeCategory != null) ...[
+              const SizedBox(height: spacing),
+              QuizCategoryCard(
+                category: financeCategory,
+                isFullWidth: true,
+                onTap: () {
+                  controller.selectCategory(financeCategory);
+                  _navigateAfterCategory();
+                },
+              ),
+            ],
+          ],
         );
       },
     );
@@ -413,4 +507,3 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     });
   }
 }
-

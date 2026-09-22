@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../radius/app_radius.dart';
-import '../buttons/app_button.dart';
+import 'genlink_confirm_dialog.dart';
 
 abstract final class AppDialog {
   static Future<bool> confirm({
@@ -15,34 +14,13 @@ abstract final class AppDialog {
     final context = Get.context;
     if (context == null) return false;
 
-    final result = await showDialog<bool>(
+    final result = await GenLinkConfirmDialog.show(
       context: context,
-      builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          title: Text(title, style: theme.textTheme.titleMedium),
-          content: message == null
-              ? null
-              : Text(message, style: theme.textTheme.bodyMedium),
-          actions: [
-            AppButton.text(
-              label: cancelLabel ?? 'common.cancel'.tr,
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-            ),
-            AppButton(
-              label: confirmLabel ?? 'common.continue'.tr,
-              variant: destructive
-                  ? AppButtonVariant.danger
-                  : AppButtonVariant.primary,
-              expanded: false,
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-            ),
-          ],
-        );
-      },
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
+      type: destructive ? GenLinkDialogType.danger : GenLinkDialogType.confirm,
     );
     return result ?? false;
   }

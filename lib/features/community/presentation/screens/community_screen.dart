@@ -9,6 +9,7 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_header_widget.dart';
@@ -335,7 +336,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                                         fontWeight: isSelected
                                                             ? FontWeight.w700
                                                             : FontWeight.w500,
-                                                        fontSize: 12.5,
+                                                        fontSize: 13,
                                                         letterSpacing: -0.1,
                                                         fontFamilyFallback:
                                                             const [
@@ -372,12 +373,6 @@ class _CommunityScreenState extends State<CommunityScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _KeepAliveWrapper(
-                        child: KeyedSubtree(
-                          key: const ValueKey('ForYouTab'),
-                          child: _buildFeedTab(context, commController),
-                        ),
-                      ),
                       _KeepAliveWrapper(
                         child: KeyedSubtree(
                           key: const ValueKey('FeedTab'),
@@ -1107,123 +1102,76 @@ class _CommunityScreenState extends State<CommunityScreen>
     BuildContext context,
     CommunityController controller,
     ForumTopicModel topic,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-
-    showDialog(
+  ) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: dialogBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        title: Text(
-          'community.deleteDiscussion'.tr.isNotEmpty &&
-                  'community.deleteDiscussion'.tr !=
-                      'community.deleteDiscussion'
-              ? '${'community.deleteDiscussion'.tr}?'
-              : 'Delete Discussion?',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
-                  'community.deleteDiscussionConfirm'.tr !=
-                      'community.deleteDiscussionConfirm'
-              ? 'community.deleteDiscussionConfirm'.tr
-              : 'Are you sure you want to delete this discussion? This action cannot be undone.',
-          style: TextStyle(color: textSecondary, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty &&
-                      'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: TextStyle(color: textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                final success = await controller.deleteDiscussion(topic.id);
-                if (success && context.mounted) {
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title:
-                        'community.discussionDeleted'.tr.isNotEmpty &&
-                            'community.discussionDeleted'.tr !=
-                                'community.discussionDeleted'
-                        ? 'community.discussionDeleted'.tr
-                        : 'Discussion Deleted',
-                    message:
-                        'community.discussionDeletedMsg'.tr.isNotEmpty &&
-                            'community.discussionDeletedMsg'.tr !=
-                                'community.discussionDeletedMsg'
-                        ? 'community.discussionDeletedMsg'.tr
-                        : 'Your discussion has been removed.',
-                  );
-                } else if (context.mounted) {
-                  AppNotificationBanner.showError(
-                    context: context,
-                    title: 'Error',
-                    message: 'Failed to delete discussion. Please try again.',
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  String errorMsg =
-                      'Failed to delete discussion. Please try again.';
-                  if (e is AppError) {
-                    if (e.isForbidden) {
-                      errorMsg =
-                          'You do not have permission to delete this discussion.';
-                    } else if (e.isNotFound) {
-                      errorMsg = 'Discussion not found.';
-                    } else if (e.message.isNotEmpty) {
-                      errorMsg = e.message;
-                    }
-                  }
-                  AppNotificationBanner.showError(
-                    context: context,
-                    title: 'Error',
-                    message: errorMsg,
-                  );
-                }
-              }
-            },
-            child: Text(
-              'common.delete'.tr.isNotEmpty &&
-                      'common.delete'.tr != 'common.delete'
-                  ? 'common.delete'.tr
-                  : 'Delete',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'community.deleteDiscussion'.tr.isNotEmpty &&
+              'community.deleteDiscussion'.tr !=
+                  'community.deleteDiscussion'
+          ? '${'community.deleteDiscussion'.tr}?'
+          : 'Delete Discussion?',
+      message: 'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+              'community.deleteDiscussionConfirm'.tr !=
+                  'community.deleteDiscussionConfirm'
+          ? 'community.deleteDiscussionConfirm'.tr
+          : 'Are you sure you want to delete this discussion? This action cannot be undone.',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+              'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
+      confirmLabel: 'common.delete'.tr.isNotEmpty &&
+              'common.delete'.tr != 'common.delete'
+          ? 'common.delete'.tr
+          : 'Delete',
+      icon: Icons.delete_outline_rounded,
     );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final success = await controller.deleteDiscussion(topic.id);
+      if (success && context.mounted) {
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                  'community.discussionDeleted'.tr !=
+                      'community.discussionDeleted'
+              ? 'community.discussionDeleted'.tr
+              : 'Discussion Deleted',
+          message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                  'community.discussionDeletedMsg'.tr !=
+                      'community.discussionDeletedMsg'
+              ? 'community.discussionDeletedMsg'.tr
+              : 'Your discussion has been removed.',
+        );
+      } else if (context.mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to delete discussion. Please try again.',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        String errorMsg =
+            'Failed to delete discussion. Please try again.';
+        if (e is AppError) {
+          if (e.isForbidden) {
+            errorMsg =
+                'You do not have permission to delete this discussion.';
+          } else if (e.isNotFound) {
+            errorMsg = 'Discussion not found.';
+          } else if (e.message.isNotEmpty) {
+            errorMsg = e.message;
+          }
+        }
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: errorMsg,
+        );
+      }
+    }
   }
 
   Widget _buildEventTab(BuildContext context, CommunityController controller) {

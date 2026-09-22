@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
@@ -4812,149 +4813,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return true;
     }
 
-    final bool? confirmed = await showGeneralDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDiscard(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: "Discard Story",
-      barrierColor: Colors.black.withValues(alpha: 0.75),
-      transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (dialogCtx, anim1, anim2) {
-        return const SizedBox.shrink();
-      },
-      transitionBuilder: (dialogCtx, anim1, anim2, child) {
-        final curve = CurvedAnimation(
-          parent: anim1,
-          curve: Curves.easeOutCubic,
-        );
-        return ScaleTransition(
-          scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
-          child: FadeTransition(
-            opacity: curve,
-            child: Dialog(
-              backgroundColor: const Color(0xFF141414),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: Color(0xFF262626), width: 1.0),
-              ),
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 24,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 380),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Discard Story?",
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          height: 1.25,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      const Text(
-                        "You have unsaved changes. If you leave now, your story draft will be lost.",
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          color: Color(0xFFAAAAAA),
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 46,
-                              child: OutlinedButton(
-                                onPressed: () => Get.back(result: false),
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF242424),
-                                  foregroundColor: Colors.white,
-                                  side: const BorderSide(
-                                    color: Colors.white24,
-                                    width: 1.0,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                ),
-                                child: const FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    "Keep Editing",
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          Expanded(
-                            child: SizedBox(
-                              height: 46,
-                              child: ElevatedButton(
-                                onPressed: () => Get.back(result: true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.danger,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                ),
-                                child: const FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    "Discard Draft",
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+      title: "Discard Story?",
+      message:
+          "You have unsaved changes. If you leave now, your story draft will be lost.",
+      cancelLabel: "Keep Editing",
+      confirmLabel: "Discard Draft",
     );
 
-    return confirmed ?? false;
+    return confirmed;
   }
 
   void _showCustomizeTextSheet() {

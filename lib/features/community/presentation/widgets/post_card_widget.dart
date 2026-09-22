@@ -8,6 +8,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import '../../domain/models/community_models.dart';
@@ -101,159 +102,69 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     widget.controller.toggleLike(widget.post.id);
   }
 
-  void _confirmDeletePost(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    showDialog(
+  Future<void> _confirmDeletePost(BuildContext context) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.squircle)),
-        title: Text(
-          'community.deletePost'.tr,
-          style: theme.textTheme.titleMedium?.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-              ) ??
-              TextStyle(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        content: Text(
-          'community.deletePostConfirm'.tr,
-          style: theme.textTheme.bodyMedium?.copyWith(color: textSecondary) ??
-              TextStyle(color: textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'common.cancel'.tr,
-              style: theme.textTheme.labelMedium?.copyWith(color: textSecondary) ??
-                  TextStyle(color: textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              widget.controller.deletePost(widget.post.id);
-              AppNotificationBanner.showDanger(
-                context: context,
-                title: "Post Deleted",
-                message: "Your post has been removed.",
-                actionLabel: "Undo",
-                onAction: () {
-                  widget.controller.undoDeletePost();
-                },
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-            ),
-            child: Text(
-              'common.delete'.tr,
-              style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.darkTextPrimary,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'community.deletePost'.tr,
+      message: 'community.deletePostConfirm'.tr,
+      confirmLabel: 'common.delete'.tr,
+      cancelLabel: 'common.cancel'.tr,
     );
+
+    if (confirmed && context.mounted) {
+      widget.controller.deletePost(widget.post.id);
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: "Post Deleted",
+        message: "Your post has been removed.",
+        actionLabel: "Undo",
+        onAction: () {
+          widget.controller.undoDeletePost();
+        },
+      );
+    }
   }
 
-  void _confirmDeleteDiscussion(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface =
-        isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    showDialog(
+  Future<void> _confirmDeleteDiscussion(BuildContext context) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surface,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: Text(
-          'community.deleteDiscussion'.tr.isNotEmpty &&
-                  'community.deleteDiscussion'.tr !=
-                      'community.deleteDiscussion'
-              ? '${'community.deleteDiscussion'.tr}?'
-              : 'Delete Discussion?',
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        content: Text(
-          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
-                  'community.deleteDiscussionConfirm'.tr !=
-                      'community.deleteDiscussionConfirm'
-              ? 'community.deleteDiscussionConfirm'.tr
-              : 'Are you sure you want to delete this discussion? This action cannot be undone.',
-          style: TextStyle(color: textSecondary, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty &&
-                      'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: TextStyle(color: textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final success =
-                  await widget.controller.deleteDiscussion(widget.post.id);
-              if (success && context.mounted) {
-                AppNotificationBanner.showSuccess(
-                  context: context,
-                  title: 'community.discussionDeleted'.tr.isNotEmpty &&
-                          'community.discussionDeleted'.tr !=
-                              'community.discussionDeleted'
-                      ? 'community.discussionDeleted'.tr
-                      : 'Discussion Deleted',
-                  message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
-                          'community.discussionDeletedMsg'.tr !=
-                              'community.discussionDeletedMsg'
-                      ? 'community.discussionDeletedMsg'.tr
-                      : 'Your discussion has been removed.',
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill)),
-            ),
-            child: Text(
-              'common.delete'.tr.isNotEmpty &&
-                      'common.delete'.tr != 'common.delete'
-                  ? 'common.delete'.tr
-                  : 'Delete',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'community.deleteDiscussion'.tr.isNotEmpty &&
+              'community.deleteDiscussion'.tr != 'community.deleteDiscussion'
+          ? '${'community.deleteDiscussion'.tr}?'
+          : 'Delete Discussion?',
+      message: 'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+              'community.deleteDiscussionConfirm'.tr !=
+                  'community.deleteDiscussionConfirm'
+          ? 'community.deleteDiscussionConfirm'.tr
+          : 'Are you sure you want to delete this discussion? This action cannot be undone.',
+      confirmLabel: 'common.delete'.tr.isNotEmpty &&
+              'common.delete'.tr != 'common.delete'
+          ? 'common.delete'.tr
+          : 'Delete',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+              'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
     );
+
+    if (confirmed && context.mounted) {
+      final success = await widget.controller.deleteDiscussion(widget.post.id);
+      if (success && context.mounted) {
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                  'community.discussionDeleted'.tr !=
+                      'community.discussionDeleted'
+              ? 'community.discussionDeleted'.tr
+              : 'Discussion Deleted',
+          message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                  'community.discussionDeletedMsg'.tr !=
+                      'community.discussionDeletedMsg'
+              ? 'community.discussionDeletedMsg'.tr
+              : 'Your discussion has been removed.',
+        );
+      }
+    }
   }
 
   bool get _isOwnPost {

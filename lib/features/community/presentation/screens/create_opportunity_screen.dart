@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import 'widgets/author_row.dart';
 
@@ -53,7 +54,7 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
     super.dispose();
   }
 
-  void _onBackPress() {
+  Future<void> _onBackPress() async {
     final hasContent =
         _titleController.text.trim().isNotEmpty ||
         _companyController.text.trim().isNotEmpty ||
@@ -61,43 +62,16 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
         _selectedType != null;
 
     if (hasContent) {
-      showDialog(
+      final confirmed = await GenLinkConfirmDialog.showDiscard(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E2228),
-          title: Text(
-            'community.discardDraft'.tr,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'community.discardMessage'.tr,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'community.keepEditing'.tr,
-                style: const TextStyle(color: Colors.white60),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: Text(
-                'community.discard'.tr,
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-            ),
-          ],
-        ),
+        title: 'community.discardDraft'.tr,
+        message: 'community.discardMessage'.tr,
+        confirmLabel: 'community.discard'.tr,
+        cancelLabel: 'community.keepEditing'.tr,
       );
+      if (confirmed && mounted) {
+        Navigator.pop(context);
+      }
     } else {
       Navigator.pop(context);
     }

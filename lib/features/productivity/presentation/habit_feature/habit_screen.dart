@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
@@ -47,49 +48,14 @@ class _HabitHomeScreenState extends State<HabitHomeScreen> {
   }
 
   Future<void> _delete(ProductivityController controller, String id) async {
-    final shouldDelete = await showDialog<bool>(
+    final shouldDelete = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogContext) {
-        final colors = ListThemeColors(dialogContext);
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'habits.deleteConfirmTitle'.tr,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            'habits.deleteConfirmMessage'.tr,
-            style: TextStyle(color: colors.textSecondary),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(
-                'common.cancel'.tr,
-                style: TextStyle(color: colors.textSecondary),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text('common.delete'.tr),
-            ),
-          ],
-        );
-      },
+      title: 'habits.deleteConfirmTitle'.tr,
+      message: 'habits.deleteConfirmMessage'.tr,
+      confirmLabel: 'common.delete'.tr,
+      cancelLabel: 'common.cancel'.tr,
     );
-    if (shouldDelete != true) return;
+    if (!shouldDelete) return;
 
     try {
       await controller.deleteHabit(id);

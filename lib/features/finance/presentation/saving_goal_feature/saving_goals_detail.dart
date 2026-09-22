@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/saving_goal_controller.dart';
@@ -274,35 +275,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Future<void> _delete() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('finance.goal.delete'.tr),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('finance.goal.deleteHint'.tr),
-            const SizedBox(height: 10),
-            Text(
-              'finance.goal.deleteNoRefund'.tr,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('common.cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('finance.goal.delete'.tr),
-          ),
-        ],
-      ),
+      title: 'finance.goal.delete'.tr,
+      message: '${'finance.goal.deleteHint'.tr}\n\n${'finance.goal.deleteNoRefund'.tr}',
+      confirmLabel: 'finance.goal.delete'.tr,
+      cancelLabel: 'common.cancel'.tr,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     final success = await controller.deleteGoal(widget.goal.savingGoalId);
     if (success && mounted) {
       Get.snackbar('finance.goal.title'.tr, 'finance.goal.deleteSuccess'.tr);

@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
@@ -1596,82 +1597,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               final targetGroup = selectedGroup!;
                               Navigator.pop(ctx);
 
-                              final bool? confirmed = await showDialog<bool>(
+                              final confirmed = await GenLinkConfirmDialog.showConfirm(
                                 context: context,
-                                builder: (dialogCtx) => AlertDialog(
-                                  backgroundColor: const Color(0xFF1E1E1E),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(22),
-                                  ),
-                                  title: const Text(
-                                    "Share Story?",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
-                                    ),
-                                  ),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Share this story to:",
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        targetGroup.name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(dialogCtx, false),
-                                      child: const Text(
-                                        "Cancel",
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 18,
-                                          vertical: 10,
-                                        ),
-                                      ),
-                                      onPressed: () =>
-                                          Navigator.pop(dialogCtx, true),
-                                      child: const Text(
-                                        "Share",
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                title: "Share Story?",
+                                message: "Share this story to ${targetGroup.name}?",
+                                confirmLabel: "Share",
+                                cancelLabel: "Cancel",
+                                icon: Icons.share_rounded,
                               );
 
                               if (confirmed == true && mounted) {
@@ -2238,190 +2170,62 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     ).then((_) => _resumeStory());
   }
 
-  void _openMuteConfirmationDialog(StoryGroupModel group) {
+  Future<void> _openMuteConfirmationDialog(StoryGroupModel group) async {
     _pauseStory();
-    showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showWarning(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(
-          "Mute ${group.userName}?",
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
-        content: Text(
+      title: "Mute ${group.userName}?",
+      message:
           "You will no longer see stories from ${group.userName}. You can unmute them anytime in settings.",
-          style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            ),
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text(
-              "Mute",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ).then((confirmed) {
-      if (confirmed == true && mounted) {
-        AppNotificationBanner.showSuccess(
-          context: context,
-          title: "Stories Muted",
-          message: "Muted stories from ${group.userName}",
-          icon: Icons.volume_off_rounded,
-        );
-      }
-      _resumeStory();
-    });
+      confirmLabel: "Mute",
+      cancelLabel: "Cancel",
+      icon: Icons.volume_off_rounded,
+    );
+
+    if (confirmed == true && mounted) {
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: "Stories Muted",
+        message: "Muted stories from ${group.userName}",
+        icon: Icons.volume_off_rounded,
+      );
+    }
+    _resumeStory();
   }
 
-  void _openBlockConfirmationDialog(StoryGroupModel group) {
+  Future<void> _openBlockConfirmationDialog(StoryGroupModel group) async {
     _pauseStory();
-    showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(
-          "Block ${group.userName}?",
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
-        content: const Text(
-          "They won't be able to see your stories or posts.",
-          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 10,
-              ),
-            ),
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text(
-              "Block",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ).then((confirmed) {
-      if (confirmed == true && mounted) {
-        _closeViewer();
-        AppNotificationBanner.showSuccess(
-          context: context,
-          title: "User Blocked",
-          message: "You will no longer see stories from ${group.userName}.",
-          icon: Icons.block_rounded,
-        );
-      } else {
-        _resumeStory();
-      }
-    });
+      title: "Block ${group.userName}?",
+      message: "They won't be able to see your stories or posts.",
+      confirmLabel: "Block",
+      cancelLabel: "Cancel",
+      icon: Icons.block_rounded,
+    );
+
+    if (confirmed == true && mounted) {
+      _closeViewer();
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: "User Blocked",
+        message: "You will no longer see stories from ${group.userName}.",
+        icon: Icons.block_rounded,
+      );
+    } else {
+      _resumeStory();
+    }
   }
 
   Future<void> _showDeleteStoryDialog(StoryItemModel story) async {
     _pauseStory();
-    final bool? confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: const Text(
-          "Delete Story?",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
-        content: const Text(
-          "Are you sure you want to permanently delete this story?",
-          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 10,
-              ),
-            ),
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text(
-              "Delete",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: "Delete Story?",
+      message: "Are you sure you want to permanently delete this story?",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true && mounted) {

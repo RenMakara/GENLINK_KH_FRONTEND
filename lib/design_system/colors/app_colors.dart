@@ -36,11 +36,6 @@ abstract final class AppColors {
   static const darkTextMuted = Color(0xFF8A8D91);
   static const darkTextInverse = Color(0xFF18191A);
 
-
-
-
-
-
   static const darkBorderSubtle = Color(0xFF323436);
   static const darkBorderStrong = Color(0xFF3E4042);
 

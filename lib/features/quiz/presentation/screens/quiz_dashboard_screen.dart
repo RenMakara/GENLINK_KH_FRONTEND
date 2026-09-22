@@ -35,7 +35,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               Obx(() => QuizXpHeroCard(stats: controller.userStats.value)),
               const SizedBox(height: 14),
 
-              // 2. Quiz Statistics Card (Completed | Available)
+              // 2. Quiz Statistics Section (Completed Quizzes | Available Quizzes)
               Obx(() => QuizStatsCard(
                     completedCount: controller.quizHistory.length,
                     availableCount: controller.quizzes.length,
@@ -75,16 +75,23 @@ class QuizDashboardScreen extends GetView<QuizController> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: Text(
-                'quiz.chooseYourChallenge'.tr,
-                style: textTheme.titleMedium?.copyWith(
-                  color: semantic.primaryText,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 19,
-                  letterSpacing: -0.3,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  const Text('🎯 ', style: TextStyle(fontSize: 18)),
+                  Expanded(
+                    child: Text(
+                      'quiz.chooseYourChallenge'.tr,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: semantic.primaryText,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 19,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
@@ -128,10 +135,13 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 child: QuizChallengeCard(
                   title: 'quiz.singleQuiz'.tr,
                   description: 'quiz.playAloneSubtitle'.tr,
-                  icon: const Soft3DSingleQuizIcon(size: 46),
+                  icon: const Soft3DSingleQuizIcon(size: 48),
+                  badgeText: 'quiz.buildYourKnowledge'.tr,
+                  badgeIcon: Icons.school_rounded,
+                  bgPainter: const SingleQuizBgPainter(),
                   gradientColors: const [
-                    Color(0xFFECFDF5),
-                    Color(0xFFD1FAE5),
+                    Color(0xFFF0FDF4),
+                    Color(0xFFDCFCE7),
                   ],
                   darkGradientColors: [
                     const Color(0xFF064E3B).withValues(alpha: 0.35),
@@ -150,7 +160,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 child: QuizChallengeCard(
                   title: 'quiz.multiplayer1v1'.tr,
                   description: 'quiz.multiplayer1v1Subtitle'.tr,
-                  icon: const Soft3DMultiplayerIcon(size: 46),
+                  icon: const Soft3DMultiplayerIcon(size: 48),
+                  badgeText: 'quiz.challengeFriendsTag'.tr,
+                  badgeIcon: Icons.local_fire_department_rounded,
+                  bgPainter: const MultiplayerBgPainter(),
                   gradientColors: const [
                     Color(0xFFFFF7ED),
                     Color(0xFFFFEDD5),
@@ -179,7 +192,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 child: QuizChallengeCard(
                   title: 'quiz.shortContentTitle'.tr,
                   description: 'quiz.shortContentSubtitle'.tr,
-                  icon: const Soft3DShortContentIcon(size: 46),
+                  icon: const Soft3DShortContentIcon(size: 48),
+                  badgeText: 'quiz.learnSomethingNew'.tr,
+                  badgeIcon: Icons.lightbulb_rounded,
+                  bgPainter: const ShortContentBgPainter(),
                   gradientColors: const [
                     Color(0xFFEFF6FF),
                     Color(0xFFDBEAFE),
@@ -201,10 +217,13 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 child: QuizChallengeCard(
                   title: 'quiz.learningProgress'.tr,
                   description: 'quiz.learningProgressSubtitle'.tr,
-                  icon: const Soft3DLearningProgressIcon(size: 46),
+                  icon: const Soft3DLearningProgressIcon(size: 48),
+                  badgeText: 'quiz.seeYourGrowth'.tr,
+                  badgeIcon: Icons.insights_rounded,
+                  bgPainter: const LearningProgressBgPainter(),
                   gradientColors: const [
-                    Color(0xFFF5F3FF),
-                    Color(0xFFEDE9FE),
+                    Color(0xFFFAF5FF),
+                    Color(0xFFF3E8FF),
                   ],
                   darkGradientColors: [
                     const Color(0xFF581C87).withValues(alpha: 0.35),
@@ -273,16 +292,23 @@ class QuizDashboardScreen extends GetView<QuizController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  'quiz.categories'.tr,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: semantic.primaryText,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 19,
-                    letterSpacing: -0.3,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    const Text('📁 ', style: TextStyle(fontSize: 18)),
+                    Expanded(
+                      child: Text(
+                        'quiz.categories'.tr,
+                        style: textTheme.titleMedium?.copyWith(
+                          color: semantic.primaryText,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 19,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -316,7 +342,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 104,
+            height: 106,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
@@ -340,7 +366,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
 
                 final cat = categoriesList[index - 1];
                 final isSelected = selectedCat?.id == cat.id;
-                final accentColor = _colorForCategory(cat.colorIndex);
+                final accentColor = _colorForCategory(cat, index - 1);
                 final icon = _resolveCategoryIcon(cat);
 
                 return QuizCategoryCard(
@@ -366,6 +392,12 @@ class QuizDashboardScreen extends GetView<QuizController> {
     final lowerId = cat.id.toLowerCase();
     final lowerName = cat.name.toLowerCase();
 
+    if (lowerId.contains('food') ||
+        lowerName.contains('food') ||
+        lowerName.contains('ម្ហូប') ||
+        lowerName.contains('អាហារ')) {
+      return Icons.restaurant_rounded;
+    }
     if (lowerId.contains('finance') ||
         lowerName.contains('finance') ||
         lowerName.contains('ហិរញ្ញ')) {
@@ -392,6 +424,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
     }
 
     return switch (cat.icon) {
+      'restaurant' => Icons.restaurant_rounded,
       'account_balance_wallet' => Icons.account_balance_wallet_rounded,
       'devices' => Icons.laptop_mac_rounded,
       'biotech' => Icons.science_rounded,
@@ -403,12 +436,33 @@ class QuizDashboardScreen extends GetView<QuizController> {
     };
   }
 
-  Color _colorForCategory(int colorIndex) {
-    return switch (colorIndex % 4) {
-      0 => AppColors.brandPrimary,
-      1 => AppColors.productivityAccent,
-      2 => AppColors.success,
-      _ => AppColors.warning,
+  Color _colorForCategory(QuizCategory cat, int index) {
+    final lowerId = cat.id.toLowerCase();
+    final lowerName = cat.name.toLowerCase();
+
+    if (lowerId.contains('food') ||
+        lowerName.contains('food') ||
+        lowerName.contains('ម្ហូប')) {
+      return const Color(0xFFF43F5E); // Rose
+    }
+    if (lowerId.contains('business') || lowerName.contains('អាជីវកម្ម')) {
+      return const Color(0xFFF59E0B); // Amber
+    }
+    if (lowerId.contains('science') || lowerName.contains('វិទ្យាសាស្ត្រ')) {
+      return const Color(0xFF06B6D4); // Cyan
+    }
+    if (lowerId.contains('tech') || lowerName.contains('បច្ចេកវិទ្យា')) {
+      return const Color(0xFF3B82F6); // Blue
+    }
+    if (lowerId.contains('finance') || lowerName.contains('ហិរញ្ញ')) {
+      return const Color(0xFF10B981); // Emerald Green
+    }
+
+    return switch (index % 4) {
+      0 => const Color(0xFF8B5CF6),
+      1 => const Color(0xFF3B82F6),
+      2 => const Color(0xFF10B981),
+      _ => const Color(0xFFF59E0B),
     };
   }
 }

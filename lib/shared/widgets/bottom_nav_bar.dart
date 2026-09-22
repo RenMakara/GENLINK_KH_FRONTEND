@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../design_system/widgets/avatar/app_avatar.dart';
+import '../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/community/presentation/controllers/community_controller.dart';
 import '../../features/community/presentation/widgets/community_creation_flow.dart';
@@ -213,29 +214,11 @@ class BottomNavBar extends StatelessWidget {
   static void _showLogoutConfirm(
     BuildContext context,
     AuthController authController,
-  ) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('auth.logout'.tr),
-        content: Text('auth.logoutConfirm'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('common.cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              authController.logout();
-            },
-            child: Text(
-              'auth.logout'.tr,
-              style: const TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
-    );
+  ) async {
+    final confirmed = await GenLinkConfirmDialog.showLogout(context: context);
+    if (confirmed) {
+      authController.logout();
+    }
   }
 }
 

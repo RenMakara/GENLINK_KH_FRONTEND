@@ -532,7 +532,17 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
                 label: 'quiz.backToDashboard'.tr,
                 icon: Icons.home_rounded,
                 isOutlined: true,
-                onPressed: () => Get.offNamed(AppRoutes.quizDashboard),
+                onPressed: () {
+                  Get.until(
+                    (route) =>
+                        route.settings.name == AppRoutes.quizDashboard ||
+                        route.settings.name == AppRoutes.home ||
+                        route.isFirst,
+                  );
+                  if (Get.currentRoute != AppRoutes.quizDashboard) {
+                    Get.offNamed(AppRoutes.quizDashboard);
+                  }
+                },
               ),
               const SizedBox(height: 24),
             ],

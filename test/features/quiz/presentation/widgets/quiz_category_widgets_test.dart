@@ -116,9 +116,9 @@ void main() {
       expect(query, 'Finance');
 
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.tap(find.byIcon(Icons.close_rounded));
       expect(cleared, isTrue);
     });
   });

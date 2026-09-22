@@ -7,6 +7,7 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
@@ -843,70 +844,26 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         }
       }
     } else if (action == 'delete') {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await GenLinkConfirmDialog.showDanger(
         context: context,
-        builder: (dialogCtx) => AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'community.deleteEvent'.tr.isNotEmpty &&
-                    'community.deleteEvent'.tr != 'community.deleteEvent'
-                ? '${'community.deleteEvent'.tr}?'
-                : 'Delete Event?',
-            style: TextStyle(
-              color: isDark ? Colors.white : AppColors.lightTextPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 17,
-            ),
-          ),
-          content: Text(
-            'community.deleteEventConfirm'.tr.isNotEmpty &&
-                    'community.deleteEventConfirm'.tr !=
-                        'community.deleteEventConfirm'
-                ? 'community.deleteEventConfirm'.tr
-                : 'Are you sure you want to delete this event? This action cannot be undone.',
-            style: TextStyle(
-              color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-              fontSize: 14,
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx, false),
-              child: Text(
-                'common.cancel'.tr.isNotEmpty &&
-                        'common.cancel'.tr != 'common.cancel'
-                    ? 'common.cancel'.tr
-                    : 'Cancel',
-                style: TextStyle(
-                  color: isDark ? Colors.white60 : Colors.black54,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogCtx, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'common.delete'.tr.isNotEmpty &&
-                        'common.delete'.tr != 'common.delete'
-                    ? 'common.delete'.tr
-                    : 'Delete',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
+        title: 'community.deleteEvent'.tr.isNotEmpty &&
+                'community.deleteEvent'.tr != 'community.deleteEvent'
+            ? '${'community.deleteEvent'.tr}?'
+            : 'Delete Event?',
+        message: 'community.deleteEventConfirm'.tr.isNotEmpty &&
+                'community.deleteEventConfirm'.tr !=
+                    'community.deleteEventConfirm'
+            ? 'community.deleteEventConfirm'.tr
+            : 'Are you sure you want to delete this event? This action cannot be undone.',
+        confirmLabel: 'common.delete'.tr.isNotEmpty &&
+                'common.delete'.tr != 'common.delete'
+            ? 'common.delete'.tr
+            : 'Delete',
+        cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+                'common.cancel'.tr != 'common.cancel'
+            ? 'common.cancel'.tr
+            : 'Cancel',
+        icon: Icons.delete_outline_rounded,
       );
 
       if (confirmed == true) {
@@ -1815,55 +1772,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }
 
   Future<void> _handleCancelRegistration(EventModel event, bool isDark) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'community.cancelRegistrationTitle'.tr,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppColors.lightTextPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
-        ),
-        content: Text(
-          'community.cancelRegistrationConfirm'.tr,
-          style: TextStyle(
-            color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx, false),
-            child: Text(
-              'common.cancel'.tr,
-              style: TextStyle(
-                color: isDark ? Colors.white60 : Colors.black54,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogCtx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              'community.confirmCancel'.tr,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'community.cancelRegistrationTitle'.tr,
+      message: 'community.cancelRegistrationConfirm'.tr,
+      confirmLabel: 'community.confirmCancel'.tr,
+      cancelLabel: 'common.cancel'.tr,
+      icon: Icons.event_busy_rounded,
     );
 
     if (confirmed != true) return;

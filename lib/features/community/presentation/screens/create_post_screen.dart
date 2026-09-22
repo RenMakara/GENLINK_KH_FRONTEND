@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../../../shared/widgets/global_create_sheet.dart';
 import '../../domain/models/community_models.dart';
@@ -353,67 +354,39 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   /// Shows a conflict dialog when the user tries to switch between media types.
   /// Returns true if the user confirms the replacement.
   Future<bool> _showMediaConflictDialog({required bool videoReplacingImages}) async {
-    final result = await showDialog<bool>(
+    final title = videoReplacingImages
+        ? ('community.videoReplaceImages'.tr != 'community.videoReplaceImages'
+            ? 'community.videoReplaceImages'.tr
+            : 'Replace photos with video?')
+        : ('community.imagesReplaceVideo'.tr != 'community.imagesReplaceVideo'
+            ? 'community.imagesReplaceVideo'.tr
+            : 'Replace video with photos?');
+
+    final message = videoReplacingImages
+        ? ('community.videoReplaceImagesMsg'.tr != 'community.videoReplaceImagesMsg'
+            ? 'community.videoReplaceImagesMsg'.tr
+            : 'Selecting a video will remove your selected photos. Continue?')
+        : ('community.imagesReplaceVideoMsg'.tr != 'community.imagesReplaceVideoMsg'
+            ? 'community.imagesReplaceVideoMsg'.tr
+            : 'Selecting photos will remove your selected video. Continue?');
+
+    final cancelLabel = 'community.keepEditing'.tr != 'community.keepEditing'
+        ? 'community.keepEditing'.tr
+        : 'Cancel';
+
+    final confirmLabel = 'community.done'.tr != 'community.done'
+        ? 'community.done'.tr
+        : 'Replace';
+
+    final result = await GenLinkConfirmDialog.showWarning(
       context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1E2228) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            videoReplacingImages
-                ? ('community.videoReplaceImages'.tr != 'community.videoReplaceImages'
-                    ? 'community.videoReplaceImages'.tr
-                    : 'Replace photos with video?')
-                : ('community.imagesReplaceVideo'.tr != 'community.imagesReplaceVideo'
-                    ? 'community.imagesReplaceVideo'.tr
-                    : 'Replace video with photos?'),
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            videoReplacingImages
-                ? ('community.videoReplaceImagesMsg'.tr != 'community.videoReplaceImagesMsg'
-                    ? 'community.videoReplaceImagesMsg'.tr
-                    : 'Selecting a video will remove your selected photos. Continue?')
-                : ('community.imagesReplaceVideoMsg'.tr != 'community.imagesReplaceVideoMsg'
-                    ? 'community.imagesReplaceVideoMsg'.tr
-                    : 'Selecting photos will remove your selected video. Continue?'),
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black54,
-              fontSize: 14,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(
-                'community.keepEditing'.tr != 'community.keepEditing'
-                    ? 'community.keepEditing'.tr
-                    : 'Cancel',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                'community.done'.tr != 'community.done' ? 'community.done'.tr : 'Replace',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+      title: title,
+      message: message,
+      cancelLabel: cancelLabel,
+      confirmLabel: confirmLabel,
+      icon: Icons.swap_horiz_rounded,
     );
+
     return result == true;
   }
 
@@ -1398,53 +1371,34 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         _attachedLink != null;
   }
 
-  void _onBackPress() {
+  Future<void> _onBackPress() async {
     if (_isInnerPopupOpen) {
       setState(() => _isInnerPopupOpen = false);
       return;
     }
     if (_canPost) {
-      showDialog(
+      final confirmed = await GenLinkConfirmDialog.showDiscard(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E2228),
-          title: Text(
-            'community.discardDraft'.tr.isNotEmpty && 'community.discardDraft'.tr != 'community.discardDraft'
-                ? 'community.discardDraft'.tr
-                : 'Discard draft?',
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'community.discardMessage'.tr.isNotEmpty && 'community.discardMessage'.tr != 'community.discardMessage'
-                ? 'community.discardMessage'.tr
-                : 'You have unsaved changes. If you leave now, your changes will be discarded.',
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'community.keepEditing'.tr.isNotEmpty && 'community.keepEditing'.tr != 'community.keepEditing'
-                    ? 'community.keepEditing'.tr
-                    : 'Keep Editing',
-                style: const TextStyle(color: Colors.white60),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: Text(
-                'community.discard'.tr.isNotEmpty && 'community.discard'.tr != 'community.discard'
-                    ? 'community.discard'.tr
-                    : 'Discard',
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-            ),
-          ],
-        ),
+        title: 'community.discardDraft'.tr.isNotEmpty &&
+                'community.discardDraft'.tr != 'community.discardDraft'
+            ? 'community.discardDraft'.tr
+            : 'Discard Draft?',
+        message: 'community.discardMessage'.tr.isNotEmpty &&
+                'community.discardMessage'.tr != 'community.discardMessage'
+            ? 'community.discardMessage'.tr
+            : 'You have unsaved changes. Discard them?',
+        confirmLabel: 'community.discard'.tr.isNotEmpty &&
+                'community.discard'.tr != 'community.discard'
+            ? 'community.discard'.tr
+            : 'Discard',
+        cancelLabel: 'community.keepEditing'.tr.isNotEmpty &&
+                'community.keepEditing'.tr != 'community.keepEditing'
+            ? 'community.keepEditing'.tr
+            : 'Keep Editing',
       );
+      if (confirmed && mounted) {
+        Navigator.pop(context);
+      }
     } else {
       Navigator.pop(context);
     }

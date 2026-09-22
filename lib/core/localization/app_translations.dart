@@ -627,10 +627,49 @@ class AppTranslations extends Translations {
     'quiz.takeAQuiz': 'Take a Quiz',
     'quiz.explorer': 'Explorer',
     'quiz.xpToNextLevel': '@xp XP to Next Level',
+    'quiz.buildYourKnowledge': 'Build your knowledge',
+    'quiz.challengeFriendsTag': 'Challenge friends',
+    'quiz.learnSomethingNew': 'Learn something new',
+    'quiz.seeYourGrowth': 'See your growth',
+    'quiz.plusOneThisWeek': '+1 this week',
+    'quiz.keepLearning': 'Keep learning!',
     'quiz.footerQuote':
         '“Education is the passport to the future, for tomorrow belongs to those who prepare for it today.”',
     'quiz.searchCategories': 'Search categories...',
     'quiz.noMatchingCategories': 'No categories match your search.',
+    'quiz.noMatchingCategoriesSubtitle':
+        'Try searching with a different term or clear the filter.',
+    'quiz.clearFilter': 'Clear search',
+    'quiz.filterAll': 'All',
+    'quiz.filterPopular': 'Popular',
+    'quiz.filterNew': 'New',
+    'quiz.filterFavorites': 'My Favorites',
+    'quiz.catDescGeneral':
+        'Explore a mix of interesting questions across various topics.',
+    'quiz.catDescBusiness':
+        'Test your knowledge in business and entrepreneurship.',
+    'quiz.catDescFood': 'Discover tasty facts about food and nutrition.',
+    'quiz.catDescCulture':
+        "Learn about traditions, people, and the world's cultures.",
+    'quiz.catDescScience': 'Explore the wonders of science and nature.',
+    'quiz.catDescHistory':
+        'Test your knowledge of historical events and figures.',
+    'quiz.catDescGeography':
+        'Explore countries, places, and the world around us.',
+    'quiz.catDescTechnology':
+        'Stay updated with the latest in tech and innovation.',
+    'quiz.catDescSports': 'Challenge yourself with sports trivia.',
+    'quiz.catDescEntertainment':
+        'Fun questions about games, shows, and pop culture.',
+    'quiz.catDescGames': 'Test your gaming knowledge and fun facts.',
+    'quiz.catDescMovies':
+        'See how much you know about your favorite movies.',
+    'quiz.catDescMusic':
+        'From classics to hits, quiz your music knowledge.',
+    'quiz.catDescHealth': 'Learn about health, wellness, and a better you.',
+    'quiz.catDescFinance':
+        'Build your financial knowledge for a brighter future.',
+    'quiz.catDescDefault': 'Test your skills and learn something new today.',
     'quiz.noRecentQuizzes': 'No quizzes played yet.',
     'quiz.noRecentQuizzesSubtitle': 'Start your first quiz to see it here.',
     'quiz.challengeFriendsTitle': 'Challenge your friends!',
@@ -3132,10 +3171,52 @@ class AppTranslations extends Translations {
     'quiz.takeAQuiz': 'ធ្វើកម្រងសំណួរ',
     'quiz.explorer': 'អ្នករុករក',
     'quiz.xpToNextLevel': 'ត្រូវការ @xp XP ទៀតដើម្បីឡើងកម្រិតបន្ទាប់',
+    'quiz.buildYourKnowledge': 'ពង្រឹងចំណេះដឹងរបស់អ្នក',
+    'quiz.challengeFriendsTag': 'ប្រកួតជាមួយមិត្តភក្តិ',
+    'quiz.learnSomethingNew': 'រៀនអ្វីថ្មីៗ',
+    'quiz.seeYourGrowth': 'មើលការរីកចម្រើនរបស់អ្នក',
+    'quiz.plusOneThisWeek': '+១ សប្តាហ៍នេះ',
+    'quiz.keepLearning': 'បន្តរៀនសូត្រ!',
     'quiz.footerQuote':
         '«ការអប់រំគឺជាលិខិតឆ្លងដែនទៅកាន់អនាគត ព្រោះថ្ងៃស្អែកជាកម្មសិទ្ធិរបស់អ្នកដែលរៀបចំសម្រាប់ថ្ងៃនេះ។»',
     'quiz.searchCategories': 'ស្វែងរកប្រភេទ...',
     'quiz.noMatchingCategories': 'គ្មានប្រភេទណាត្រូវនឹងការស្វែងរករបស់អ្នកទេ។',
+    'quiz.noMatchingCategoriesSubtitle':
+        'សូមសាកល្បងស្វែងរកដោយប្រើពាក្យផ្សេង ឬសម្អាតតម្រង។',
+    'quiz.clearFilter': 'សម្អាតការស្វែងរក',
+    'quiz.filterAll': 'ទាំងអស់',
+    'quiz.filterPopular': 'ពេញនិយម',
+    'quiz.filterNew': 'ថ្មី',
+    'quiz.filterFavorites': 'ចំណូលចិត្ត',
+    'quiz.catDescGeneral':
+        'ស្វែងយល់ពីសំណួរគួរឱ្យចាប់អារម្មណ៍ចម្រុះលើប្រធានបទផ្សេងៗ។',
+    'quiz.catDescBusiness':
+        'សាកល្បងចំណេះដឹងរបស់អ្នកក្នុងអាជីវកម្ម និងសហគ្រិនភាព។',
+    'quiz.catDescFood': 'ស្វែងយល់ពីការពិតដ៏ឆ្ងាញ់អំពីម្ហូបអាហារ និងអាហារូបត្ថម្ភ។',
+    'quiz.catDescCulture':
+        'ស្វែងយល់អំពីប្រពៃណី មនុស្ស និងវប្បធម៌នៃពិភពលោក។',
+    'quiz.catDescScience': 'ស្វែងយល់ពីភាពអស្ចារ្យនៃវិទ្យាសាស្ត្រ និងធម្មជាតិ។',
+    'quiz.catDescHistory':
+        'សាកល្បងចំណេះដឹងរបស់អ្នកអំពីព្រឹត្តិការណ៍ និងឥស្សរជនប្រវត្តិសាស្ត្រ។',
+    'quiz.catDescGeography':
+        'ស្វែងយល់ពីបណ្តាប្រទេស ទីកន្លែង និងពិភពលោកជុំវិញយើង។',
+    'quiz.catDescTechnology':
+        'ទទួលបានព័ត៌មានទាន់សម័យអំពីបច្ចេកវិទ្យា និងការច្នៃប្រឌិត។',
+    'quiz.catDescSports':
+        'ប្រកួតប្រជែងខ្លួនឯងជាមួយនឹងចំណេះដឹងទូទៅផ្នែកកីឡា។',
+    'quiz.catDescEntertainment':
+        'សំណួរសប្បាយៗអំពីហ្គេម កម្មវិធី និងវប្បធម៌ប្រជាប្រិយ។',
+    'quiz.catDescGames':
+        'សាកល្បងចំណេះដឹង និងការពិតដ៏រីករាយអំពីការលេងហ្គេម។',
+    'quiz.catDescMovies':
+        'មើលថាតើអ្នកស្គាល់ភាពយន្តដែលអ្នកចូលចិត្តកម្រិតណា។',
+    'quiz.catDescMusic':
+        'ពីបុរាណរហូតដល់បទល្បីៗ សាកល្បងចំណេះដឹងតន្ត្រីរបស់អ្នក។',
+    'quiz.catDescHealth':
+        'ស្វែងយល់អំពីសុខភាព សុខុមាលភាព និងភាពប្រសើរឡើងរបស់អ្នក។',
+    'quiz.catDescFinance':
+        'កសាងចំណេះដឹងហិរញ្ញវត្ថុរបស់អ្នកសម្រាប់អនាគតដ៏ភ្លឺស្វាង។',
+    'quiz.catDescDefault': 'សាកល្បងជំនាញរបស់អ្នក និងរៀនអ្វីថ្មីៗថ្ងៃនេះ។',
     'quiz.noRecentQuizzes': 'មិនទាន់មានកម្រងសំណួរដែលបានលេងនៅឡើយទេ។',
     'quiz.noRecentQuizzesSubtitle':
         'ចាប់ផ្តើមកម្រងសំណួរដំបូងរបស់អ្នក ដើម្បីបង្ហាញនៅទីនេះ។',

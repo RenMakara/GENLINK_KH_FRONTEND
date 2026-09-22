@@ -3,6 +3,7 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.d
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/expense_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_detail_widget.dart';
@@ -315,23 +316,14 @@ class ExpenseDetailScreen extends StatelessWidget {
   }
 
   Future<void> _showDeleteDialog(BuildContext context) async {
-    final confirmed = await Get.dialog<bool>(
-      AlertDialog(
-        title: Text('finance.expense.deleteConfirmTitle'.tr),
-        content: Text('finance.expense.deleteConfirmMessage'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('finance.expense.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Get.back(result: true),
-            child: Text('finance.expense.delete'.tr),
-          ),
-        ],
-      ),
+    final confirmed = await GenLinkConfirmDialog.showDanger(
+      context: context,
+      title: 'finance.expense.deleteConfirmTitle'.tr,
+      message: 'finance.expense.deleteConfirmMessage'.tr,
+      confirmLabel: 'finance.expense.delete'.tr,
+      cancelLabel: 'finance.expense.cancel'.tr,
     );
-    if (confirmed != true || onDeleted == null) return;
+    if (!confirmed || onDeleted == null) return;
     final deleted = await onDeleted!();
     if (!context.mounted) return;
     if (deleted) {

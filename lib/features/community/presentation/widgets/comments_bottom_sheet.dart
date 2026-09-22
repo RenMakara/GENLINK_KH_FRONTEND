@@ -6,6 +6,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
@@ -194,152 +195,77 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     );
   }
 
-  void _showDeleteCommentDialog(CommentModel comment) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final dialogBg =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-
-    bool isDeleting = false;
-
-    showDialog(
+  void _showDeleteCommentDialog(CommentModel comment) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: dialogBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          title: Text(
-            'community.deleteComment'.tr.isNotEmpty &&
-                    'community.deleteComment'.tr != 'community.deleteComment'
-                ? '${'community.deleteComment'.tr}?'
-                : 'Delete Comment?',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'community.deleteCommentConfirm'.tr.isNotEmpty &&
-                    'community.deleteCommentConfirm'.tr !=
-                        'community.deleteCommentConfirm'
-                ? 'community.deleteCommentConfirm'.tr
-                : 'Are you sure you want to delete this comment? This action cannot be undone.',
-            style: TextStyle(color: textSecondary, fontSize: 14),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isDeleting ? null : () => Navigator.pop(ctx),
-              child: Text(
-                'common.cancel'.tr.isNotEmpty &&
-                        'common.cancel'.tr != 'common.cancel'
-                    ? 'common.cancel'.tr
-                    : 'Cancel',
-                style: TextStyle(
-                  color: isDeleting
-                      ? textSecondary.withValues(alpha: 0.5)
-                      : textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              ),
-              onPressed: isDeleting
-                  ? null
-                  : () async {
-                      setDialogState(() {
-                        isDeleting = true;
-                      });
-                      try {
-                        final success = await controller.deleteComment(
-                          widget.postId,
-                          comment.id,
-                        );
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                        }
-                        if (success && mounted) {
-                          if (_replyingToComment?.id == comment.id) {
-                            setState(() {
-                              _replyingToComment = null;
-                            });
-                          }
-                          AppNotificationBanner.showSuccess(
-                            context: context,
-                            title: 'community.commentDeleted'.tr.isNotEmpty &&
-                                    'community.commentDeleted'.tr !=
-                                        'community.commentDeleted'
-                                ? 'community.commentDeleted'.tr
-                                : 'Deleted',
-                            message: 'Comment deleted successfully.',
-                          );
-                        } else if (mounted) {
-                          AppNotificationBanner.showError(
-                            context: context,
-                            title: 'Error',
-                            message:
-                                'Failed to delete comment. Please try again.',
-                          );
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                        }
-                        if (mounted) {
-                          String errorMsg =
-                              'Failed to delete comment. Please try again.';
-                          if (e is AppError && e.isForbidden) {
-                            errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
-                                    'community.commentPermissionError'.tr !=
-                                        'community.commentPermissionError'
-                                ? 'community.commentPermissionError'.tr
-                                : 'You do not have permission to modify this comment.';
-                          } else if (e is AppError && e.message.isNotEmpty) {
-                            errorMsg = e.message;
-                          }
-                          AppNotificationBanner.showError(
-                            context: context,
-                            title: 'Error',
-                            message: errorMsg,
-                          );
-                        }
-                      }
-                    },
-              child: isDeleting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(
-                      'common.delete'.tr.isNotEmpty &&
-                              'common.delete'.tr != 'common.delete'
-                          ? 'common.delete'.tr
-                          : 'Delete',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-            ),
-          ],
-        ),
-      ),
+      title: 'community.deleteComment'.tr.isNotEmpty &&
+              'community.deleteComment'.tr != 'community.deleteComment'
+          ? '${'community.deleteComment'.tr}?'
+          : 'Delete Comment?',
+      message: 'community.deleteCommentConfirm'.tr.isNotEmpty &&
+              'community.deleteCommentConfirm'.tr !=
+                  'community.deleteCommentConfirm'
+          ? 'community.deleteCommentConfirm'.tr
+          : 'Are you sure you want to delete this comment? This action cannot be undone.',
+      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
+              'common.cancel'.tr != 'common.cancel'
+          ? 'common.cancel'.tr
+          : 'Cancel',
+      confirmLabel: 'common.delete'.tr.isNotEmpty &&
+              'common.delete'.tr != 'common.delete'
+          ? 'common.delete'.tr
+          : 'Delete',
+      icon: Icons.delete_outline_rounded,
     );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final success = await controller.deleteComment(
+        widget.postId,
+        comment.id,
+      );
+      if (success && mounted) {
+        if (_replyingToComment?.id == comment.id) {
+          setState(() {
+            _replyingToComment = null;
+          });
+        }
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'community.commentDeleted'.tr.isNotEmpty &&
+                  'community.commentDeleted'.tr !=
+                      'community.commentDeleted'
+              ? 'community.commentDeleted'.tr
+              : 'Deleted',
+          message: 'Comment deleted successfully.',
+        );
+      } else if (mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to delete comment. Please try again.',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMsg = 'Failed to delete comment. Please try again.';
+        if (e is AppError && e.isForbidden) {
+          errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
+                  'community.commentPermissionError'.tr !=
+                      'community.commentPermissionError'
+              ? 'community.commentPermissionError'.tr
+              : 'You do not have permission to modify this comment.';
+        } else if (e is AppError && e.message.isNotEmpty) {
+          errorMsg = e.message;
+        }
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: errorMsg,
+        );
+      }
+    }
   }
 
   @override

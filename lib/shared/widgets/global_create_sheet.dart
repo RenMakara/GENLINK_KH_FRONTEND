@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../design_system/colors/app_colors.dart';
-import '../../design_system/radius/app_radius.dart';
 import '../../design_system/typography/app_typography.dart';
+import '../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../features/community/presentation/screens/create_discussion_screen.dart';
 import '../../features/community/presentation/screens/create_event_screen.dart';
 import '../../features/community/presentation/screens/create_post_screen.dart';
@@ -136,88 +136,12 @@ class GlobalCreateSheet extends StatelessWidget {
         ? 'common.done'.tr
         : 'Done';
 
-    showDialog(
+    GenLinkConfirmDialog.showSuccess(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          side: BorderSide(color: border, width: 0.8),
-        ),
-        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 12, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: iconBorder, width: 0.8),
-              ),
-              child: Icon(
-                Icons.emoji_events_outlined,
-                color: textPrimary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                dialogTitle,
-                style: TextStyle(
-                  fontFamily: AppTypography.englishFontFamily,
-                  fontFamilyFallback: _fontFallbacks,
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          dialogDesc,
-          style: TextStyle(
-            fontFamily: AppTypography.englishFontFamily,
-            fontFamilyFallback: _fontFallbacks,
-            color: textSecondary,
-            fontSize: 13.5,
-            height: 1.45,
-          ),
-        ),
-        actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: isDark
-                  ? const Color(0xFFE4E6EB)
-                  : const Color(0xFF18191B),
-              foregroundColor: isDark
-                  ? const Color(0xFF18191A)
-                  : const Color(0xFFFFFFFF),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              doneText,
-              style: TextStyle(
-                fontFamily: AppTypography.englishFontFamily,
-                fontFamilyFallback: _fontFallbacks,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: dialogTitle,
+      message: dialogDesc,
+      confirmLabel: doneText,
+      icon: Icons.emoji_events_outlined,
     );
   }
 
@@ -230,7 +154,7 @@ class GlobalCreateSheet extends StatelessWidget {
     Color iconBg,
     Color iconBorder,
     bool isDark,
-  ) {
+  ) async {
     Navigator.of(context).pop();
     final dialogTitle =
         'create.actionShortContent'.tr.isNotEmpty &&
@@ -253,110 +177,18 @@ class GlobalCreateSheet extends StatelessWidget {
         ? 'common.cancel'.tr
         : 'Cancel';
 
-    showDialog(
+    final confirmed = await GenLinkConfirmDialog.showConfirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          side: BorderSide(color: border, width: 0.8),
-        ),
-        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 12, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: iconBorder, width: 0.8),
-              ),
-              child: Icon(
-                Icons.video_library_outlined,
-                color: textPrimary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                dialogTitle,
-                style: TextStyle(
-                  fontFamily: AppTypography.englishFontFamily,
-                  fontFamilyFallback: _fontFallbacks,
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          dialogDesc,
-          style: TextStyle(
-            fontFamily: AppTypography.englishFontFamily,
-            fontFamilyFallback: _fontFallbacks,
-            color: textSecondary,
-            fontSize: 13.5,
-            height: 1.45,
-          ),
-        ),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: textSecondary,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              cancelText,
-              style: TextStyle(
-                fontFamily: AppTypography.englishFontFamily,
-                fontFamilyFallback: _fontFallbacks,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: isDark
-                  ? const Color(0xFFE4E6EB)
-                  : const Color(0xFF18191B),
-              foregroundColor: isDark
-                  ? const Color(0xFF18191A)
-                  : const Color(0xFFFFFFFF),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Get.toNamed(AppRoutes.shortContentCreate);
-            },
-            child: Text(
-              createShortContentText,
-              style: TextStyle(
-                fontFamily: AppTypography.englishFontFamily,
-                fontFamilyFallback: _fontFallbacks,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: dialogTitle,
+      message: dialogDesc,
+      cancelLabel: cancelText,
+      confirmLabel: createShortContentText,
+      icon: Icons.video_library_outlined,
     );
+
+    if (confirmed == true) {
+      Get.toNamed(AppRoutes.shortContentCreate);
+    }
   }
 
   @override

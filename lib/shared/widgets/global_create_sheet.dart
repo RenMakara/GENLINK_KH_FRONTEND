@@ -842,26 +842,26 @@ class GlobalCreateSheet extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final glassBg = isDark
-        ? const Color(0xEE16181D)
-        : const Color(0xF4FBFBFB);
+        ? const Color(0xFA15181E)
+        : const Color(0xFDF8FAFC);
     final glassBorder = isDark
-        ? const Color(0x2EFFFFFF)
+        ? const Color(0x33FFFFFF)
         : const Color(0x1A000000);
     final textPrimary = isDark
-        ? const Color(0xFFF0F2F5)
-        : const Color(0xFF141619);
+        ? const Color(0xFFF3F4F6)
+        : const Color(0xFF111827);
     final textSecondary = isDark
-        ? const Color(0xFF949BA6)
+        ? const Color(0xFF9CA3AF)
         : const Color(0xFF6B7280);
     final rowDivider = isDark
-        ? const Color(0x18FFFFFF)
+        ? const Color(0x1FFFFFFF)
         : const Color(0x0F000000);
     final iconBg = isDark
-        ? const Color(0x18FFFFFF)
+        ? const Color(0x1AFFFFFF)
         : const Color(0x0A000000);
     final iconBorder = isDark
-        ? const Color(0x20FFFFFF)
-        : const Color(0x10000000);
+        ? const Color(0x24FFFFFF)
+        : const Color(0x12000000);
     final dialogBg = isDark ? const Color(0xFF181A20) : Colors.white;
     final dialogBorder = isDark ? const Color(0xFF282B35) : const Color(0xFFE2E4EA);
 
@@ -893,7 +893,7 @@ class GlobalCreateSheet extends StatelessWidget {
     final bool placeAbove =
         availableAbove >= 180.0 || availableAbove >= availableBelow;
 
-    final popupWidth = (screenWidth * 0.54).clamp(195.0, 212.0);
+    final popupWidth = (screenWidth * 0.58).clamp(210.0, 230.0);
     final popupRight = (screenWidth - resolvedAnchor.right).clamp(
       8.0,
       (screenWidth - popupWidth - 8.0).clamp(8.0, double.infinity),
@@ -918,20 +918,21 @@ class GlobalCreateSheet extends StatelessWidget {
         maxHeight: maxPopupHeight,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             width: popupWidth,
             decoration: BoxDecoration(
               color: glassBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: glassBorder, width: 0.8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
+                  blurRadius: 24,
+                  spreadRadius: -2,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -949,7 +950,7 @@ class GlobalCreateSheet extends StatelessWidget {
                   children: [
                     // Header
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 7, 6, 5),
+                      padding: const EdgeInsets.fromLTRB(12, 9, 8, 7),
                       child: Row(
                         children: [
                           Expanded(
@@ -963,9 +964,9 @@ class GlobalCreateSheet extends StatelessWidget {
                                     fontFamily: AppTypography.englishFontFamily,
                                     fontFamilyFallback: fontFallbacks,
                                     color: textPrimary,
-                                    fontSize: 13.0,
+                                    fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.2,
+                                    letterSpacing: -0.3,
                                     decoration: TextDecoration.none,
                                   ),
                                 ),
@@ -994,22 +995,22 @@ class GlobalCreateSheet extends StatelessWidget {
                             color: Colors.transparent,
                             child: InkWell(
                               canRequestFocus: false,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                               onTap: () => _close(context),
                               child: Container(
-                                width: 20,
-                                height: 20,
+                                width: 22,
+                                height: 22,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? const Color(0x18FFFFFF)
-                                      : const Color(0x0A000000),
+                                      ? const Color(0x20FFFFFF)
+                                      : const Color(0x0E000000),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.close_rounded,
                                   color: textSecondary,
-                                  size: 12,
+                                  size: 13,
                                 ),
                               ),
                             ),
@@ -1439,21 +1440,21 @@ class _ComposerGlassOption extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 24,
-                height: 24,
+                width: 26,
+                height: 26,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: iconBorder, width: 0.6),
+                  borderRadius: BorderRadius.circular(7.5),
+                  border: Border.all(color: iconBorder, width: 0.7),
                 ),
                 child: Icon(
                   icon,
-                  color: textPrimary.withValues(alpha: 0.88),
-                  size: 14,
+                  color: textPrimary.withValues(alpha: 0.90),
+                  size: 14.5,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 9),
               Expanded(
                 child: Text(
                   title,
@@ -1463,18 +1464,19 @@ class _ComposerGlassOption extends StatelessWidget {
                     fontFamily: AppTypography.englishFontFamily,
                     fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
                     color: textPrimary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
+                    fontSize: 12.8,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.25,
                     height: 1.25,
                     decoration: TextDecoration.none,
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
               Icon(
                 Icons.chevron_right_rounded,
-                color: textSecondary.withValues(alpha: 0.35),
-                size: 14.5,
+                color: textSecondary.withValues(alpha: 0.40),
+                size: 15,
               ),
             ],
           ),

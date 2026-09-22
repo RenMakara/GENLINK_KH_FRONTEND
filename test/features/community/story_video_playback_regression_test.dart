@@ -9,6 +9,7 @@ import 'package:genlink_frontend/features/community/domain/models/story_model.da
 import 'package:genlink_frontend/features/community/presentation/controllers/story_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/story_viewer_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/story_video_player_widget.dart';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 class _FakeVideoPlayerController extends VideoPlayerController {
   _FakeVideoPlayerController() : super.file(File('dummy.mp4'));
@@ -246,6 +247,78 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
+    });
+
+    testWidgets('6. Remote viewer (Account B, isOwner: false) plays Account A video story without UnimplementedError', (tester) async {
+      final storyAccountA = StoryItemModel(
+        id: 'story_account_a_vid_99',
+        type: StoryType.video,
+        mediaUrl: 'https://cdn.genlink.com/stories/account_a_video.mp4',
+        textContent: 'Story from Account A',
+        timeAgo: '2h ago',
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      );
+      final groupAccountA = StoryGroupModel(
+        userId: 'account_a_id',
+        userName: 'Account A Creator',
+        userAvatar: 'assets/images/user_profile.png',
+        isOwner: false, // Account B is viewing
+        stories: [storyAccountA],
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: StoryViewerScreen(
+            initialGroupIndex: 0,
+            groups: [groupAccountA],
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(StoryViewerScreen), findsOneWidget);
+      expect(find.byType(StoryVideoPlayerWidget), findsOneWidget);
+      expect(find.text('Story from Account A'), findsOneWidget);
+
+      // Verify that "UnimplementedError: init() has not been implemented." is NEVER displayed
+      expect(find.textContaining('UnimplementedError'), findsNothing);
+      expect(find.textContaining('init() has not been implemented'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
+    });
+
+    testWidgets('7. StoryVideoPlayerWidget internal initialization renders without throwing UnimplementedError', (tester) async {
+      VideoPlayerController? capturedCtrl;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StoryVideoPlayerWidget(
+              videoUrl: 'https://cdn.genlink.com/stories/stream_test.mp4',
+              onControllerInitialized: (ctrl) {
+                capturedCtrl = ctrl;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(StoryVideoPlayerWidget), findsOneWidget);
+      expect(find.textContaining('UnimplementedError'), findsNothing);
+      expect(capturedCtrl, isNotNull);
+      expect(capturedCtrl!.value.isInitialized, isTrue);
+    });
+
+    testWidgets('8. ensureVideoPlayerPlatformRegistered guarantees platform interface is functional', (tester) async {
+      ensureVideoPlayerPlatformRegistered();
+      expect(VideoPlayerPlatform.instance, isNotNull);
+      expect(VideoPlayerPlatform.instance.runtimeType.toString(), isNot(contains('Placeholder')));
+
+      // Initializing should not throw UnimplementedError
+      await expectLater(VideoPlayerPlatform.instance.init(), completes);
     });
   });
 }

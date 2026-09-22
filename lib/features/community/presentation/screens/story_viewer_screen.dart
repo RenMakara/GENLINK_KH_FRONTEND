@@ -2532,6 +2532,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     final demoStory = getDemoStoryById(story.id);
 
+    // For text stories, the text is already baked into the story PNG image
+    // (rendered by _renderCanvasToPng at publish time). Suppress LayerType.text
+    // overlays so the text does not appear twice.
+    final bool textBakedInImage =
+        story.type == StoryType.text &&
+        story.mediaUrl != null &&
+        story.mediaUrl!.isNotEmpty;
+
     return Stack(
       children: [
         Positioned.fill(child: _buildMediaWidget(story, group)),
@@ -2620,9 +2628,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           )
         else ...[
           ...story.layers
-              .where((layer) => layer.type != LayerType.mention)
+              .where((layer) =>
+                  layer.type != LayerType.mention &&
+                  !(textBakedInImage && layer.type == LayerType.text))
               .map((layer) => _buildViewerLayerWidget(layer)),
           if (!isTemplate &&
+              !textBakedInImage &&
               story.layers.isEmpty &&
               story.textContent != null &&
               story.textContent!.trim().isNotEmpty)

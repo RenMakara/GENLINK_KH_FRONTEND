@@ -3,24 +3,38 @@ import '../../domain/models/story_model.dart';
 
 export '../../domain/models/story_model.dart' show StoryAuthor;
 
-abstract final class DemoStoryAuthors {
-  static const renMakara = StoryAuthor(
-    id: 'user_makara',
-    name: 'Ren Makara',
-    avatarUrl: 'assets/images/ren_makara_profile.png',
-    handle: '@renmakara',
-    university: 'ACLEDA University of Business (AUB)',
-  );
+// ---------------------------------------------------------------------------
+// PRODUCTION NOTE: All demo/mock Story data has been removed.
+//
+// This file is kept to prevent compilation errors in story_viewer_screen.dart
+// and other files that reference DemoStoryModel.
+//
+// kDemoStories is intentionally EMPTY. getDemoStoryGroups() returns [].
+// getDemoStoryById() always returns null.
+//
+// The Story tray displays ONLY real authenticated-user Stories and real backend
+// Stories. No fake users, no placeholder content, no hardcoded names.
+// ---------------------------------------------------------------------------
 
-  static const hengChansela = StoryAuthor(
-    id: 'user_chansela',
-    name: 'Heng Chansela',
-    avatarUrl: 'assets/images/heng_chansela_profile.png',
-    handle: '@hengchansela',
-    university: 'ACLEDA University of Business (AUB)',
-  );
-}
+/// Always empty in production. Do NOT add fake Story users here.
+final List<DemoStoryModel> kDemoStories = [];
 
+/// Always returns an empty list. The Story tray uses only real backend data.
+List<StoryGroupModel> getDemoStoryGroups() => [];
+
+/// Always returns null — no demo stories exist.
+DemoStoryModel? getDemoStoryById(String storyId) => null;
+
+void updateDemoStoryLike(String storyId, bool isLiked, int likesCount) {}
+
+void markDemoStoryViewed(String storyId) {}
+
+// ---------------------------------------------------------------------------
+// Stub class kept for backward compatibility with story_viewer_screen.dart
+// Do NOT instantiate or use DemoStoryModel for real UI rendering.
+// With kDemoStories empty, getDemoStoryById() always returns null and
+// these fields are never accessed at runtime.
+// ---------------------------------------------------------------------------
 class DemoStoryModel {
   final StoryAuthor author;
   final String storyContent;
@@ -40,10 +54,10 @@ class DemoStoryModel {
     required this.createdAt,
     this.timeAgo = '2h ago',
     this.location,
-    this.gradientColors = const [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+    this.gradientColors = const [],
     this.icon,
     this.tag,
-    this.likesCount = 12,
+    this.likesCount = 0,
     this.isLiked = false,
     this.isViewed = false,
   });
@@ -54,104 +68,4 @@ class DemoStoryModel {
   String get id => 'demo_${author.id}';
   String get userAvatar => author.avatarUrl;
   String get content => storyContent;
-
-  StoryGroupModel toStoryGroup() {
-    final startHex = gradientColors.isNotEmpty
-        ? '0x${gradientColors.first.toARGB32().toRadixString(16).padLeft(8, '0')}'
-        : '0xFF0F172A';
-    final endHex = gradientColors.length > 1
-        ? '0x${gradientColors.last.toARGB32().toRadixString(16).padLeft(8, '0')}'
-        : '0xFF1E293B';
-
-    return StoryGroupModel(
-      userId: author.id,
-      userName: author.name,
-      userAvatar: author.avatarUrl,
-      isOwner: false,
-      hasUnseen: !isViewed,
-      stories: [
-        StoryItemModel(
-          id: 'demo_${author.id}',
-          type: StoryType.text,
-          textContent: storyContent,
-          location: location,
-          timeAgo: timeAgo,
-          createdAt: createdAt,
-          bgGradientStart: startHex,
-          bgGradientEnd: endHex,
-          likesCount: likesCount,
-          isLiked: isLiked,
-          isViewed: isViewed,
-          settings: const StorySettings(
-            visibility: StoryPrivacy.public,
-            replyPermission: StoryReplyPermission.everyone,
-            allowReactions: true,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-final List<DemoStoryModel> kDemoStories = [
-  DemoStoryModel(
-    author: DemoStoryAuthors.renMakara,
-    storyContent:
-        'Working on the Flutter mobile design system today! 🚀💻 Loving the new GenLink dark theme tokens.',
-    location: 'CADT Innovation Hub',
-    timeAgo: '2h ago',
-    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    gradientColors: const [Color(0xFF4F46E5), Color(0xFF7C3AED)],
-    icon: Icons.code_rounded,
-    tag: '#Flutter #DesignSystem',
-    likesCount: 14,
-  ),
-  DemoStoryModel(
-    author: DemoStoryAuthors.hengChansela,
-    storyContent:
-        'Campus Hackathon 2026 kick-off this Saturday! Who wants to build AI agents with us? 🤖💡',
-    location: 'Main Auditorium',
-    timeAgo: '5h ago',
-    createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-    gradientColors: const [Color(0xFFEA580C), Color(0xFFF59E0B)],
-    icon: Icons.rocket_launch_rounded,
-    tag: '#Hackathon #Innovation',
-    likesCount: 35,
-  ),
-];
-
-List<StoryGroupModel> getDemoStoryGroups() {
-  return kDemoStories.map((d) => d.toStoryGroup()).toList();
-}
-
-DemoStoryModel? getDemoStoryById(String storyId) {
-  final normalized = storyId.replaceFirst('demo_', '').toLowerCase();
-  for (final story in kDemoStories) {
-    if (story.id.toLowerCase() == storyId.toLowerCase() ||
-        story.userId.toLowerCase() == storyId.toLowerCase() ||
-        story.userId.toLowerCase() == normalized ||
-        story.userId.toLowerCase() == 'user_$normalized' ||
-        story.userId.toLowerCase() == 'demo_user_$normalized' ||
-        story.userName.toLowerCase() == normalized ||
-        story.author.name.toLowerCase() == normalized ||
-        story.author.id.toLowerCase() == normalized) {
-      return story;
-    }
-  }
-  return null;
-}
-
-void updateDemoStoryLike(String storyId, bool isLiked, int likesCount) {
-  final demo = getDemoStoryById(storyId);
-  if (demo != null) {
-    demo.isLiked = isLiked;
-    demo.likesCount = likesCount;
-  }
-}
-
-void markDemoStoryViewed(String storyId) {
-  final demo = getDemoStoryById(storyId);
-  if (demo != null) {
-    demo.isViewed = true;
-  }
 }

@@ -993,7 +993,7 @@ void main() {
       final pubGroup = StoryGroupModel(
         userId: 'user_pub',
         userName: 'User Public',
-        userAvatar: '',
+        userAvatar: 'assets/images/user_profile.png',
         isOwner: true,
         stories: [publicStory],
       );
@@ -1014,7 +1014,7 @@ void main() {
       final friendsGroup = StoryGroupModel(
         userId: 'user_friends',
         userName: 'User Friends',
-        userAvatar: '',
+        userAvatar: 'assets/images/user_profile.png',
         isOwner: true,
         stories: [friendsStory],
       );
@@ -1035,7 +1035,7 @@ void main() {
       final onlyMeGroup = StoryGroupModel(
         userId: 'user_only_me',
         userName: 'User Only Me',
-        userAvatar: '',
+        userAvatar: 'assets/images/user_profile.png',
         isOwner: true,
         stories: [onlyMeStory],
       );

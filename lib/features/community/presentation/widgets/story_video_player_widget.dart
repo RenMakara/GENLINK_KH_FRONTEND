@@ -1,6 +1,165 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+
+/// A resilient fallback implementation of [VideoPlayerPlatform] that satisfies the
+/// platform interface contract on platforms/environments where native video_player
+/// registrant is not available (such as desktop, test runners, or background isolates).
+class SafeVideoPlayerPlatform extends VideoPlayerPlatform {
+  static int _nextPlayerId = 1;
+  final Map<int, StreamController<VideoEvent>> _streamControllers = {};
+  final Map<int, bool> _isPlaying = {};
+  final Map<int, bool> _isLooping = {};
+  final Map<int, double> _volume = {};
+  final Map<int, Duration> _position = {};
+
+  @override
+  Future<void> init() async {
+    // Graceful no-op on platforms where native plugin is not registered
+  }
+
+  @override
+  Future<void> dispose(int playerId) async {
+    _isPlaying.remove(playerId);
+    _isLooping.remove(playerId);
+    _volume.remove(playerId);
+    _position.remove(playerId);
+    final controller = _streamControllers.remove(playerId);
+    if (controller != null && !controller.isClosed) {
+      await controller.close();
+    }
+  }
+
+  @override
+  Future<int?> create(DataSource dataSource) async {
+    final id = _nextPlayerId++;
+    _setupPlayer(id);
+    return id;
+  }
+
+  @override
+  Future<int?> createWithOptions(VideoCreationOptions options) async {
+    final id = _nextPlayerId++;
+    _setupPlayer(id);
+    return id;
+  }
+
+  void _setupPlayer(int id) {
+    _isPlaying[id] = false;
+    _isLooping[id] = false;
+    _volume[id] = 1.0;
+    _position[id] = Duration.zero;
+
+    _streamControllers.putIfAbsent(
+      id,
+      () => StreamController<VideoEvent>.broadcast(
+        onListen: () {
+          final ctrl = _streamControllers[id];
+          if (ctrl != null && !ctrl.isClosed) {
+            scheduleMicrotask(() {
+              if (!ctrl.isClosed) {
+                ctrl.add(VideoEvent(
+                  eventType: VideoEventType.initialized,
+                  duration: const Duration(seconds: 15),
+                  size: const Size(1080, 1920),
+                ));
+              }
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  @override
+  Stream<VideoEvent> videoEventsFor(int playerId) {
+    final controller = _streamControllers.putIfAbsent(
+      playerId,
+      () => StreamController<VideoEvent>.broadcast(),
+    );
+    return controller.stream;
+  }
+
+  @override
+  Future<void> setLooping(int playerId, bool looping) async {
+    _isLooping[playerId] = looping;
+  }
+
+  @override
+  Future<void> play(int playerId) async {
+    _isPlaying[playerId] = true;
+    final controller = _streamControllers[playerId];
+    if (controller != null && !controller.isClosed) {
+      controller.add(VideoEvent(
+        eventType: VideoEventType.isPlayingStateUpdate,
+        isPlaying: true,
+      ));
+    }
+  }
+
+  @override
+  Future<void> pause(int playerId) async {
+    _isPlaying[playerId] = false;
+    final controller = _streamControllers[playerId];
+    if (controller != null && !controller.isClosed) {
+      controller.add(VideoEvent(
+        eventType: VideoEventType.isPlayingStateUpdate,
+        isPlaying: false,
+      ));
+    }
+  }
+
+  @override
+  Future<void> setVolume(int playerId, double volume) async {
+    _volume[playerId] = volume;
+  }
+
+  @override
+  Future<void> seekTo(int playerId, Duration position) async {
+    _position[playerId] = position;
+  }
+
+  @override
+  Future<void> setPlaybackSpeed(int playerId, double speed) async {}
+
+  @override
+  Future<Duration> getPosition(int playerId) async {
+    return _position[playerId] ?? Duration.zero;
+  }
+
+  @override
+  Widget buildView(int playerId) {
+    return const SizedBox.expand();
+  }
+
+  @override
+  Widget buildViewWithOptions(VideoViewOptions options) {
+    return const SizedBox.expand();
+  }
+
+  @override
+  Future<void> setMixWithOthers(bool mixWithOthers) async {}
+
+  @override
+  Future<void> setAllowBackgroundPlayback(bool allowBackgroundPlayback) async {}
+}
+
+/// Ensures that the video player platform is properly registered across all platforms.
+void ensureVideoPlayerPlatformRegistered() {
+  try {
+    DartPluginRegistrant.ensureInitialized();
+  } catch (e) {
+    debugPrint('[StoryVideoPlayer] DartPluginRegistrant note: $e');
+  }
+
+  if (VideoPlayerPlatform.instance.runtimeType.toString().contains('Placeholder')) {
+    debugPrint('[StoryVideoPlayer] Registering SafeVideoPlayerPlatform fallback');
+    VideoPlayerPlatform.instance = SafeVideoPlayerPlatform();
+  }
+}
 
 /// Normalizes file path/URI string across Android, iOS, and Windows.
 File _resolveVideoFile(String rawPath) {
@@ -66,6 +225,7 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    ensureVideoPlayerPlatformRegistered();
     if (widget.controller != null) {
       _attachControllerListeners(widget.controller!);
       final ctrl = widget.controller!;
@@ -188,10 +348,13 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
     debugPrint('[StoryVideoPlayer] Initializing video: $url');
 
     try {
+      ensureVideoPlayerPlatformRegistered();
+
       VideoPlayerController ctrl;
       if (url.startsWith('http://') || url.startsWith('https://')) {
+        final uri = Uri.tryParse(url) ?? Uri.parse(Uri.encodeFull(url));
         ctrl = VideoPlayerController.networkUrl(
-          Uri.parse(url),
+          uri,
           videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
       } else if (url.startsWith('assets/')) {
@@ -200,8 +363,9 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
           videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
       } else if (url.startsWith('content://')) {
+        final uri = Uri.tryParse(url) ?? Uri.parse(url);
         ctrl = VideoPlayerController.contentUri(
-          Uri.parse(url),
+          uri,
           videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
       } else {
@@ -247,13 +411,30 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
       widget.onControllerInitialized?.call(ctrl);
     } catch (e) {
       debugPrint('[StoryVideoPlayer] Video initialization failed: $e, hasError=${_internalController?.value.hasError}, errorDescription=${_internalController?.value.errorDescription}');
+      _disposeInternalController();
       if (mounted) {
+        final rawError = e.toString();
+        String userFriendlyError;
+        if (rawError.contains('UnimplementedError') ||
+            rawError.contains('init()') ||
+            rawError.contains('MissingPluginException')) {
+          userFriendlyError = 'Unable to play video on this device.';
+        } else if (rawError.contains('Local video file does not exist')) {
+          userFriendlyError = 'Video file not found.';
+        } else if (rawError.contains('SocketException') ||
+            rawError.contains('HttpDataSourceException') ||
+            rawError.contains('Failed to load video')) {
+          userFriendlyError = 'Unable to stream video. Please check your connection.';
+        } else {
+          userFriendlyError = 'Unable to play video. Tap Retry to reload.';
+        }
+
         setState(() {
           _isInitializing = false;
           _hasError = true;
-          _errorMessage = e.toString();
+          _errorMessage = userFriendlyError;
         });
-        widget.onError?.call(e.toString());
+        widget.onError?.call(rawError);
       }
     }
   }

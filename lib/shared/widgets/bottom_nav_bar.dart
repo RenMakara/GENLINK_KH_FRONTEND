@@ -294,49 +294,45 @@ class _NavBarContentState extends State<_NavBarContent>
         final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.0);
 
         // Outer glass capsule styling — ONE continuous glass/frosted surface
-        final pillBg = isDark
-            ? const Color(0xCC121418) // rich translucent dark glass
-            : const Color(0xCCFFFFFF); // crisp translucent frosted light glass
-        final pillBorder = isDark
-            ? const Color(0x2EFFFFFF) // subtle luminous glass highlight
-            : const Color(0x1F000000); // 12% hairline border
-        final pillShadow = [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.07),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: -4,
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.80),
-            blurRadius: 1,
-            offset: const Offset(0, -0.5),
-          ),
-        ];
+        final pillShadow = isDark
+            ? const [
+                BoxShadow(
+                  color: Color(0x66000000), // 40% black soft broad floating shadow
+                  blurRadius: 32,
+                  offset: Offset(0, 12),
+                  spreadRadius: -4,
+                ),
+                BoxShadow(
+                  color: Color(0x33000000), // 20% black ambient shadow
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: Color(0x14FFFFFF), // subtle top glass specular catch
+                  blurRadius: 1,
+                  offset: Offset(0, -0.5),
+                ),
+              ]
+            : const [
+                BoxShadow(
+                  color: Color(0x14000000), // soft broad floating shadow
+                  blurRadius: 28,
+                  offset: Offset(0, 10),
+                  spreadRadius: -3,
+                ),
+                BoxShadow(
+                  color: Color(0x0A000000), // ambient shadow
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+                BoxShadow(
+                  color: Color(0x33FFFFFF), // top specular catch
+                  blurRadius: 1,
+                  offset: Offset(0, -0.5),
+                ),
+              ];
 
-        // Active glass indicator — INNER GLASS HIGHLIGHT inside outer glass capsule
-        final capsuleBg = isDark
-            ? const Color(0x24FFFFFF) // 14% luminous frosted white highlight on dark glass
-            : const Color(0x52FFFFFF); // 32% clean translucent frosted white highlight
-        final capsuleBorder = isDark
-            ? const Color(0x38FFFFFF) // subtle luminous glass rim
-            : const Color(0x66FFFFFF); // delicate white light-catch rim border
-        final capsuleShadow = [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.16)
-                : Colors.black.withValues(alpha: 0.02),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.50),
-            blurRadius: 1,
-            offset: const Offset(0, -0.5),
-          ),
-        ];
-
-        // Active & Inactive colors from Design System
+        // Strict monochrome neutral colors from Design System
         final activeIconColor = semanticColors.navigationActiveIcon;
         final activeLabelColor = semanticColors.navigationActiveLabel;
         final inactiveIconColor = semanticColors.navigationInactiveIcon;
@@ -372,18 +368,40 @@ class _NavBarContentState extends State<_NavBarContent>
                             borderRadius: BorderRadius.circular(barHeight / 2),
                             child: BackdropFilter(
                               filter: ImageFilter.blur(
-                                sigmaX: 20.0,
-                                sigmaY: 20.0,
+                                sigmaX: 24.0,
+                                sigmaY: 24.0,
                               ),
                               child: Container(
                                 height: barHeight,
                                 decoration: BoxDecoration(
-                                  color: pillBg,
                                   borderRadius:
                                       BorderRadius.circular(barHeight / 2),
+                                  gradient: isDark
+                                      ? const LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          stops: [0.0, 0.35, 1.0],
+                                          colors: [
+                                            Color(0x20FFFFFF), // subtle luminous light catch along top edge
+                                            Color(0x3008090B), // neutral translucent charcoal glass body (~19%)
+                                            Color(0x4408090B), // deeper translucent neutral charcoal base (~27%)
+                                          ],
+                                        )
+                                      : const LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          stops: [0.0, 0.35, 1.0],
+                                          colors: [
+                                            Color(0x73FFFFFF), // 45% soft specular light catch along top curve
+                                            Color(0x38FFFFFF), // 22% translucent neutral white glass body
+                                            Color(0x28FFFFFF), // 16% soft base
+                                          ],
+                                        ),
                                   border: Border.all(
-                                    color: pillBorder,
-                                    width: 1.0,
+                                    color: isDark
+                                        ? const Color(0x1AFFFFFF) // 10% white rim: extremely subtle, no strong gray outline!
+                                        : const Color(0x3DFFFFFF), // 24% white rim
+                                    width: 0.5,
                                   ),
                                 ),
                                 padding: EdgeInsets.symmetric(
@@ -423,40 +441,62 @@ class _NavBarContentState extends State<_NavBarContent>
                                       child: Stack(
                                         clipBehavior: Clip.hardEdge,
                                         children: [
-                                          // ── Layer 1: ONE Shared Sliding Active Glass Capsule ──
-                                          // Fully contained inside the capsule with breathing room
+                                          // ── Layer 1: ONE Shared Sliding Active Glass Lens ──
+                                          // Seamless illuminated glass highlight without cutting separate blur box
                                           Positioned(
                                             left: indicatorLeft,
                                             top: indicatorVInset,
                                             width: indicatorWidth,
                                             height: indicatorHeight,
-
                                             child: DecoratedBox(
                                               key: const ValueKey(
                                                   'nav_active_indicator'),
                                               decoration: BoxDecoration(
                                                 borderRadius: indicatorRadius,
-                                                boxShadow: capsuleShadow,
-                                              ),
-                                              child: ClipRRect(
-                                                borderRadius: indicatorRadius,
-                                                child: BackdropFilter(
-                                                  filter: ImageFilter.blur(
-                                                    sigmaX: isDark ? 8.0 : 6.0,
-                                                    sigmaY: isDark ? 8.0 : 6.0,
-                                                  ),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: capsuleBg,
-                                                      borderRadius:
-                                                          indicatorRadius,
-                                                      border: Border.all(
-                                                        color: capsuleBorder,
-                                                        width: 1.0,
+                                                gradient: isDark
+                                                    ? const LinearGradient(
+                                                        begin: Alignment.topCenter,
+                                                        end: Alignment.bottomCenter,
+                                                        stops: [0.0, 0.35, 0.75, 1.0],
+                                                        colors: [
+                                                          Color(0x1FFFFFFF), // subtle luminous light sheen along top edge (12%)
+                                                          Color(0x06FFFFFF), // highly transparent center body (~2%) — background diffuses through
+                                                          Color(0x03FFFFFF), // pure optical clarity
+                                                          Color(0x0EFFFFFF), // delicate bottom meniscus light catch (5%)
+                                                        ],
+                                                      )
+                                                    : const LinearGradient(
+                                                        begin: Alignment.topCenter,
+                                                        end: Alignment.bottomCenter,
+                                                        stops: [0.0, 0.35, 0.75, 1.0],
+                                                        colors: [
+                                                          Color(0x73FFFFFF), // clean white top highlight catch (45%)
+                                                          Color(0x28FFFFFF), // translucent optical body (16%)
+                                                          Color(0x18FFFFFF), // clear glass center (9%)
+                                                          Color(0x38FFFFFF), // bottom meniscus reflection (22%)
+                                                        ],
                                                       ),
-                                                    ),
-                                                  ),
+                                                border: Border.all(
+                                                  color: isDark
+                                                      ? const Color(0x12FFFFFF) // whisper-thin luminous rim (~7%) — no solid gray button outline
+                                                      : const Color(0x40FFFFFF), // subtle white refraction edge
+                                                  width: 0.5,
                                                 ),
+                                                boxShadow: isDark
+                                                    ? const [
+                                                        BoxShadow(
+                                                          color: Color(0x0DFFFFFF), // soft inner optical glow/reflection
+                                                          blurRadius: 8,
+                                                          spreadRadius: -1,
+                                                        ),
+                                                      ]
+                                                    : const [
+                                                        BoxShadow(
+                                                          color: Color(0x0A000000), // subtle elevation diffusion
+                                                          blurRadius: 5,
+                                                          offset: Offset(0, 1.5),
+                                                        ),
+                                                      ],
                                               ),
                                             ),
                                           ),
@@ -642,9 +682,9 @@ class _TabItem extends StatelessWidget {
                       style: TextStyle(
                         color: labelColor,
                         fontWeight:
-                            showActive ? FontWeight.w600 : FontWeight.w500,
+                            showActive ? FontWeight.w700 : FontWeight.w500,
                         fontSize: fontSize,
-                        letterSpacing: showActive ? -0.15 : -0.1,
+                        letterSpacing: showActive ? -0.1 : -0.05,
                         height: 1.15,
                       ),
                     ),
@@ -717,11 +757,54 @@ class _PlusButtonState extends State<_PlusButton>
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.isDark ? const Color(0xFFF0F2F5) : const Color(0xFF141517);
-    final iconColor = widget.isDark ? const Color(0xFF141517) : Colors.white;
+    final bgGradient = widget.isDark
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFFFFF),
+              Color(0xFFE8EBF0),
+            ],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF22252A),
+              Color(0xFF111215),
+            ],
+          );
+    final iconColor = widget.isDark ? const Color(0xFF111318) : Colors.white;
     final border = widget.isDark
-        ? const Color(0x33FFFFFF)
-        : const Color(0x1F000000);
+        ? const Color(0x40FFFFFF)
+        : const Color(0x26FFFFFF);
+    final shadow = widget.isDark
+        ? const [
+            BoxShadow(
+              color: Color(0x52000000),
+              blurRadius: 18,
+              offset: Offset(0, 7),
+              spreadRadius: -2,
+            ),
+            BoxShadow(
+              color: Color(0x26000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ]
+        : const [
+            BoxShadow(
+              color: Color(0x24000000),
+              blurRadius: 18,
+              offset: Offset(0, 7),
+              spreadRadius: -2,
+            ),
+            BoxShadow(
+              color: Color(0x12000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ];
 
     return Semantics(
       button: true,
@@ -734,17 +817,9 @@ class _PlusButtonState extends State<_PlusButton>
             height: widget.size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: bg,
-              border: Border.all(color: border, width: 1.0),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.isDark
-                      ? const Color(0x52000000)
-                      : const Color(0x29000000),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              gradient: bgGradient,
+              border: Border.all(color: border, width: 0.5),
+              boxShadow: shadow,
             ),
             child: Material(
               color: Colors.transparent,

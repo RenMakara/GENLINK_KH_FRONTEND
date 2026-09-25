@@ -34,7 +34,11 @@ class MockDio extends Mock implements Dio {}
 
 void main() {
   setUp(() {
+    Get.testMode = true;
     Get.reset();
+    Get.addTranslations(AppTranslations().keys);
+    Get.locale = const Locale('en', 'US');
+    Get.fallbackLocale = const Locale('en', 'US');
   });
 
   group('Chat Models & Serialization Tests', () {
@@ -1021,6 +1025,18 @@ void main() {
     });
 
     testWidgets('CreateGroupScreen renders group info, member search, and selection', (tester) async {
+      controller.conversations.assignAll([
+        ChatConversationModel(
+          id: 'c-sokny',
+          name: 'Sokny Enat',
+          avatar: 'assets/images/user_profile.png',
+          profileUserId: 'u-sokny',
+          lastMessage: 'Hello',
+          lastMessageTime: '1m',
+          isGroup: false,
+        ),
+      ]);
+
       await tester.pumpWidget(
         const GetMaterialApp(
           home: CreateGroupScreen(),
@@ -1035,7 +1051,7 @@ void main() {
       await tester.tap(find.text('Sokny Enat'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Selected · 1'), findsOneWidget);
+      expect(find.text('1 selected'), findsOneWidget);
     });
 
     testWidgets('ChatListScreen renders properly in Dark Mode', (tester) async {

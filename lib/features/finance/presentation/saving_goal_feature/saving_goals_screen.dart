@@ -93,7 +93,7 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
                       color: primary,
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(100),
                         onTap: () => Navigator.push<void>(
                           context,
                           MaterialPageRoute(

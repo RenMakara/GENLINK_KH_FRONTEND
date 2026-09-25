@@ -15,7 +15,7 @@ class SplashController extends GetxController {
   final AuthController _auth;
   final LocalStorage _storage;
 
-  static const _minimumDisplay = Duration(milliseconds: 600);
+  static const _minimumDisplay = Duration(seconds: 2);
 
   @override
   void onReady() {

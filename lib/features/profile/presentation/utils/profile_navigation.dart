@@ -33,7 +33,7 @@ abstract final class ProfileNavigation {
       }
     }
 
-    return normalizedUsername;
+    return normalizedUsername ?? normalizedUserId;
   }
 
   static Future<void> open({String? username, String? userId}) async {

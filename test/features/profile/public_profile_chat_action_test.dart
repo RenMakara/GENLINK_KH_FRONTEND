@@ -104,6 +104,11 @@ class _FakeChatController extends GetxController implements ChatController {
   }
 
   @override
+  final Rxn<ChatConversationModel> activeConversation = Rxn<ChatConversationModel>();
+  @override
+  final RxnString activeRoomId = RxnString();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

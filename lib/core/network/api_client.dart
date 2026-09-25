@@ -69,7 +69,7 @@ class ApiClient {
     final list = data as List? ?? const [];
     return list
         .map((e) => item((e as Map).cast<String, dynamic>()))
-        .toList(growable: false);
+        .toList();
   }
 
   T _unwrap<T>(Response<dynamic> response, T Function(dynamic) parse) =>
@@ -77,6 +77,11 @@ class ApiClient {
 
   Map<String, dynamic> _envelope(Response<dynamic> response) {
     final body = response.data;
+    if (response.statusCode == 204 ||
+        body == null ||
+        (body is String && body.trim().isEmpty)) {
+      return const {'success': true, 'data': null};
+    }
     if (body is! Map) {
       throw AppError(
         message: 'Unexpected response format',

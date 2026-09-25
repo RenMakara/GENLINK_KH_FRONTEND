@@ -400,6 +400,15 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> toggleLikeStory(String storyId) async {
+    final client = _client;
+    if (client != null) {
+      try {
+        await client.post(ApiEndpoints.storyLike(storyId), parse: (_) {});
+      } catch (e) {
+        debugPrint('[StoryRepository] toggleLikeStory error: $e');
+        rethrow;
+      }
+    }
   }
 
   @override

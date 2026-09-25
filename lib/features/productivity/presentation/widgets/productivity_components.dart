@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../notification/domain/models/notification_model.dart';
+import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../levelup/widget/grow_section_widget.dart';
 import '../../domain/entities/productivity_entities.dart'
     hide ProductivityPage;
@@ -18,10 +20,14 @@ class ProductivityHeader extends StatelessWidget {
     super.key,
     required this.streakCount,
     required this.onNotifications,
+    this.onBack,
+    this.showBackButton = true,
   });
 
   final int? streakCount;
   final VoidCallback onNotifications;
+  final VoidCallback? onBack;
+  final bool showBackButton;
 
   @override
   Widget build(BuildContext context) {
@@ -39,23 +45,81 @@ class ProductivityHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (showBackButton) ...[
+          Semantics(
+            button: true,
+            label: 'Back',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onBack ??
+                    () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Get.back();
+                      }
+                    },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  margin: const EdgeInsets.only(top: 2),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfacePrimary : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.darkBorderSubtle
+                          : AppColors.lightBorderSubtle,
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.25 : 0.05,
+                        ),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: textPrimary,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+        ],
+
         // Title & Subtitle
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'productivity.title'.tr,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 27,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.6,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'productivity.title'.tr,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 27,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                  ),
                 ),
               ),
               const SizedBox(height: 3),
               Text(
                 'productivity.subtitle'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13.5,
@@ -65,6 +129,7 @@ class ProductivityHeader extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: 8),
 
         // Streak Pill Badge
         Container(
@@ -138,26 +203,55 @@ class ProductivityHeader extends StatelessWidget {
                 size: 24,
               ),
             ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFEF4444),
-                  border: Border.all(
-                    color: isDark ? AppColors.darkBgPrimary : Colors.white,
-                    width: 1.5,
-                  ),
-                ),
-              ),
-            ),
+            _buildNotificationBadge(isDark),
           ],
         ),
       ],
     );
+  }
+
+  Widget _buildNotificationBadge(bool isDark) {
+    if (!Get.isRegistered<NotificationController>()) {
+      return const SizedBox.shrink();
+    }
+
+    final notifController = Get.find<NotificationController>();
+    return Obx(() {
+      final serverUnread = notifController.totalUnreadCount.value;
+      final localUnread = notifController.notifications
+          .where((n) => !n.isRead && n.type != NotificationType.chat)
+          .length;
+      final unreadChatCount = notifController.notifications
+          .where((n) => !n.isRead && n.type == NotificationType.chat)
+          .length;
+      final adjustedServerUnread = serverUnread > unreadChatCount
+          ? serverUnread - unreadChatCount
+          : localUnread;
+      final unread = adjustedServerUnread > localUnread
+          ? adjustedServerUnread
+          : localUnread;
+
+      if (unread <= 0) {
+        return const SizedBox.shrink();
+      }
+
+      return Positioned(
+        top: 10,
+        right: 10,
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFEF4444),
+            border: Border.all(
+              color: isDark ? AppColors.darkBgPrimary : Colors.white,
+              width: 1.5,
+            ),
+          ),
+        ),
+      );
+    });
   }
 }
 

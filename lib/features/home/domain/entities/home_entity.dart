@@ -1,3 +1,5 @@
+import 'package:genlink_frontend/features/challenge/domain/models/challenge_models.dart';
+
 class HomeEntity {
   const HomeEntity({
     required this.user,
@@ -153,6 +155,8 @@ class ChallengePreview {
     this.description,
     this.xpReward,
     this.deadline,
+    this.challengeType,
+    this.type,
   });
 
   final String challengeId;
@@ -160,6 +164,63 @@ class ChallengePreview {
   final String? description;
   final int? xpReward;
   final String? deadline;
+  final ChallengeType? challengeType;
+  final String? type;
+
+  ChallengeType get resolvedType {
+    if (challengeType != null) {
+      if (challengeType != ChallengeType.unknown) return challengeType!;
+      if (type != null && type!.isNotEmpty) return ChallengeType.unknown;
+    }
+    if (type != null && type!.isNotEmpty) {
+      return challengeTypeFromWire(type);
+    }
+    final text = '${title.toLowerCase()} ${(description ?? '').toLowerCase()}';
+    if (text.contains('habit') || text.contains('ទម្លាប់')) {
+      return ChallengeType.habit;
+    }
+    if (text.contains('task') || text.contains('កិច្ចការ')) {
+      return ChallengeType.task;
+    }
+    if (text.contains('quiz') || text.contains('សំណួរ') || text.contains('កម្រងសំណួរ')) {
+      return ChallengeType.quiz;
+    }
+    if (text.contains('expense') ||
+        text.contains('budget') ||
+        text.contains('finance') ||
+        text.contains('ចំណាយ') ||
+        text.contains('ថវិកា') ||
+        text.contains('សន្សំ')) {
+      return ChallengeType.finance;
+    }
+    if (text.contains('focus') ||
+        text.contains('session') ||
+        text.contains('deep work') ||
+        text.contains('ការផ្តោតអារម្មណ៍')) {
+      return ChallengeType.focus;
+    }
+    return ChallengeType.unknown;
+  }
+
+  ChallengePreview copyWith({
+    String? challengeId,
+    String? title,
+    String? description,
+    int? xpReward,
+    String? deadline,
+    ChallengeType? challengeType,
+    String? type,
+  }) {
+    return ChallengePreview(
+      challengeId: challengeId ?? this.challengeId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      xpReward: xpReward ?? this.xpReward,
+      deadline: deadline ?? this.deadline,
+      challengeType: challengeType ?? this.challengeType,
+      type: type ?? this.type,
+    );
+  }
 }
 
 class FinanceSnapshot {

@@ -103,23 +103,30 @@ void main() {
     testWidgets('renders title, subtitle, streak pill, and notification badge',
         (tester) async {
       bool notificationsTapped = false;
+      bool backTapped = false;
 
       await tester.pumpWidget(
         buildTestApp(
           child: ProductivityHeader(
             streakCount: 3,
             onNotifications: () => notificationsTapped = true,
+            onBack: () => backTapped = true,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
+      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
       expect(find.text('Productivity'), findsOneWidget);
       expect(find.text('Your daily growth dashboard'), findsOneWidget);
       expect(find.text('3 days'), findsOneWidget);
       expect(find.text('Streak'), findsOneWidget);
       expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(backTapped, isTrue);
 
       await tester.tap(find.byIcon(Icons.notifications_none_rounded));
       await tester.pumpAndSettle();
@@ -138,6 +145,24 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1 day'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+    });
+
+    testWidgets('hides back button when showBackButton is false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          child: ProductivityHeader(
+            streakCount: 1,
+            onNotifications: () {},
+            showBackButton: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
     });
   });
 

@@ -926,11 +926,20 @@ class CreationMilestonesCard extends StatelessWidget {
     required this.milestones,
     required this.onAddMilestone,
     required this.onRemoveMilestone,
+    this.onQuickAdd,
   });
 
   final List<String> milestones;
   final VoidCallback onAddMilestone;
   final ValueChanged<int> onRemoveMilestone;
+  final ValueChanged<String>? onQuickAdd;
+
+  static const List<String> _quickSuggestions = [
+    'Research & Scope',
+    'Draft Outline',
+    'Core Prototype',
+    'Review & Polish',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1036,55 +1045,184 @@ class CreationMilestonesCard extends StatelessWidget {
             ],
           ),
 
-          // List of added milestones (if any)
+          // When milestones are added: Render numbered step cards
           if (milestones.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            const SizedBox(height: 14),
+            Column(
               children: List.generate(
                 milestones.length,
                 (index) => Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  margin: EdgeInsets.only(
+                    bottom: index < milestones.length - 1 ? 8 : 0,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF6B21A8) : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isDark
-                          ? const Color(0xFFC084FC)
+                          ? const Color(0xFFA855F7).withValues(alpha: 0.28)
                           : const Color(0xFFE9D5FF),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.2 : 0.03,
+                        ),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 14,
-                        color: Color(0xFF9333EA),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        milestones[index],
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      // Step Number Badge
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFA855F7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${index + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      GestureDetector(
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          milestones[index],
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
                         onTap: () => onRemoveMilestone(index),
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 14,
-                          color: colors.textMuted,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: colors.textMuted,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
+            ),
+          ] else ...[
+            // Empty guidance hint
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFFA855F7).withValues(alpha: 0.2)
+                      : const Color(0xFFE9D5FF).withValues(alpha: 0.8),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline_rounded,
+                    size: 18,
+                    color: const Color(0xFF9333EA).withValues(alpha: 0.8),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'goals.create.noMilestonesHint'.tr,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Quick Suggestion Chips (Available if onQuickAdd is provided)
+          if (onQuickAdd != null) ...[
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _quickSuggestions.map((suggestion) {
+                  final alreadyAdded = milestones.contains(suggestion);
+                  if (alreadyAdded) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () => onQuickAdd!(suggestion),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF7E22CE).withValues(alpha: 0.2)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFFA855F7).withValues(alpha: 0.4)
+                                : const Color(0xFFD8B4FE),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.add_rounded,
+                              size: 13,
+                              color: Color(0xFF9333EA),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              suggestion,
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ],

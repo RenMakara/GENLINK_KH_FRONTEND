@@ -1261,7 +1261,11 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
         mediaPath.startsWith('https://')) {
       return NetworkImage(mediaPath);
     } else {
-      return FileImage(_resolveMediaFile(mediaPath));
+      final file = _resolveMediaFile(mediaPath);
+      if (file.existsSync() && file.lengthSync() > 0) {
+        return FileImage(file);
+      }
+      return const AssetImage('assets/images/placeholder.png');
     }
   }
 
@@ -1274,34 +1278,50 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
     }
 
     _cleanImageStream();
-    final provider = _getImageProvider(mediaPath);
-    _imageStream = provider.resolve(const ImageConfiguration());
-    _imageStreamListener = ImageStreamListener(
-      (ImageInfo info, bool synchronousCall) {
-        final size = Size(
-          info.image.width.toDouble(),
-          info.image.height.toDouble(),
-        );
-        if (synchronousCall) {
-          _naturalImageSize = size;
-        } else if (mounted && _naturalImageSize != size) {
-          setState(() {
+    try {
+      final provider = _getImageProvider(mediaPath);
+      final stream = provider.resolve(const ImageConfiguration());
+      _imageStream = stream;
+      _imageStreamListener = ImageStreamListener(
+        (ImageInfo info, bool synchronousCall) {
+          final size = Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          );
+          if (synchronousCall) {
             _naturalImageSize = size;
+          } else if (mounted && _naturalImageSize != size) {
+            setState(() {
+              _naturalImageSize = size;
+            });
+          }
+          // Clean up stream once size is resolved
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _cleanImageStream();
+            }
           });
-        }
-      },
-      onError: (exception, stackTrace) {
-      },
-    );
-    _imageStream?.addListener(_imageStreamListener!);
+        },
+        onError: (exception, stackTrace) {
+          _cleanImageStream();
+        },
+      );
+      stream.addListener(_imageStreamListener!);
+    } catch (_) {
+      _cleanImageStream();
+    }
   }
 
   void _cleanImageStream() {
-    if (_imageStream != null && _imageStreamListener != null) {
-      _imageStream!.removeListener(_imageStreamListener!);
-    }
+    final stream = _imageStream;
+    final listener = _imageStreamListener;
     _imageStream = null;
     _imageStreamListener = null;
+    if (stream != null && listener != null) {
+      try {
+        stream.removeListener(listener);
+      } catch (_) {}
+    }
   }
 
   @override

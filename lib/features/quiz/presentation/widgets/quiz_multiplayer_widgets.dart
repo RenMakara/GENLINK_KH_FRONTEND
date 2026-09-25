@@ -11,29 +11,39 @@ import '../../domain/models/quiz_match_models.dart';
 import '../../domain/models/quiz_models.dart';
 
 /// Top header for 1v1 multiplayer screens.
-class MultiplayerHeader extends StatelessWidget {
+class MultiplayerHeader extends StatelessWidget implements PreferredSizeWidget {
   const MultiplayerHeader({
     super.key,
     required this.onBack,
     this.title,
     this.subtitle,
     this.showTrophy = true,
+    this.onTrophyTap,
+    this.padding,
+    this.actions,
   });
 
   final VoidCallback onBack;
   final String? title;
   final String? subtitle;
   final bool showTrophy;
+  final VoidCallback? onTrophyTap;
+  final EdgeInsetsGeometry? padding;
+  final List<Widget>? actions;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
 
   @override
   Widget build(BuildContext context) {
     final semantic = context.semanticColors;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: 8,
-      ),
+      padding: padding ??
+          const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: 10,
+          ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -71,22 +81,35 @@ class MultiplayerHeader extends StatelessWidget {
               ],
             ),
           ),
+          ...?actions,
           if (showTrophy) ...[
             const SizedBox(width: AppSpacing.sm),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.growthAccent.withValues(alpha: 0.14),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.growthAccent.withValues(alpha: 0.25),
+            Tooltip(
+              message: 'quiz.leaderboard'.tr,
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: onTrophyTap,
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.growthAccent.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.growthAccent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.emoji_events_rounded,
+                      color: AppColors.growthAccent,
+                      size: 20,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Icon(
-                Icons.emoji_events_rounded,
-                color: AppColors.growthAccent,
-                size: 20,
               ),
             ),
           ],

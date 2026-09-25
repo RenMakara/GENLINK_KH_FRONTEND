@@ -23,6 +23,7 @@ import '../../features/media/presentation/media_picker.dart';
 import '../../features/notification/data/firebase_mobile_notification_service.dart';
 import '../../features/notification/data/firebase_mobile_push_registration_service.dart';
 import '../../features/notification/domain/mobile_push_registration_service.dart';
+import '../../features/profile/presentation/bindings/profile_binding.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
 import '../../features/productivity/presentation/controllers/productivity_controller.dart';
 import '../../features/community/presentation/controllers/community_controller.dart';
@@ -58,6 +59,8 @@ class InitialBinding extends Bindings {
       ..put<Dio>(dio, permanent: true)
       ..put<ApiClient>(apiClient, permanent: true);
 
+    ProfileBinding.registerOwnerController();
+
     NotificationBinding().dependencies();
 
     final mobilePushRegistrationService = FirebaseMobilePushRegistrationService(
@@ -83,38 +86,13 @@ class InitialBinding extends Bindings {
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
       mainController.reset();
-      if (Get.isRegistered<ProfileController>()) {
-        final profileCtrl = Get.find<ProfileController>();
-        profileCtrl.profile.value = null;
-        profileCtrl.publicProfile.value = null;
-        profileCtrl.interests.clear();
-        profileCtrl.portfolio.clear();
-        profileCtrl.socialLinks.clear();
-        profileCtrl.badges.clear();
-        profileCtrl.savedItems.clear();
-        Get.delete<ProfileController>(force: true);
-      }
-      if (Get.isRegistered<CommunityController>()) {
-        final commCtrl = Get.find<CommunityController>();
-        commCtrl.posts.clear();
-        commCtrl.activeComments.clear();
-        Get.delete<CommunityController>(force: true);
-      }
-      if (Get.isRegistered<StoryController>()) {
-        final storyCtrl = Get.find<StoryController>();
-        storyCtrl.storyGroups.clear();
-        Get.delete<StoryController>(force: true);
-      }
-      if (Get.isRegistered<ChatController>()) {
-        Get.delete<ChatController>(force: true);
-      }
-      if (Get.isRegistered<NotificationController>()) {
-        Get.delete<NotificationController>(force: true);
-      }
-      if (Get.isRegistered<ProductivityController>()) {
-        Get.find<ProductivityController>().clear();
-        Get.delete<ProductivityController>(force: true);
-      }
+      Get.delete<ProfileController>(force: true);
+      ProfileBinding.registerOwnerController();
+      Get.delete<CommunityController>(force: true);
+      Get.delete<StoryController>(force: true);
+      Get.delete<ChatController>(force: true);
+      Get.delete<NotificationController>(force: true);
+      Get.delete<ProductivityController>(force: true);
     }
 
     AuthBinding(

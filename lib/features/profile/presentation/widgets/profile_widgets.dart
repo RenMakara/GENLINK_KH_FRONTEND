@@ -26,7 +26,7 @@ class RingedAvatar extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onTap;
 
-  static const _ringWidth = 3.0;
+  static const _ringWidth = 2.0;
 
   @override
   Widget build(BuildContext context) {
@@ -457,7 +457,10 @@ class AddChipButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: scheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(color: scheme.outlineVariant),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -492,8 +495,11 @@ class SavedItemCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: scheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: scheme.outlineVariant),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.5),
+            width: 0.8,
+          ),
         ),
         child: Center(
           child: Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
@@ -94,13 +95,13 @@ void main() {
       const AuthChoiceScreen(),
       brightness: Brightness.dark,
     );
-    final mark = tester.widget<Image>(
+    final markSvg = tester.widget<SvgPicture>(
       find.descendant(
         of: find.byType(AppLogoMark),
-        matching: find.byType(Image),
+        matching: find.byType(SvgPicture),
       ),
     );
-    expect((mark.image as AssetImage).assetName, AppLogoAssets.markDark);
+    expect((markSvg.bytesLoader as SvgAssetLoader).assetName, AppLogoAssets.glDark);
     await expectLater(
       find.byType(AuthChoiceScreen),
       matchesGoldenFile('goldens/auth_choice_dark.png'),

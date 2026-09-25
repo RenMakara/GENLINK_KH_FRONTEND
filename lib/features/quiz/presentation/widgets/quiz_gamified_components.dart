@@ -6,6 +6,8 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../notification/domain/models/notification_model.dart';
+import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../domain/models/quiz_models.dart';
 
 // ============================================================================
@@ -1241,18 +1243,7 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
                         size: 22,
                         color: semantic.primaryText,
                       ),
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
+                      _buildNotificationBadge(semantic.surface, isDark),
                     ],
                   ),
                 ),
@@ -1262,6 +1253,50 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
         ),
       ),
     );
+  }
+
+  Widget _buildNotificationBadge(Color surfaceColor, bool isDark) {
+    if (!Get.isRegistered<NotificationController>()) {
+      return const SizedBox.shrink();
+    }
+
+    final notifController = Get.find<NotificationController>();
+    return Obx(() {
+      final serverUnread = notifController.totalUnreadCount.value;
+      final localUnread = notifController.notifications
+          .where((n) => !n.isRead && n.type != NotificationType.chat)
+          .length;
+      final unreadChatCount = notifController.notifications
+          .where((n) => !n.isRead && n.type == NotificationType.chat)
+          .length;
+      final adjustedServerUnread = serverUnread > unreadChatCount
+          ? serverUnread - unreadChatCount
+          : localUnread;
+      final unread = adjustedServerUnread > localUnread
+          ? adjustedServerUnread
+          : localUnread;
+
+      if (unread <= 0) {
+        return const SizedBox.shrink();
+      }
+
+      return Positioned(
+        top: 10,
+        right: 10,
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEF4444),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isDark ? surfaceColor : Colors.white,
+              width: 1.5,
+            ),
+          ),
+        ),
+      );
+    });
   }
 }
 

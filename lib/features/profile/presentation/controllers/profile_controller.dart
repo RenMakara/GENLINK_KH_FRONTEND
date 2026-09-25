@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart' show ImageSource;
 
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../media/domain/entities/media_entity.dart';
 import '../../../media/domain/media_upload_service.dart';
 import '../../../media/presentation/media_picker.dart';
@@ -54,6 +56,18 @@ class ProfileController extends GetxController {
     errorMessage.value = null;
     followStats.value = null;
 
+    if (isOwner) {
+      final auth = Get.isRegistered<AuthController>()
+          ? Get.find<AuthController>()
+          : null;
+      if (auth != null &&
+          !auth.isAuthenticated.value &&
+          auth.currentUser.value == null) {
+        isLoading.value = false;
+        return;
+      }
+    }
+
     if (!isOwner) {
       try {
         final loaded = await _repository.getPublicProfile(viewingUsername!);
@@ -83,8 +97,12 @@ class ProfileController extends GetxController {
       _setOwnerProfile(await _repository.getMyProfile());
     } on AppError catch (e) {
       errorMessage.value = e.message;
+      isLoading.value = false;
+      return;
     } catch (_) {
       errorMessage.value = 'common.error'.tr;
+      isLoading.value = false;
+      return;
     } finally {
       isLoading.value = false;
     }
@@ -292,7 +310,14 @@ class ProfileController extends GetxController {
         link: link,
         imageUrl: imageUrl,
       );
-      portfolio.add(item);
+      final current = List<PortfolioItemEntity>.from(portfolio);
+      current.removeWhere(
+        (existing) =>
+            existing.portfolioId.isNotEmpty &&
+            existing.portfolioId == item.portfolioId,
+      );
+      current.insert(0, item);
+      portfolio.value = current;
     });
   }
 
@@ -311,21 +336,25 @@ class ProfileController extends GetxController {
         link: link,
         imageUrl: imageUrl,
       );
-      final index = portfolio.indexWhere(
+      final current = List<PortfolioItemEntity>.from(portfolio);
+      final index = current.indexWhere(
         (item) => item.portfolioId == portfolioId,
       );
       if (index >= 0) {
-        portfolio[index] = updated;
+        current[index] = updated;
       } else {
-        portfolio.add(updated);
+        current.add(updated);
       }
+      portfolio.value = current;
     });
   }
 
   Future<bool> deletePortfolioItem(String portfolioId) {
     return _save(() async {
       await _repository.deletePortfolioItem(portfolioId);
-      portfolio.removeWhere((item) => item.portfolioId == portfolioId);
+      final current = List<PortfolioItemEntity>.from(portfolio);
+      current.removeWhere((item) => item.portfolioId == portfolioId);
+      portfolio.value = current;
     });
   }
 
@@ -338,21 +367,25 @@ class ProfileController extends GetxController {
         platform: platform,
         url: url,
       );
-      final index = socialLinks.indexWhere(
+      final current = List<SocialLinkEntity>.from(socialLinks);
+      final index = current.indexWhere(
         (existing) => existing.platform == platform,
       );
       if (index >= 0) {
-        socialLinks[index] = link;
+        current[index] = link;
       } else {
-        socialLinks.add(link);
+        current.add(link);
       }
+      socialLinks.value = current;
     });
   }
 
   Future<bool> deleteSocialLink(String platform) {
     return _save(() async {
       await _repository.deleteSocialLink(platform);
-      socialLinks.removeWhere((link) => link.platform == platform);
+      final current = List<SocialLinkEntity>.from(socialLinks);
+      current.removeWhere((link) => link.platform == platform);
+      socialLinks.value = current;
     });
   }
 
@@ -362,16 +395,19 @@ class ProfileController extends GetxController {
   }
 
   Future<bool> _save(Future<void> Function() action) async {
+    if (isSaving.value) return false;
     isSaving.value = true;
     errorMessage.value = null;
     try {
       await action();
       return true;
     } on AppError catch (e) {
+      debugPrint('[PROFILE-SAVE] AppError: ${e.message} (${e.errorCode})');
       errorMessage.value = e.message;
       AppSnackbar.error(e.message);
       return false;
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('[PROFILE-SAVE] Unexpected error: $e\n$stack');
       errorMessage.value = 'common.error'.tr;
       AppSnackbar.error('common.error'.tr);
       return false;

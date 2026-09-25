@@ -1340,6 +1340,114 @@ class CommunityRemoteDataSource {
     return _mockFollowedUserIds.contains(userId);
   }
 
+  Future<List<FollowUserModel>> getFollowers(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFollowers(userId),
+          queryParameters: {'page': page, 'size': size},
+        ),
+      );
+      final list = _extractContentList(response.data);
+      return list
+          .whereType<Map>()
+          .map((item) => FollowUserModel.fromJson(item.cast<String, dynamic>()))
+          .where((item) => item.userId.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<FollowUserModel>> getFollowing(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFollowing(userId),
+          queryParameters: {'page': page, 'size': size},
+        ),
+      );
+      final list = _extractContentList(response.data);
+      return list
+          .whereType<Map>()
+          .map((item) => FollowUserModel.fromJson(item.cast<String, dynamic>()))
+          .where((item) => item.userId.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<FollowUserModel>> getPendingFollowRequests({
+    int page = 0,
+    int size = 50,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFollowRequests,
+          queryParameters: {'page': page, 'size': size},
+        ),
+      );
+      final list = _extractContentList(response.data);
+      return list
+          .whereType<Map>()
+          .map((item) => FollowUserModel.fromJson(item.cast<String, dynamic>()))
+          .where((item) => item.userId.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> acceptFollowRequest(String followerUserId) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityFollowRequestAccept(followerUserId),
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> rejectFollowRequest(String followerUserId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(
+          ApiEndpoints.communityFollowRequestReject(followerUserId),
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static List<dynamic> _extractContentList(dynamic body) {
+    if (body is List) return body;
+    if (body is Map) {
+      final payload = body['data'] ?? body;
+      if (payload is Map) {
+        final content =
+            payload['content'] ?? payload['items'] ?? payload['list'];
+        if (content is List) return content;
+      }
+      if (payload is List) return payload;
+    }
+    return const [];
+  }
+
   void _updateMockPostsFollowStatus(String userId, bool isFollowing) {
     for (int i = 0; i < _mockPosts.length; i++) {
       if (_mockPosts[i].userId == userId) {
@@ -1644,5 +1752,141 @@ class CommunityRemoteDataSource {
       }
     } catch (_) {}
     return const <String>{};
+  }
+
+  // ── Opportunities (Career) ──────────────────────────────────────────
+
+  Future<List<OpportunityModel>> getOpportunities({
+    String? type,
+    bool includeExpired = false,
+    int page = 0,
+    int size = 20,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'includeExpired': includeExpired,
+        'page': page,
+        'size': size,
+      };
+      if (type != null && type.trim().isNotEmpty && type.toUpperCase() != 'ALL') {
+        queryParams['type'] = type.trim().toUpperCase();
+      }
+
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityOpportunities,
+          queryParameters: queryParams,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final list = rawData is Map<String, dynamic> && rawData['content'] is List
+            ? rawData['content'] as List
+            : (rawData is List ? rawData : const []);
+
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(OpportunityModel.fromJson)
+            .toList();
+      }
+      return const [];
+    } catch (e) {
+      debugPrint('[CommunityRemoteDataSource] getOpportunities error: $e');
+      rethrow;
+    }
+  }
+
+  Future<OpportunityModel> getOpportunityById(String opportunityId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityOpportunityDetail(opportunityId),
+      ),
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return OpportunityModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to load opportunity',
+      errorCode: 'OPPORTUNITY_NOT_FOUND',
+    );
+  }
+
+  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) async {
+    if (currentlySaved) {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(
+          ApiEndpoints.profileSavedItem('OPPORTUNITY', opportunityId),
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 204 ? false : true;
+    } else {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.profileSaved,
+          data: {
+            'itemType': 'OPPORTUNITY',
+            'itemId': opportunityId,
+          },
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 201 ? true : false;
+    }
+  }
+
+  Future<OpportunityModel> createOpportunity({
+    required String title,
+    String? organization,
+    String? type,
+    String? description,
+    DateTime? deadline,
+    String? location,
+    String? applyLink,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityOpportunities,
+        data: {
+          'title': title.trim(),
+          if (organization != null && organization.trim().isNotEmpty)
+            'organization': organization.trim(),
+          if (type != null && type.trim().isNotEmpty)
+            'type': type.trim().toUpperCase(),
+          if (description != null && description.trim().isNotEmpty)
+            'description': description.trim(),
+          if (deadline != null)
+            'deadline':
+                '${deadline.year.toString().padLeft(4, '0')}-${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}',
+          if (location != null && location.trim().isNotEmpty)
+            'location': location.trim(),
+          if (applyLink != null && applyLink.trim().isNotEmpty)
+            'applyLink': applyLink.trim(),
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return OpportunityModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to create opportunity',
+      errorCode: 'CREATE_OPPORTUNITY_FAILED',
+    );
   }
 }

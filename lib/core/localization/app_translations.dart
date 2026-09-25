@@ -27,6 +27,7 @@ class AppTranslations extends Translations {
     'common.next': 'Next',
     'common.back': 'Back',
     'common.done': 'Done',
+    'common.add': 'Add',
     'common.delete': 'Delete',
     'common.remove': 'Remove',
     'common.edit': 'Edit',
@@ -121,7 +122,7 @@ class AppTranslations extends Translations {
     'auth.welcomeTo': 'Welcome to',
     'auth.choiceSubtitle':
         "Cambodia's digital passport for the next generation of youth.",
-    'auth.continueWithMail': 'Continue with Mail',
+    'auth.continueWithMail': 'Login your Account',
     'auth.encryptedNotice':
         'Your data is encrypted and never shared without consent.',
     'auth.loginTitle': 'Welcome back',
@@ -195,6 +196,9 @@ class AppTranslations extends Translations {
     'auth.loginErrorTitle': 'Invalid email or password',
     'auth.loginErrorDescription':
         'Please check your credentials and try again.',
+    'auth.registerErrorTitle': 'Registration failed',
+    'auth.registerErrorDescription':
+        'Please check your information and try again.',
     'auth.googleUnavailable':
         'Google Sign-In is not configured in this build yet.',
 
@@ -257,6 +261,8 @@ class AppTranslations extends Translations {
     'community.repostContent': 'Repost Content',
     'community.repostingOriginal': 'Reposting content originally by @name',
     'community.repostQuoteHint': 'Add an optional quote caption...',
+    'community.addQuoteOptional': 'Add a quote (optional)',
+    'community.shareThoughtsWithCommunity': 'Share your thoughts with your community.',
     'community.repostNow': 'Repost Now',
     'community.userReposted': '@name reposted',
     'community.justNow': 'Just now',
@@ -478,7 +484,7 @@ class AppTranslations extends Translations {
     'profile.coverSelectionHint':
         'Pick one of the ten cover styles for your public profile.',
     'profile.coverUpdated': 'Profile cover updated',
-    'profile.addPortfolio': 'Add item',
+    'profile.addPortfolio': 'Add Portfolio',
     'profile.portfolioTitle': 'Title',
     'profile.portfolioDescription': 'Description',
     'profile.portfolioLink': 'Link',
@@ -550,6 +556,20 @@ class AppTranslations extends Translations {
     'portfolio.edit': 'Edit item',
     'portfolio.imageUrl': 'Image URL',
     'portfolio.deleteConfirm': 'Delete "@title"?',
+    'portfolio.saved': 'Portfolio item saved',
+    'portfolio.deleted': 'Portfolio item deleted',
+    'portfolio.titleRequired': 'Title is required',
+    'portfolio.createProject': 'Create Project',
+    'portfolio.updateProject': 'Update Project',
+    'portfolio.coverPhoto': 'Project Cover Photo',
+    'portfolio.uploadPhoto': 'Upload Cover Image',
+    'portfolio.tapToUpload': 'Tap to choose from gallery or paste a URL',
+    'portfolio.chooseGallery': 'Choose from gallery',
+    'portfolio.orPasteUrl': 'Or paste image URL',
+    'portfolio.linkPlaceholder': 'https://github.com/... or https://...',
+    'portfolio.titlePlaceholder': 'e.g. GenLink Mobile Platform',
+    'portfolio.descPlaceholder':
+        'Describe your project, technologies used, key features, and your contributions...',
     'interests.hint':
         'Pick the topics you care about — they personalise your feed and '
         'suggestions.',
@@ -1023,6 +1043,18 @@ class AppTranslations extends Translations {
     'notification.emptyCategoryTitle': 'No @category notifications',
     'notification.emptyCategoryDesc': "You're all caught up.",
     'friends.requests': 'Friend Requests',
+    'friends.followers': 'Followers',
+    'friends.followBack': 'Follow Back',
+    'friends.following': 'Following',
+    'friends.followsYou': 'Follows you',
+    'friends.mutualFollow': 'You follow each other',
+    'friends.remove': 'Remove',
+    'friends.nowFollowing': 'You are now following @name',
+    'friends.unfollowed': 'Unfollowed @name',
+    'friends.removedFollower': 'Removed @name from list',
+    'friends.noFollowers': 'No followers yet',
+    'friends.noFollowersDesc':
+        'When people follow you, they will appear here.',
     'friends.accept': 'Accept',
     'friends.decline': 'Decline',
     'friends.accepted': 'Friend request accepted',
@@ -2292,6 +2324,14 @@ class AppTranslations extends Translations {
     'goals.detail.deleteMilestoneTitle': 'Delete milestone?',
     'goals.detail.deleteMilestoneMessage': 'Remove "@title" from this goal?',
     'goals.detail.noMilestones': 'No milestones added yet',
+    'goals.detail.addFirstMilestone': 'Add First Milestone',
+    'goals.detail.milestonesEmptyDesc':
+        'Break your goal down into small, achievable steps to build momentum.',
+    'goals.detail.milestoneDialogSubtitle':
+        'Set a clear checkpoint or deliverable to reach your goal.',
+    'goals.create.quickSuggestions': 'Quick suggestions',
+    'goals.create.noMilestonesHint':
+        'No milestones added yet. Tap "+ Add Milestone" to build your roadmap.',
 
     // ── Productivity - Focus ─────────────────────────────────────────────────
     'focus.title': 'Focus',
@@ -2452,6 +2492,63 @@ class AppTranslations extends Translations {
     'chat.today': 'Today',
     'chat.yesterday': 'Yesterday',
 
+    // ── Create Group & Group Chat ─────────────────────────────────────────
+    'chat.group.newGroupChat': 'New Group Chat',
+    'chat.group.create': 'Create',
+    'chat.group.createGroup': 'Create Group',
+    'chat.group.createGroupButton': 'Create Group →',
+    'chat.group.groupName': 'Group Name',
+    'chat.group.groupNameHint': 'e.g. Flutter Study Group',
+    'chat.group.groupNameRequired': 'Group Name Required',
+    'chat.group.groupNameRequiredMsg': 'Please enter a name for your group chat.',
+    'chat.group.selectMembersWarningTitle': 'Select Members',
+    'chat.group.selectMembersWarningMsg':
+        'Please select at least 1 member to add to the group.',
+    'chat.group.imageSelectionFailed': 'Image Selection Failed',
+    'chat.group.imageSelectionFailedMsg':
+        'Could not select group photo. Please try again.',
+    'chat.group.createGroupErrorMsg':
+        'Failed to create group. Please check your connection and try again.',
+    'chat.group.searchHint': 'Search students by name or username...',
+    'chat.group.clearSearch': 'Clear search',
+    'chat.group.members': 'Members',
+    'chat.group.selectedCount': '@count selected',
+    'chat.group.zeroSelected': '0 selected',
+    'chat.group.selectMembers': 'Select Members',
+    'chat.group.oneMemberSelected': '1 member selected',
+    'chat.group.membersSelectedCount': '@count members selected',
+    'chat.group.student': 'Student',
+    'chat.group.noStudentsFound': 'No students found',
+    'chat.group.tryDifferentSearch': 'Try a different name or username.',
+    'chat.group.searchDifferentHint':
+        'Search for a different\nname or username.',
+    'chat.group.noMembersAvailable': 'No members available',
+    'chat.group.noMembersAvailableHint': 'There are no eligible members to add.',
+    'chat.group.editGroup': 'Edit Group',
+    'chat.group.editGroupName': 'Edit Group Name',
+    'chat.group.enterGroupName': 'Enter new group name',
+    'chat.group.groupRenamed': 'Group Renamed',
+    'chat.group.groupRenamedMsg': 'Group name changed to "@name".',
+    'chat.group.leaveGroupTitle': 'Leave Group',
+    'chat.group.leaveGroupPrompt':
+        'Are you sure you want to leave this group chat? You will no longer receive messages.',
+    'chat.group.leave': 'Leave',
+    'chat.group.leftGroup': 'Left Group',
+    'chat.group.leftGroupMsg': 'You have left "@name".',
+    'chat.group.roleOwner': 'Owner',
+    'chat.group.roleAdmin': 'Admin',
+    'chat.group.roleMember': 'Member',
+    'chat.group.removeMember': 'Remove Member',
+    'chat.group.makeAdmin': 'Make Admin',
+    'chat.group.dismissAdmin': 'Dismiss Admin',
+    'chat.group.totalMembers': '@count total',
+    'chat.group.membersInThisGroup': '@count members in this group',
+    'chat.group.photoUpdated': 'Group Photo Updated',
+    'chat.group.photoUpdatedMsg': 'Group photo has been changed successfully.',
+    'chat.group.photoUpdateFailed': 'Photo Update Failed',
+    'chat.group.photoUpdateFailedMsg':
+        'Could not change group photo. Please try again.',
+
     // levelup / growth
     'levelup.title': 'Level Up',
     'levelup.subtitleWelcome': 'Welcome, @name · Your personal growth journey',
@@ -2565,6 +2662,7 @@ class AppTranslations extends Translations {
     'common.next': 'បន្ទាប់',
     'common.back': 'ត្រឡប់ក្រោយ',
     'common.done': 'រួចរាល់',
+    'common.add': 'បន្ថែម',
     'common.delete': 'លុប',
     'common.remove': 'ដកចេញ',
     'common.edit': 'កែសម្រួល',
@@ -2656,7 +2754,7 @@ class AppTranslations extends Translations {
     'auth.welcomeTo': 'សូមស្វាគមន៍មកកាន់',
     'auth.choiceSubtitle':
         'លិខិតឆ្លងដែនឌីជីថលរបស់កម្ពុជា សម្រាប់យុវជនជំនាន់ក្រោយ',
-    'auth.continueWithMail': 'បន្តជាមួយអ៊ីមែល',
+    'auth.continueWithMail': 'បន្តជាមួយគណនី',
     'auth.encryptedNotice':
         'ទិន្នន័យរបស់អ្នកត្រូវបានអ៊ិនគ្រីប និងមិនចែករំលែកដោយគ្មានការយល់ព្រម',
     'auth.loginTitle': 'សូមស្វាគមន៍ការត្រឡប់មកវិញ',
@@ -2731,6 +2829,9 @@ class AppTranslations extends Translations {
     'auth.loginErrorTitle': 'អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ',
     'auth.loginErrorDescription':
         'សូមពិនិត្យមើលព័ត៌មានរបស់អ្នក ហើយព្យាយាមម្តងទៀត។',
+    'auth.registerErrorTitle': 'ការចុះឈ្មោះមិនជោគជ័យ',
+    'auth.registerErrorDescription':
+        'សូមពិនិត្យមើលព័ត៌មានរបស់អ្នក ហើយព្យាយាមម្តងទៀត។',
     'auth.googleUnavailable': 'Google Sign-In មិនទាន់បានកំណត់ក្នុងកំណែនេះទេ',
 
     // ── Community ───────────────────────────────────────────────────────
@@ -2794,6 +2895,8 @@ class AppTranslations extends Translations {
     'community.repostContent': 'ចែករំលែកប្រកាសឡើងវិញ',
     'community.repostingOriginal': 'កំពុងចែករំលែកប្រកាសដើមពី @name',
     'community.repostQuoteHint': 'បន្ថែមអត្ថបទ (ជាជម្រើស)...',
+    'community.addQuoteOptional': 'បន្ថែមសម្រង់ (ជាជម្រើស)',
+    'community.shareThoughtsWithCommunity': 'ចែករំលែកគំនិតរបស់អ្នកជាមួយសហគមន៍។',
     'community.repostNow': 'ចែករំលែកឥឡូវនេះ',
     'community.userReposted': 'បានចែករំលែកឡើងវិញដោយ @name',
     'community.justNow': 'ទើបតែបន្តិចមុន',
@@ -3094,6 +3197,20 @@ class AppTranslations extends Translations {
     'portfolio.edit': 'កែស្នាដៃ',
     'portfolio.imageUrl': 'តំណរូបភាព',
     'portfolio.deleteConfirm': 'លុប "@title"?',
+    'portfolio.saved': 'បានរក្សាទុកស្នាដៃ',
+    'portfolio.deleted': 'បានលុបស្នាដៃ',
+    'portfolio.titleRequired': 'សូមបញ្ចូលចំណងជើង',
+    'portfolio.createProject': 'បង្កើតស្នាដៃ',
+    'portfolio.updateProject': 'ធ្វើបច្ចុប្បន្នភាពស្នាដៃ',
+    'portfolio.coverPhoto': 'រូបភាពក្របស្នាដៃ',
+    'portfolio.uploadPhoto': 'បង្ហោះរូបភាពក្រប',
+    'portfolio.tapToUpload': 'ចុចដើម្បីជ្រើសរើសពីរូបភាព ឬបញ្ចូលតំណ',
+    'portfolio.chooseGallery': 'ជ្រើសពីរូបភាព',
+    'portfolio.orPasteUrl': 'ឬបញ្ចូលតំណរូបភាព',
+    'portfolio.linkPlaceholder': 'https://github.com/... ឬ https://...',
+    'portfolio.titlePlaceholder': 'ឧ. កម្មវិធី GenLink Mobile',
+    'portfolio.descPlaceholder':
+        'រៀបរាប់ពីគម្រោង បច្ចេកវិទ្យាប្រើប្រាស់ លក្ខណៈពិសេស និងការរួមចំណែករបស់អ្នក...',
     'interests.hint':
         'ជ្រើសរើសប្រធានបទដែលអ្នកចាប់អារម្មណ៍ — វានឹងកែសម្រួលមាតិកា '
         'និងការណែនាំរបស់អ្នក',
@@ -3575,6 +3692,18 @@ class AppTranslations extends Translations {
     'notification.emptyCategoryTitle': 'មិនមានការជូនដំណឹង @category',
     'notification.emptyCategoryDesc': 'អ្នកបានមើលការជូនដំណឹងទាំងអស់ហើយ',
     'friends.requests': 'សំណើមិត្តភក្តិ',
+    'friends.followers': 'អ្នកតាមដាន',
+    'friends.followBack': 'តាមដានត្រឡប់',
+    'friends.following': 'កំពុងតាមដាន',
+    'friends.followsYou': 'តាមដានអ្នក',
+    'friends.mutualFollow': 'អ្នកតាមដានគ្នាទៅវិញទៅមក',
+    'friends.remove': 'លុបចេញ',
+    'friends.nowFollowing': 'ឥឡូវនេះអ្នកកំពុងតាមដាន @name',
+    'friends.unfollowed': 'បានឈប់តាមដាន @name',
+    'friends.removedFollower': 'បានលុប @name ចេញពីបញ្ជី',
+    'friends.noFollowers': 'មិនទាន់មានអ្នកតាមដានទេ',
+    'friends.noFollowersDesc':
+        'នៅពេលមាននរណាម្នាក់តាមដានអ្នក វានឹងបង្ហាញនៅទីនេះ។',
     'friends.accept': 'យល់ព្រម',
     'friends.decline': 'បដិសេធ',
     'friends.accepted': 'បានយល់ព្រមសំណើមិត្តភក្តិ',
@@ -4848,6 +4977,14 @@ class AppTranslations extends Translations {
     'goals.detail.deleteMilestoneMessage':
         'តើអ្នកចង់ដកចេញ "@title" ពីគោលដៅនេះទេ?',
     'goals.detail.noMilestones': 'មិនទាន់មានដំណាក់កាលនៅឡើយទេ',
+    'goals.detail.addFirstMilestone': 'បន្ថែមដំណាក់កាលដំបូង',
+    'goals.detail.milestonesEmptyDesc':
+        'បំបែកគោលដៅរបស់អ្នកជាជំហានតូចៗដើម្បីតាមដានការរីកចម្រើនរបស់អ្នក។',
+    'goals.detail.milestoneDialogSubtitle':
+        'កំណត់គោលដៅជាក់លាក់សម្រាប់ជំហាននេះដើម្បីសម្រេចគោលដៅរបស់អ្នក។',
+    'goals.create.quickSuggestions': 'ការណែនាំរហ័ស',
+    'goals.create.noMilestonesHint':
+        'មិនទាន់មានដំណាក់កាលនៅឡើយទេ។ ចុច "+ បន្ថែមដំណាក់កាល" ដើម្បីរៀបចំផែនការ។',
 
     // ── Productivity - Focus ─────────────────────────────────────────────────
     'focus.title': 'ផ្តោតអារម្មណ៍',
@@ -5006,6 +5143,63 @@ class AppTranslations extends Translations {
     'chat.voiceMessage': 'សារជាសំឡេង',
     'chat.today': 'ថ្ងៃនេះ',
     'chat.yesterday': 'ម្សិលមិញ',
+
+    // ── Create Group & Group Chat ─────────────────────────────────────────
+    'chat.group.newGroupChat': 'ការជជែកជាក្រុមថ្មី',
+    'chat.group.create': 'បង្កើត',
+    'chat.group.createGroup': 'បង្កើតក្រុម',
+    'chat.group.createGroupButton': 'បង្កើតក្រុម →',
+    'chat.group.groupName': 'ឈ្មោះក្រុម',
+    'chat.group.groupNameHint': 'ឧ. ក្រុមសិក្សា Flutter',
+    'chat.group.groupNameRequired': 'ទាមទារឈ្មោះក្រុម',
+    'chat.group.groupNameRequiredMsg': 'សូមបញ្ចូលឈ្មោះសម្រាប់ការជជែកជាក្រុមរបស់អ្នក។',
+    'chat.group.selectMembersWarningTitle': 'ជ្រើសរើសសមាជិក',
+    'chat.group.selectMembersWarningMsg':
+        'សូមជ្រើសរើសសមាជិកយ៉ាងហោចណាស់ 1 នាក់ដើម្បីបន្ថែមទៅក្នុងក្រុម។',
+    'chat.group.imageSelectionFailed': 'ការជ្រើសរើសរូបភាពបានបរាជ័យ',
+    'chat.group.imageSelectionFailedMsg':
+        'មិនអាចជ្រើសរើសរូបថតក្រុមបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'chat.group.createGroupErrorMsg':
+        'ការបង្កើតក្រុមបានបរាជ័យ។ សូមពិនិត្យមើលការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត។',
+    'chat.group.searchHint': 'ស្វែងរកសិស្សតាមឈ្មោះ ឬឈ្មោះអ្នកប្រើ...',
+    'chat.group.clearSearch': 'សម្អាតការស្វែងរក',
+    'chat.group.members': 'សមាជិក',
+    'chat.group.selectedCount': 'បានជ្រើសរើស @count',
+    'chat.group.zeroSelected': 'បានជ្រើសរើស 0',
+    'chat.group.selectMembers': 'ជ្រើសរើសសមាជិក',
+    'chat.group.oneMemberSelected': 'បានជ្រើសរើសសមាជិក 1 នាក់',
+    'chat.group.membersSelectedCount': 'បានជ្រើសរើសសមាជិក @count នាក់',
+    'chat.group.student': 'សិស្ស',
+    'chat.group.noStudentsFound': 'រកមិនឃើញសិស្សទេ',
+    'chat.group.tryDifferentSearch': 'សាកល្បងឈ្មោះ ឬឈ្មោះអ្នកប្រើផ្សេង។',
+    'chat.group.searchDifferentHint':
+        'ស្វែងរកឈ្មោះ\nឬឈ្មោះអ្នកប្រើផ្សេង។',
+    'chat.group.noMembersAvailable': 'មិនមានសមាជិកទេ',
+    'chat.group.noMembersAvailableHint': 'មិនមានសមាជិកដែលអាចបន្ថែមបានទេ។',
+    'chat.group.editGroup': 'កែសម្រួលក្រុម',
+    'chat.group.editGroupName': 'កែសម្រួលឈ្មោះក្រុម',
+    'chat.group.enterGroupName': 'បញ្ចូលឈ្មោះក្រុមថ្មី',
+    'chat.group.groupRenamed': 'ឈ្មោះក្រុមត្រូវបានប្តូរ',
+    'chat.group.groupRenamedMsg': 'ឈ្មោះក្រុមត្រូវបានប្តូរទៅជា "@name"។',
+    'chat.group.leaveGroupTitle': 'ចាកចេញពីក្រុម',
+    'chat.group.leaveGroupPrompt':
+        'តើអ្នកប្រាកដជាចង់ចាកចេញពីក្រុមនេះឬ? អ្នកនឹងលែងទទួលបានសារទៀតហើយ។',
+    'chat.group.leave': 'ចាកចេញ',
+    'chat.group.leftGroup': 'បានចាកចេញពីក្រុម',
+    'chat.group.leftGroupMsg': 'អ្នកបានចាកចេញពី "@name"។',
+    'chat.group.roleOwner': 'ម្ចាស់',
+    'chat.group.roleAdmin': 'អ្នកគ្រប់គ្រង',
+    'chat.group.roleMember': 'សមាជិក',
+    'chat.group.removeMember': 'ដកសមាជិកចេញ',
+    'chat.group.makeAdmin': 'តែងតាំងជាអ្នកគ្រប់គ្រង',
+    'chat.group.dismissAdmin': 'ដកសិទ្ធិអ្នកគ្រប់គ្រង',
+    'chat.group.totalMembers': 'សរុប @count នាក់',
+    'chat.group.membersInThisGroup': 'មានសមាជិក @count នាក់នៅក្នុងក្រុមនេះ',
+    'chat.group.photoUpdated': 'រូបថតក្រុមត្រូវបានធ្វើបច្ចុប្បន្នភាព',
+    'chat.group.photoUpdatedMsg': 'រូបថតក្រុមត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ។',
+    'chat.group.photoUpdateFailed': 'ការធ្វើបច្ចុប្បន្នភាពរូបថតបានបរាជ័យ',
+    'chat.group.photoUpdateFailedMsg':
+        'មិនអាចប្តូររូបថតក្រុមបានទេ។ សូមព្យាយាមម្តងទៀត។',
 
     // levelup / growth
     'levelup.title': 'បង្កើនកម្រិត',

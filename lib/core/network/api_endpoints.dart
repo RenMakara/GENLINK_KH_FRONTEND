@@ -227,6 +227,14 @@ abstract final class ApiEndpoints {
   static String communityFollowers(String userId) =>
       '$_base/community/users/$userId/followers';
 
+  static const communityFollowRequests = '$_base/community/follow-requests';
+
+  static String communityFollowRequestAccept(String followerUserId) =>
+      '$_base/community/follow-requests/$followerUserId/accept';
+
+  static String communityFollowRequestReject(String followerUserId) =>
+      '$_base/community/follow-requests/$followerUserId';
+
   // ── Discussions ───────────────────────────────────────────────────────
   static const communityDiscussions = '$_base/community/discussions';
   static String communityDiscussionDetail(String discussionId) =>
@@ -261,6 +269,12 @@ abstract final class ApiEndpoints {
 
   static String communityEventAttendees(String eventId) =>
       '$_base/community/events/$eventId/attendees';
+
+  // ── Opportunities (Career) ──────────────────────────────────────────
+  static const communityOpportunities = '$_base/community/opportunities';
+
+  static String communityOpportunityDetail(String opportunityId) =>
+      '$_base/community/opportunities/$opportunityId';
 
   // ── Stories ────────────────────────────────────────────────────────────
   static const stories = '$_base/community/stories';

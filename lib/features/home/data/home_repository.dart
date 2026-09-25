@@ -1,6 +1,7 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../domain/entities/home_entity.dart';
+import 'package:genlink_frontend/features/challenge/domain/models/challenge_models.dart';
 
 abstract class HomeRepository {
   Future<HomeEntity> getHome();
@@ -91,14 +92,18 @@ class HomeRepositoryImpl implements HomeRepository {
         checkedInToday: json['checkedInToday'] as bool? ?? false,
       );
 
-  static ChallengePreview _mapChallenge(Map<String, dynamic> json) =>
-      ChallengePreview(
-        challengeId: json['challengeId'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        description: json['description'] as String?,
-        xpReward: (json['xpReward'] as num?)?.toInt(),
-        deadline: json['deadline'] as String?,
-      );
+  static ChallengePreview _mapChallenge(Map<String, dynamic> json) {
+    final rawType = (json['challengeType'] ?? json['type'])?.toString();
+    return ChallengePreview(
+      challengeId: (json['challengeId'] ?? json['id'] ?? '').toString(),
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      xpReward: (json['xpReward'] as num?)?.toInt(),
+      deadline: json['deadline'] as String?,
+      challengeType: rawType != null ? challengeTypeFromWire(rawType) : null,
+      type: rawType,
+    );
+  }
 
   static FinanceSnapshot _mapFinance(Map<String, dynamic> json) =>
       FinanceSnapshot(

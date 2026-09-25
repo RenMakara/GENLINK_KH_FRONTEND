@@ -217,6 +217,47 @@ void main() {
     },
   );
 
+  test(
+    'profile screen ignores stale Get.parameters username when embedded without viewingUsername',
+    () {
+      Get.parameters = {'username': 'other_person'};
+      final ownerController = ProfileController(repository: repository);
+      Get.put<ProfileController>(ownerController);
+
+      expect(const ProfileScreen().controller, same(ownerController));
+      Get.parameters = {};
+    },
+  );
+
+  test(
+    'profile screen automatically lazily registers owner controller when repository is registered',
+    () {
+      Get.put<ProfileRepository>(repository);
+      expect(Get.isRegistered<ProfileController>(), isFalse);
+      final controller = const ProfileScreen().controller;
+      expect(controller, isNotNull);
+      expect(Get.isRegistered<ProfileController>(), isTrue);
+    },
+  );
+
+  test(
+    'ProfileBinding registers both owner and public controller when public username parameter is present',
+    () {
+      Get.put<ProfileRepository>(repository);
+      Get.parameters = {'username': 'public_user'};
+      ProfileBinding().dependencies();
+
+      expect(Get.isRegistered<ProfileController>(), isTrue);
+      expect(
+        Get.isRegistered<ProfileController>(
+          tag: ProfileController.publicTag('public_user'),
+        ),
+        isTrue,
+      );
+      Get.parameters = {};
+    },
+  );
+
   test('profile navigation resolves the signed-in user as the owner', () {
     final auth = AuthController(
       authRepository: _MockAuthRepository(),
@@ -319,4 +360,86 @@ void main() {
       expect(controller.isBadgesLoading.value, isFalse);
     },
   );
+
+  group('Portfolio operations on non-growable / unmodifiable lists', () {
+    const existing1 = PortfolioItemEntity(
+      portfolioId: 'p-1',
+      title: 'Project 1',
+    );
+    const existing2 = PortfolioItemEntity(
+      portfolioId: 'p-2',
+      title: 'Project 2',
+    );
+
+    test('addPortfolioItem prepends new item even if portfolio was fixed-length', () async {
+      final controller = ProfileController(repository: repository);
+      // Simulate fixed-length list as returned by List.unmodifiable or toList(growable: false)
+      controller.portfolio.value = List.unmodifiable([existing1, existing2]);
+
+      const created = PortfolioItemEntity(
+        portfolioId: 'p-new',
+        title: 'New Project',
+      );
+      when(
+        () => repository.createPortfolioItem(
+          title: 'New Project',
+          description: null,
+          link: null,
+          imageUrl: null,
+        ),
+      ).thenAnswer((_) async => created);
+
+      final result = await controller.addPortfolioItem(title: 'New Project');
+
+      expect(result, isTrue);
+      expect(controller.errorMessage.value, isNull);
+      expect(controller.portfolio.length, 3);
+      expect(controller.portfolio.first.portfolioId, 'p-new');
+      expect(controller.portfolio[1].portfolioId, 'p-1');
+      expect(controller.portfolio[2].portfolioId, 'p-2');
+    });
+
+    test('updatePortfolioItem updates item even if portfolio was fixed-length', () async {
+      final controller = ProfileController(repository: repository);
+      controller.portfolio.value = List.unmodifiable([existing1, existing2]);
+
+      const updated = PortfolioItemEntity(
+        portfolioId: 'p-1',
+        title: 'Updated Project 1',
+      );
+      when(
+        () => repository.updatePortfolioItem(
+          portfolioId: 'p-1',
+          title: 'Updated Project 1',
+          description: null,
+          link: null,
+          imageUrl: null,
+        ),
+      ).thenAnswer((_) async => updated);
+
+      final result = await controller.updatePortfolioItem(
+        portfolioId: 'p-1',
+        title: 'Updated Project 1',
+      );
+
+      expect(result, isTrue);
+      expect(controller.errorMessage.value, isNull);
+      expect(controller.portfolio.length, 2);
+      expect(controller.portfolio.first.title, 'Updated Project 1');
+    });
+
+    test('deletePortfolioItem removes item even if portfolio was fixed-length', () async {
+      final controller = ProfileController(repository: repository);
+      controller.portfolio.value = List.unmodifiable([existing1, existing2]);
+
+      when(() => repository.deletePortfolioItem('p-1')).thenAnswer((_) async {});
+
+      final result = await controller.deletePortfolioItem('p-1');
+
+      expect(result, isTrue);
+      expect(controller.errorMessage.value, isNull);
+      expect(controller.portfolio.length, 1);
+      expect(controller.portfolio.first.portfolioId, 'p-2');
+    });
+  });
 }

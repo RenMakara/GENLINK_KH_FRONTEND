@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -30,9 +31,10 @@ class PortfolioScreen extends GetView<ProfileController> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_rounded),
             tooltip: 'portfolio.add'.tr,
-            onPressed: () => _edit(context, null),
+            onPressed: () =>
+                Get.toNamed<void>(AppRoutes.profilePortfolioForm),
           ),
           const SizedBox(width: AppSpacing.xs),
         ],
@@ -49,7 +51,8 @@ class PortfolioScreen extends GetView<ProfileController> {
             action: AppButton.secondary(
               label: 'portfolio.add'.tr,
               expanded: false,
-              onPressed: () => _edit(context, null),
+              onPressed: () =>
+                  Get.toNamed<void>(AppRoutes.profilePortfolioForm),
             ),
           );
         }
@@ -60,7 +63,10 @@ class PortfolioScreen extends GetView<ProfileController> {
           separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
           itemBuilder: (context, index) => _PortfolioCard(
             item: items[index],
-            onEdit: () => _edit(context, items[index]),
+            onEdit: () => Get.toNamed<void>(
+              AppRoutes.profilePortfolioForm,
+              arguments: items[index],
+            ),
             onDelete: () => _delete(items[index]),
           ),
         );
@@ -74,94 +80,213 @@ class PortfolioScreen extends GetView<ProfileController> {
       confirmLabel: 'common.delete'.tr,
       destructive: true,
     );
-    if (confirmed) await controller.deletePortfolioItem(item.portfolioId);
-  }
-
-  Future<void> _edit(BuildContext context, PortfolioItemEntity? item) async {
-    final title = TextEditingController(text: item?.title ?? '');
-    final description = TextEditingController(text: item?.description ?? '');
-    final link = TextEditingController(text: item?.link ?? '');
-    final imageUrl = TextEditingController(text: item?.imageUrl ?? '');
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(item == null ? 'portfolio.add'.tr : 'portfolio.edit'.tr),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: title,
-                autofocus: true,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'profile.portfolioTitle'.tr,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: description,
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'profile.portfolioDescription'.tr,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: link,
-                keyboardType: TextInputType.url,
-                decoration: InputDecoration(
-                  hintText: 'profile.portfolioLink'.tr,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextField(
-                controller: imageUrl,
-                keyboardType: TextInputType.url,
-                decoration: InputDecoration(hintText: 'portfolio.imageUrl'.tr),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('common.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(title.text.trim().isNotEmpty),
-            child: Text('common.save'.tr),
-          ),
-        ],
-      ),
-    );
-
-    if (saved ?? false) {
-      if (item == null) {
-        await controller.addPortfolioItem(
-          title: title.text.trim(),
-          description: description.text.trim(),
-          link: link.text.trim(),
-          imageUrl: imageUrl.text.trim(),
-        );
-      } else {
-        await controller.updatePortfolioItem(
-          portfolioId: item.portfolioId,
-          title: title.text.trim(),
-          description: description.text.trim(),
-          link: link.text.trim(),
-          imageUrl: imageUrl.text.trim(),
-        );
+    if (confirmed) {
+      final success = await controller.deletePortfolioItem(item.portfolioId);
+      if (success) {
+        AppSnackbar.show('portfolio.deleted'.tr);
       }
     }
+  }
 
-    title.dispose();
-    description.dispose();
-    link.dispose();
-    imageUrl.dispose();
+  static Future<bool?> showEditDialog(
+    BuildContext context,
+    ProfileController controller, [
+    PortfolioItemEntity? item,
+  ]) {
+    return showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) => _PortfolioEditDialog(
+        controller: controller,
+        item: item,
+      ),
+    );
+  }
+}
+
+class _PortfolioEditDialog extends StatefulWidget {
+  const _PortfolioEditDialog({
+    required this.controller,
+    this.item,
+  });
+
+  final ProfileController controller;
+  final PortfolioItemEntity? item;
+
+  @override
+  State<_PortfolioEditDialog> createState() => _PortfolioEditDialogState();
+}
+
+class _PortfolioEditDialogState extends State<_PortfolioEditDialog> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _linkController;
+  late final TextEditingController _imageUrlController;
+
+  String? _titleError;
+  String? _errorMessage;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.item?.title ?? '');
+    _descriptionController =
+        TextEditingController(text: widget.item?.description ?? '');
+    _linkController = TextEditingController(text: widget.item?.link ?? '');
+    _imageUrlController =
+        TextEditingController(text: widget.item?.imageUrl ?? '');
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _linkController.dispose();
+    _imageUrlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onSave() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() {
+        _titleError = 'portfolio.titleRequired'.tr;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    final success = widget.item == null
+        ? await widget.controller.addPortfolioItem(
+            title: title,
+            description: _descriptionController.text.trim(),
+            link: _linkController.text.trim(),
+            imageUrl: _imageUrlController.text.trim(),
+          )
+        : await widget.controller.updatePortfolioItem(
+            portfolioId: widget.item!.portfolioId,
+            title: title,
+            description: _descriptionController.text.trim(),
+            link: _linkController.text.trim(),
+            imageUrl: _imageUrlController.text.trim(),
+          );
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).pop(true);
+      AppSnackbar.show('portfolio.saved'.tr);
+    } else {
+      setState(() {
+        _isSaving = false;
+        _errorMessage =
+            widget.controller.errorMessage.value ?? 'common.error'.tr;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return AlertDialog(
+      title:
+          Text(widget.item == null ? 'portfolio.add'.tr : 'portfolio.edit'.tr),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_errorMessage != null) ...[
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: scheme.errorContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: scheme.error.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, size: 18, color: scheme.error),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            TextField(
+              controller: _titleController,
+              autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'profile.portfolioTitle'.tr,
+                errorText: _titleError,
+              ),
+              onChanged: (_) {
+                if (_titleError != null) setState(() => _titleError = null);
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _descriptionController,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'profile.portfolioDescription'.tr,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _linkController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                hintText: 'profile.portfolioLink'.tr,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _imageUrlController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(hintText: 'portfolio.imageUrl'.tr),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: _isSaving ? null : _onSave,
+          child: _isSaving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text('common.save'.tr),
+        ),
+      ],
+    );
   }
 }
 
@@ -185,8 +310,11 @@ class _PortfolioCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.5),
+          width: 0.8,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

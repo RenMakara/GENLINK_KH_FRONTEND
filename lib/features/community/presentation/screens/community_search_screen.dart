@@ -1355,6 +1355,8 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   color: textPrimary,
                   fontSize: 12.5,
                   height: 1.35,
+                  fontWeight: FontWeight.w400,
+                  fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                 ),
               ),
               if (post.imageUrls.isNotEmpty) ...[
@@ -1362,7 +1364,12 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    post.imageUrls.first,
+                    post.imageUrls.first.contains('.cdn.digitaloceanspaces.com')
+                        ? post.imageUrls.first.replaceFirst(
+                            '.cdn.digitaloceanspaces.com',
+                            '.digitaloceanspaces.com',
+                          )
+                        : post.imageUrls.first,
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,

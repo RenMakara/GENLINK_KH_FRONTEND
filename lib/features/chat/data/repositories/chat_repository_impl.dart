@@ -1,4 +1,4 @@
-﻿import '../../domain/models/chat_models.dart';
+import '../../domain/models/chat_models.dart';
 import '../datasources/chat_local_datasource.dart';
 import '../datasources/chat_remote_datasource.dart';
 
@@ -40,13 +40,59 @@ class ChatRepositoryImpl {
 
   Future<ChatConversationModel> createGroup(
     String name,
-    List<String> memberUserIds,
-  ) async {
-    final conv = await remoteDataSource.createGroup(name, memberUserIds);
+    List<String> memberUserIds, {
+    String? avatarUrl,
+  }) async {
+    final conv = await remoteDataSource.createGroup(
+      name,
+      memberUserIds,
+      avatarUrl: avatarUrl,
+    );
     final existing = await localDataSource?.getConversations() ?? [];
     existing.insert(0, conv);
     await localDataSource?.saveConversations(existing);
     return conv;
+  }
+
+  Future<ChatConversationModel> renameGroup(
+    String roomId, {
+    String? name,
+    String? avatarUrl,
+  }) async {
+    final updated = await remoteDataSource.renameGroup(
+      roomId,
+      name: name,
+      avatarUrl: avatarUrl,
+    );
+    final existing = await localDataSource?.getConversations() ?? [];
+    final idx = existing.indexWhere((c) => c.id == roomId);
+    if (idx != -1) {
+      existing[idx] = updated;
+      await localDataSource?.saveConversations(existing);
+    }
+    return updated;
+  }
+
+  Future<ChatConversationModel> addMembers(
+    String roomId,
+    List<String> memberIds,
+  ) async {
+    final updated = await remoteDataSource.addMembers(roomId, memberIds);
+    final existing = await localDataSource?.getConversations() ?? [];
+    final idx = existing.indexWhere((c) => c.id == roomId);
+    if (idx != -1) {
+      existing[idx] = updated;
+      await localDataSource?.saveConversations(existing);
+    }
+    return updated;
+  }
+
+  Future<bool> leaveGroup(String roomId) async {
+    final ok = await remoteDataSource.leaveGroup(roomId);
+    if (ok) {
+      await localDataSource?.deleteConversation(roomId);
+    }
+    return ok;
   }
 
   Future<List<ChatMessageModel>> getMessages(String conversationId) async {
@@ -120,5 +166,9 @@ class ChatRepositoryImpl {
 
   Future<List<Map<String, dynamic>>> searchUsers(String query) {
     return remoteDataSource.searchUsers(query);
+  }
+
+  Future<List<Map<String, dynamic>>> getEligibleUsers({String? currentUserId}) {
+    return remoteDataSource.getEligibleUsers(currentUserId: currentUserId);
   }
 }

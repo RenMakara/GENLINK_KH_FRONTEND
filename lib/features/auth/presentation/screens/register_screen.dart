@@ -9,6 +9,7 @@ import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
+import '../widgets/auth_floating_error_banner.dart';
 import '../widgets/auth_scaffold.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -28,8 +29,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   AuthController get _auth => Get.find<AuthController>();
 
+  String? _errorMessage;
+  int _errorTriggerCount = 0;
+  Worker? _errorWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth.errorMessage.value = null;
+    _errorWorker = ever<String?>(_auth.errorMessage, (msg) {
+      if (msg != null && msg.isNotEmpty && mounted) {
+        setState(() {
+          _errorMessage = msg;
+          _errorTriggerCount++;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _errorWorker?.dispose();
     _fullName.dispose();
     _username.dispose();
     _email.dispose();
@@ -48,12 +68,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _email.text.trim(),
       password: _password.text,
     );
-    if (success) Get.toNamed<void>(AppRoutes.verifyEmail);
+    if (success) {
+      Get.toNamed<void>(AppRoutes.verifyEmail);
+    } else if (mounted) {
+      setState(() {
+        _errorMessage =
+            _auth.errorMessage.value ?? 'auth.registerErrorTitle'.tr;
+        _errorTriggerCount++;
+      });
+    }
   }
 
   Future<void> _signInWithGoogle() async {
+    FocusScope.of(context).unfocus();
     final success = await _auth.signInWithGoogle();
-    if (success) await _auth.continueAfterGoogleLogin();
+    if (success) {
+      await _auth.continueAfterGoogleLogin();
+    } else if (_auth.errorMessage.value != null && mounted) {
+      setState(() {
+        _errorMessage = _auth.errorMessage.value;
+        _errorTriggerCount++;
+      });
+    }
+  }
+
+  void _dismissError() {
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+      _auth.errorMessage.value = null;
+    }
   }
 
   @override
@@ -61,6 +106,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final theme = Theme.of(context);
 
     return AuthScaffold(
+      overlay: AuthFloatingErrorBanner(
+        key: const ValueKey('auth-floating-error-banner'),
+        message: _errorMessage,
+        triggerKey: _errorTriggerCount,
+        title: _errorMessage ?? 'auth.registerErrorTitle'.tr,
+        description: 'auth.registerErrorDescription'.tr,
+        onDismissed: _dismissError,
+      ),
       footer: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -104,7 +157,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Obx(() => AuthErrorBanner(message: _auth.errorMessage.value)),
               AppInput(
                 label: 'auth.fullName'.tr,
                 hint: 'auth.fullNameHint'.tr,
@@ -149,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 () => AppButton(
                   label: 'auth.createAccount'.tr,
                   loading: _auth.isLoading.value,
-                  onPressed: _submit,
+                  onPressed: _auth.isLoading.value ? null : _submit,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),

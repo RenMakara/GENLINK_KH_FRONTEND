@@ -15,28 +15,42 @@ class ProfileBinding extends Bindings {
   @override
   void dependencies() {
     _registerRepository();
+    registerOwnerController();
 
     final publicUsername = ProfileNavigation.ownerAwareUsername(
       username: Get.parameters['username'],
     );
     if (publicUsername != null) {
+      registerPublicController(publicUsername);
+    }
+  }
+
+  static void registerOwnerController() {
+    _registerRepository();
+    if (!Get.isRegistered<ProfileController>() && Get.isRegistered<ProfileRepository>()) {
       Get.lazyPut<ProfileController>(
         () => ProfileController(
           repository: Get.find<ProfileRepository>(),
-          viewingUsername: publicUsername,
+          onOwnerProfileChanged: syncCachedAuthUser,
         ),
-        tag: ProfileController.publicTag(publicUsername),
+        fenix: true,
       );
-      return;
     }
+  }
 
-    Get.lazyPut<ProfileController>(
-      () => ProfileController(
-        repository: Get.find<ProfileRepository>(),
-        onOwnerProfileChanged: syncCachedAuthUser,
-      ),
-      fenix: true,
-    );
+  static void registerPublicController(String username) {
+    _registerRepository();
+    final tag = ProfileController.publicTag(username);
+    if (!Get.isRegistered<ProfileController>(tag: tag) && Get.isRegistered<ProfileRepository>()) {
+      Get.lazyPut<ProfileController>(
+        () => ProfileController(
+          repository: Get.find<ProfileRepository>(),
+          viewingUsername: username,
+        ),
+        tag: tag,
+        fenix: true,
+      );
+    }
   }
 
   static void syncCachedAuthUser(ProfileEntity profile) {
@@ -69,10 +83,12 @@ class ProfileBinding extends Bindings {
 
   static void _registerRepository() {
     if (Get.isRegistered<ProfileRepository>()) return;
-    Get.put<ProfileRepository>(
-      ProfileRepositoryImpl(ProfileRemoteDatasource(Get.find<ApiClient>())),
-      permanent: true,
-    );
+    if (Get.isRegistered<ApiClient>()) {
+      Get.put<ProfileRepository>(
+        ProfileRepositoryImpl(ProfileRemoteDatasource(Get.find<ApiClient>())),
+        permanent: true,
+      );
+    }
   }
 }
 

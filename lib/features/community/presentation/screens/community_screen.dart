@@ -17,6 +17,7 @@ import '../widgets/post_card_widget.dart';
 import '../widgets/quick_create_post_card.dart';
 import '../widgets/story_tray_widget.dart';
 import '../widgets/community_creation_flow.dart';
+import '../widgets/opportunity_card_widget.dart';
 
 import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
@@ -82,6 +83,20 @@ class _CommunityScreenState extends State<CommunityScreen>
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final commController = _effectiveController;
+    final targetIndex = commController.categories.indexOf(
+      commController.selectedCategory.value,
+    );
+    if (targetIndex >= 0 &&
+        targetIndex != _tabController.index &&
+        !_tabController.indexIsChanging) {
+      _tabController.index = targetIndex;
+    }
+  }
+
   void _initializeHeaderAnimations() {
     if (_headerVisibilityController != null) return;
 
@@ -104,6 +119,14 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   void _handleTabChange() {
     if (!mounted) return;
+    if (!TickerMode.valuesOf(context).enabled) return;
+    if (_tabController.indexIsChanging) return;
+
+    final anim = _tabController.animation;
+    if (anim != null && (anim.value - _tabController.index).abs() > 0.05) {
+      return;
+    }
+
     final commController = _effectiveController;
     final targetIndex = _tabController.index;
     if (targetIndex >= 0 && targetIndex < commController.categories.length) {
@@ -389,6 +412,12 @@ class _CommunityScreenState extends State<CommunityScreen>
                         child: KeyedSubtree(
                           key: const ValueKey('EventTab'),
                           child: _buildEventTab(context, commController),
+                        ),
+                      ),
+                      _KeepAliveWrapper(
+                        child: KeyedSubtree(
+                          key: const ValueKey('CareerTab'),
+                          child: _buildCareerTab(context, commController),
                         ),
                       ),
                     ],
@@ -2111,6 +2140,200 @@ class _CommunityScreenState extends State<CommunityScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCareerTab(BuildContext context, CommunityController controller) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderSubtle =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final mediaQuery = MediaQuery.of(context);
+    final safeBottom = mediaQuery.padding.bottom;
+
+    return Column(
+      children: [
+        // Category Pills row
+        SizedBox(
+          height: 48,
+          child: Obx(() {
+            final activeType = controller.selectedOpportunityType.value;
+            return ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 8,
+              ),
+              itemCount: CommunityController.opportunityCategories.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final category = CommunityController.opportunityCategories[index];
+                final isSelected = activeType == category;
+
+                final activeBg = isDark ? Colors.white : AppColors.lightTextPrimary;
+                final activeText = isDark ? Colors.black : Colors.white;
+                final inactiveBg = isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04);
+
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => controller.filterOpportunitiesByType(category),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isSelected ? activeBg : inactiveBg,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.transparent
+                              : borderSubtle.withValues(alpha: isDark ? 0.4 : 0.6),
+                          width: 0.8,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          color: isSelected ? activeText : textSecondary,
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+
+        // List / Content Area
+        Expanded(
+          child: Obx(() {
+            if (controller.isLoadingOpportunities.value &&
+                controller.opportunities.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (controller.hasOpportunitiesError.value &&
+                controller.opportunities.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.wifi_off_rounded, size: 44, color: textMuted),
+                      const SizedBox(height: 12),
+                      Text(
+                        controller.opportunitiesErrorMessage.value.isNotEmpty
+                            ? controller.opportunitiesErrorMessage.value
+                            : 'Failed to load opportunities',
+                        style: TextStyle(color: textSecondary, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => controller.fetchOpportunities(isRefresh: true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.brandPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                        child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (controller.opportunities.isEmpty) {
+              return RefreshIndicator(
+                onRefresh: controller.refreshOpportunities,
+                color: AppColors.brandPrimary,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(height: mediaQuery.size.height * 0.18),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.black.withValues(alpha: 0.04),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.work_outline_rounded,
+                              size: 32,
+                              color: textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No Opportunities Found',
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 17,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            child: Text(
+                              controller.selectedOpportunityType.value == 'All'
+                                  ? 'New internships, scholarships, and jobs will appear here.'
+                                  : 'No ${controller.selectedOpportunityType.value.toLowerCase()} opportunities available at this time.',
+                              style: TextStyle(color: textMuted, fontSize: 13.5, height: 1.45),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: controller.refreshOpportunities,
+              color: AppColors.brandPrimary,
+              child: ListView.builder(
+                padding: EdgeInsets.only(
+                  top: 8,
+                  bottom: safeBottom + 88,
+                ),
+                itemCount: controller.opportunities.length,
+                itemBuilder: (context, index) {
+                  final opp = controller.opportunities[index];
+                  return OpportunityCardWidget(opportunity: opp);
+                },
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

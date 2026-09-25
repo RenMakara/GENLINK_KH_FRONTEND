@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
+
 class AppAvatar extends StatelessWidget {
   const AppAvatar({super.key, this.imageUrl, this.name, this.size = 44});
 
@@ -10,14 +12,26 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final url = imageUrl;
+    final url = imageUrl?.trim();
 
     ImageProvider? imageProvider;
     if (url != null && url.isNotEmpty) {
       if (url.startsWith('assets/')) {
         imageProvider = AssetImage(url);
       } else {
-        imageProvider = NetworkImage(url);
+        String resolved = url;
+        if (resolved.contains('.cdn.digitaloceanspaces.com')) {
+          resolved = resolved.replaceFirst(
+            '.cdn.digitaloceanspaces.com',
+            '.digitaloceanspaces.com',
+          );
+        }
+        if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+          imageProvider = NetworkImage(resolved);
+        } else {
+          final clean = resolved.startsWith('/') ? resolved : '/$resolved';
+          imageProvider = NetworkImage('${AppConfig.apiBaseUrl}$clean');
+        }
       }
     }
 

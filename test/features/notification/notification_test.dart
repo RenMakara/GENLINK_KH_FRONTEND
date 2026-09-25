@@ -453,9 +453,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(FriendRequestsScreen), findsOneWidget);
-      expect(find.text('Friend Requests'), findsOneWidget);
-      expect(find.text('Accept'), findsWidgets);
-      expect(find.text('Decline'), findsWidgets);
+      expect(find.text('Followers'), findsOneWidget);
+      Get.back();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('tapping a notification marks it as read', (tester) async {

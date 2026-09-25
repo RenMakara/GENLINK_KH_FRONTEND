@@ -356,6 +356,31 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<List<FollowUserModel>> getFollowers(String userId, {int page = 0, int size = 50}) {
+    return remoteDataSource.getFollowers(userId, page: page, size: size);
+  }
+
+  @override
+  Future<List<FollowUserModel>> getFollowing(String userId, {int page = 0, int size = 50}) {
+    return remoteDataSource.getFollowing(userId, page: page, size: size);
+  }
+
+  @override
+  Future<List<FollowUserModel>> getPendingFollowRequests({int page = 0, int size = 50}) {
+    return remoteDataSource.getPendingFollowRequests(page: page, size: size);
+  }
+
+  @override
+  Future<bool> acceptFollowRequest(String followerUserId) {
+    return remoteDataSource.acceptFollowRequest(followerUserId);
+  }
+
+  @override
+  Future<bool> rejectFollowRequest(String followerUserId) {
+    return remoteDataSource.rejectFollowRequest(followerUserId);
+  }
+
+  @override
   Future<RsvpResponseModel> rsvpEvent(
     String eventId, {
     EventRegistrationRequest? request,
@@ -467,5 +492,53 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Set<String>> getSavedEventIds() {
     return remoteDataSource.getSavedEventIds();
+  }
+
+  // ── Opportunities (Career) ──────────────────────────────────────────
+
+  @override
+  Future<List<OpportunityModel>> getOpportunities({
+    String? type,
+    bool includeExpired = false,
+    int page = 0,
+    int size = 20,
+  }) {
+    return remoteDataSource.getOpportunities(
+      type: type,
+      includeExpired: includeExpired,
+      page: page,
+      size: size,
+    );
+  }
+
+  @override
+  Future<OpportunityModel> getOpportunityDetails(String opportunityId) {
+    return remoteDataSource.getOpportunityById(opportunityId);
+  }
+
+  @override
+  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) {
+    return remoteDataSource.toggleSaveOpportunity(opportunityId, currentlySaved);
+  }
+
+  @override
+  Future<OpportunityModel> createOpportunity({
+    required String title,
+    String? organization,
+    String? type,
+    String? description,
+    DateTime? deadline,
+    String? location,
+    String? applyLink,
+  }) {
+    return remoteDataSource.createOpportunity(
+      title: title,
+      organization: organization,
+      type: type,
+      description: description,
+      deadline: deadline,
+      location: location,
+      applyLink: applyLink,
+    );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -23,6 +24,7 @@ import 'feed_video_playback_manager.dart';
 import 'full_screen_image_viewer.dart';
 import 'post_liked_by_sheet.dart';
 import 'forum_share_to_chat_sheet.dart';
+import 'repost/repost_bottom_sheet.dart';
 
 class PostCardWidget extends StatefulWidget {
   final CommunityPostModel post;
@@ -366,129 +368,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   }
 
   void _showRepostDialog(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-
-    final captionController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.squircle),
-          side: BorderSide(color: borderSubtle),
-        ),
-        title: Text(
-          'community.repostContent'.tr,
-          style: theme.textTheme.titleMedium?.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-              ) ??
-              TextStyle(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'community.repostingOriginal'.trParams({'name': widget.post.authorName}),
-              style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
-                  TextStyle(
-                    color: textSecondary,
-                    fontSize: 13,
-                  ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: borderSubtle),
-              ),
-              padding: const EdgeInsets.all(AppSpacing.sm + 4),
-              child: TextField(
-                controller: captionController,
-                minLines: 2,
-                maxLines: 4,
-                style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
-                    TextStyle(
-                      color: textPrimary,
-                      fontSize: 14,
-                    ),
-                decoration: InputDecoration(
-                  hintText: 'community.repostQuoteHint'.tr,
-                  hintStyle: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
-                      TextStyle(
-                        color: textMuted,
-                        fontSize: 14,
-                      ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              minimumSize: const Size(48, 48),
-            ),
-            child: Text(
-              'common.cancel'.tr,
-              style: theme.textTheme.labelMedium?.copyWith(
-                    color: textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ) ??
-                  TextStyle(
-                    color: textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              widget.controller.repostPost(widget.post.id, caption: captionController.text);
-              AppNotificationBanner.showSuccess(
-                context: context,
-                title: "✓ Reposted",
-                message: "Post has been reposted to your feed.",
-                icon: Icons.repeat_rounded,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-            ),
-            child: Text(
-              'community.repostNow'.tr,
-              style: theme.textTheme.labelMedium?.copyWith(
-                    color: isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-                  TextStyle(
-                    color: isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ),
-        ],
-      ),
+    RepostBottomSheet.show(
+      context,
+      post: widget.post,
+      controller: widget.controller,
     );
   }
 
@@ -585,14 +468,26 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                       },
                       child: CircleAvatar(
                         radius: avatarRadius,
-                        backgroundImage: widget.post.authorAvatar.startsWith('assets/')
-                            ? AssetImage(widget.post.authorAvatar) as ImageProvider
-                            : (widget.post.authorAvatar.startsWith('http')
-                                ? NetworkImage(widget.post.authorAvatar)
-                                : null),
-                        onBackgroundImageError: widget.post.authorAvatar.startsWith('http')
-                            ? (_, _) {}
-                            : null,
+                        backgroundImage: () {
+                          final av = widget.post.authorAvatar.trim();
+                          if (av.isEmpty) return null;
+                          if (av.startsWith('assets/')) {
+                            return AssetImage(av) as ImageProvider;
+                          }
+                          String resolved = av;
+                          if (resolved.contains('.cdn.digitaloceanspaces.com')) {
+                            resolved = resolved.replaceFirst(
+                              '.cdn.digitaloceanspaces.com',
+                              '.digitaloceanspaces.com',
+                            );
+                          }
+                          if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+                            return NetworkImage(resolved);
+                          }
+                          final clean = resolved.startsWith('/') ? resolved : '/$resolved';
+                          return NetworkImage('${AppConfig.apiBaseUrl}$clean');
+                        }(),
+                        onBackgroundImageError: widget.post.authorAvatar.trim().isNotEmpty ? (_, _) {} : null,
                         backgroundColor: isDark
                             ? AppColors.darkSurfaceSecondary
                             : AppColors.lightBgSecondary,
@@ -885,17 +780,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     overflow: (widget.post.content.length <= 220 || _isContentExpanded)
                         ? TextOverflow.visible
                         : TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
                           color: textPrimary,
                           fontSize: 14.5,
                           height: 1.55,
                           letterSpacing: 0.15,
-                        ) ??
-                        TextStyle(
-                          color: textPrimary,
-                          fontSize: 14.5,
-                          height: 1.55,
-                          letterSpacing: 0.15,
+                          fontWeight: FontWeight.w400,
+                          fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                         ),
                   ),
                   if (widget.post.content.length > 220) ...[
@@ -2511,24 +2402,54 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
   }
 
   void _removeStreamListener() {
-    if (_imageStream != null && _streamListener != null) {
-      _imageStream!.removeListener(_streamListener!);
-      _imageStream = null;
-      _streamListener = null;
+    final stream = _imageStream;
+    final listener = _streamListener;
+    _imageStream = null;
+    _streamListener = null;
+    if (stream != null && listener != null) {
+      try {
+        stream.removeListener(listener);
+      } catch (_) {}
     }
   }
 
   ImageProvider _resolveProvider(String url) {
-    if (url.startsWith('assets/')) {
-      return AssetImage(url);
-    } else if (url.startsWith('http')) {
-      return NetworkImage(url);
+    final trimmed = url.trim();
+    if (trimmed.startsWith('assets/')) {
+      return AssetImage(trimmed);
+    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      String resolved = trimmed;
+      if (resolved.contains('.cdn.digitaloceanspaces.com')) {
+        resolved = resolved.replaceFirst(
+          '.cdn.digitaloceanspaces.com',
+          '.digitaloceanspaces.com',
+        );
+      }
+      return NetworkImage(resolved);
     } else {
-      return FileImage(File(url));
+      try {
+        final file = File(trimmed);
+        if (file.existsSync() && file.lengthSync() > 0) {
+          return FileImage(file);
+        }
+      } catch (_) {}
+
+      // Fallback for relative backend paths
+      final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+      return NetworkImage('${AppConfig.apiBaseUrl}$clean');
     }
   }
 
   void _resolveImage() {
+    if (widget.url.trim().isEmpty) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+      return;
+    }
+
     try {
       final provider = _resolveProvider(widget.url);
       final stream = provider.resolve(const ImageConfiguration());
@@ -2541,22 +2462,39 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
           if (w > 0 && h > 0) {
             final ratio = w / h;
             widget.onAspectRatioResolved?.call(ratio);
-            setState(() {
-              _aspectRatio = ratio;
+            if (_aspectRatio != ratio) {
+              setState(() {
+                _aspectRatio = ratio;
+              });
+            }
+            // Once the aspect ratio is known, cleanly detach this listener.
+            // Keeping it attached causes MultiFrameImageStreamCompleter (for animated
+            // images/multi-frame sources) to keep running frame callbacks in parallel
+            // with Flutter's Image widget, resulting in `assert(_nextFrame != null)` failure.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _removeStreamListener();
+              }
             });
           }
         },
         onError: (dynamic error, StackTrace? stackTrace) {
-          if (mounted) {
-            setState(() {
-              _hasError = true;
-            });
-          }
+          debugPrint('[_FeedPostImageView] Error loading image ${widget.url}: $error');
+          if (!mounted) return;
+          _removeStreamListener();
+          setState(() {
+            _hasError = true;
+          });
         },
       );
       stream.addListener(_streamListener!);
     } catch (_) {
-      _hasError = true;
+      _removeStreamListener();
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
     }
   }
 
@@ -2570,14 +2508,53 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
         : const Color(0xFFF2F4F7);
 
     if (_hasError) {
-      return Container(
-        height: widget.isSingle ? 220 : double.infinity,
-        color: surfaceColor,
-        alignment: Alignment.center,
-        child: Icon(
-          Icons.broken_image_outlined,
-          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-          size: 32,
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          _removeStreamListener();
+          setState(() {
+            _hasError = false;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _resolveImage();
+          });
+        },
+        child: Container(
+          height: widget.isSingle ? 220 : double.infinity,
+          color: surfaceColor,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.broken_image_outlined,
+                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                size: 32,
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh_rounded,
+                    size: 14,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'common.retry'.tr.isNotEmpty && 'common.retry'.tr != 'common.retry'
+                        ? 'common.retry'.tr
+                        : 'Tap to retry',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                      fontFamilyFallback: const ['KantumruyPro', 'Sora'],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       );
     }

@@ -10,9 +10,7 @@ import 'package:genlink_frontend/design_system/widgets/headers/app_screen_header
 import 'package:genlink_frontend/features/auth/domain/entities/user_entity.dart';
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
-import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
-import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
+
 import 'package:genlink_frontend/features/community/presentation/controllers/story_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/community_header_widget.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/quick_create_post_card.dart';
@@ -31,14 +29,6 @@ class _FakeStorage implements SecureStorage {
 class _FakeLocalizationService extends GetxService implements LocalizationService {
   @override
   final language = 'en'.obs;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _FakeCommunityRepository implements CommunityRepository {
-  @override
-  Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) async => [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

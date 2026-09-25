@@ -943,11 +943,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          final isMe = _checkIsOrganizer(event);
+          if (isMe) {
+            ProfileNavigation.open();
+            return;
+          }
+          final effectiveUsername = (event.organizerUsername != null &&
+                  event.organizerUsername!.trim().isNotEmpty)
+              ? event.organizerUsername!.trim()
+              : null;
+          final effectiveUserId = (event.organizerId != null &&
+                  event.organizerId!.trim().isNotEmpty)
+              ? event.organizerId!.trim()
+              : null;
+          final fallbackName = (event.organizerName.trim().isNotEmpty &&
+                  event.organizerName.trim().toLowerCase() != 'me')
+              ? event.organizerName.trim()
+              : null;
+
           ProfileNavigation.open(
-            username: event.organizerName.trim().toLowerCase() == 'me'
-                ? null
-                : (event.organizerName.isNotEmpty ? event.organizerName : null),
-            userId: event.organizerId?.isNotEmpty == true ? event.organizerId : null,
+            username: effectiveUsername ?? fallbackName,
+            userId: effectiveUserId,
           );
         },
         borderRadius: BorderRadius.circular(AppRadius.md),

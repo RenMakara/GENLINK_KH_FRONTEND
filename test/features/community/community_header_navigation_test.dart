@@ -161,6 +161,29 @@ class MockCommunityRepository implements CommunityRepository {
   }) async => true;
 
   @override
+  Future<List<OpportunityModel>> getOpportunities({
+    String? type,
+    bool includeExpired = false,
+    int page = 0,
+    int size = 20,
+  }) async => [];
+
+  @override
+  Future<OpportunityModel> getOpportunityDetails(String opportunityId) async {
+    return OpportunityModel(
+      id: opportunityId,
+      title: 'Mock Opportunity',
+      organization: 'Mock Org',
+      description: 'Mock Description',
+      type: 'JOB',
+    );
+  }
+
+  @override
+  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) async =>
+      !currentlySaved;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -191,7 +214,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Guest'), findsOneWidget);
+        expect(find.text('Home'), findsOneWidget);
 
         expect(find.byIcon(Icons.search_rounded), findsOneWidget);
         expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
@@ -245,11 +268,11 @@ void main() {
         ),
       );
 
-      final titleFinder = find.text('Guest');
+      final titleFinder = find.text('Home');
       expect(titleFinder, findsOneWidget);
       final Text titleText = tester.widget(titleFinder);
       expect(titleText.style?.fontWeight, equals(FontWeight.w800));
-      expect(titleText.style?.fontSize, equals(25.0));
+      expect(titleText.style?.fontSize, equals(26.0));
       expect(titleText.style?.letterSpacing, equals(-0.6));
 
       // Forum non-home mode preserves Community title
@@ -289,7 +312,7 @@ void main() {
         ),
       );
 
-      final homeFinder = find.text('Guest');
+      final homeFinder = find.text('Home');
       expect(homeFinder, findsOneWidget);
     });
 
@@ -316,11 +339,11 @@ void main() {
           ),
         );
 
-        final titleFinder = find.text('Guest');
+        final titleFinder = find.text('Home');
         expect(titleFinder, findsOneWidget);
         final Text titleText = tester.widget(titleFinder);
         expect(titleText.style?.fontWeight, equals(FontWeight.w800));
-        expect(titleText.style?.fontSize, equals(25.0));
+        expect(titleText.style?.fontSize, equals(26.0));
         expect(titleText.style?.letterSpacing, equals(-0.6));
         expect(tester.takeException(), isNull);
       },
@@ -408,7 +431,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Guest'), findsOneWidget);
+        expect(find.text('ទំព័រដើម'), findsOneWidget);
         expect(find.byIcon(Icons.search_rounded), findsOneWidget);
         expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
         expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
@@ -453,7 +476,7 @@ void main() {
             isNull,
             reason: 'Failed at size $size',
           );
-          expect(find.text('Guest'), findsOneWidget);
+          expect(find.text('Home'), findsOneWidget);
           expect(find.byIcon(Icons.search_rounded), findsOneWidget);
           expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
           expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
@@ -479,7 +502,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Guest'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
       final inkWidgets = tester.widgetList<Ink>(find.byType(Ink));
       for (final ink in inkWidgets) {
         final dec = ink.decoration as BoxDecoration?;
@@ -490,7 +513,7 @@ void main() {
 
   group('CommunityScreen Tab Navigation Tests', () {
     testWidgets(
-      'renders exactly 3 tabs: Feed, Forum, Event and excludes Career',
+      'renders 4 tabs: Feed, Forum, Event, and Career',
       (tester) async {
         final controller = CommunityController(
           repository: MockCommunityRepository(),
@@ -509,9 +532,10 @@ void main() {
         expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
         expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
         expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
+        expect(find.widgetWithText(InkWell, 'Career'), findsOneWidget);
 
-        expect(controller.categories, equals(['Feed', 'Forum', 'Event']));
-        expect(controller.categories.contains('Career'), isFalse);
+        expect(controller.categories, equals(['Feed', 'Forum', 'Event', 'Career']));
+        expect(controller.categories.contains('Career'), isTrue);
       },
     );
 
@@ -541,6 +565,10 @@ void main() {
         await tester.tap(find.widgetWithText(InkWell, 'Event'));
         await tester.pumpAndSettle();
         expect(controller.selectedCategory.value, equals('Event'));
+
+        await tester.tap(find.widgetWithText(InkWell, 'Career'));
+        await tester.pumpAndSettle();
+        expect(controller.selectedCategory.value, equals('Career'));
 
         await tester.tap(find.widgetWithText(InkWell, 'Feed'));
         await tester.pumpAndSettle();
@@ -646,6 +674,7 @@ void main() {
         expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
         expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
         expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
+        expect(find.widgetWithText(InkWell, 'Career'), findsOneWidget);
       },
     );
 
@@ -691,6 +720,7 @@ void main() {
           expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
           expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
           expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
+          expect(find.widgetWithText(InkWell, 'Career'), findsOneWidget);
         }
       },
     );
@@ -723,6 +753,7 @@ void main() {
         expect(find.widgetWithText(InkWell, 'ព័ត៌មាន'), findsOneWidget);
         expect(find.widgetWithText(InkWell, 'វេទិកា'), findsOneWidget);
         expect(find.widgetWithText(InkWell, 'ព្រឹត្តិការណ៍'), findsOneWidget);
+        expect(find.widgetWithText(InkWell, 'អាជីព'), findsOneWidget);
       },
     );
 
@@ -748,6 +779,7 @@ void main() {
       expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
       expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
       expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Career'), findsOneWidget);
     });
   });
 }

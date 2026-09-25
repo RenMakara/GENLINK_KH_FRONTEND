@@ -8,6 +8,7 @@ class GroupMemberTile extends StatelessWidget {
   final String? avatarUrl;
   final bool isOnline;
   final bool isSelected;
+  final bool isVerified;
   final VoidCallback onTap;
 
   const GroupMemberTile({
@@ -17,6 +18,7 @@ class GroupMemberTile extends StatelessWidget {
     this.avatarUrl,
     this.isOnline = false,
     required this.isSelected,
+    this.isVerified = false,
     required this.onTap,
   });
 
@@ -25,28 +27,35 @@ class GroupMemberTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final borderColor = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final defaultBg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final borderColor = isDark ? AppColors.darkBorderSubtle : const Color(0xFFE5E7EB);
+    final defaultBg = isDark ? AppColors.darkSurfacePrimary : Colors.white;
 
     final tileBg = isSelected
-        ? AppColors.chatPrimary.withValues(alpha: isDark ? 0.16 : 0.08)
+        ? (isDark
+            ? AppColors.chatPrimary.withValues(alpha: 0.16)
+            : const Color(0xFFF1F6FE))
         : defaultBg;
 
+    final cardBorderColor = isSelected
+        ? AppColors.chatPrimary.withValues(alpha: 0.5)
+        : borderColor;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: tileBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isSelected ? AppColors.chatPrimary : borderColor,
-                width: isSelected ? 1.4 : 1.0,
+                color: cardBorderColor,
+                width: isSelected ? 1.5 : 1.0,
               ),
             ),
             child: Row(
@@ -54,32 +63,48 @@ class GroupMemberTile extends StatelessWidget {
                 ChatAvatar(
                   avatarUrl: avatarUrl,
                   name: name,
-                  radius: 20,
+                  radius: 24,
                   isOnline: isOnline,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
 
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 14,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 15,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isVerified) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: AppColors.chatPrimary,
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         handle,
                         style: TextStyle(
                           color: textMuted,
-                          fontSize: 12,
+                          fontSize: 13,
+                          fontWeight: FontWeight.normal,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -88,14 +113,17 @@ class GroupMemberTile extends StatelessWidget {
                   ),
                 ),
 
-                Container(
-                  width: 22,
-                  height: 22,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isSelected ? AppColors.chatPrimary : Colors.transparent,
                     border: Border.all(
-                      color: isSelected ? AppColors.chatPrimary : borderColor,
+                      color: isSelected
+                          ? AppColors.chatPrimary
+                          : (isDark ? AppColors.darkBorderStrong : const Color(0xFFD6DAE1)),
                       width: 1.8,
                     ),
                   ),
@@ -103,7 +131,7 @@ class GroupMemberTile extends StatelessWidget {
                       ? const Icon(
                           Icons.check_rounded,
                           color: Colors.white,
-                          size: 14,
+                          size: 16,
                         )
                       : null,
                 ),

@@ -17,6 +17,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/achievements_screen.dart';
 import '../../features/profile/presentation/screens/interests_screen.dart';
 import '../../features/profile/presentation/screens/portfolio_screen.dart';
+import '../../features/profile/presentation/screens/portfolio_form_screen.dart';
 import '../../features/profile/presentation/screens/profile_setup_screen.dart';
 import '../../features/profile/presentation/screens/saved_items_screen.dart';
 import '../../features/settings/presentation/screens/account_settings_screen.dart';
@@ -280,6 +281,12 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.profilePortfolio,
       page: () => const PortfolioScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profilePortfolioForm,
+      page: () => const PortfolioFormScreen(),
       binding: ProfileBinding(),
       middlewares: [AuthMiddleware()],
     ),

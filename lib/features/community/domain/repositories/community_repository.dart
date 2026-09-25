@@ -164,6 +164,14 @@ abstract class CommunityRepository {
   Future<bool> followUser(String userId);
   Future<bool> unfollowUser(String userId);
   Future<bool> checkIsFollowing(String userId);
+  Future<List<FollowUserModel>> getFollowers(String userId, {int page = 0, int size = 50}) async =>
+      const [];
+  Future<List<FollowUserModel>> getFollowing(String userId, {int page = 0, int size = 50}) async =>
+      const [];
+  Future<List<FollowUserModel>> getPendingFollowRequests({int page = 0, int size = 50}) async =>
+      const [];
+  Future<bool> acceptFollowRequest(String followerUserId) async => true;
+  Future<bool> rejectFollowRequest(String followerUserId) async => true;
 
   Future<RsvpResponseModel> rsvpEvent(
     String eventId, {
@@ -245,4 +253,29 @@ abstract class CommunityRepository {
   }
 
   Future<EventModel> getEventDetails(String eventId);
+
+  // ── Opportunities (Career) ──────────────────────────────────────────
+
+  Future<List<OpportunityModel>> getOpportunities({
+    String? type,
+    bool includeExpired = false,
+    int page = 0,
+    int size = 20,
+  }) async => const [];
+
+  Future<OpportunityModel> getOpportunityDetails(String opportunityId) =>
+      throw UnimplementedError();
+
+  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) async =>
+      !currentlySaved;
+
+  Future<OpportunityModel> createOpportunity({
+    required String title,
+    String? organization,
+    String? type,
+    String? description,
+    DateTime? deadline,
+    String? location,
+    String? applyLink,
+  }) => throw UnimplementedError();
 }

@@ -52,9 +52,11 @@ dependencies:
 
   # Video preview + feed playback
   video_player: ^2.9.2
+  video_player_platform_interface: ^6.2.0
   firebase_core: ^4.14.0
   firebase_messaging: ^16.6.0
   flutter_local_notifications: ^22.3.0
+  flutter_svg: ^2.3.0
 
 
 # google_sign_in_android 7.2.12+ migrated to built-in Kotlin/AGP 9,
@@ -114,6 +116,7 @@ flutter:
     # General Images
     - assets/images/
     - assets/images/profile_covers/
+    - assets/splash/
 
   # ==============================
   # Fonts

@@ -228,11 +228,13 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
 class StoryViewerScreen extends StatefulWidget {
   final int initialGroupIndex;
   final List<StoryGroupModel> groups;
+  final int initialStoryIndex;
 
   const StoryViewerScreen({
     super.key,
     required this.initialGroupIndex,
     required this.groups,
+    this.initialStoryIndex = 0,
   });
 
   @override
@@ -292,6 +294,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       0,
       widget.groups.isEmpty ? 0 : widget.groups.length - 1,
     );
+    final initialGroup = _currentGroup;
+    final maxStoryIdx =
+        (initialGroup != null && initialGroup.stories.isNotEmpty)
+            ? initialGroup.stories.length - 1
+            : 0;
+    _currentStoryIdx = widget.initialStoryIndex.clamp(0, maxStoryIdx);
 
     _progressAnimController = AnimationController(vsync: this);
     _progressAnimController.addStatusListener((status) {
@@ -601,25 +609,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     }
 
-    if (story.isLiked && Get.isRegistered<NotificationController>()) {
-      final notifCtrl = Get.find<NotificationController>();
-      final group = _currentGroup;
-      notifCtrl.addActivityNotification(
-        NotificationModel(
-          id: 'notif_like_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
-          type: NotificationType.like,
-          title: 'Story Like',
-          body: '${group?.userName ?? "Someone"} liked your story.',
-          senderName: group?.userName ?? 'Community User',
-          senderAvatar: group?.userAvatar,
-          timeAgo: 'Just now',
-          timestamp: DateTime.now(),
-          isRead: false,
-          targetId: story.id,
-          targetType: 'story',
-        ),
-      );
-    }
   }
 
   void _triggerDoubleTapLike() {

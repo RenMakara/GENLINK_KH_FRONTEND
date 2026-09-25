@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../controllers/community_controller.dart';
 import 'widgets/author_row.dart';
 
 class CreateOpportunityScreen extends StatefulWidget {
@@ -16,30 +18,40 @@ class CreateOpportunityScreen extends StatefulWidget {
 class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _applyLinkController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _companyFocus = FocusNode();
+  final FocusNode _locationFocus = FocusNode();
+  final FocusNode _applyLinkFocus = FocusNode();
   final FocusNode _descFocus = FocusNode();
 
   bool _isSubmitting = false;
-  String? _selectedType;
+  String _selectedType = 'INTERNSHIP';
+  DateTime? _selectedDeadline;
 
-  static const List<String> _typeKeys = [
-    'community.opportunityFullTime',
-    'community.opportunityPartTime',
-    'community.opportunityInternship',
+  static const List<Map<String, String>> _types = [
+    {'key': 'INTERNSHIP', 'label': 'Internship'},
+    {'key': 'SCHOLARSHIP', 'label': 'Scholarship'},
+    {'key': 'JOB', 'label': 'Job'},
+    {'key': 'HACKATHON', 'label': 'Hackathon'},
+    {'key': 'VOLUNTEER', 'label': 'Volunteer'},
   ];
 
   bool get _canPost =>
       _titleController.text.trim().isNotEmpty &&
       _companyController.text.trim().isNotEmpty &&
-      _selectedType != null;
+      _selectedType.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
     _titleController.addListener(() => setState(() {}));
     _companyController.addListener(() => setState(() {}));
+    _locationController.addListener(() => setState(() {}));
+    _applyLinkController.addListener(() => setState(() {}));
     _descController.addListener(() => setState(() {}));
   }
 
@@ -47,9 +59,13 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
   void dispose() {
     _titleController.dispose();
     _companyController.dispose();
+    _locationController.dispose();
+    _applyLinkController.dispose();
     _descController.dispose();
     _titleFocus.dispose();
     _companyFocus.dispose();
+    _locationFocus.dispose();
+    _applyLinkFocus.dispose();
     _descFocus.dispose();
     super.dispose();
   }
@@ -58,8 +74,10 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
     final hasContent =
         _titleController.text.trim().isNotEmpty ||
         _companyController.text.trim().isNotEmpty ||
+        _locationController.text.trim().isNotEmpty ||
+        _applyLinkController.text.trim().isNotEmpty ||
         _descController.text.trim().isNotEmpty ||
-        _selectedType != null;
+        _selectedDeadline != null;
 
     if (hasContent) {
       final confirmed = await GenLinkConfirmDialog.showDiscard(
@@ -77,21 +95,60 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
     }
   }
 
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDeadline ?? now.add(const Duration(days: 30)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 730)),
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedDeadline = picked);
+    }
+  }
+
   void _submit() async {
     if (!_canPost || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      final commController = Get.find<CommunityController>();
+      final created = await commController.repository.createOpportunity(
+        title: _titleController.text.trim(),
+        organization: _companyController.text.trim(),
+        type: _selectedType,
+        description: _descController.text.trim(),
+        deadline: _selectedDeadline,
+        location: _locationController.text.trim(),
+        applyLink: _applyLinkController.text.trim(),
+      );
 
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
+      commController.opportunities.insert(0, created);
+      commController.opportunities.refresh();
 
-    AppNotificationBanner.showSuccess(
-      context: context,
-      title: 'community.opportunityPosted'.tr,
-      message: 'community.opportunityPostedMsg'.tr,
-    );
-    Navigator.pop(context);
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: 'community.opportunityPosted'.tr,
+        message: 'community.opportunityPostedMsg'.tr,
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      final msg = e is AppError
+          ? e.message
+          : 'Posting opportunities requires Administrator role.';
+      AppNotificationBanner.showWarning(
+        context: context,
+        title: 'Admin Only',
+        message: msg,
+      );
+    }
   }
 
   @override
@@ -198,7 +255,7 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
               ),
               const SizedBox(height: 20),
 
-              _buildLabel('Title', textMuted),
+              _buildLabel('Title *', textMuted),
               const SizedBox(height: 8),
               TextField(
                 controller: _titleController,
@@ -231,7 +288,7 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
 
               const SizedBox(height: 16),
 
-              _buildLabel('Company', textMuted),
+              _buildLabel('Organization / Company *', textMuted),
               const SizedBox(height: 8),
               TextField(
                 controller: _companyController,
@@ -259,6 +316,65 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                   textPrimary: textPrimary,
                 ),
                 textInputAction: TextInputAction.next,
+                onSubmitted: (_) => _locationFocus.requestFocus(),
+              ),
+
+              const SizedBox(height: 16),
+
+              _buildLabel('Location', textMuted),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _locationController,
+                focusNode: _locationFocus,
+                maxLines: 1,
+                maxLength: 120,
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => null,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: _inputDecoration(
+                  hint: 'e.g. Phnom Penh / Remote',
+                  isDark: isDark,
+                  textMuted: textMuted,
+                  inputBg: inputBg,
+                  cardBorder: cardBorder,
+                  textPrimary: textPrimary,
+                ),
+                textInputAction: TextInputAction.next,
+                onSubmitted: (_) => _applyLinkFocus.requestFocus(),
+              ),
+
+              const SizedBox(height: 16),
+
+              _buildLabel('Application URL / Link', textMuted),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _applyLinkController,
+                focusNode: _applyLinkFocus,
+                maxLines: 1,
+                keyboardType: TextInputType.url,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: _inputDecoration(
+                  hint: 'https://example.com/apply',
+                  isDark: isDark,
+                  textMuted: textMuted,
+                  inputBg: inputBg,
+                  cardBorder: cardBorder,
+                  textPrimary: textPrimary,
+                ),
+                textInputAction: TextInputAction.next,
                 onSubmitted: (_) => _descFocus.requestFocus(),
               ),
 
@@ -266,19 +382,23 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
 
               _buildLabel('community.opportunityType'.tr, textMuted),
               const SizedBox(height: 8),
-              Row(
-                children: _typeKeys.map((key) {
-                  final isSelected = _selectedType == key;
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        right: key != _typeKeys.last ? 8 : 0,
-                      ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _types.map((typeMap) {
+                    final key = typeMap['key']!;
+                    final label = typeMap['label']!;
+                    final isSelected = _selectedType == key;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedType = key),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? (isDark ? Colors.white : Colors.black87)
@@ -290,24 +410,70 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                                   : cardBorder,
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              key.tr,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? (isDark ? Colors.black : Colors.white)
-                                    : textMuted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? (isDark ? Colors.black : Colors.white)
+                                  : textMuted,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              _buildLabel('Application Deadline', textMuted),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickDeadline,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: inputBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 18,
+                        color: _selectedDeadline != null
+                            ? textPrimary
+                            : textMuted,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _selectedDeadline != null
+                            ? '${_selectedDeadline!.year}-${_selectedDeadline!.month.toString().padLeft(2, '0')}-${_selectedDeadline!.day.toString().padLeft(2, '0')}'
+                            : 'Select deadline date (optional)',
+                        style: TextStyle(
+                          color: _selectedDeadline != null
+                              ? textPrimary
+                              : textMuted,
+                          fontSize: 14.5,
+                          fontWeight: _selectedDeadline != null
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_selectedDeadline != null)
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedDeadline = null),
+                          child: Icon(Icons.clear, size: 18, color: textMuted),
+                        ),
+                    ],
+                  ),
+                ),
               ),
 
               const SizedBox(height: 16),

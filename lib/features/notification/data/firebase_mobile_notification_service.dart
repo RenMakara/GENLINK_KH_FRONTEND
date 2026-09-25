@@ -290,8 +290,8 @@ class MobilePushNotificationRouter {
 
       case MobilePushNotificationDestination.events:
         Get.to<void>(() => const EventsScreen());
-      case MobilePushNotificationDestination.friendRequests:
-        Get.to<void>(() => const FriendRequestsScreen());
+            case MobilePushNotificationDestination.friendRequests:
+        Get.to<void>(() => FriendRequestsScreen(highlightUserId: payload.referenceId));
       case MobilePushNotificationDestination.finance:
         Get.to<void>(() => const FinanceScreen());
       case MobilePushNotificationDestination.budget:

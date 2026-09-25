@@ -22,24 +22,36 @@ class _MainScreenState extends State<MainScreen> {
   late final List<Widget> pages = [
     KeyedSubtree(
       key: const PageStorageKey<String>('page_home'),
-      child: CommunityScreen(
-        isHomeScreen: true,
-        onNavigateTab: (index) => controller.changeIndex(index),
+      child: PageStorage(
+        bucket: PageStorageBucket(),
+        child: CommunityScreen(
+          isHomeScreen: true,
+          onNavigateTab: (index) => controller.changeIndex(index),
+        ),
       ),
     ),
     KeyedSubtree(
       key: const PageStorageKey<String>('page_growth'),
-      child: LevelUpScreen(
-        onNavigateTab: (index) => controller.changeIndex(index),
+      child: PageStorage(
+        bucket: PageStorageBucket(),
+        child: LevelUpScreen(
+          onNavigateTab: (index) => controller.changeIndex(index),
+        ),
       ),
     ),
-    const KeyedSubtree(
-      key: PageStorageKey<String>('page_finance'),
-      child: FinanceScreen(),
+    KeyedSubtree(
+      key: const PageStorageKey<String>('page_finance'),
+      child: PageStorage(
+        bucket: PageStorageBucket(),
+        child: const FinanceScreen(),
+      ),
     ),
-    const KeyedSubtree(
-      key: PageStorageKey<String>('page_profile'),
-      child: ProfileScreen(),
+    KeyedSubtree(
+      key: const PageStorageKey<String>('page_profile'),
+      child: PageStorage(
+        bucket: PageStorageBucket(),
+        child: const ProfileScreen(),
+      ),
     ),
   ];
 
@@ -62,6 +74,10 @@ class _MainScreenState extends State<MainScreen> {
         extendBody: true,
         body: NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification notification) {
+            if (notification.metrics.axis != Axis.vertical) {
+              return false;
+            }
+
             if (notification is ScrollUpdateNotification) {
               final double pixels = notification.metrics.pixels;
               final double maxScroll = notification.metrics.maxScrollExtent;

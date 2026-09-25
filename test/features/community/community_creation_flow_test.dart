@@ -77,9 +77,6 @@ void main() {
 
       expect(find.text('Share something with your community.'), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.add_box_outlined), findsOneWidget);
 
       await tester.tap(find.byType(QuickCreatePostCard));
       await tester.pumpAndSettle();

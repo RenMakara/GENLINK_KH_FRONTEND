@@ -23,6 +23,7 @@ class AppScreenHeader extends StatelessWidget
     this.includeSafeArea = true,
     this.maxWidth = 760,
     this.toolbarHeight = 52,
+    this.leadingGap = AppSpacing.md,
   });
 
   static const double standardHeight = 52;
@@ -36,6 +37,7 @@ class AppScreenHeader extends StatelessWidget
   final bool includeSafeArea;
   final double maxWidth;
   final double toolbarHeight;
+  final double leadingGap;
 
   @override
   Size get preferredSize => Size.fromHeight(toolbarHeight);
@@ -68,7 +70,7 @@ class AppScreenHeader extends StatelessWidget
                   height: 40,
                   child: Center(child: leading),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                SizedBox(width: leadingGap),
               ],
               Expanded(
                 child: titleWidget ??
@@ -201,8 +203,6 @@ class AppHeaderActionButton extends StatelessWidget {
     final isNarrow = width < 360;
     final buttonSize = isVeryNarrow ? 36.0 : (isNarrow ? 38.0 : 40.0);
     final iconSize = isVeryNarrow ? 19.0 : (isNarrow ? 20.0 : 20.5);
-    final borderRadius = BorderRadius.circular(buttonSize * 0.30);
-
     final showCountBadge = badgeCount != null && badgeCount! > 0;
     final showDotBadge = !showCountBadge && (badgeCount == null && hasBadge);
 
@@ -213,15 +213,16 @@ class AppHeaderActionButton extends StatelessWidget {
         message: tooltip,
         child: Material(
           color: Colors.transparent,
+          shape: const CircleBorder(),
           child: InkWell(
             onTap: onTap,
-            borderRadius: borderRadius,
+            customBorder: const CircleBorder(),
             child: Ink(
               width: buttonSize,
               height: buttonSize,
               decoration: BoxDecoration(
                 color: semantic.surface,
-                borderRadius: borderRadius,
+                shape: BoxShape.circle,
                 border: Border.all(color: semantic.borderSubtle, width: 0.8),
               ),
               child: Center(

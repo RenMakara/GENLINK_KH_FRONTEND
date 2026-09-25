@@ -833,8 +833,6 @@ class _WelcomeBrand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final semantic = context.semanticColors;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -842,8 +840,8 @@ class _WelcomeBrand extends StatelessWidget {
         SizedBox(height: compact ? 2 : AppSpacing.xs),
         AppWordmark(
           height: compact ? 18 : 22,
-          color: semantic.primaryText,
         ),
+
       ],
     );
   }

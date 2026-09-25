@@ -54,6 +54,27 @@ void main() {
       await tester.tap(find.byIcon(Icons.arrow_back));
       expect(backPressed, isTrue);
     });
+
+    testWidgets('responds to trophy tap and supports custom actions', (tester) async {
+      var trophyTapped = false;
+      await tester.pumpWidget(
+        buildTestableWidget(
+          MultiplayerHeader(
+            onBack: () {},
+            title: '1v1 Multiplayer Quiz',
+            showTrophy: true,
+            onTrophyTap: () => trophyTapped = true,
+            actions: const [Icon(Icons.more_vert)],
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.emoji_events_rounded));
+      expect(trophyTapped, isTrue);
+    });
   });
 
   group('MultiplayerQuizSearchBar', () {

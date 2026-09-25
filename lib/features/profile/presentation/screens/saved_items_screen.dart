@@ -10,6 +10,7 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../community/domain/models/community_models.dart';
 import '../../../community/presentation/screens/event_details_screen.dart';
+import '../../../community/presentation/screens/opportunity_details_screen.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_controller.dart';
 
@@ -39,6 +40,13 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
       await Get.to(
         () => EventDetailsScreen(
           event: EventModel(id: item.itemId, title: item.title ?? ''),
+        ),
+      );
+    } else if (item.itemType == 'OPPORTUNITY') {
+      await Get.to(
+        () => OpportunityDetailsScreen(
+          opportunityId: item.itemId,
+          initialTitle: item.title,
         ),
       );
     } else if (item.itemType == 'SHORT_CONTENT') {

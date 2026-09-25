@@ -4,12 +4,13 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import 'community_creation_flow.dart';
 
 /// Compact "Share something" entry point for the community feed.
 ///
-/// The card keeps the existing create-post and optional creation callbacks;
-/// only their visual presentation is condensed into the Home feed design.
+/// Features the user's avatar and a pill-shaped input capsule ("Share something with your community...").
 class QuickCreatePostCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onTapPost;
@@ -33,8 +34,30 @@ class QuickCreatePostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final semantic = context.semanticColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasOptionalActions =
         onTapPost != null || onTapDiscussion != null || onTapEvent != null;
+
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+
+    Widget buildAvatar() {
+      if (avatarUrl != null && avatarUrl!.isNotEmpty) {
+        return AppAvatar(imageUrl: avatarUrl, name: userName, size: 40);
+      }
+      if (authController == null) {
+        return AppAvatar(name: userName, size: 40);
+      }
+      return Obx(() {
+        final authUser = authController.currentUser.value;
+        return AppAvatar(
+          imageUrl: authUser?.avatarUrl,
+          name: userName ?? authUser?.fullName,
+          size: 40,
+        );
+      });
+    }
 
     return Padding(
       padding: padding,
@@ -42,47 +65,81 @@ class QuickCreatePostCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap ?? () => CommunityCreationFlow.openCreatePost(context),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(16),
           child: Ink(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.chatPrimarySoft,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: semantic.borderSubtle),
+              color: isDark ? const Color(0xFF1B1B1E) : semantic.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: semantic.borderSubtle.withValues(
+                  alpha: isDark ? 0.6 : 1.0,
+                ),
+                width: 0.8,
+              ),
               boxShadow: semantic.cardShadow,
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.edit_outlined,
-                  color: AppColors.brandPrimary,
-                  size: 24,
-                ),
+                buildAvatar(),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _prompt,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  child: Container(
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.black.withValues(alpha: 0.35)
+                          : Colors.black.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.06),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.edit_outlined,
                           color: semantic.secondaryText,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
-                        ) ??
-                        TextStyle(
-                          color: semantic.secondaryText,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
+                          size: 18,
                         ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _prompt,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: semantic.secondaryText,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w400,
+                                  fontFamilyFallback: const [
+                                    'KantumruyPro',
+                                    'Sora',
+                                  ],
+                                ) ??
+                                TextStyle(
+                                  color: semantic.secondaryText,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w400,
+                                  fontFamilyFallback: const [
+                                    'KantumruyPro',
+                                    'Sora',
+                                  ],
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                if (hasOptionalActions)
-                  _buildOptionalActionIcons(semantic)
-                else
-                  _buildDecorativeActionIcons(semantic),
+                if (hasOptionalActions) ...[
+                  const SizedBox(width: 8),
+                  _buildOptionalActionIcons(semantic),
+                ],
               ],
             ),
           ),
@@ -109,30 +166,6 @@ class QuickCreatePostCard extends StatelessWidget {
         : 'Share something with your community.';
   }
 
-  Widget _buildDecorativeActionIcons(AppSemanticColors semantic) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _QuickCreateActionIcon(
-          icon: Icons.image_outlined,
-          tooltip: 'Post',
-          color: AppColors.brandPrimary,
-        ),
-        _buildDivider(semantic),
-        _QuickCreateActionIcon(
-          icon: Icons.bar_chart_rounded,
-          tooltip: 'Discussion',
-          color: AppColors.brandPrimary,
-        ),
-        _buildDivider(semantic),
-        _QuickCreateActionIcon(
-          icon: Icons.add_box_outlined,
-          tooltip: 'Event',
-          color: AppColors.brandPrimary,
-        ),
-      ],
-    );
-  }
 
   Widget _buildOptionalActionIcons(AppSemanticColors semantic) {
     return Row(

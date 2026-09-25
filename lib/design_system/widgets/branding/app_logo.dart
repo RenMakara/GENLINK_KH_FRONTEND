@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../colors/app_colors.dart';
 import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
 abstract final class AppLogoAssets {
-  static const markLight = 'assets/logos/gl_mark_light.png';
+  static const glLight = 'assets/splash/genlink_gl_light.svg';
+  static const glDark = 'assets/splash/genlink_gl_dark.svg';
+  static const wordmarkLight = 'assets/splash/genlink_wordmark_light.svg';
+  static const wordmarkDark = 'assets/splash/genlink_wordmark_dark.svg';
 
-  static const markDark = 'assets/logos/gl_mark_dark.png';
-
-  static const wordmark = 'assets/logos/genlink_wordmark.png';
+  // Raster PNG companions
+  static const markLight = 'assets/splash/genlink_gl_light.png';
+  static const markDark = 'assets/splash/genlink_gl_dark.png';
+  static const wordmark = wordmarkLight;
 }
 
 class AppLogoMark extends StatelessWidget {
@@ -19,8 +25,16 @@ class AppLogoMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final assetPath = isDark ? AppLogoAssets.glDark : AppLogoAssets.glLight;
+    if (assetPath.endsWith('.svg')) {
+      return SvgPicture.asset(
+        assetPath,
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
     return Image.asset(
-      isDark ? AppLogoAssets.markDark : AppLogoAssets.markLight,
+      assetPath,
       height: size,
       fit: BoxFit.contain,
     );
@@ -35,15 +49,24 @@ class AppWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = color ?? Theme.of(context).colorScheme.onSurface;
-    return ColorFiltered(
-      colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
-      child: Image.asset(
-        AppLogoAssets.wordmark,
-        height: height,
-        fit: BoxFit.contain,
-      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final assetPath = isDark
+        ? AppLogoAssets.wordmarkDark
+        : AppLogoAssets.wordmarkLight;
+
+    final image = SvgPicture.asset(
+      assetPath,
+      height: height,
+      fit: BoxFit.contain,
     );
+
+    if (color != null) {
+      return ColorFiltered(
+        colorFilter: ColorFilter.mode(color!, BlendMode.srcIn),
+        child: image,
+      );
+    }
+    return image;
   }
 }
 
@@ -105,27 +128,35 @@ class AppLogoPlate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       height: size,
       width: size,
       decoration: BoxDecoration(
         color: isDark
-            ? theme.colorScheme.surface
-            : theme.colorScheme.surface.withValues(alpha: 0.9),
+            ? AppColors.darkSurfacePrimary
+            : AppColors.lightSurfacePrimary.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(size * AppRadius.plateRatio),
+        border: Border.all(
+          color: isDark
+              ? AppColors.darkBorderSubtle
+              : AppColors.lightBorderSubtle,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.06),
-            blurRadius: 40,
-            spreadRadius: 2,
-            offset: const Offset(0, 12),
+            color: isDark
+                ? const Color(0xFF0EA5E9).withValues(alpha: 0.18)
+                : Colors.black.withValues(alpha: 0.06),
+            blurRadius: isDark ? 30 : 40,
+            spreadRadius: isDark ? 1 : 2,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Center(child: AppLogoMark(size: size * 0.34)),
+      child: Center(child: AppLogoMark(size: size * 0.44)),
     );
   }
 }
+

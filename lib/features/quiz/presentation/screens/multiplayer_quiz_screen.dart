@@ -69,20 +69,44 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
     return Obx(() {
       final allQuizzes = quizController.quizzes;
       if (quizController.isQuizListLoading.value && allQuizzes.isEmpty) {
-        return _centeredLoader('quiz.loadingMultiplayer'.tr);
+        return Column(
+          children: [
+            MultiplayerHeader(
+              onBack: _leave,
+              title: 'quiz.multiplayerQuiz'.tr,
+              subtitle: 'quiz.multiplayerSubtitle'.tr,
+              onTrophyTap: () => Get.toNamed(AppRoutes.leaderboard),
+            ),
+            Expanded(
+              child: _centeredLoader('quiz.loadingMultiplayer'.tr),
+            ),
+          ],
+        );
       }
       if (allQuizzes.isEmpty) {
-        return _emptyState(
-          context,
-          icon: Icons.quiz_outlined,
-          title: 'quiz.noQuizzesAvailable'.tr,
-          message: quizController.quizListError.value ??
-              'quiz.noQuizzesAvailable'.tr,
-          action: QuizGradientButton(
-            label: 'common.retry'.tr,
-            onPressed: () => quizController.loadQuizzes(),
-            height: 50,
-          ),
+        return Column(
+          children: [
+            MultiplayerHeader(
+              onBack: _leave,
+              title: 'quiz.multiplayerQuiz'.tr,
+              subtitle: 'quiz.multiplayerSubtitle'.tr,
+              onTrophyTap: () => Get.toNamed(AppRoutes.leaderboard),
+            ),
+            Expanded(
+              child: _emptyState(
+                context,
+                icon: Icons.quiz_outlined,
+                title: 'quiz.noQuizzesAvailable'.tr,
+                message: quizController.quizListError.value ??
+                    'quiz.noQuizzesAvailable'.tr,
+                action: QuizGradientButton(
+                  label: 'common.retry'.tr,
+                  onPressed: () => quizController.loadQuizzes(),
+                  height: 50,
+                ),
+              ),
+            ),
+          ],
         );
       }
 
@@ -100,89 +124,99 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
         return titleMatch || categoryMatch;
       }).toList();
 
-      return ListView(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      return Column(
         children: [
           MultiplayerHeader(
             onBack: _leave,
             title: 'quiz.multiplayerQuiz'.tr,
             subtitle: 'quiz.multiplayerSubtitle'.tr,
+            onTrophyTap: () => Get.toNamed(AppRoutes.leaderboard),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'quiz.chooseMultiplayerQuiz'.tr,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: semantic.primaryText,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'quiz.chooseMultiplayerQuizDescription'.tr,
-            style: TextStyle(
-              fontSize: 12.5,
-              color: semantic.secondaryText,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 16),
-          MultiplayerQuizSearchBar(
-            controller: _searchController,
-            onChanged: (val) => setState(() => _searchQuery = val),
-            onClear: () {
-              setState(() {
-                _searchController.clear();
-                _searchQuery = '';
-              });
-            },
-          ),
-          const SizedBox(height: 14),
-          MultiplayerCategoryFilterChips(
-            categories: quizController.categories,
-            selectedCategoryId: _selectedCategoryId,
-            onCategorySelected: (catId) =>
-                setState(() => _selectedCategoryId = catId),
-          ),
-          const SizedBox(height: 16),
-          if (filteredQuizzes.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      size: 44,
-                      color: semantic.textMuted,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'quiz.noMatchingQuizzes'.tr,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: semantic.secondaryText,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                4,
+                AppSpacing.lg,
+                32,
+              ),
+              children: [
+                Text(
+                  'quiz.chooseMultiplayerQuiz'.tr,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: semantic.primaryText,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'quiz.chooseMultiplayerQuizDescription'.tr,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: semantic.secondaryText,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                MultiplayerQuizSearchBar(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  onClear: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                ),
+                const SizedBox(height: 14),
+                MultiplayerCategoryFilterChips(
+                  categories: quizController.categories,
+                  selectedCategoryId: _selectedCategoryId,
+                  onCategorySelected: (catId) =>
+                      setState(() => _selectedCategoryId = catId),
+                ),
+                const SizedBox(height: 16),
+                if (filteredQuizzes.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            size: 44,
+                            color: semantic.textMuted,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'quiz.noMatchingQuizzes'.tr,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: semantic.secondaryText,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  )
+                else ...[
+                  for (final quiz in filteredQuizzes) ...[
+                    MultiplayerQuizCard(
+                      quiz: quiz,
+                      onTap: () => controller.startMatch(quiz.quizId),
+                    ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              ),
-            )
-          else ...[
-            for (final quiz in filteredQuizzes) ...[
-              MultiplayerQuizCard(
-                quiz: quiz,
-                onTap: () => controller.startMatch(quiz.quizId),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ],
-          const SizedBox(height: 8),
-          const MultiplayerDiscoveryCard(),
-          const SizedBox(height: 32),
+                ],
+                const SizedBox(height: 8),
+                const MultiplayerDiscoveryCard(),
+              ],
+            ),
+          ),
         ],
       );
     });
@@ -200,60 +234,66 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
       _ => 'quiz.waitingForOpponent'.tr,
     };
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                children: [
-                  MultiplayerHeader(
-                    onBack: _leave,
-                    title: 'quiz.multiplayerQuiz'.tr,
-                    showTrophy: false,
-                  ),
-                  const SizedBox(height: 8),
-                  MultiplayerMatchupHero(
-                    currentUser: currentUser,
-                    opponent: controller.opponent,
-                    isSearching: true,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: semantic.primaryText,
-                      letterSpacing: -0.2,
+    return Column(
+      children: [
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        MultiplayerMatchupHero(
+                          currentUser: currentUser,
+                          opponent: controller.opponent,
+                          isSearching: true,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: semantic.primaryText,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'quiz.matchmakingSubtitle'.tr,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: semantic.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const MultiplayerFeatureHighlightsRow(),
+                        const SizedBox(height: 14),
+                        const MultiplayerDidYouKnowCard(),
+                        const Spacer(),
+                        const SizedBox(height: 16),
+                        CancelMatchButton(onCancel: _leave),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'quiz.matchmakingSubtitle'.tr,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: semantic.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const MultiplayerFeatureHighlightsRow(),
-                  const SizedBox(height: 14),
-                  const MultiplayerDidYouKnowCard(),
-                  const Spacer(),
-                  const SizedBox(height: 16),
-                  CancelMatchButton(onCancel: _leave),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -263,58 +303,64 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
         Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
     final currentUser = authController?.currentUser.value;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                children: [
-                  MultiplayerHeader(
-                    onBack: _leave,
-                    title: 'quiz.multiplayerQuiz'.tr,
-                    showTrophy: false,
-                  ),
-                  const SizedBox(height: 8),
-                  MultiplayerMatchupHero(
-                    currentUser: currentUser,
-                    opponent: controller.opponent,
-                    isSearching: false,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'quiz.opponentFound'.tr,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: semantic.primaryText,
-                      letterSpacing: -0.2,
+    return Column(
+      children: [
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        MultiplayerMatchupHero(
+                          currentUser: currentUser,
+                          opponent: controller.opponent,
+                          isSearching: false,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'quiz.opponentFound'.tr,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: semantic.primaryText,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'quiz.preparingMatch'.tr,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: semantic.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        CircularProgressIndicator(color: semantic.primary),
+                        const Spacer(),
+                        const SizedBox(height: 16),
+                        CancelMatchButton(onCancel: _leave),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'quiz.preparingMatch'.tr,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: semantic.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  CircularProgressIndicator(color: semantic.primary),
-                  const Spacer(),
-                  const SizedBox(height: 16),
-                  CancelMatchButton(onCancel: _leave),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -553,45 +599,78 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
   }
 
   Widget _buildDisconnected(BuildContext context) {
-    return _emptyState(
-      context,
-      icon: Icons.cloud_off_outlined,
-      title: 'quiz.matchDisconnected'.tr,
-      message: 'quiz.matchReconnectMessage'.tr,
-      action: QuizGradientButton(
-        label: 'common.retry'.tr,
-        icon: Icons.refresh_rounded,
-        onPressed: controller.retry,
-        height: 50,
-      ),
+    return Column(
+      children: [
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
+        ),
+        Expanded(
+          child: _emptyState(
+            context,
+            icon: Icons.cloud_off_outlined,
+            title: 'quiz.matchDisconnected'.tr,
+            message: 'quiz.matchReconnectMessage'.tr,
+            action: QuizGradientButton(
+              label: 'common.retry'.tr,
+              icon: Icons.refresh_rounded,
+              onPressed: controller.retry,
+              height: 50,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildAbandoned(BuildContext context) {
-    return _emptyState(
-      context,
-      icon: Icons.flag_outlined,
-      title: 'quiz.matchAbandoned'.tr,
-      message: 'quiz.matchAbandonedMessage'.tr,
-      action: QuizGradientButton(
-        label: 'common.retry'.tr,
-        onPressed: controller.retry,
-        height: 50,
-      ),
+    return Column(
+      children: [
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
+        ),
+        Expanded(
+          child: _emptyState(
+            context,
+            icon: Icons.flag_outlined,
+            title: 'quiz.matchAbandoned'.tr,
+            message: 'quiz.matchAbandonedMessage'.tr,
+            action: QuizGradientButton(
+              label: 'common.retry'.tr,
+              onPressed: controller.retry,
+              height: 50,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildError(BuildContext context) {
-    return _emptyState(
-      context,
-      icon: Icons.error_outline,
-      title: 'quiz.multiplayerError'.tr,
-      message: controller.errorMessage.value ?? 'quiz.requestFailed'.tr,
-      action: QuizGradientButton(
-        label: 'common.retry'.tr,
-        onPressed: controller.retry,
-        height: 50,
-      ),
+    return Column(
+      children: [
+        MultiplayerHeader(
+          onBack: _leave,
+          title: 'quiz.multiplayerQuiz'.tr,
+          showTrophy: false,
+        ),
+        Expanded(
+          child: _emptyState(
+            context,
+            icon: Icons.error_outline,
+            title: 'quiz.multiplayerError'.tr,
+            message: controller.errorMessage.value ?? 'quiz.requestFailed'.tr,
+            action: QuizGradientButton(
+              label: 'common.retry'.tr,
+              onPressed: controller.retry,
+              height: 50,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

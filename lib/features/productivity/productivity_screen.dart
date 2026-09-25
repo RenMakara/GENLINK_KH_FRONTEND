@@ -82,6 +82,7 @@ class _DashboardView extends StatelessWidget {
               ProductivityHeader(
                 streakCount: habitStreak,
                 onNotifications: () => Get.toNamed(AppRoutes.notifications),
+                onBack: () => Navigator.of(context).maybePop(),
               ),
               const SizedBox(height: 18),
               ProductivitySummaryCard(
@@ -123,7 +124,16 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: BackButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
+      body: const Center(child: CircularProgressIndicator()),
+    );
   }
 }
 
@@ -136,6 +146,13 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: BackButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -159,6 +176,13 @@ class _UnavailableView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: BackButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
       body: Center(child: Text('productivity.availableAfterSignIn'.tr)),
     );
   }

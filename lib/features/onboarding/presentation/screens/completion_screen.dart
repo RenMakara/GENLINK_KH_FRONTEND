@@ -227,8 +227,6 @@ class _CompletionBrand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final semantic = context.semanticColors;
-
     return AnimatedBuilder(
       animation: entranceAnimation,
       builder: (context, child) => Transform.scale(
@@ -243,7 +241,8 @@ class _CompletionBrand extends StatelessWidget {
         children: [
           const AppLogoMark(size: 72),
           const SizedBox(height: AppSpacing.xs),
-          AppWordmark(height: 18, color: semantic.primaryText),
+          const AppWordmark(height: 18),
+
         ],
       ),
     );

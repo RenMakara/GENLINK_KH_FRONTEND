@@ -19,6 +19,8 @@ import '../productivity/presentation/controllers/productivity_controller.dart';
 import '../productivity/presentation/productivity_scope.dart';
 import '../home/domain/entities/home_entity.dart';
 import '../home/presentation/controllers/home_controller.dart';
+import 'package:genlink_frontend/features/challenge/domain/models/challenge_models.dart';
+import 'package:genlink_frontend/features/finance/finance_screen.dart';
 
 class LevelUpScreen extends GetView<HomeController> {
   const LevelUpScreen({super.key, this.onNavigateTab});
@@ -399,7 +401,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
             icon: Icons.quiz_outlined,
             color: const Color(0xFFF2B84B),
             completed: false,
-            onTap: () => Get.toNamed(AppRoutes.quizDashboard),
+            onTap: () => _handleNextMove(challenge),
           ),
         );
       }
@@ -416,6 +418,45 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
 
   void _toggleDateDetail() {
     setState(() => showDateDetail = !showDateDetail);
+  }
+
+  void _handleNextMove(ChallengePreview challenge) {
+    switch (challenge.resolvedType) {
+      case ChallengeType.habit:
+        Get.to(() => const HabitHomeScreen());
+        break;
+
+      case ChallengeType.task:
+        Get.to(() => const TasksPage());
+        break;
+
+      case ChallengeType.quiz:
+        Get.toNamed(AppRoutes.quizDashboard);
+        break;
+
+      case ChallengeType.finance:
+        if (widget.onNavigateTab != null) {
+          widget.onNavigateTab!(2);
+        } else {
+          Get.to(() => const FinanceScreen());
+        }
+        break;
+
+      case ChallengeType.focus:
+        Get.to(() => const FocusPage());
+        break;
+
+      case ChallengeType.event:
+      case ChallengeType.community:
+      case ChallengeType.unknown:
+        final id = challenge.challengeId.trim();
+        if (id.isNotEmpty) {
+          Get.toNamed(AppRoutes.challengeDetail, arguments: id);
+        } else {
+          Get.toNamed(AppRoutes.challengeList);
+        }
+        break;
+    }
   }
 
   @override
@@ -678,7 +719,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       badgeText: xpReward != null && xpReward > 0
                           ? '+$xpReward XP'
                           : null,
-                      onTap: () => Get.toNamed(AppRoutes.challengeList),
+                      onTap: () => _handleNextMove(challenge),
                     ),
                   ],
 

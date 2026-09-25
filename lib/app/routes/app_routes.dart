@@ -49,6 +49,7 @@ abstract final class AppRoutes {
   static const profileAchievements = '/profile/achievements';
   static const profileSaved = '/profile/saved';
   static const profilePortfolio = '/profile/portfolio';
+  static const profilePortfolioForm = '/profile/portfolio/form';
   static const profileInterests = '/profile/interests';
   static const settings = '/settings';
   static const settingsNotifications = '/settings/notifications';

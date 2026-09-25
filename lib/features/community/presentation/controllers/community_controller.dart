@@ -53,7 +53,7 @@ class CommunityController extends GetxController {
 
   final selectedCategory = 'Feed'.obs;
   final selectedForumCategory = 'All'.obs;
-  final categories = ['Feed', 'Forum', 'Event'];
+  final categories = ['Feed', 'Forum', 'Event', 'Career'];
 
   final isLoadingFeed = false.obs;
   final isRefreshingFeed = false.obs;
@@ -141,6 +141,23 @@ class CommunityController extends GetxController {
 
   final eventBookmarkLoadingIds = <String>{}.obs;
 
+  // ── Opportunities (Career) ──────────────────────────────────────────
+  final opportunities = <OpportunityModel>[].obs;
+  final isLoadingOpportunities = false.obs;
+  final isRefreshingOpportunities = false.obs;
+  final hasOpportunitiesError = false.obs;
+  final opportunitiesErrorMessage = ''.obs;
+  final selectedOpportunityType = 'All'.obs;
+  final opportunityBookmarkLoadingIds = <String>{}.obs;
+  static const opportunityCategories = [
+    'All',
+    'Internship',
+    'Scholarship',
+    'Job',
+    'Hackathon',
+    'Volunteer',
+  ];
+
   void _upsertEvent(RxList<EventModel> collection, EventModel event) {
     final index = collection.indexWhere((item) => item.id == event.id);
     if (index == -1) {
@@ -208,6 +225,7 @@ class CommunityController extends GetxController {
               ? Get.find<AuthController>().currentUser.value?.id ?? ''
               : '');
       final currentName = CurrentUser.name;
+      final currentUsername = CurrentUser.username;
       final currentAvatar = CurrentUser.avatarUrl;
 
       if (createdEvent.organizerId == null || createdEvent.organizerId!.isEmpty) {
@@ -217,6 +235,9 @@ class CommunityController extends GetxController {
             organizerName: createdEvent.organizerName.isNotEmpty
                 ? createdEvent.organizerName
                 : (currentName.isNotEmpty && currentName != 'Guest' ? currentName : ''),
+            organizerUsername: createdEvent.organizerUsername?.isNotEmpty == true
+                ? createdEvent.organizerUsername
+                : (currentUsername.isNotEmpty ? currentUsername : null),
             organizerAvatar: createdEvent.organizerAvatar ?? currentAvatar,
           );
         }
@@ -298,6 +319,7 @@ class CommunityController extends GetxController {
             ? Get.find<AuthController>().currentUser.value?.id ?? ''
             : '');
     final currentName = CurrentUser.name;
+    final currentUsername = CurrentUser.username;
     final currentAvatar = CurrentUser.avatarUrl;
 
     var eventToStore = event.copyWith();
@@ -308,6 +330,9 @@ class CommunityController extends GetxController {
           organizerName: eventToStore.organizerName.isNotEmpty
               ? eventToStore.organizerName
               : (currentName.isNotEmpty && currentName != 'Guest' ? currentName : ''),
+          organizerUsername: eventToStore.organizerUsername?.isNotEmpty == true
+              ? eventToStore.organizerUsername
+              : (currentUsername.isNotEmpty ? currentUsername : null),
           organizerAvatar: eventToStore.organizerAvatar ?? currentAvatar,
         );
       }
@@ -828,6 +853,81 @@ class CommunityController extends GetxController {
 
   Future<void> refreshEvents() async {
     await fetchEvents(isRefresh: true);
+  }
+
+  // ── Opportunities (Career) ──────────────────────────────────────────
+
+  Future<void> fetchOpportunities({bool isRefresh = false}) async {
+    if (isLoadingOpportunities.value || isRefreshingOpportunities.value) return;
+    if (isRefresh) {
+      isRefreshingOpportunities.value = true;
+    } else {
+      isLoadingOpportunities.value = true;
+    }
+    hasOpportunitiesError.value = false;
+    opportunitiesErrorMessage.value = '';
+
+    try {
+      final type = selectedOpportunityType.value == 'All'
+          ? null
+          : selectedOpportunityType.value;
+      final results = await repository.getOpportunities(
+        type: type,
+        includeExpired: false,
+      );
+      opportunities.assignAll(results);
+    } catch (e) {
+      if (e is! NoSuchMethodError) {
+        debugPrint('[CommunityController] fetchOpportunities error: $e');
+      }
+      hasOpportunitiesError.value = true;
+      opportunitiesErrorMessage.value =
+          e is AppError ? e.message : 'Unable to load opportunities';
+    } finally {
+      if (isRefresh) {
+        isRefreshingOpportunities.value = false;
+      } else {
+        isLoadingOpportunities.value = false;
+      }
+      opportunities.refresh();
+    }
+  }
+
+  Future<void> refreshOpportunities() async {
+    await fetchOpportunities(isRefresh: true);
+  }
+
+  void filterOpportunitiesByType(String type) {
+    if (selectedOpportunityType.value == type) return;
+    selectedOpportunityType.value = type;
+    fetchOpportunities();
+  }
+
+  Future<bool> toggleOpportunityBookmark(String opportunityId) async {
+    if (opportunityBookmarkLoadingIds.contains(opportunityId)) return false;
+    opportunityBookmarkLoadingIds.add(opportunityId);
+
+    try {
+      final index = opportunities.indexWhere((o) => o.id == opportunityId);
+      final currentSaved = index != -1 ? opportunities[index].savedByMe : false;
+      final newSaved = await repository.toggleSaveOpportunity(
+        opportunityId,
+        currentSaved,
+      );
+
+      if (index != -1) {
+        opportunities[index] = opportunities[index].copyWith(
+          savedByMe: newSaved,
+        );
+        opportunities.refresh();
+      }
+      return newSaved;
+    } catch (e) {
+      debugPrint('[CommunityController] toggleOpportunityBookmark error: $e');
+      return false;
+    } finally {
+      opportunityBookmarkLoadingIds.remove(opportunityId);
+    }
   }
 
   final selectedEventDate = 'All'.obs;
@@ -1478,6 +1578,7 @@ class CommunityController extends GetxController {
     fetchPosts();
     fetchDiscussions();
     fetchEvents();
+    fetchOpportunities();
   }
 
   @override
@@ -1633,7 +1734,14 @@ class CommunityController extends GetxController {
                 }
               },
             );
-            resolved.add(media.url);
+            String resolvedUrl = media.url;
+            if (resolvedUrl.contains('.cdn.digitaloceanspaces.com')) {
+              resolvedUrl = resolvedUrl.replaceFirst(
+                '.cdn.digitaloceanspaces.com',
+                '.digitaloceanspaces.com',
+              );
+            }
+            resolved.add(resolvedUrl);
           } else {
             resolved.add(img);
           }
@@ -1693,8 +1801,15 @@ class CommunityController extends GetxController {
           uploadProgress.value = 0.2 + fraction * 0.6;
         },
       );
-      debugPrint('[CommunityController] Video upload succeeded: ${media.url}');
-      return media.url;
+      String videoUrl = media.url;
+      if (videoUrl.contains('.cdn.digitaloceanspaces.com')) {
+        videoUrl = videoUrl.replaceFirst(
+          '.cdn.digitaloceanspaces.com',
+          '.digitaloceanspaces.com',
+        );
+      }
+      debugPrint('[CommunityController] Video upload succeeded: $videoUrl');
+      return videoUrl;
     } catch (e) {
       debugPrint(
         '[CommunityController] Video upload failed for path: $rawUrl. Error: $e',

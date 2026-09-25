@@ -10,6 +10,10 @@ abstract final class AppTextTheme {
       code == 'km' ? khmer : english;
 
   static TextTheme _build(String family, {required bool isKhmer}) {
+    final fallbacks = isKhmer
+        ? const [AppTypography.englishFontFamily, AppTypography.khmerFontFamily]
+        : const [AppTypography.khmerFontFamily, AppTypography.englishFontFamily];
+
     double size(double s) => isKhmer ? s + 2.0 : s;
     double height(double h) => isKhmer ? h + 0.15 : h;
     
@@ -24,6 +28,7 @@ abstract final class AppTextTheme {
     return TextTheme(
       displayLarge: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(40),
         height: height(1.15),
         fontWeight: weight(FontWeight.w700),
@@ -31,6 +36,7 @@ abstract final class AppTextTheme {
       ),
       displayMedium: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(32),
         height: height(1.2),
         fontWeight: weight(FontWeight.w700),
@@ -38,78 +44,91 @@ abstract final class AppTextTheme {
       ),
       displaySmall: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(24),
         height: height(1.2),
         fontWeight: weight(FontWeight.w700),
       ),
       headlineLarge: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(28),
         height: height(1.25),
         fontWeight: weight(FontWeight.w600),
       ),
       headlineMedium: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(24),
         height: height(1.3),
         fontWeight: weight(FontWeight.w600),
       ),
       headlineSmall: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(20),
         height: height(1.3),
         fontWeight: weight(FontWeight.w600),
       ),
       titleLarge: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(20),
         height: height(1.3),
         fontWeight: weight(FontWeight.w600),
       ),
       titleMedium: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(16),
         height: height(1.4),
         fontWeight: weight(FontWeight.w600),
       ),
       titleSmall: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(14),
         height: height(1.4),
         fontWeight: weight(FontWeight.w600),
       ),
       bodyLarge: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(16),
         height: height(1.5),
         fontWeight: weight(FontWeight.w400),
       ),
       bodyMedium: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(14),
         height: height(1.5),
         fontWeight: weight(FontWeight.w400),
       ),
       bodySmall: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(12),
         height: height(1.45),
         fontWeight: weight(FontWeight.w400),
       ),
       labelLarge: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(15),
         height: height(1.2),
         fontWeight: weight(FontWeight.w600),
       ),
       labelMedium: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(13),
         height: height(1.2),
         fontWeight: weight(FontWeight.w500),
       ),
       labelSmall: TextStyle(
         fontFamily: family,
+        fontFamilyFallback: fallbacks,
         fontSize: size(11),
         height: height(1.2),
         fontWeight: weight(FontWeight.w500),

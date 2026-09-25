@@ -101,70 +101,9 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   }
 
   Future<void> _pickTarget() async {
-    final controller = TextEditingController(text: _targetController.text);
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) {
-        final colors = FormThemeColors(ctx);
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'goals.create.target'.tr,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            style: TextStyle(color: colors.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'goals.create.targetHint'.tr,
-              hintStyle: TextStyle(color: colors.textMuted),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: colors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: colors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: Color(0xFF22C55E),
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                'common.cancel'.tr,
-                style: TextStyle(color: colors.textSecondary),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.ctaBackground,
-                foregroundColor: colors.ctaForeground,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text('common.save'.tr),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => _TargetInputDialog(initialValue: _targetController.text),
     );
 
     if (result != null) {
@@ -173,84 +112,9 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   }
 
   Future<void> _showAddMilestoneDialog() async {
-    final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) {
-        final colors = FormThemeColors(ctx);
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'goals.create.milestoneDialogTitle'.tr,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'goals.create.milestoneNotice'.tr,
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 12.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                style: TextStyle(color: colors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'goals.create.milestoneDialogHint'.tr,
-                  hintStyle: TextStyle(color: colors.textMuted),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF9333EA),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                'common.cancel'.tr,
-                style: TextStyle(color: colors.textSecondary),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF9333EA),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text('common.add'.tr),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => const _CreateMilestoneDialog(),
     );
 
     if (result != null && result.isNotEmpty) {
@@ -478,6 +342,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         CreationMilestonesCard(
           milestones: _pendingMilestones,
           onAddMilestone: _showAddMilestoneDialog,
+          onQuickAdd: (title) => setState(() => _pendingMilestones.add(title)),
           onRemoveMilestone: (index) =>
               setState(() => _pendingMilestones.removeAt(index)),
         ),
@@ -505,3 +370,367 @@ String _formatDate(DateTime value) =>
 
 String _errorText(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
+
+
+class _TargetInputDialog extends StatefulWidget {
+  const _TargetInputDialog({this.initialValue});
+
+  final String? initialValue;
+
+  @override
+  State<_TargetInputDialog> createState() => _TargetInputDialogState();
+}
+
+class _TargetInputDialogState extends State<_TargetInputDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Navigator.of(context).pop(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = FormThemeColors(context);
+    return AlertDialog(
+      backgroundColor: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      title: Text(
+        'goals.create.target'.tr,
+        style: TextStyle(
+          color: colors.textPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        style: TextStyle(color: colors.textPrimary),
+        decoration: InputDecoration(
+          hintText: 'goals.create.targetHint'.tr,
+          hintStyle: TextStyle(color: colors.textMuted),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: Color(0xFF22C55E),
+              width: 1.5,
+            ),
+          ),
+        ),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'common.cancel'.tr,
+            style: TextStyle(color: colors.textSecondary),
+          ),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.ctaBackground,
+            foregroundColor: colors.ctaForeground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text('common.save'.tr),
+        ),
+      ],
+    );
+  }
+}
+
+class _CreateMilestoneDialog extends StatefulWidget {
+  const _CreateMilestoneDialog();
+
+  @override
+  State<_CreateMilestoneDialog> createState() => _CreateMilestoneDialogState();
+}
+
+class _CreateMilestoneDialogState extends State<_CreateMilestoneDialog> {
+  late final TextEditingController _controller;
+
+  static const List<String> _suggestions = [
+    'Research & Scope',
+    'Draft Outline',
+    'Core Prototype',
+    'Review & Polish',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text.trim();
+    if (text.isNotEmpty) {
+      Navigator.of(context).pop(text);
+    }
+  }
+
+  void _applySuggestion(String text) {
+    _controller.text = text;
+    _controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: text.length),
+    );
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = FormThemeColors(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AlertDialog(
+      backgroundColor: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: BorderSide(color: colors.border),
+      ),
+      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      title: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF9333EA), Color(0xFFA855F7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.flag_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'goals.create.milestoneDialogTitle'.tr,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'goals.create.milestonesSubtitle'.tr,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Suggestion Chips
+            Text(
+              'goals.create.quickSuggestions'.tr,
+              style: TextStyle(
+                color: colors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _suggestions.map((suggestion) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () => _applySuggestion(suggestion),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF7E22CE).withValues(alpha: 0.2)
+                              : const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFFA855F7).withValues(alpha: 0.4)
+                                : const Color(0xFFD8B4FE),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.add_rounded,
+                              size: 12,
+                              color: Color(0xFF9333EA),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              suggestion,
+                              style: const TextStyle(
+                                color: Color(0xFF9333EA),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              maxLength: 160,
+              onChanged: (_) => setState(() {}),
+              style: TextStyle(color: colors.textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: isDark
+                    ? colors.surfaceSecondary
+                    : const Color(0xFFFAF5FF).withValues(alpha: 0.6),
+                prefixIcon: const Icon(
+                  Icons.edit_note_rounded,
+                  color: Color(0xFF9333EA),
+                ),
+                suffixIcon: _controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.cancel_rounded,
+                          size: 18,
+                        ),
+                        color: colors.textMuted,
+                        onPressed: () {
+                          _controller.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                hintText: 'goals.create.milestoneDialogHint'.tr,
+                hintStyle: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: 13,
+                ),
+                counterStyle: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: 11,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: colors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: colors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF9333EA),
+                    width: 1.8,
+                  ),
+                ),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'common.cancel'.tr,
+            style: TextStyle(color: colors.textSecondary),
+          ),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF9333EA),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 10,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text('common.add'.tr),
+        ),
+      ],
+    );
+  }
+}

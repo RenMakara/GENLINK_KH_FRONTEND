@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/utils/current_user.dart';
 export 'event_requests.dart';
+export 'opportunity_model.dart';
 import 'event_requests.dart';
 
 class EventModel {
@@ -11,6 +12,7 @@ class EventModel {
   final String title;
   final String subtitle;
   final String organizerName;
+  final String? organizerUsername;
   final String? organizerId;
   final String? organizerAvatar;
 
@@ -68,6 +70,7 @@ class EventModel {
     required this.title,
     this.subtitle = '',
     this.organizerName = '',
+    this.organizerUsername,
     this.organizerId,
     this.organizerAvatar,
     this.eventType = 'In person',
@@ -481,6 +484,20 @@ class EventModel {
       }
     }
 
+    final rawOrgUsername = (organizerObj?['username'] ??
+            organizerObj?['userName'] ??
+            createdByObj?['username'] ??
+            createdByObj?['userName'] ??
+            json['organizerUsername'] ??
+            json['organizer_username'] ??
+            json['creatorUsername'] ??
+            json['authorUsername'])
+        ?.toString()
+        .trim();
+    final cleanOrgUsername = (rawOrgUsername != null && rawOrgUsername.isNotEmpty)
+        ? rawOrgUsername
+        : null;
+
     final orgName =
         organizerObj?['fullName'] as String? ??
         organizerObj?['username'] as String? ??
@@ -561,6 +578,7 @@ class EventModel {
       title: json['title'] as String? ?? '',
       subtitle: json['subtitle'] as String? ?? '',
       organizerName: orgName,
+      organizerUsername: cleanOrgUsername,
       organizerId: orgId,
       organizerAvatar: cleanOrgAvatar,
       eventType: eventTypeVal,
@@ -617,6 +635,8 @@ class EventModel {
       'title': title,
       if (subtitle.isNotEmpty) 'subtitle': subtitle,
       if (organizerId != null) 'organizerId': organizerId,
+      if (organizerUsername != null && organizerUsername!.isNotEmpty)
+        'organizerUsername': organizerUsername,
       if (organizerName.isNotEmpty) 'organizerName': organizerName,
       if (organizerAvatar != null && organizerAvatar!.isNotEmpty)
         'organizerAvatar': organizerAvatar,
@@ -652,6 +672,7 @@ class EventModel {
     String? title,
     String? subtitle,
     String? organizerName,
+    String? organizerUsername,
     String? organizerId,
     String? organizerAvatar,
     String? eventType,
@@ -689,6 +710,7 @@ class EventModel {
       title: title ?? this.title,
       subtitle: subtitle ?? this.subtitle,
       organizerName: organizerName ?? this.organizerName,
+      organizerUsername: organizerUsername ?? this.organizerUsername,
       organizerId: organizerId ?? this.organizerId,
       organizerAvatar: organizerAvatar ?? this.organizerAvatar,
       eventType: eventType ?? this.eventType,
@@ -1088,4 +1110,72 @@ class CareerGoalModel {
     this.cheersCount = 0,
     required this.targetDate,
   });
+}
+
+class FollowUserModel {
+  final String userId;
+  final String fullName;
+  final String username;
+  final String? avatarUrl;
+  final String status;
+  bool isFollowingBack;
+  final DateTime? followedAt;
+
+  FollowUserModel({
+    required this.userId,
+    required this.fullName,
+    required this.username,
+    this.avatarUrl,
+    this.status = 'ACCEPTED',
+    this.isFollowingBack = false,
+    this.followedAt,
+  });
+
+  factory FollowUserModel.fromJson(
+    Map<String, dynamic> json, {
+    bool isFollowingBack = false,
+  }) {
+    final userMap = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : (json['author'] is Map<String, dynamic>
+            ? json['author'] as Map<String, dynamic>
+            : json);
+
+    final uid = userMap['userId']?.toString() ??
+        userMap['id']?.toString() ??
+        userMap['followerId']?.toString() ??
+        '';
+
+    final name = (userMap['fullName'] as String?)?.isNotEmpty == true
+        ? userMap['fullName'] as String
+        : (userMap['name'] as String?)?.isNotEmpty == true
+            ? userMap['name'] as String
+            : (userMap['username'] as String?)?.isNotEmpty == true
+                ? userMap['username'] as String
+                : 'User';
+
+    final username = (userMap['username'] as String?)?.isNotEmpty == true
+        ? userMap['username'] as String
+        : uid;
+
+    final avatar =
+        userMap['avatarUrl'] as String? ?? userMap['avatar'] as String?;
+
+    DateTime? createdAt;
+    if (json['createdAt'] != null) {
+      try {
+        createdAt = DateTime.parse(json['createdAt'] as String);
+      } catch (_) {}
+    }
+
+    return FollowUserModel(
+      userId: uid,
+      fullName: name,
+      username: username,
+      avatarUrl: avatar,
+      status: json['status'] as String? ?? 'ACCEPTED',
+      isFollowingBack: isFollowingBack,
+      followedAt: createdAt,
+    );
+  }
 }

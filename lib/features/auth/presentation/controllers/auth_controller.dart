@@ -74,6 +74,7 @@ class AuthController extends GetxController {
   Timer? _cooldownTimer;
   bool _logoutInProgress = false;
   bool _sessionPersistenceInProgress = false;
+  bool _sessionClearing = false;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -396,12 +397,26 @@ class AuthController extends GetxController {
   /// session is unrecoverable.
   Future<void> onSessionExpired() async {
     // A late response from the previous session must not clear credentials
-    // while a new login is persisting its token pair.
-    if (_logoutInProgress || _sessionPersistenceInProgress) return;
-    isAuthenticated.value = false;
-    currentUser.value = null;
-    await _clearSession();
-    Get.offAllNamed<void>(AppRoutes.login);
+    // while a new login is persisting its token pair or if a session clear is already in flight.
+    if (_logoutInProgress || _sessionPersistenceInProgress || _sessionClearing) {
+      return;
+    }
+    if (!isAuthenticated.value &&
+        (Get.currentRoute == AppRoutes.login ||
+            Get.currentRoute == AppRoutes.authChoice)) {
+      return;
+    }
+    _sessionClearing = true;
+    try {
+      isAuthenticated.value = false;
+      currentUser.value = null;
+      await _clearSession();
+      if (Get.currentRoute != AppRoutes.login) {
+        Get.offAllNamed<void>(AppRoutes.login);
+      }
+    } finally {
+      _sessionClearing = false;
+    }
   }
 
   // ── Profile sync ─────────────────────────────────────────────────────

@@ -26,6 +26,7 @@ ChallengeType challengeTypeFromWire(String? value) {
     'HABIT' => ChallengeType.habit,
     'TASK' => ChallengeType.task,
     'FINANCE' => ChallengeType.finance,
+    'EXPENSE' => ChallengeType.finance,
     'QUIZ' => ChallengeType.quiz,
     'EVENT' => ChallengeType.event,
     'COMMUNITY' => ChallengeType.community,

@@ -48,19 +48,61 @@ class ChatRemoteDataSource {
 
   Future<ChatConversationModel> createGroup(
     String name,
-    List<String> memberUserIds,
-  ) async {
+    List<String> memberUserIds, {
+    String? avatarUrl,
+  }) async {
     final response = await guardDio(
       () => dio.post<dynamic>(
         '${ApiEndpoints.chats}/groups',
         data: {
           'name': name,
           'memberIds': memberUserIds,
+          if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatarUrl': avatarUrl,
         },
       ),
     );
     final data = _dataOf(response.data);
     return ChatConversationModel.fromRoomResponse(data);
+  }
+
+  Future<ChatConversationModel> renameGroup(
+    String roomId, {
+    String? name,
+    String? avatarUrl,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (name != null) payload['name'] = name;
+    if (avatarUrl != null) payload['avatarUrl'] = avatarUrl;
+
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        '${ApiEndpoints.chats}/$roomId',
+        data: payload,
+      ),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(data, roomId: roomId);
+  }
+
+  Future<ChatConversationModel> addMembers(
+    String roomId,
+    List<String> memberIds,
+  ) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        '${ApiEndpoints.chats}/$roomId/members',
+        data: {'memberIds': memberIds},
+      ),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(data, roomId: roomId);
+  }
+
+  Future<bool> leaveGroup(String roomId) async {
+    await guardDio(
+      () => dio.delete<dynamic>('${ApiEndpoints.chats}/$roomId/leave'),
+    );
+    return true;
   }
 
   Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
@@ -191,6 +233,41 @@ class ChatRemoteDataSource {
     } catch (_) {
       return const [];
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getEligibleUsers({String? currentUserId}) async {
+    try {
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        final response = await guardDio(
+          () => dio.get<dynamic>(
+            ApiEndpoints.communityFollowing(currentUserId),
+            queryParameters: {'size': 50},
+          ),
+        );
+        final content = _contentOf(response.data);
+        final results = <Map<String, dynamic>>[];
+        final seenIds = <String>{};
+        for (final item in content) {
+          if (item is Map) {
+            final userMap = item['user'] is Map ? (item['user'] as Map).cast<String, dynamic>() : item.cast<String, dynamic>();
+            final uid = userMap['userId']?.toString() ?? userMap['id']?.toString() ?? '';
+            if (uid.isNotEmpty && seenIds.add(uid)) {
+              results.add({
+                'id': uid,
+                'name': (userMap['fullName'] as String?)?.isNotEmpty == true
+                    ? userMap['fullName']
+                    : (userMap['username'] ?? 'User'),
+                'handle': '@${userMap['username'] ?? ''}',
+                'avatar': userMap['avatarUrl'] ?? 'assets/images/user_profile.png',
+                'isOnline': false,
+              });
+            }
+          }
+        }
+        return results;
+      }
+    } catch (_) {}
+    return const [];
   }
 
   List<dynamic> _contentOf(dynamic body) {

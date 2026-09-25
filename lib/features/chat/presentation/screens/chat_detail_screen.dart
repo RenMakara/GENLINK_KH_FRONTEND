@@ -18,6 +18,7 @@ import '../widgets/chat_attachment_sheet.dart';
 import '../widgets/chat_system_message.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
+import 'group_profile_screen.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   const ChatDetailScreen({super.key, this.roomId});
@@ -100,126 +101,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.dispose();
   }
 
-  void _showGroupInfoSheet(BuildContext context, ChatConversationModel conv) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-
-    Get.bottomSheet(
-      Material(
-        color: surfaceColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: 14,
-            bottom: MediaQuery.of(context).padding.bottom + 16,
-            left: 16,
-            right: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              ChatAvatar(
-                avatarUrl: conv.avatar,
-                name: conv.name,
-                radius: 32,
-                isEventChat: conv.isEventChat,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                conv.name,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                conv.isGroup
-                    ? '${conv.membersCount} members'
-                    : (conv.isOnline ? 'Online' : 'Offline'),
-                style: TextStyle(color: textMuted, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.person_add_outlined, color: AppColors.chatPrimary),
-                title: Text(
-                  'chat.addMembers'.tr.isNotEmpty && 'chat.addMembers'.tr != 'chat.addMembers'
-                      ? 'chat.addMembers'.tr
-                      : 'Add Members',
-                  style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-                onTap: () {
-                  Get.back();
-                  AppNotificationBanner.showInfo(
-                    context: context,
-                    title: 'Group Members',
-                    message: 'Invite link copied to clipboard.',
-                    icon: Icons.link_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.notifications_off_outlined, color: AppColors.chatPrimary),
-                title: Text(
-                  'chat.muteChat'.tr.isNotEmpty && 'chat.muteChat'.tr != 'chat.muteChat'
-                      ? 'chat.muteChat'.tr
-                      : 'Mute Notifications',
-                  style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-                onTap: () {
-                  Get.back();
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: 'Notifications',
-                    message: 'Muted notifications for this group.',
-                    icon: Icons.notifications_off_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.exit_to_app_rounded, color: AppColors.danger),
-                title: Text(
-                  'chat.leaveGroup'.tr.isNotEmpty && 'chat.leaveGroup'.tr != 'chat.leaveGroup'
-                      ? 'chat.leaveGroup'.tr
-                      : 'Leave Group',
-                  style: const TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-                onTap: () {
-                  Get.back();
-                  AppNotificationBanner.showInfo(
-                    context: context,
-                    title: 'Leave Group',
-                    message: 'You left the group.',
-                    icon: Icons.info_outline_rounded,
-                  );
-                  Get.back();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-    );
-  }
-
   void _onHeaderTap(ChatConversationModel conv) {
     if (conv.isGroup) {
-      _showGroupInfoSheet(context, conv);
+      Get.to(() => GroupProfileScreen(conversation: conv));
     } else if (conv.isEventChat) {
       AppNotificationBanner.showInfo(
         context: context,

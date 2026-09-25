@@ -20,6 +20,7 @@ import '../../../chat/chat_navigation.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/full_screen_image_viewer.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
+import '../bindings/profile_binding.dart';
 import '../controllers/profile_controller.dart';
 import '../models/profile_cover_preset.dart';
 import '../utils/profile_navigation.dart';
@@ -30,15 +31,39 @@ class ProfileScreen extends StatelessWidget {
 
   final String? viewingUsername;
 
+  String? get _resolvedUsername {
+    if (viewingUsername != null && viewingUsername!.trim().isNotEmpty) {
+      return viewingUsername!.trim();
+    }
+    // Only inspect route parameters when navigated directly to the standalone
+    // profile route, never when embedded inside MainScreen or other tabs.
+    final currentRoute = Get.currentRoute;
+    if (currentRoute == AppRoutes.profile ||
+        currentRoute.startsWith('${AppRoutes.profile}?') ||
+        currentRoute.startsWith('${AppRoutes.profile}/')) {
+      final param = Get.parameters['username'];
+      if (param != null && param.trim().isNotEmpty) {
+        return param.trim();
+      }
+    }
+    return null;
+  }
+
   ProfileController get controller {
     final username = ProfileNavigation.ownerAwareUsername(
-      username: viewingUsername,
+      username: _resolvedUsername,
     );
-    return username == null
-        ? Get.find<ProfileController>()
-        : Get.find<ProfileController>(
-            tag: ProfileController.publicTag(username),
-          );
+    if (username == null) {
+      if (!Get.isRegistered<ProfileController>()) {
+        ProfileBinding.registerOwnerController();
+      }
+      return Get.find<ProfileController>();
+    }
+    final tag = ProfileController.publicTag(username);
+    if (!Get.isRegistered<ProfileController>(tag: tag)) {
+      ProfileBinding.registerPublicController(username);
+    }
+    return Get.find<ProfileController>(tag: tag);
   }
 
   @override
@@ -88,6 +113,17 @@ class ProfileScreen extends StatelessWidget {
 
   AppScreenHeader _ownerAppBar(BuildContext context) => AppScreenHeader(
     title: '',
+    leading: Navigator.of(context).canPop()
+        ? AppBackButton(
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                Get.back();
+              }
+            },
+          )
+        : null,
     titleWidget: Obx(() {
       final profile = controller.profile.value;
       if (profile == null) return const SizedBox.shrink();
@@ -114,6 +150,11 @@ class ProfileScreen extends StatelessWidget {
     }),
     actions: [
       AppHeaderActionButton(
+        icon: Icons.ios_share_outlined,
+        tooltip: 'profile.shareProfile'.tr,
+        onTap: _shareOwnerProfile,
+      ),
+      AppHeaderActionButton(
         icon: Icons.notifications_none_rounded,
         tooltip: 'settings.notifications'.tr,
         onTap: () => Get.toNamed<void>(AppRoutes.notifications),
@@ -126,17 +167,77 @@ class ProfileScreen extends StatelessWidget {
     ],
   );
 
-  AppScreenHeader _publicAppBar(BuildContext context) => AppScreenHeader(
-    title: 'profile.publicProfile'.tr,
-    leading: const AppBackButton(),
-    actions: [
-      AppHeaderActionButton(
-        icon: Icons.ios_share_outlined,
-        tooltip: 'profile.shareProfile'.tr,
-        onTap: _sharePublicProfile,
+  AppScreenHeader _publicAppBar(BuildContext context) {
+    final semantic = context.semanticColors;
+    final width = MediaQuery.sizeOf(context).width;
+    final isVeryNarrow = width < 335;
+    final isNarrow = width < 360;
+    final titleFontSize = isVeryNarrow ? 21.0 : (isNarrow ? 22.5 : 24.0);
+    final titleLetterSpacing = isVeryNarrow ? -0.3 : (isNarrow ? -0.4 : -0.5);
+
+    return AppScreenHeader(
+      title: 'profile.publicProfile'.tr,
+      leadingGap: AppSpacing.md,
+      leading: AppBackButton(
+        onPressed: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            Get.back();
+          }
+        },
       ),
-    ],
-  );
+      titleWidget: Obx(() {
+        final profile = controller.publicProfile.value;
+        final displayName = profile != null && profile.fullName.trim().isNotEmpty
+            ? profile.fullName.trim()
+            : (profile != null && profile.username.trim().isNotEmpty
+                ? '@${profile.username.trim()}'
+                : (_resolvedUsername != null && _resolvedUsername!.isNotEmpty
+                    ? '@$_resolvedUsername'
+                    : 'profile.publicProfile'.tr));
+
+        return Text(
+          displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: semantic.primaryText,
+                fontSize: titleFontSize,
+                fontWeight: FontWeight.w800,
+                letterSpacing: titleLetterSpacing,
+                height: 1.2,
+              ) ??
+              TextStyle(
+                color: semantic.primaryText,
+                fontSize: titleFontSize,
+                fontWeight: FontWeight.w800,
+                letterSpacing: titleLetterSpacing,
+                height: 1.2,
+              ),
+        );
+      }),
+      actions: [
+        AppHeaderActionButton(
+          icon: Icons.ios_share_outlined,
+          tooltip: 'profile.shareProfile'.tr,
+          onTap: _sharePublicProfile,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _shareOwnerProfile() async {
+    final profile = controller.profile.value;
+    if (profile == null) return;
+    await Clipboard.setData(ClipboardData(text: '@${profile.username}'));
+    Get.showSnackbar(
+      GetSnackBar(
+        message: 'profile.shareCopied'.tr,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   Future<void> _sharePublicProfile() async {
     final profile = controller.publicProfile.value;
@@ -218,16 +319,6 @@ class _OwnerProfile extends StatelessWidget {
           Navigator.of(sheetContext).pop();
           await controller.updateCoverPreset(preset);
         },
-      ),
-    );
-  }
-
-  Future<void> _shareProfile() async {
-    await Clipboard.setData(ClipboardData(text: '@${profile.username}'));
-    Get.showSnackbar(
-      GetSnackBar(
-        message: 'profile.shareCopied'.tr,
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -315,113 +406,218 @@ class _OwnerProfile extends StatelessWidget {
             followers: controller.followStats.value?.followers ?? 0,
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        _OwnerActionRow(onShare: _shareProfile),
         const SizedBox(height: AppSpacing.lg),
         _CompletionCard(profile: profile),
         const SizedBox(height: AppSpacing.lg),
-        _ProfileSectionCard(
-          icon: Icons.emoji_events_outlined,
-          title: 'profile.achievements'.tr,
-          trailing: TextButton(
-            onPressed: () => Get.toNamed<void>(AppRoutes.profileAchievements),
-            child: Text('profile.viewAll'.tr),
-          ),
-          child: controller.sortedBadges.isEmpty
-              ? _SectionEmpty(message: 'achievements.empty'.tr)
-              : SizedBox(
-                  height: 92,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: controller.sortedBadges.take(5).length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(width: AppSpacing.sm),
-                    itemBuilder: (_, index) =>
-                        BadgeTile(badge: controller.sortedBadges[index]),
-                  ),
-                ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _ProfileSectionCard(
-          icon: Icons.bar_chart_rounded,
-          title: 'profile.coreExpertise'.tr,
-          trailing: TextButton(
-            onPressed: () => Get.toNamed<void>(AppRoutes.profileInterests),
-            child: Text('common.edit'.tr),
-          ),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final interest in controller.interests)
-                InterestChip(interest: interest, compact: true),
-              AddChipButton(
-                onPressed: () => Get.toNamed<void>(AppRoutes.profileInterests),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _ProfileSectionCard(
-          icon: Icons.share_outlined,
-          title: 'profile.careerPath'.tr,
-          trailing: TextButton(
-            onPressed: () => Get.toNamed<void>(AppRoutes.editProfile),
-            child: Text('common.edit'.tr),
-          ),
-          child: _CareerCard(profile: profile),
-        ),
-        if (controller.portfolio.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
-          SectionHeader(
-            title: 'profile.portfolio'.tr,
+        Obx(
+          () => _ProfileSectionCard(
+            icon: Icons.emoji_events_outlined,
+            title: 'profile.achievements'.tr,
             trailing: TextButton(
-              onPressed: () => Get.toNamed<void>(AppRoutes.profilePortfolio),
+              onPressed: () => Get.toNamed<void>(AppRoutes.profileAchievements),
               child: Text('profile.viewAll'.tr),
             ),
+            child: controller.sortedBadges.isEmpty
+                ? _SectionEmpty(message: 'achievements.empty'.tr)
+                : SizedBox(
+                    height: 92,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: controller.sortedBadges.take(5).length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (_, index) =>
+                          BadgeTile(badge: controller.sortedBadges[index]),
+                    ),
+                  ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: 150,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: controller.portfolio.take(4).length,
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (_, index) => SizedBox(
-                width: 158,
-                child: _PortfolioPreview(item: controller.portfolio[index]),
-              ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Obx(
+          () => _ProfileSectionCard(
+            icon: Icons.bar_chart_rounded,
+            title: 'profile.coreExpertise'.tr,
+            trailing: TextButton(
+              onPressed: () => Get.toNamed<void>(AppRoutes.profileInterests),
+              child: Text('common.edit'.tr),
+            ),
+            child: Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final interest in controller.interests)
+                  InterestChip(interest: interest, compact: true),
+                AddChipButton(
+                  onPressed: () =>
+                      Get.toNamed<void>(AppRoutes.profileInterests),
+                ),
+              ],
             ),
           ),
-        ],
-        if (controller.socialLinks.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
-          _LabelledSection(
-            title: 'profile.socialLinks'.tr,
-            child: _SocialLinksCard(links: controller.socialLinks),
-          ),
-        ],
+        ),
         const SizedBox(height: AppSpacing.lg),
-        _ProfileSectionCard(
-          icon: Icons.bookmark_border_rounded,
-          title: 'profile.savedContent'.tr,
-          trailing: TextButton(
-            onPressed: () => Get.toNamed<void>(AppRoutes.profileSaved),
-            child: Text('profile.viewAll'.tr),
-          ),
-          child: controller.savedItems.isEmpty
-              ? _SectionEmpty(message: 'profile.emptySaved'.tr)
-              : SizedBox(
-                  height: 145,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: controller.savedItems.take(4).length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(width: AppSpacing.sm),
-                    itemBuilder: (_, index) =>
-                        SavedItemCard(item: controller.savedItems[index]),
+        Obx(
+          () => _ProfileSectionCard(
+            icon: Icons.folder_open_outlined,
+            title: 'profile.portfolio'.tr,
+            trailing: controller.portfolio.isNotEmpty
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.add_rounded, size: 20),
+                        tooltip: 'profile.addPortfolio'.tr,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        onPressed: () => Get.toNamed<void>(
+                          AppRoutes.profilePortfolioForm,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      TextButton(
+                        onPressed: () =>
+                            Get.toNamed<void>(AppRoutes.profilePortfolio),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                          ),
+                        ),
+                        child: Text('profile.viewAll'.tr),
+                      ),
+                    ],
+                  )
+                : null,
+            child: controller.portfolio.isEmpty
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.lg,
+                      horizontal: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant
+                            .withValues(alpha: 0.4),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.work_outline_rounded,
+                          size: 32,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'profile.emptyPortfolio'.tr,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        FilledButton.tonalIcon(
+                          onPressed: () => Get.toNamed<void>(
+                            AppRoutes.profilePortfolioForm,
+                          ),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text('profile.addPortfolio'.tr),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 38),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : SizedBox(
+                    height: 140,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: controller.portfolio.length < 5
+                          ? controller.portfolio.length + 1
+                          : 5,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (_, index) {
+                        if (index == controller.portfolio.length) {
+                          return SizedBox(
+                            width: 110,
+                            child: _AddPortfolioShelfCard(
+                              onTap: () => Get.toNamed<void>(
+                                AppRoutes.profilePortfolioForm,
+                              ),
+                            ),
+                          );
+                        }
+                        return SizedBox(
+                          width: 158,
+                          child: _PortfolioPreview(
+                            item: controller.portfolio[index],
+                            onTap: () => Get.toNamed<void>(
+                              AppRoutes.profilePortfolioForm,
+                              arguments: controller.portfolio[index],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
+          ),
+        ),
+        Obx(() {
+          if (controller.socialLinks.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppSpacing.lg),
+              _LabelledSection(
+                title: 'profile.socialLinks'.tr,
+                child: _SocialLinksCard(links: controller.socialLinks),
+              ),
+            ],
+          );
+        }),
+        const SizedBox(height: AppSpacing.lg),
+        Obx(
+          () => _ProfileSectionCard(
+            icon: Icons.bookmark_border_rounded,
+            title: 'profile.savedContent'.tr,
+            trailing: TextButton(
+              onPressed: () => Get.toNamed<void>(AppRoutes.profileSaved),
+              child: Text('profile.viewAll'.tr),
+            ),
+            child: controller.savedItems.isEmpty
+                ? _SectionEmpty(message: 'profile.emptySaved'.tr)
+                : SizedBox(
+                    height: 145,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: controller.savedItems.take(4).length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(width: AppSpacing.sm),
+                      itemBuilder: (_, index) =>
+                          SavedItemCard(item: controller.savedItems[index]),
+                    ),
+                  ),
+          ),
         ),
         Builder(
           builder: (context) {
@@ -465,6 +661,7 @@ class _CompletionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return AppSurface(
+      radius: AppRadius.lg,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -544,79 +741,7 @@ class _CompletionCard extends StatelessWidget {
   }
 }
 
-class _CareerCard extends StatelessWidget {
-  const _CareerCard({required this.profile});
-  final ProfileEntity profile;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final status = _enumLabel(profile.workStatus);
-    final title = status.isEmpty ? 'profile.noCareerDetails'.tr : status;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: const Color(0xFF17181A),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'profile.currentTrack'.tr.toUpperCase(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.62),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if ((profile.universityName ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Icon(
-                  Icons.business_center_outlined,
-                  size: 18,
-                  color: Colors.white.withValues(alpha: 0.78),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    profile.universityName!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.72),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          FilledButton(
-            onPressed: () => Get.toNamed<void>(AppRoutes.editProfile),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF17181A),
-              minimumSize: const Size(0, 44),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-            ),
-            child: Text('profile.editCareer'.tr),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _PublicProfile extends StatelessWidget {
   const _PublicProfile({
@@ -1132,7 +1257,10 @@ class _ProfileHero extends StatelessWidget {
               decoration: BoxDecoration(
                 color: scheme.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: scheme.outlineVariant, width: 2),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.6),
+                  width: 1.2,
+                ),
               ),
               child: AppAvatar(
                 imageUrl: imageUrl,
@@ -1152,7 +1280,7 @@ class _ProfileHero extends StatelessWidget {
             left: 0,
             right: 0,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: SizedBox(
                 height: 158,
                 child: Stack(
@@ -1405,7 +1533,8 @@ class _ProfileStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final divider = Theme.of(context).colorScheme.outlineVariant;
+    final divider =
+        Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.45);
     return Row(
       children: [
         Expanded(
@@ -1528,39 +1657,6 @@ class _ProfileMeta extends StatelessWidget {
   }
 }
 
-class _OwnerActionRow extends StatelessWidget {
-  const _OwnerActionRow({required this.onShare});
-
-  final Future<void> Function() onShare;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: AppButton.secondary(
-            label: 'profile.edit'.tr,
-            icon: Icons.edit_outlined,
-            height: 54,
-            onPressed: () => Get.toNamed<void>(AppRoutes.editProfile),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: AppButton(
-            label: 'profile.shareProfile'.tr,
-            icon: Icons.share_outlined,
-            height: 54,
-            onPressed: () {
-              onShare();
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ProfileSectionCard extends StatelessWidget {
   const _ProfileSectionCard({
     required this.icon,
@@ -1579,7 +1675,7 @@ class _ProfileSectionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return AppSurface(
-      radius: AppRadius.xl,
+      radius: AppRadius.lg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1598,12 +1694,17 @@ class _ProfileSectionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              ?trailing,
+              if (trailing != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                trailing!,
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -1650,12 +1751,13 @@ class _SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      AppSurface(radius: AppRadius.lg, child: child);
+      AppSurface(radius: 12.0, child: child);
 }
 
 class _PortfolioPreview extends StatelessWidget {
-  const _PortfolioPreview({required this.item});
+  const _PortfolioPreview({required this.item, this.onTap});
   final PortfolioItemEntity item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1663,47 +1765,107 @@ class _PortfolioPreview extends StatelessWidget {
     final scheme = theme.colorScheme;
     final imageUrl = item.imageUrl?.trim();
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (imageUrl != null && imageUrl.isNotEmpty)
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _PortfolioPlaceholder(scheme: scheme),
-            )
-          else
-            _PortfolioPlaceholder(scheme: scheme),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.center,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.78 : 0.64,
+      borderRadius: BorderRadius.circular(12.0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      _PortfolioPlaceholder(scheme: scheme),
+                )
+              else
+                _PortfolioPlaceholder(scheme: scheme),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(
+                        alpha: theme.brightness == Brightness.dark
+                            ? 0.78
+                            : 0.64,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Text(
-                item.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: Colors.white,
                 ),
               ),
-            ),
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddPortfolioShelfCard extends StatelessWidget {
+  const _AddPortfolioShelfCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.25),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    Icon(Icons.add_rounded, size: 20, color: scheme.primary),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'common.add'.tr,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

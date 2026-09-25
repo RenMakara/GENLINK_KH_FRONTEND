@@ -275,6 +275,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     // 5. If metadata was provisional or needs enrichment, fetch room in parallel
     if (activeConversation.value == null ||
         activeConversation.value!.name == 'Chat' ||
+        (activeConversation.value!.isGroup && activeConversation.value!.members.isEmpty) ||
         !conversations.any((c) => c.id == cleanRoomId)) {
       try {
         final room = await repository.getRoom(cleanRoomId);
@@ -365,10 +366,15 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   Future<ChatConversationModel?> createGroup(
     String name,
-    List<String> memberUserIds,
-  ) async {
+    List<String> memberUserIds, {
+    String? avatarUrl,
+  }) async {
     try {
-      final newGroup = await repository.createGroup(name, memberUserIds);
+      final newGroup = await repository.createGroup(
+        name,
+        memberUserIds,
+        avatarUrl: avatarUrl,
+      );
       conversations.insert(0, newGroup);
       conversations.refresh();
       await openConversation(newGroup);
@@ -380,6 +386,64 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
+    }
+  }
+
+  Future<bool> renameGroup(
+    String roomId,
+    String? newName, {
+    String? avatarUrl,
+  }) async {
+    try {
+      final updated = await repository.renameGroup(
+        roomId,
+        name: newName,
+        avatarUrl: avatarUrl,
+      );
+      final idx = conversations.indexWhere((c) => c.id == roomId);
+      if (idx != -1) {
+        conversations[idx] = updated;
+        safeRefreshConversations();
+      }
+      if (activeConversation.value?.id == roomId) {
+        activeConversation.value = updated;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> addMembersToGroup(String roomId, List<String> memberIds) async {
+    try {
+      final updated = await repository.addMembers(roomId, memberIds);
+      final idx = conversations.indexWhere((c) => c.id == roomId);
+      if (idx != -1) {
+        conversations[idx] = updated;
+        safeRefreshConversations();
+      }
+      if (activeConversation.value?.id == roomId) {
+        activeConversation.value = updated;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> leaveGroup(String roomId) async {
+    try {
+      final ok = await repository.leaveGroup(roomId);
+      if (ok) {
+        conversations.removeWhere((c) => c.id == roomId);
+        safeRefreshConversations();
+        if (activeConversation.value?.id == roomId) {
+          activeConversation.value = null;
+        }
+      }
+      return ok;
+    } catch (_) {
+      return false;
     }
   }
 

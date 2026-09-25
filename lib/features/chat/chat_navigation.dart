@@ -4,7 +4,6 @@ import '../../app/routes/app_routes.dart';
 import 'domain/models/chat_models.dart';
 import 'presentation/bindings/chat_binding.dart';
 import 'presentation/controllers/chat_controller.dart';
-import 'presentation/screens/chat_detail_screen.dart';
 
 /// Canonical chat navigation helper ensuring uniform routing and state initialization.
 class ChatNavigation {
@@ -48,9 +47,8 @@ class ChatNavigation {
       return;
     }
 
-    Get.to<void>(
-      () => ChatDetailScreen(roomId: cleanRoomId),
-      routeName: AppRoutes.chatDetail,
+    Get.toNamed<void>(
+      AppRoutes.chatDetail,
       arguments: {'roomId': cleanRoomId, 'conversation': conversation},
       preventDuplicates: false,
     );

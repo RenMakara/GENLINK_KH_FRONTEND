@@ -10,6 +10,10 @@ import 'package:genlink_frontend/features/home/presentation/controllers/home_con
 import 'package:genlink_frontend/features/levelup/levelup_screen.dart';
 import 'package:genlink_frontend/features/levelup/widget/grow_section_widget.dart';
 import 'package:genlink_frontend/features/levelup/widget/levelup_widget.dart';
+import 'package:genlink_frontend/app/routes/app_routes.dart';
+import 'package:genlink_frontend/features/challenge/domain/models/challenge_models.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:get/get.dart';
 
 class _TestHttpOverrides extends HttpOverrides {
@@ -132,6 +136,7 @@ HomeEntity _createMockHome({
   int habitsTotal = 1,
   int tasksDone = 1,
   int tasksTotal = 1,
+  ChallengePreview? dailyChallenge,
 }) {
   return HomeEntity(
     user: HomeUser(
@@ -146,12 +151,13 @@ HomeEntity _createMockHome({
       tasksCompleted: tasksDone,
       tasksTotal: tasksTotal,
     ),
-    dailyChallenge: const ChallengePreview(
-      challengeId: 'ch-1',
-      title: 'Practice Focus Session',
-      description: 'Complete 25 minutes of deep work to level up.',
-      xpReward: 30,
-    ),
+    dailyChallenge: dailyChallenge ??
+        const ChallengePreview(
+          challengeId: 'ch-1',
+          title: 'Practice Focus Session',
+          description: 'Complete 25 minutes of deep work to level up.',
+          xpReward: 30,
+        ),
   );
 }
 
@@ -382,4 +388,288 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('Smart Direct Action for YOUR NEXT MOVE', () {
+    testWidgets(
+      'Test 1 — Habit challenge (type = HABIT) navigates to HabitHomeScreen',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final mockRepo = MockHomeRepository(
+          stubData: _createMockHome(
+            dailyChallenge: const ChallengePreview(
+              challengeId: 'f0000000-0000-4000-8000-000000000001',
+              title: 'Check in on a habit',
+              description: 'Complete one habit check-in today.',
+              xpReward: 15,
+              type: 'HABIT',
+              challengeType: ChallengeType.habit,
+            ),
+          ),
+        );
+        Get.put(HomeController(repository: mockRepo));
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en'),
+            home: const LevelUpScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
+        expect(find.text('Check in on a habit'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(GrowthActionCard, 'Check in on a habit'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(HabitHomeScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Test 2 — Task challenge (type = TASK) navigates to TasksPage',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final mockRepo = MockHomeRepository(
+          stubData: _createMockHome(
+            dailyChallenge: const ChallengePreview(
+              challengeId: 'f0000000-0000-4000-8000-000000000004',
+              title: 'Complete today task',
+              description: 'Finish at least one task on your list.',
+              xpReward: 20,
+              type: 'TASK',
+              challengeType: ChallengeType.task,
+            ),
+          ),
+        );
+        Get.put(HomeController(repository: mockRepo));
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en'),
+            home: const LevelUpScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
+        expect(find.text('Complete today task'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(GrowthActionCard, 'Complete today task'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TasksPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Test 3 — Quiz challenge (type = QUIZ) navigates to quizDashboard',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final mockRepo = MockHomeRepository(
+          stubData: _createMockHome(
+            dailyChallenge: const ChallengePreview(
+              challengeId: 'f0000000-0000-4000-8000-000000000002',
+              title: 'Take a quiz',
+              description: 'Finish any quiz and see your score.',
+              xpReward: 20,
+              type: 'QUIZ',
+              challengeType: ChallengeType.quiz,
+            ),
+          ),
+        );
+        Get.put(HomeController(repository: mockRepo));
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en'),
+            home: const LevelUpScreen(),
+            getPages: [
+              GetPage(
+                name: AppRoutes.quizDashboard,
+                page: () => const Scaffold(body: Text('Quiz Dashboard Screen')),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
+        expect(find.text('Take a quiz'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(GrowthActionCard, 'Take a quiz'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Quiz Dashboard Screen'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Test 4 — Unknown challenge type navigates to Challenge Detail with challengeId',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final mockRepo = MockHomeRepository(
+          stubData: _createMockHome(
+            dailyChallenge: const ChallengePreview(
+              challengeId: 'custom-challenge-id-999',
+              title: 'Mystery Adventure',
+              description: 'Explore the uncharted territories.',
+              xpReward: 50,
+              type: 'CUSTOM_UNKNOWN',
+              challengeType: ChallengeType.unknown,
+            ),
+          ),
+        );
+        Get.put(HomeController(repository: mockRepo));
+
+        String? detailReceivedId;
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en'),
+            home: const LevelUpScreen(),
+            getPages: [
+              GetPage(
+                name: AppRoutes.challengeDetail,
+                page: () {
+                  detailReceivedId = Get.arguments?.toString();
+                  return Scaffold(body: Text('Detail for: $detailReceivedId'));
+                },
+              ),
+              GetPage(
+                name: AppRoutes.challengeList,
+                page: () => const Scaffold(body: Text('Challenge List Screen')),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
+        expect(find.text('Mystery Adventure'), findsOneWidget);
+
+        await tester.tap(find.widgetWithText(GrowthActionCard, 'Mystery Adventure'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Detail for: custom-challenge-id-999'), findsOneWidget);
+        expect(detailReceivedId, 'custom-challenge-id-999');
+        expect(find.text('Challenge List Screen'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Test 5 — Tap action does NOT award duplicate XP',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final mockRepo = MockHomeRepository(
+          stubData: _createMockHome(
+            totalXp: 95,
+            dailyChallenge: const ChallengePreview(
+              challengeId: 'f0000000-0000-4000-8000-000000000001',
+              title: 'Check in on a habit',
+              description: 'Complete one habit check-in today.',
+              xpReward: 15,
+              type: 'HABIT',
+              challengeType: ChallengeType.habit,
+            ),
+          ),
+        );
+        final controller = Get.put(HomeController(repository: mockRepo));
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en'),
+            home: const LevelUpScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final xpBefore = controller.home.value?.user.totalXp;
+        expect(xpBefore, 95);
+
+        await tester.tap(find.widgetWithText(GrowthActionCard, 'Check in on a habit'));
+        await tester.pumpAndSettle();
+
+        final xpAfter = controller.home.value?.user.totalXp;
+        expect(xpAfter, 95);
+      },
+    );
+
+    testWidgets(
+      'Expense/Finance challenge navigates via onNavigateTab when provided',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        int? navigatedTab;
+        final mockRepo = MockHomeRepository(
+          stubData: _createMockHome(
+            dailyChallenge: const ChallengePreview(
+              challengeId: 'f0000000-0000-4000-8000-000000000003',
+              title: 'Log an expense',
+              description: 'Track one expense to stay on top of your budget.',
+              xpReward: 15,
+              type: 'EXPENSE',
+              challengeType: ChallengeType.finance,
+            ),
+          ),
+        );
+        Get.put(HomeController(repository: mockRepo));
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en'),
+            home: LevelUpScreen(
+              onNavigateTab: (index) => navigatedTab = index,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(GrowthActionCard, 'Log an expense'));
+        await tester.pumpAndSettle();
+
+        expect(navigatedTab, 2);
+      },
+    );
+  });
 }

@@ -76,7 +76,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         leading: Center(
           child: AppBackButton(onPressed: () => Get.back()),
         ),
-        leadingWidth: 70,
+        leadingWidth: 76,
         title: Text(
           titleText,
           style: TextStyle(

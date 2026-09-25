@@ -10,6 +10,7 @@ import '../../../community/presentation/controllers/community_controller.dart';
 import '../../../community/presentation/controllers/story_controller.dart';
 import '../../../community/presentation/screens/events_screen.dart';
 import '../../../community/presentation/screens/friend_requests_screen.dart';
+import '../../../community/presentation/screens/story_viewer_screen.dart';
 import '../../../community/presentation/widgets/comments_bottom_sheet.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
@@ -451,12 +452,79 @@ class NotificationController extends GetxController
       return;
     }
 
+    // ── Story Navigation ────────────────────────────────────────────────
+    final isStoryTarget = targetType == 'STORY' ||
+        targetType == 'STORY_LIKE' ||
+        targetType == 'STORY_REACTION' ||
+        targetType == 'STORY_REPLY' ||
+        (notif.category == NotificationCategory.social &&
+            (notif.title.toLowerCase().contains('story') ||
+                notif.body.toLowerCase().contains('story')));
+
+    if (isStoryTarget && targetId != null && targetId.isNotEmpty) {
+      final storyCtrl = Get.isRegistered<StoryController>()
+          ? Get.find<StoryController>()
+          : Get.put(StoryController());
+
+      if (storyCtrl.storyGroups.isEmpty) {
+        await storyCtrl.fetchStories();
+      }
+
+      int foundGroupIdx = -1;
+      int foundStoryIdx = -1;
+
+      for (int g = 0; g < storyCtrl.storyGroups.length; g++) {
+        final sIdx = storyCtrl.storyGroups[g].stories
+            .indexWhere((s) => s.id == targetId);
+        if (sIdx != -1) {
+          foundGroupIdx = g;
+          foundStoryIdx = sIdx;
+          break;
+        }
+      }
+
+      // If not found in current groups, attempt to refresh from backend
+      if (foundGroupIdx == -1) {
+        await storyCtrl.fetchStories();
+        for (int g = 0; g < storyCtrl.storyGroups.length; g++) {
+          final sIdx = storyCtrl.storyGroups[g].stories
+              .indexWhere((s) => s.id == targetId);
+          if (sIdx != -1) {
+            foundGroupIdx = g;
+            foundStoryIdx = sIdx;
+            break;
+          }
+        }
+      }
+
+      if (foundGroupIdx != -1 && context.mounted) {
+        Get.to<void>(
+          () => StoryViewerScreen(
+            initialGroupIndex: foundGroupIdx,
+            groups: storyCtrl.storyGroups,
+            initialStoryIndex: foundStoryIdx,
+          ),
+        );
+        return;
+      }
+
+      if (context.mounted) {
+        AppNotificationBanner.showInfo(
+          context: context,
+          title: 'Story unavailable',
+          message: 'This story has expired or was deleted.',
+        );
+      }
+      return;
+    }
+
     // ── Post / Comments Navigation ───────────────────────────────────────
-    if (targetType == 'POST' ||
-        targetType == 'COMMENT' ||
-        notif.type == NotificationType.comment ||
-        notif.type == NotificationType.reply ||
-        notif.type == NotificationType.like) {
+    if (!isStoryTarget &&
+        (targetType == 'POST' ||
+            targetType == 'COMMENT' ||
+            notif.type == NotificationType.comment ||
+            notif.type == NotificationType.reply ||
+            notif.type == NotificationType.like)) {
       if (targetId != null && targetId.isNotEmpty) {
         try {
           if (!Get.isRegistered<CommunityController>()) {
@@ -480,34 +548,18 @@ class NotificationController extends GetxController
         targetType == 'FRIENDREQUEST' ||
         targetType == 'USER' ||
         targetType == 'PROFILE') {
-      Get.to<void>(() => const FriendRequestsScreen());
+      Get.to<void>(
+        () => FriendRequestsScreen(
+          highlightUserId: notif.metadata?['senderId']?.toString() ??
+              notif.metadata?['followerId']?.toString() ??
+              notif.metadata?['userId']?.toString() ??
+              notif.targetId,
+        ),
+      );
       return;
     }
 
     if (notif.category == NotificationCategory.social) {
-      if (targetType == 'STORY' && targetId != null && targetId.isNotEmpty) {
-        if (Get.isRegistered<StoryController>()) {
-          final storyCtrl = Get.find<StoryController>();
-          final hasTarget = storyCtrl.storyGroups.any(
-            (group) => group.stories.any((s) => s.id == targetId),
-          );
-          if (hasTarget) {
-            AppNotificationBanner.showInfo(
-              context: context,
-              title: notif.title.isNotEmpty ? notif.title : 'Story',
-              message: notif.body,
-            );
-            return;
-          }
-        }
-        AppNotificationBanner.showInfo(
-          context: context,
-          title: 'Story unavailable',
-          message: 'This story has expired or was deleted.',
-        );
-        return;
-      }
-
       AppNotificationBanner.showInfo(
         context: context,
         title: notif.title,

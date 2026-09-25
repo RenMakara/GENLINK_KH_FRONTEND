@@ -115,22 +115,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 14),
-        child: Center(
-          child: AppBackButton(
-            onPressed: () {
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              } else {
-                Get.offAllNamed(AppRoutes.home);
-              }
-            },
-          ),
+      leading: Center(
+        child: AppBackButton(
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Get.offAllNamed(AppRoutes.home);
+            }
+          },
         ),
       ),
-      leadingWidth: 54,
-      titleSpacing: 6,
+      leadingWidth: 72,
+      titleSpacing: 0,
       centerTitle: false,
       title: Text(
         titleText,

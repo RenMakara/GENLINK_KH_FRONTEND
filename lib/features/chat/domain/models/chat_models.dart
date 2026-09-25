@@ -332,6 +332,49 @@ class ChatMessageModel {
   }
 }
 
+class ChatMemberModel {
+  final String userId;
+  final String fullName;
+  final String username;
+  final String? avatarUrl;
+  final String role; // 'OWNER', 'ADMIN', 'MEMBER'
+
+  const ChatMemberModel({
+    required this.userId,
+    required this.fullName,
+    required this.username,
+    this.avatarUrl,
+    this.role = 'MEMBER',
+  });
+
+  bool get isOwner => role.toUpperCase() == 'OWNER';
+  bool get isAdmin => role.toUpperCase() == 'ADMIN' || isOwner;
+
+  factory ChatMemberModel.fromJson(Map<String, dynamic> json) {
+    final rawUser = json['user'] is Map ? json['user'] as Map : json;
+    final user = rawUser.cast<String, dynamic>();
+    return ChatMemberModel(
+      userId: user['userId']?.toString() ?? user['id']?.toString() ?? '',
+      fullName: (user['fullName'] as String?) ??
+          (user['name'] as String?) ??
+          'Student',
+      username: (user['username'] as String?) ??
+          (user['handle'] as String?) ??
+          '',
+      avatarUrl: (user['avatarUrl'] as String?) ?? (user['avatar'] as String?),
+      role: (json['role'] as String?) ?? 'MEMBER',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'fullName': fullName,
+        'username': username,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        'role': role,
+      };
+}
+
 class ChatConversationModel {
   final String id;
   final String name;
@@ -344,6 +387,7 @@ class ChatConversationModel {
   String lastMessageTime;
   int unreadCount;
   final int membersCount;
+  final List<ChatMemberModel> members;
   final bool isEventChat;
   final bool isPinned;
   final bool isArchived;
@@ -362,6 +406,7 @@ class ChatConversationModel {
     required this.lastMessageTime,
     this.unreadCount = 0,
     this.membersCount = 2,
+    this.members = const [],
     this.isEventChat = false,
     this.isPinned = false,
     this.isArchived = false,
@@ -385,6 +430,16 @@ class ChatConversationModel {
         lastCreatedAt;
     final lastType = (lastMessage?['type'] as String?) ?? 'TEXT';
     final isGroup = type == 'GROUP' || (json['isGroup'] as bool? ?? false);
+    final rawMembers = json['members'] is List ? json['members'] as List : const [];
+    final membersList = rawMembers
+        .whereType<Map>()
+        .map((m) => ChatMemberModel.fromJson(m.cast<String, dynamic>()))
+        .toList();
+    final parsedCount = (json['membersCount'] as num?)?.toInt();
+    final resolvedCount = parsedCount ??
+        (isGroup
+            ? (membersList.isNotEmpty ? membersList.length : (json['memberCount'] as num?)?.toInt() ?? 0)
+            : 2);
     return ChatConversationModel(
       id: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
       name:
@@ -394,7 +449,8 @@ class ChatConversationModel {
           (json['name'] as String?) ??
           'Chat',
       avatar:
-          counterpart['avatarUrl'] as String? ??
+          (json['avatarUrl'] as String?) ??
+          (counterpart['avatarUrl'] as String?) ??
           (json['avatar'] as String?) ??
           'assets/images/user_profile.png',
       profileUserId: isGroup
@@ -418,7 +474,8 @@ class ChatConversationModel {
           ? (json['lastMessageTime'] as String? ?? '')
           : _timeAgo(lastActivity),
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
-      membersCount: (json['membersCount'] as num?)?.toInt() ?? 2,
+      membersCount: resolvedCount,
+      members: membersList,
       isEventChat: (json['isEventChat'] as bool?) ?? (type == 'EVENT'),
       isPinned: (json['isPinned'] as bool?) ?? false,
       isArchived: (json['isArchived'] as bool?) ?? false,
@@ -466,13 +523,20 @@ class ChatConversationModel {
         (counterpart['fullName'] as String?) ??
         (counterpart['username'] as String?) ??
         'Chat';
-    final avatar = (counterpart['avatarUrl'] as String?) ??
+    final avatar = (json['avatarUrl'] as String?) ??
+        (counterpart['avatarUrl'] as String?) ??
         'assets/images/user_profile.png';
 
     final resolvedId = json['roomId']?.toString() ??
         json['id']?.toString() ??
         roomId ??
         '';
+
+    final membersRaw = json['members'] is List ? json['members'] as List : const [];
+    final membersList = membersRaw
+        .whereType<Map>()
+        .map((m) => ChatMemberModel.fromJson(m.cast<String, dynamic>()))
+        .toList();
 
     return ChatConversationModel(
       id: resolvedId,
@@ -487,7 +551,8 @@ class ChatConversationModel {
       lastMessage: '',
       lastMessageTime: 'Just now',
       unreadCount: 0,
-      membersCount: members.length,
+      membersCount: membersList.isNotEmpty ? membersList.length : membersRaw.length,
+      members: membersList,
       isEventChat: (json['isEventChat'] as bool?) ?? (type == 'EVENT'),
       isPinned: (json['isPinned'] as bool?) ?? false,
       isArchived: (json['isArchived'] as bool?) ?? false,
@@ -507,6 +572,7 @@ class ChatConversationModel {
     String? lastMessageTime,
     int? unreadCount,
     int? membersCount,
+    List<ChatMemberModel>? members,
     bool? isEventChat,
     bool? isPinned,
     bool? isArchived,
@@ -525,6 +591,7 @@ class ChatConversationModel {
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       unreadCount: unreadCount ?? this.unreadCount,
       membersCount: membersCount ?? this.membersCount,
+      members: members ?? this.members,
       isEventChat: isEventChat ?? this.isEventChat,
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
@@ -546,6 +613,7 @@ class ChatConversationModel {
       'lastMessageTime': lastMessageTime,
       'unreadCount': unreadCount,
       'membersCount': membersCount,
+      'members': members.map((m) => m.toJson()).toList(),
       'isEventChat': isEventChat,
       'isPinned': isPinned,
       'isArchived': isArchived,

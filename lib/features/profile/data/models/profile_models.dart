@@ -55,11 +55,13 @@ abstract final class ProfileMapper {
 
   static PortfolioItemEntity portfolioItem(Map<String, dynamic> json) {
     return PortfolioItemEntity(
-      portfolioId: json['portfolioId'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      description: json['description'] as String?,
-      link: json['link'] as String?,
-      imageUrl: json['imageUrl'] as String?,
+      portfolioId: json['portfolioId']?.toString() ??
+          json['id']?.toString() ??
+          '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString(),
+      link: json['link']?.toString(),
+      imageUrl: json['imageUrl']?.toString(),
     );
   }
 

@@ -147,14 +147,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
     String? link,
     String? imageUrl,
   }) {
-    return <String, dynamic>{
-      'title': title,
-      'description': description,
-      'link': link,
-      'imageUrl': imageUrl,
-    }..removeWhere(
-      (key, value) =>
-          key != 'title' && (value == null || (value as String).isEmpty),
-    );
+    final body = <String, dynamic>{
+      'title': title.trim(),
+    };
+    if (description != null && description.trim().isNotEmpty) {
+      body['description'] = description.trim();
+    }
+    if (link != null && link.trim().isNotEmpty) {
+      body['link'] = link.trim();
+    }
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      body['imageUrl'] = imageUrl.trim();
+    }
+    return body;
   }
 }

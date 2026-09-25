@@ -1,0 +1,223 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../../app/routes/app_routes.dart';
+import '../../../../core/utils/validators.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/branding/app_logo.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
+import '../../../../design_system/widgets/inputs/app_input.dart';
+import '../controllers/auth_controller.dart';
+import '../widgets/auth_floating_error_banner.dart';
+import '../widgets/auth_scaffold.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullName = TextEditingController();
+  final _username = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
+
+  AuthController get _auth => Get.find<AuthController>();
+
+  String? _errorMessage;
+  int _errorTriggerCount = 0;
+  Worker? _errorWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth.errorMessage.value = null;
+    _errorWorker = ever<String?>(_auth.errorMessage, (msg) {
+      if (msg != null && msg.isNotEmpty && mounted) {
+        setState(() {
+          _errorMessage = msg;
+          _errorTriggerCount++;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorWorker?.dispose();
+    _fullName.dispose();
+    _username.dispose();
+    _email.dispose();
+    _password.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
+
+    final success = await _auth.register(
+      fullName: _fullName.text.trim(),
+      username: _username.text.trim(),
+      email: _email.text.trim(),
+      password: _password.text,
+    );
+    if (success) {
+      Get.toNamed<void>(AppRoutes.verifyEmail);
+    } else if (mounted) {
+      setState(() {
+        _errorMessage =
+            _auth.errorMessage.value ?? 'auth.registerErrorTitle'.tr;
+        _errorTriggerCount++;
+      });
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    FocusScope.of(context).unfocus();
+    final success = await _auth.signInWithGoogle();
+    if (success) {
+      await _auth.continueAfterGoogleLogin();
+    } else if (_auth.errorMessage.value != null && mounted) {
+      setState(() {
+        _errorMessage = _auth.errorMessage.value;
+        _errorTriggerCount++;
+      });
+    }
+  }
+
+  void _dismissError() {
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+      _auth.errorMessage.value = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AuthScaffold(
+      overlay: AuthFloatingErrorBanner(
+        key: const ValueKey('auth-floating-error-banner'),
+        message: _errorMessage,
+        triggerKey: _errorTriggerCount,
+        title: _errorMessage ?? 'auth.registerErrorTitle'.tr,
+        description: 'auth.registerErrorDescription'.tr,
+        onDismissed: _dismissError,
+      ),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('auth.haveAccount'.tr, style: theme.textTheme.bodyMedium),
+              AppButton.text(
+                label: 'auth.login'.tr,
+                onPressed: () => Get.offNamed<void>(AppRoutes.login),
+              ),
+            ],
+          ),
+          Text(
+            'auth.legalNotice'.tr,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+          ),
+        ],
+      ),
+      children: [
+        const AuthBrandLockup(),
+        const SizedBox(height: AppSpacing.xl),
+        Text(
+          'auth.registerTitle'.tr,
+          style: theme.textTheme.displayMedium,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'auth.registerSubtitle'.tr,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppInput(
+                label: 'auth.fullName'.tr,
+                hint: 'auth.fullNameHint'.tr,
+                controller: _fullName,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                validator: Validators.required,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppInput(
+                label: 'auth.username'.tr,
+                hint: 'auth.usernameHint'.tr,
+                controller: _username,
+                textInputAction: TextInputAction.next,
+                validator: Validators.username,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppInput.email(
+                label: 'auth.email'.tr,
+                hint: 'auth.emailHint'.tr,
+                controller: _email,
+                validator: Validators.email,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppInput.password(
+                label: 'auth.password'.tr,
+                hint: 'auth.passwordHint'.tr,
+                controller: _password,
+                textInputAction: TextInputAction.next,
+                validator: Validators.password,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppInput.password(
+                label: 'auth.confirmPassword'.tr,
+                hint: 'auth.passwordHint'.tr,
+                controller: _confirmPassword,
+                validator: Validators.matches(() => _password.text),
+                onSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Obx(
+                () => AppButton(
+                  label: 'auth.createAccount'.tr,
+                  loading: _auth.isLoading.value,
+                  onPressed: _auth.isLoading.value ? null : _submit,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const AuthOrDivider(),
+              const SizedBox(height: AppSpacing.lg),
+              Obx(
+                () => GoogleSignInButton(
+                  semanticLabel: 'auth.continueWithGoogle'.tr,
+                  loading: _auth.isLoading.value,
+                  onPressed: _auth.isLoading.value ? null : _signInWithGoogle,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

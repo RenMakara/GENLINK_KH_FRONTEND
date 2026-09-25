@@ -1,18 +1,363 @@
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-/// Central GetX page registry.
-///
-/// Add GetPage definitions here once real presentation pages are introduced.
+import '../../features/auth/presentation/middleware/auth_middleware.dart';
+import '../../features/auth/presentation/screens/auth_choice_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/reset_otp_screen.dart';
+import '../../features/auth/presentation/screens/reset_password_screen.dart';
+import '../../features/auth/presentation/screens/verify_otp_screen.dart';
+import '../../features/onboarding/presentation/screens/language_select_screen.dart';
+import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/onboarding/presentation/screens/completion_screen.dart';
+import '../../features/profile/presentation/bindings/profile_binding.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/achievements_screen.dart';
+import '../../features/profile/presentation/screens/interests_screen.dart';
+import '../../features/profile/presentation/screens/portfolio_screen.dart';
+import '../../features/profile/presentation/screens/portfolio_form_screen.dart';
+import '../../features/profile/presentation/screens/profile_setup_screen.dart';
+import '../../features/profile/presentation/screens/saved_items_screen.dart';
+import '../../features/settings/presentation/screens/account_settings_screen.dart';
+import '../../features/settings/presentation/screens/about_screen.dart';
+import '../../features/settings/presentation/bindings/settings_binding.dart';
+import '../../features/settings/presentation/screens/appearance_settings_screen.dart';
+import '../../features/settings/presentation/screens/language_settings_screen.dart';
+import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
+import '../../features/settings/presentation/screens/security_settings_screen.dart';
+import '../../features/settings/presentation/screens/password_setup_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/settings/presentation/screens/notification_preferences_screen.dart';
+import '../../features/chat/chat_feature.dart';
+import '../../features/community/presentation/screens/friend_requests_screen.dart';
+import '../../features/notification/notification_feature.dart';
+import '../../features/quiz/presentation/bindings/quiz_binding.dart';
+import '../../features/quiz/presentation/screens/quiz_dashboard_screen.dart';
+import '../../features/quiz/presentation/screens/category_selection_screen.dart';
+import '../../features/quiz/presentation/screens/multiplayer_quiz_screen.dart';
+import '../../features/quiz/presentation/screens/quiz_in_progress_screen.dart';
+import '../../features/quiz/presentation/screens/review_submit_screen.dart';
+import '../../features/quiz/presentation/screens/result_screen.dart';
+import '../../features/short_content/presentation/bindings/short_content_binding.dart';
+import '../../features/short_content/presentation/screens/short_content_create_screen.dart';
+import '../../features/short_content/presentation/screens/short_content_feed_screen.dart';
+import '../../features/challenge/presentation/bindings/challenge_binding.dart';
+import '../../features/challenge/presentation/screens/challenge_detail_screen.dart';
+import '../../features/challenge/presentation/screens/challenge_list_screen.dart';
+import '../../features/leaderboard/presentation/bindings/leaderboard_binding.dart';
+import '../../features/leaderboard/presentation/screens/leaderboard_home_screen.dart';
+import '../../features/leaderboard/presentation/screens/full_ranking_screen.dart';
+import '../../features/leaderboard/presentation/screens/top_rank_detail_screen.dart'
+    as lb_detail;
+import '../../features/splash/presentation/bindings/splash_binding.dart';
+import '../../features/splash/presentation/screens/splash_screen.dart';
+import '../../features/splash/presentation/screens/welcome_screen.dart';
+import '../../main_screen.dart';
+import '../bindings/main_binding.dart';
+import 'app_routes.dart';
+
 abstract final class AppPages {
-  static const initial = '/';
+  static const initial = AppRoutes.splash;
 
   static final pages = <GetPage<dynamic>>[
-    GetPage(name: initial, page: () => const SizedBox.shrink()),
+    GetPage<dynamic>(
+      name: AppRoutes.splash,
+      page: () => const SplashScreen(),
+      binding: SplashBinding(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.welcome,
+      page: () => const WelcomeScreen(),
+      binding: WelcomeBinding(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.languageSelect,
+      page: () => const LanguageSelectScreen(),
+      binding: LanguageSelectBinding(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.onboarding,
+      page: () => const OnboardingScreen(),
+      binding: OnboardingBinding(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.completion,
+      page: () => const CompletionScreen(),
+      binding: CompletionBinding(),
+    ),
+
+    GetPage<dynamic>(
+      name: AppRoutes.authChoice,
+      page: () => const AuthChoiceScreen(),
+    ),
+    GetPage<dynamic>(name: AppRoutes.login, page: () => const LoginScreen()),
+    GetPage<dynamic>(
+      name: AppRoutes.register,
+      page: () => const RegisterScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.verifyEmail,
+      page: () => const VerifyOtpScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.forgotPassword,
+      page: () => const ForgotPasswordScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.resetOtp,
+      page: () => const ResetOtpScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.resetPassword,
+      page: () => const ResetPasswordScreen(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.setPassword,
+      page: () => PasswordSetupScreen(
+        optionalPrompt:
+            Get.arguments is Map &&
+            (Get.arguments as Map)['optionalPrompt'] == true,
+      ),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+
+    GetPage<dynamic>(
+      name: AppRoutes.home,
+      page: () => const MainScreen(),
+      binding: MainBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.notifications,
+      page: () => const NotificationScreen(),
+      binding: NotificationBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.friendRequests,
+      page: () => const FriendRequestsScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.chat,
+      page: () => const ChatListScreen(),
+      binding: ChatBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.chatDetail,
+      page: () => const ChatDetailScreen(),
+      binding: ChatBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+
+    GetPage<dynamic>(
+      name: AppRoutes.quizDashboard,
+      page: () => const QuizDashboardScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.quizCategories,
+      page: () => const CategorySelectionScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.quizMultiplayer,
+      page: () => const MultiplayerQuizScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.quizInProgress,
+      page: () => const QuizInProgressScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.quizReview,
+      page: () => const ReviewSubmitScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.quizResult,
+      page: () => const ResultScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.shortContent,
+      page: () => const ShortContentFeedScreen(),
+      binding: ShortContentBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.shortContentDetail,
+      page: () => const ShortContentDetailScreen(),
+      binding: ShortContentDetailBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.shortContentCreate,
+      page: () => const ShortContentCreateScreen(),
+      binding: ShortContentBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.challengeList,
+      page: () => const ChallengeListScreen(),
+      binding: ChallengeBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.challengeDetail,
+      page: () =>
+          ChallengeDetailScreen(challengeId: Get.arguments?.toString() ?? ''),
+      binding: ChallengeBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.leaderboard,
+      page: () => const LeaderboardHomeScreen(),
+      binding: LeaderboardBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.leaderboardRanking,
+      page: () => const FullRankingScreen(),
+      binding: LeaderboardBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.leaderboardProfile,
+      page: () => const lb_detail.TopRankDetailScreen(),
+      binding: LeaderboardBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.leaderboardAchievements,
+      // Badges are the backend-supported achievement catalog. Keep the legacy
+      // leaderboard URL, but render the functional profile experience so the
+      // app does not expose a placeholder screen.
+      page: () => const AchievementsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profileSetup,
+      page: () => const ProfileSetupScreen(),
+      binding: ProfileSetupBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profile,
+      page: () => ProfileScreen(viewingUsername: Get.parameters['username']),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.editProfile,
+      page: () => const EditProfileScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profileAchievements,
+      page: () => const AchievementsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profileSaved,
+      page: () => const SavedItemsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profilePortfolio,
+      page: () => const PortfolioScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profilePortfolioForm,
+      page: () => const PortfolioFormScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profileInterests,
+      page: () => const InterestsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settings,
+      page: () => const SettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsNotifications,
+      page: () => const NotificationPreferencesScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsLanguage,
+      page: () => const LanguageSettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsAppearance,
+      page: () => const AppearanceSettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsPrivacy,
+      page: () => const PrivacySettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsSecurity,
+      page: () => const SecuritySettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.passwordSetup,
+      page: () => PasswordSetupScreen(
+        optionalPrompt:
+            Get.arguments is Map &&
+            (Get.arguments as Map)['optionalPrompt'] == true,
+      ),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsAccount,
+      page: () => const AccountSettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsAbout,
+      page: () => const AboutScreen(),
+      middlewares: [AuthMiddleware()],
+    ),
   ];
 
   static final unknownRoute = GetPage<dynamic>(
     name: '/not-found',
-    page: () => const SizedBox.shrink(),
+    page: () => const SplashScreen(),
+    binding: SplashBinding(),
   );
 }

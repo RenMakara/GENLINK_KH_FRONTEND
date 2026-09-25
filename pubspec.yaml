@@ -1,5 +1,7 @@
 name: genlink_frontend
+
 description: "This project for Genlink KH frontend design"
+
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -10,45 +12,137 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  mobile_scanner: ^7.0.1
 
-  # GetX is the app-level routing, binding, and state management foundation.
+  # ==============================
+  # State Management + Routing + i18n
+  # ==============================
   get: ^4.7.2
 
+  # ==============================
+  # UI Icons
+  # ==============================
   cupertino_icons: ^1.0.8
 
-  # HTTP client for API communication.
+  # ==============================
+  # API Communication
+  # ==============================
   dio: ^5.4.0
+  url_launcher: ^6.3.2
 
-  # Encrypted storage for tokens and sensitive credentials.
-  flutter_secure_storage: ^9.0.0
+  # ==============================
+  # Secure Local Storage
+  # ==============================
+  flutter_secure_storage: ^11.0.0
 
-  # Device information for refresh token tracking.
-  device_info_plus: ^9.1.1
+  # ==============================
+  # Device Information & Camera
+  # ==============================
+  device_info_plus: ^13.2.0
+  google_sign_in: ^7.2.0
+  image_picker: ^1.1.2
+  photo_manager: ^3.12.0
+  camera: ^0.12.1
+  permission_handler: ^13.0.2
+
+  # ==============================
+  # Media upload
+  # ==============================
+  crypto: ^3.0.0
+
+  # Video preview + feed playback
+  video_player: ^2.9.2
+  video_player_platform_interface: ^6.2.0
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.6.0
+  flutter_local_notifications: ^22.3.0
+  flutter_svg: ^2.3.0
+
+
+# google_sign_in_android 7.2.12+ migrated to built-in Kotlin/AGP 9,
+# while this project currently builds with AGP 8.11.1.
+dependency_overrides:
+  google_sign_in_android: 7.2.11
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Flutter recommended lint rules
   flutter_lints: ^6.0.0
 
-  # Mocking for tests.
+  # Unit testing mock library
   mocktail: ^1.0.3
+
+  # ==============================
+  # App Launcher Icon
+  # ==============================
+  flutter_launcher_icons: ^0.14.4
+
+# ==============================
+# Flutter Launcher Icon Configuration
+# ==============================
+flutter_launcher_icons:
+  android: true
+  ios: true
+
+  # Your application logo
+  image_path: "assets/logos/genlink_icon.png"
+
+  # Android adaptive icon
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logos/genlink_icon.png"
+
+  # Remove alpha/transparency issues on Android
+  android_gravity: center
+
+  # iOS
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
 
+
   assets:
-    - assets/icons/svg/
+
     - assets/icons/png/
+
+    # Stickers
+    - assets/stickers/cats/
+
+    # Logos / Branding
     - assets/logos/
+
+    # General Images
     - assets/images/
-    - assets/illustrations/
-    - assets/lottie/
-    - assets/backgrounds/auth/
-    - assets/backgrounds/home/
-    - assets/backgrounds/community/
-    - assets/backgrounds/finance/
-    - assets/backgrounds/productivity/
-    - assets/backgrounds/growth/
-    - assets/backgrounds/profile/
-    - assets/textures/
+    - assets/images/profile_covers/
+    - assets/splash/
+
+  # ==============================
+  # Fonts
+  # ==============================
+  fonts:
+
+    # Sora
+    - family: Sora
+      fonts:
+        - asset: assets/fonts/Sora-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Sora-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Sora-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Sora-Bold.ttf
+          weight: 700
+
+    # Kantumruy Pro
+    - family: KantumruyPro
+      fonts:
+        - asset: assets/fonts/KantumruyPro-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/KantumruyPro-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/KantumruyPro-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/KantumruyPro-Bold.ttf
+          weight: 700

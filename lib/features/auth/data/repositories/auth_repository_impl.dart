@@ -5,9 +5,6 @@ import '../datasources/auth_remote_datasource.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_response_model.dart';
 
-/// Concrete auth repository backed by [AuthRemoteDatasource].
-///
-/// Maps between data-layer models and domain entities at the boundary.
 class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl(this._remote);
 
@@ -85,6 +82,14 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    await _remote.verifyResetOtp(email: email, otp: otp);
+  }
+
+  @override
   Future<void> resetPassword({
     required String email,
     required String otp,
@@ -93,6 +98,22 @@ class AuthRepositoryImpl implements AuthRepository {
     await _remote.resetPassword(
       email: email,
       otp: otp,
+      newPassword: newPassword,
+    );
+  }
+
+  @override
+  Future<bool> setPassword({required String password}) {
+    return _remote.setPassword(password: password);
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _remote.changePassword(
+      currentPassword: currentPassword,
       newPassword: newPassword,
     );
   }
@@ -113,8 +134,6 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     await _remote.logout();
   }
-
-  // ── Mappers ──────────────────────────────────────────────────────────
 
   AuthSession _mapToSession(AuthResponseModel model) {
     return AuthSession(
@@ -144,6 +163,7 @@ class AuthRepositoryImpl implements AuthRepository {
       preferredLanguage: model.preferredLanguage,
       role: model.role,
       active: model.active,
+      hasPassword: model.hasPassword,
     );
   }
 }

@@ -1,16 +1,5 @@
 import 'user_response_model.dart';
 
-/// Backend AuthResponse DTO.
-///
-/// Contract:
-/// ```json
-/// {
-///   "accessToken": "...",
-///   "refreshToken": "...",
-///   "tokenType": "Bearer",
-///   "user": { ... }
-/// }
-/// ```
 class AuthResponseModel {
   const AuthResponseModel({
     required this.accessToken,

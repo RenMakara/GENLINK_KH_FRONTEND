@@ -1,15 +1,8 @@
-/// Login request body matching backend LoginRequest record.
 class LoginRequestModel {
-  const LoginRequestModel({
-    required this.email,
-    required this.password,
-  });
+  const LoginRequestModel({required this.email, required this.password});
 
   final String email;
   final String password;
 
-  Map<String, dynamic> toJson() => {
-        'email': email,
-        'password': password,
-      };
+  Map<String, dynamic> toJson() => {'email': email, 'password': password};
 }

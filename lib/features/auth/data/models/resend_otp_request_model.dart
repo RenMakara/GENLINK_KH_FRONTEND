@@ -1,4 +1,3 @@
-/// Resend OTP request matching backend ResendOtpRequest record.
 class ResendOtpRequestModel {
   const ResendOtpRequestModel({required this.email});
 

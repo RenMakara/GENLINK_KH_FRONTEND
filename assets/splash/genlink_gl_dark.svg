@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 426" fill="none">
+  <defs>
+    <linearGradient id="genlink-gl-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4A64EC"/>
+      <stop offset="50%" stop-color="#6BA7DA"/>
+      <stop offset="100%" stop-color="#7DCBAF"/>
+    </linearGradient>
+  </defs>
+  <path d="M 179 15 L 23 110 L 17 115 L 15 119 L 15 293 L 17 297 L 22 301 L 95 345 L 97 345 L 205 410 L 210 410 L 216 404 L 216 137 L 214 134 L 209 133 L 118 188 L 114 193 L 115 243 L 118 243 L 163 215 L 167 214 L 169 216 L 169 326 L 167 328 L 159 325 L 66 267 L 66 145 L 75 138 L 77 138 L 173 78 L 180 76 L 182 78 L 188 79 L 237 49 L 237 47 L 214 34 L 185 16 Z" fill="#F8FAFC"/>
+  <path d="M 296 86 L 288 88 L 272 99 L 257 107 L 253 112 L 253 405 L 258 409 L 261 409 L 394 328 L 434 302 L 434 297 L 431 294 L 395 272 L 389 272 L 306 324 L 302 325 L 300 323 L 300 101 L 299 89 Z" fill="url(#genlink-gl-gradient)"/>
+</svg>

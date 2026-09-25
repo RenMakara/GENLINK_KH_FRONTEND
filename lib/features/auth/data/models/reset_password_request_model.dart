@@ -1,4 +1,3 @@
-/// Reset password request matching backend ResetPasswordRequest record.
 class ResetPasswordRequestModel {
   const ResetPasswordRequestModel({
     required this.email,

@@ -1,29 +1,5 @@
 import '../../domain/entities/user_entity.dart';
 
-/// Backend UserResponse DTO.
-///
-/// Matches the Java record:
-/// ```json
-/// {
-///   "userId": "uuid",
-///   "fullName": "...",
-///   "username": "...",
-///   "email": "...",
-///   "phoneNumber": "...",
-///   "avatarUrl": "...",
-///   "bio": "...",
-///   "universityName": "...",
-///   "workStatus": "STUDENT",
-///   "location": "...",
-///   "emailVerified": true,
-///   "accountStatus": "ACTIVE",
-///   "totalXp": 0,
-///   "level": 1,
-///   "preferredLanguage": "ENGLISH",
-///   "role": "USER",
-///   "active": true
-/// }
-/// ```
 class UserResponseModel {
   const UserResponseModel({
     required this.userId,
@@ -43,6 +19,7 @@ class UserResponseModel {
     required this.preferredLanguage,
     required this.role,
     required this.active,
+    this.hasPassword = false,
   });
 
   final String userId;
@@ -62,6 +39,7 @@ class UserResponseModel {
   final String preferredLanguage;
   final String role;
   final bool active;
+  final bool hasPassword;
 
   UserEntity toEntity() {
     return UserEntity(
@@ -82,6 +60,7 @@ class UserResponseModel {
       preferredLanguage: preferredLanguage,
       role: role,
       active: active,
+      hasPassword: hasPassword,
     );
   }
 
@@ -104,6 +83,7 @@ class UserResponseModel {
       preferredLanguage: json['preferredLanguage'] as String? ?? 'ENGLISH',
       role: json['role'] as String? ?? 'USER',
       active: json['active'] as bool? ?? false,
+      hasPassword: json['hasPassword'] as bool? ?? false,
     );
   }
 }

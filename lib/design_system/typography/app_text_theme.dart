@@ -2,16 +2,138 @@ import 'package:flutter/material.dart';
 
 import 'app_typography.dart';
 
-/// Text theme folder.
-///
-/// Build Material text themes here so features consume typography through
-/// Theme.of(context).textTheme.
 abstract final class AppTextTheme {
-  static const english = TextTheme(
-    bodyMedium: TextStyle(fontFamily: AppTypography.englishFontFamily),
-  );
+  static TextTheme english = _build(AppTypography.englishFontFamily, isKhmer: false);
+  static TextTheme khmer = _build(AppTypography.khmerFontFamily, isKhmer: true);
 
-  static const khmer = TextTheme(
-    bodyMedium: TextStyle(fontFamily: AppTypography.khmerFontFamily),
-  );
+  static TextTheme forLanguageCode(String code) =>
+      code == 'km' ? khmer : english;
+
+  static TextTheme _build(String family, {required bool isKhmer}) {
+    final fallbacks = isKhmer
+        ? const [AppTypography.englishFontFamily, AppTypography.khmerFontFamily]
+        : const [AppTypography.khmerFontFamily, AppTypography.englishFontFamily];
+
+    double size(double s) => isKhmer ? s + 2.0 : s;
+    double height(double h) => isKhmer ? h + 0.15 : h;
+    
+    FontWeight weight(FontWeight w) {
+      if (!isKhmer) return w;
+      if (w == FontWeight.w700) return FontWeight.w600;
+      if (w == FontWeight.w600) return FontWeight.w500;
+      if (w == FontWeight.w500) return FontWeight.w400;
+      return w;
+    }
+
+    return TextTheme(
+      displayLarge: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(40),
+        height: height(1.15),
+        fontWeight: weight(FontWeight.w700),
+        letterSpacing: isKhmer ? 0 : -0.5,
+      ),
+      displayMedium: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(32),
+        height: height(1.2),
+        fontWeight: weight(FontWeight.w700),
+        letterSpacing: isKhmer ? 0 : -0.4,
+      ),
+      displaySmall: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(24),
+        height: height(1.2),
+        fontWeight: weight(FontWeight.w700),
+      ),
+      headlineLarge: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(28),
+        height: height(1.25),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      headlineMedium: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(24),
+        height: height(1.3),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(20),
+        height: height(1.3),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      titleLarge: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(20),
+        height: height(1.3),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      titleMedium: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(16),
+        height: height(1.4),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      titleSmall: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(14),
+        height: height(1.4),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      bodyLarge: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(16),
+        height: height(1.5),
+        fontWeight: weight(FontWeight.w400),
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(14),
+        height: height(1.5),
+        fontWeight: weight(FontWeight.w400),
+      ),
+      bodySmall: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(12),
+        height: height(1.45),
+        fontWeight: weight(FontWeight.w400),
+      ),
+      labelLarge: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(15),
+        height: height(1.2),
+        fontWeight: weight(FontWeight.w600),
+      ),
+      labelMedium: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(13),
+        height: height(1.2),
+        fontWeight: weight(FontWeight.w500),
+      ),
+      labelSmall: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: fallbacks,
+        fontSize: size(11),
+        height: height(1.2),
+        fontWeight: weight(FontWeight.w500),
+        letterSpacing: isKhmer ? 0 : 0.3,
+      ),
+    );
+  }
 }

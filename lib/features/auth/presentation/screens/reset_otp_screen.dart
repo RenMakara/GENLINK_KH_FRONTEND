@@ -1,0 +1,162 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../../app/routes/app_routes.dart';
+import '../../../../core/utils/validators.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/branding/app_logo.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/dialogs/app_dialog.dart';
+import '../controllers/auth_controller.dart';
+import '../widgets/auth_scaffold.dart';
+import '../widgets/otp_keypad.dart';
+
+class ResetOtpScreen extends StatefulWidget {
+  const ResetOtpScreen({super.key});
+
+  @override
+  State<ResetOtpScreen> createState() => _ResetOtpScreenState();
+}
+
+class _ResetOtpScreenState extends State<ResetOtpScreen> {
+  String _otp = '';
+
+  bool _verifying = false;
+
+  AuthController get _auth => Get.find<AuthController>();
+
+  late final String _email = _auth.pendingEmail.value.isNotEmpty
+      ? _auth.pendingEmail.value
+      : (Get.arguments as String? ?? '');
+
+  bool get _isComplete => _otp.length == Validators.otpLength;
+
+  void _appendDigit(String digit) {
+    if (_verifying || _otp.length >= Validators.otpLength) return;
+    setState(() => _otp += digit);
+  }
+
+  void _deleteDigit() {
+    if (_verifying || _otp.isEmpty) return;
+    setState(() => _otp = _otp.substring(0, _otp.length - 1));
+  }
+
+  Future<void> _continue() async {
+    if (!_isComplete || _verifying) return;
+
+    setState(() => _verifying = true);
+    final success = await _auth.verifyResetOtp(email: _email, otp: _otp);
+    if (!mounted) return;
+
+    setState(() => _verifying = false);
+    if (success) {
+      await Get.toNamed<void>(AppRoutes.resetPassword, arguments: _otp);
+    }
+  }
+
+  Future<void> _resend() async {
+    final success = await _auth.forgotPassword(email: _email);
+    if (success && mounted) {
+      setState(() => _otp = '');
+      AppSnackbar.show('auth.resendCode'.tr);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AuthScaffold(
+      backBottomSpacing: AppSpacing.md,
+      children: [
+        const AuthBrandLockup(),
+        const SizedBox(height: AppSpacing.xl),
+        Text('auth.verifyTitle'.tr, style: theme.textTheme.displayMedium),
+        const SizedBox(height: AppSpacing.sm),
+        Text.rich(
+          TextSpan(
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+            ),
+            children: [
+              TextSpan(text: '${'auth.verifySentTo'.tr} '),
+              TextSpan(
+                text: _email,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Obx(
+          () => OtpCodeDisplay(
+            code: _otp,
+            length: Validators.otpLength,
+            errorText: _auth.errorMessage.value,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Obx(() {
+          final remaining = _auth.resendCooldown.value;
+          if (remaining > 0) {
+            return Center(
+              child: Text.rich(
+                TextSpan(
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                  children: [
+                    TextSpan(text: '${'auth.resendCodeIn'.tr} '),
+                    TextSpan(
+                      text: _formatCountdown(remaining),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          return Center(
+            child: AppButton.text(
+              label: 'auth.resendCode'.tr,
+              onPressed: _resend,
+            ),
+          );
+        }),
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          key: const ValueKey('reset-otp-continue-button'),
+          label: 'common.continue'.tr,
+          loading: _verifying,
+          onPressed: _isComplete ? _continue : null,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        IgnorePointer(
+          ignoring: _verifying,
+          child: OtpNumericKeypad(
+            onDigitPressed: _appendDigit,
+            onBackspacePressed: _deleteDigit,
+            onSymbolPressed: null,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'auth.otpHelp'.tr,
+          key: const ValueKey('otp-help-text'),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _formatCountdown(int seconds) =>
+      '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+}

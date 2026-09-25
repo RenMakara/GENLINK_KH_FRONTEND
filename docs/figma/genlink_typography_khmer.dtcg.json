@@ -1,0 +1,28 @@
+{
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "$value": "KantumruyPro",
+      "$description": "Locale-aware font family"
+    },
+    "weight": {
+      "regular": {
+        "$type": "string",
+        "$value": "400"
+      },
+      "medium": {
+        "$type": "string",
+        "$value": "400"
+      },
+      "semibold": {
+        "$type": "string",
+        "$value": "500"
+      },
+      "bold": {
+        "$type": "string",
+        "$value": "600"
+      }
+    }
+  }
+}
+

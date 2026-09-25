@@ -1,0 +1,425 @@
+{
+  "bg": {
+    "primary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9686274509803922,
+          0.9686274509803922,
+          0.9607843137254902
+        ],
+        "alpha": 1,
+        "hex": "#F7F7F5"
+      },
+      "$description": "App scaffold and page background"
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9372549019607843,
+          0.9372549019607843,
+          0.9215686274509803
+        ],
+        "alpha": 1,
+        "hex": "#EFEFEB"
+      },
+      "$description": "Subtle background grouping"
+    }
+  },
+  "surface": {
+    "primary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "alpha": 1,
+        "hex": "#FFFFFF"
+      },
+      "$description": "Cards, sheets, and primary containers"
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9490196078431372,
+          0.9490196078431372,
+          0.9372549019607843
+        ],
+        "alpha": 1,
+        "hex": "#F2F2EF"
+      },
+      "$description": "Inputs, chips, and secondary containers"
+    },
+    "elevated": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "alpha": 1,
+        "hex": "#FFFFFF"
+      },
+      "$description": "Raised cards and popovers"
+    },
+    "glass": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "alpha": 0.721569,
+        "hex": "#FFFFFFB8"
+      },
+      "$description": "Translucent glass surfaces; preserve alpha"
+    }
+  },
+  "text": {
+    "primary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.06666666666666667,
+          0.06666666666666667,
+          0.06666666666666667
+        ],
+        "alpha": 1,
+        "hex": "#111111"
+      },
+      "$description": "Headings and high-emphasis text"
+    },
+    "secondary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.4,
+          0.4,
+          0.4
+        ],
+        "alpha": 1,
+        "hex": "#666666"
+      },
+      "$description": "Supporting copy and labels"
+    },
+    "muted": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.6039215686274509,
+          0.6039215686274509,
+          0.5725490196078431
+        ],
+        "alpha": 1,
+        "hex": "#9A9A92"
+      },
+      "$description": "Hints, metadata, and disabled copy"
+    },
+    "inverse": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          1,
+          1
+        ],
+        "alpha": 1,
+        "hex": "#FFFFFF"
+      },
+      "$description": "Text on primary/accent surfaces"
+    }
+  },
+  "border": {
+    "subtle": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.06666666666666667,
+          0.06666666666666667,
+          0.06666666666666667
+        ],
+        "alpha": 0.078431,
+        "hex": "#11111114"
+      },
+      "$description": "Low-emphasis dividers and outlines; preserve alpha"
+    },
+    "strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.06666666666666667,
+          0.06666666666666667,
+          0.06666666666666667
+        ],
+        "alpha": 0.160784,
+        "hex": "#11111129"
+      },
+      "$description": "Focused or high-emphasis outlines"
+    }
+  },
+  "brand": {
+    "primary": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.06666666666666667,
+          0.06666666666666667,
+          0.06666666666666667
+        ],
+        "alpha": 1,
+        "hex": "#111111"
+      },
+      "$description": "Primary action and selected state"
+    },
+    "primary-soft": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9098039215686274,
+          0.9098039215686274,
+          0.8901960784313725
+        ],
+        "alpha": 1,
+        "hex": "#E8E8E3"
+      },
+      "$description": "Soft selected state background"
+    },
+    "dark-cyan": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.33725490196078434,
+          0.8509803921568627,
+          1
+        ],
+        "alpha": 1,
+        "hex": "#56D9FF"
+      },
+      "$description": "Dark theme highlight and gradient endpoint"
+    },
+    "dark-mint": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.2627450980392157,
+          0.8470588235294118,
+          0.7764705882352941
+        ],
+        "alpha": 1,
+        "hex": "#43D8C6"
+      },
+      "$description": "Dark theme secondary accent"
+    },
+    "dark-pink": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          0.47058823529411764,
+          0.7176470588235294
+        ],
+        "alpha": 1,
+        "hex": "#FF78B7"
+      },
+      "$description": "Dark theme tertiary accent"
+    }
+  },
+  "accent": {
+    "premium": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.7843137254901961,
+          0.7490196078431373,
+          0.6823529411764706
+        ],
+        "alpha": 1,
+        "hex": "#C8BFAE"
+      },
+      "$description": "Premium and profile accent"
+    },
+    "liked": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          1,
+          0.08627450980392157,
+          0.25098039215686274
+        ],
+        "alpha": 1,
+        "hex": "#FF1640"
+      },
+      "$description": "Active social reaction only"
+    }
+  },
+  "semantic": {
+    "danger": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.8941176470588236,
+          0.0784313725490196,
+          0.0784313725490196
+        ],
+        "alpha": 1,
+        "hex": "#E41414"
+      },
+      "$description": "Validation, failed, destructive"
+    },
+    "success": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.13333333333333333,
+          0.7725490196078432,
+          0.3686274509803922
+        ],
+        "alpha": 1,
+        "hex": "#22C55E"
+      },
+      "$description": "Saved, confirmed, successful"
+    },
+    "warning": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9607843137254902,
+          0.6196078431372549,
+          0.043137254901960784
+        ],
+        "alpha": 1,
+        "hex": "#F59E0B"
+      },
+      "$description": "Warnings and pending states"
+    },
+    "info": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.6274509803921569,
+          0.6274509803921569,
+          0.6274509803921569
+        ],
+        "alpha": 1,
+        "hex": "#A0A0A0"
+      },
+      "$description": "Neutral information"
+    }
+  },
+  "feature": {
+    "brand": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.12156862745098039,
+          0.43529411764705883,
+          0.9215686274509803
+        ],
+        "alpha": 1,
+        "hex": "#1F6FEB"
+      },
+      "$description": "General GenLink feature accent"
+    },
+    "community": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.36470588235294116,
+          0.6784313725490196,
+          0.9254901960784314
+        ],
+        "alpha": 1,
+        "hex": "#5DADEC"
+      },
+      "$description": "Community"
+    },
+    "productivity": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.5450980392156862,
+          0.48627450980392156,
+          0.9647058823529412
+        ],
+        "alpha": 1,
+        "hex": "#8B7CF6"
+      },
+      "$description": "Productivity"
+    },
+    "finance": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.29411764705882354,
+          0.6823529411764706,
+          0.45098039215686275
+        ],
+        "alpha": 1,
+        "hex": "#4BAE73"
+      },
+      "$description": "Finance"
+    },
+    "growth": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9490196078431372,
+          0.7215686274509804,
+          0.29411764705882354
+        ],
+        "alpha": 1,
+        "hex": "#F2B84B"
+      },
+      "$description": "Growth and LevelUp"
+    },
+    "profile": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.7843137254901961,
+          0.7490196078431373,
+          0.6823529411764706
+        ],
+        "alpha": 1,
+        "hex": "#C8BFAE"
+      },
+      "$description": "Profile"
+    }
+  }
+}
+

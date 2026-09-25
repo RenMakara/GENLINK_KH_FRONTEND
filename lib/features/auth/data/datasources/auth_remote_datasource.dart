@@ -5,30 +5,24 @@ import '../../../../core/network/api_endpoints.dart';
 import '../models/api_response_model.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_response_model.dart';
+import '../models/change_password_request_model.dart';
+import '../models/set_password_request_model.dart';
 
-/// Remote datasource for auth endpoints.
-///
-/// Handles raw HTTP calls and parses the ApiResponse envelope. Throws
-/// [AppError] on any non-success response.
 class AuthRemoteDatasource {
   AuthRemoteDatasource(this._dio);
 
   final Dio _dio;
 
-  // ── Login ─────────────────────────────────────────────────────────────
-
   Future<AuthResponseModel> login({
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.login,
       data: {'email': email, 'password': password},
     );
     return _parseAuthResponse(response);
   }
-
-  // ── Register ──────────────────────────────────────────────────────────
 
   Future<String> register({
     required String fullName,
@@ -40,7 +34,7 @@ class AuthRemoteDatasource {
     String? workStatus,
     String? preferredLanguage,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.register,
       data: {
         'fullName': fullName,
@@ -56,23 +50,19 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
-  // ── Google Login ──────────────────────────────────────────────────────
-
   Future<AuthResponseModel> googleLogin({required String idToken}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.googleLogin,
       data: {'idToken': idToken},
     );
     return _parseAuthResponse(response);
   }
 
-  // ── Verify Email / OTP ───────────────────────────────────────────────
-
   Future<AuthResponseModel> verifyEmail({
     required String email,
     required String otp,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.verifyEmail,
       data: {'email': email, 'otp': otp},
     );
@@ -83,17 +73,15 @@ class AuthRemoteDatasource {
     required String email,
     required String otp,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.verifyOtp,
       data: {'email': email, 'otp': otp},
     );
     return _parseAuthResponse(response);
   }
 
-  // ── Resend OTP ───────────────────────────────────────────────────────
-
   Future<String> resendOtp({required String email}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.resendOtp,
       data: {'email': email},
     );
@@ -101,19 +89,28 @@ class AuthRemoteDatasource {
   }
 
   Future<String> resendVerificationOtp({required String email}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.resendVerificationOtp,
       data: {'email': email},
     );
     return _parseMessage(response);
   }
 
-  // ── Password Reset ───────────────────────────────────────────────────
-
   Future<String> forgotPassword({required String email}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.forgotPassword,
       data: {'email': email},
+    );
+    return _parseMessage(response);
+  }
+
+  Future<String> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _post(
+      ApiEndpoints.verifyResetOtp,
+      data: {'email': email, 'otp': otp},
     );
     return _parseMessage(response);
   }
@@ -123,31 +120,45 @@ class AuthRemoteDatasource {
     required String otp,
     required String newPassword,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.resetPassword,
-      data: {
-        'email': email,
-        'otp': otp,
-        'newPassword': newPassword,
-      },
+      data: {'email': email, 'otp': otp, 'newPassword': newPassword},
     );
     return _parseMessage(response);
   }
 
-  // ── Refresh Token ────────────────────────────────────────────────────
+  Future<bool> setPassword({required String password}) async {
+    final response = await _post(
+      ApiEndpoints.setPassword,
+      data: SetPasswordRequestModel(password: password).toJson(),
+    );
+    return _parsePasswordStatus(response);
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _post(
+      ApiEndpoints.changePassword,
+      data: ChangePasswordRequestModel(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      ).toJson(),
+    );
+    _parseMessage(response);
+  }
 
   Future<AuthResponseModel> refreshToken({required String refreshToken}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.refreshToken,
       data: {'refreshToken': refreshToken},
     );
     return _parseAuthResponse(response);
   }
 
-  // ── Get Current User ─────────────────────────────────────────────────
-
   Future<UserResponseModel> getCurrentUser() async {
-    final response = await _dio.get(ApiEndpoints.me);
+    final response = await _get(ApiEndpoints.me);
     final body = response.data as Map<String, dynamic>;
     final api = ApiResponseModel<dynamic>.fromJson(body, null);
     if (!api.success || api.data == null) {
@@ -160,13 +171,15 @@ class AuthRemoteDatasource {
     return UserResponseModel.fromJson(api.data as Map<String, dynamic>);
   }
 
-  // ── Logout ───────────────────────────────────────────────────────────
-
   Future<void> logout() async {
-    await _dio.post(ApiEndpoints.logout);
+    await _post(ApiEndpoints.logout);
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────
+  Future<Response<dynamic>> _post(String path, {Object? data}) =>
+      guardDio(() => _dio.post<dynamic>(path, data: data));
+
+  Future<Response<dynamic>> _get(String path) =>
+      guardDio(() => _dio.get<dynamic>(path));
 
   AuthResponseModel _parseAuthResponse(Response<dynamic> response) {
     final body = response.data as Map<String, dynamic>;
@@ -195,5 +208,20 @@ class AuthRemoteDatasource {
       );
     }
     return api.message ?? '';
+  }
+
+  bool _parsePasswordStatus(Response<dynamic> response) {
+    final body = response.data as Map<String, dynamic>;
+    final api = ApiResponseModel<dynamic>.fromJson(body, null);
+    if (!api.success) {
+      throw AppError(
+        message: api.message ?? 'Request failed',
+        errorCode: api.errorCode ?? 'API_ERROR',
+        statusCode: response.statusCode,
+      );
+    }
+
+    final data = api.data;
+    return data is Map && data['hasPassword'] == true;
   }
 }

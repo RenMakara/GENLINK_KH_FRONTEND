@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:genlink_frontend/features/auth/data/models/change_password_request_model.dart';
 import 'package:genlink_frontend/features/auth/data/models/login_request_model.dart';
 import 'package:genlink_frontend/features/auth/data/models/register_request_model.dart';
 import 'package:genlink_frontend/features/auth/data/models/google_login_request_model.dart';
@@ -7,6 +8,7 @@ import 'package:genlink_frontend/features/auth/data/models/forgot_password_reque
 import 'package:genlink_frontend/features/auth/data/models/reset_password_request_model.dart';
 import 'package:genlink_frontend/features/auth/data/models/refresh_token_request_model.dart';
 import 'package:genlink_frontend/features/auth/data/models/resend_otp_request_model.dart';
+import 'package:genlink_frontend/features/auth/data/models/set_password_request_model.dart';
 
 void main() {
   group('Request Models toJson', () {
@@ -100,6 +102,22 @@ void main() {
       const model = ResendOtpRequestModel(email: 'user@example.com');
       final json = model.toJson();
       expect(json['email'], 'user@example.com');
+    });
+
+    test('SetPasswordRequestModel toJson', () {
+      const model = SetPasswordRequestModel(password: 'Password123');
+      expect(model.toJson(), {'password': 'Password123'});
+    });
+
+    test('ChangePasswordRequestModel toJson', () {
+      const model = ChangePasswordRequestModel(
+        currentPassword: 'OldPassword123',
+        newPassword: 'NewPassword123',
+      );
+      expect(model.toJson(), {
+        'currentPassword': 'OldPassword123',
+        'newPassword': 'NewPassword123',
+      });
     });
   });
 }

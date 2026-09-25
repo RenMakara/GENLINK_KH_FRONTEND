@@ -1,4 +1,3 @@
-/// Register request body matching backend RegisterRequest record.
 class RegisterRequestModel {
   const RegisterRequestModel({
     required this.fullName,

@@ -1,0 +1,1892 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/errors/app_error.dart';
+import '../../../../core/network/api_endpoints.dart';
+import '../../domain/models/community_models.dart';
+import '../../domain/models/community_post_model.dart';
+import '../../../../shared/utils/current_user.dart';
+
+class CommunityRemoteDataSource {
+  final Dio dio;
+
+  CommunityRemoteDataSource({required this.dio});
+
+  final List<CommunityPostModel> _mockPosts = [
+    CommunityPostModel(
+      id: 'post_me',
+      userId: 'user_me',
+      authorName: 'Sokny Enat',
+      authorTag: '@soknyenat',
+      authorAvatar: 'assets/images/user_profile.png',
+      isVerified: false,
+      timeAgo: '15m ago',
+      content:
+          'Building cross-platform mobile apps with Flutter & Cloud Infrastructure at ACLEDA University of Business! 🚀💻 #Flutter #CloudComputing #CampusLink',
+      imageUrls: [
+        'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
+      ],
+      likesCount: 42,
+      commentsCount: 8,
+      sharesCount: 2,
+      isLiked: false,
+      isBookmarked: false,
+      isOwner: false,
+      community: 'ACLEDA University of Business',
+    ),
+    CommunityPostModel(
+      id: 'post_chansela',
+      userId: 'user_chansela',
+      authorName: 'Heng Chansela',
+      authorTag: '@hengchansela',
+      authorAvatar: 'assets/images/heng_chansela_profile.png',
+      isVerified: false,
+      timeAgo: '2h ago',
+      content:
+          '❤️ Creating beautiful memories together after classes at AUB.\nCampus life is more meaningful when you have someone to share every moment with. ☕📸',
+      imageUrls: ['assets/images/heng_chansela_post.png'],
+      location: 'ACLEDA University of Business, Phnom Penh',
+      likesCount: 42,
+      commentsCount: 8,
+      sharesCount: 3,
+      isLiked: true,
+      isBookmarked: false,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+    ),
+    CommunityPostModel(
+      id: 'post_flutter_workshop_event',
+      userId: 'user_aub',
+      authorName: 'AUB Digital Academy',
+      authorTag: '@aub_academy',
+      authorAvatar: 'assets/images/user_profile.png',
+      isVerified: true,
+      timeAgo: '3h ago',
+      content:
+          '🚀 Excited to announce our upcoming Flutter Workshop 2026! Learn how to build clean architecture mobile apps with reactive state management. Register below to secure your seat! 📱✨ #Flutter #MobileDev #AUB',
+      likesCount: 88,
+      commentsCount: 16,
+      sharesCount: 12,
+      isLiked: false,
+      isBookmarked: false,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+      postType: 'event',
+      attachedEvent: EventModel(
+        id: 'ev1',
+        title: 'Flutter Workshop 2026',
+        subtitle: 'Build real-world mobile apps with Flutter from scratch.',
+        organizerName: 'AUB Digital Academy',
+        eventType: 'In person',
+        location: 'ACLEDA University, Phnom Penh',
+        dateString: '25 Jul 2026',
+        timeString: '9:00 AM – 4:00 PM',
+        description:
+            'Join us for an intensive hands-on workshop where you will learn how to build beautiful and high-performance cross-platform applications using Flutter.\n\nWhether you are a beginner or looking to enhance your skills, this workshop covers clean architecture, reactive state management with GetX, and real-world backend API integration.',
+        category: 'Workshop',
+        imageUrl:
+            'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&auto=format&fit=crop&q=80',
+        attendeesCount: 120,
+        attendeeAvatars: [
+          'assets/images/user_profile.png',
+          'assets/images/heng_chansela_profile.png',
+          'assets/images/ren_makara_profile.png',
+        ],
+      ),
+    ),
+    CommunityPostModel(
+      id: 'post_makara',
+      userId: 'user_makara',
+      authorName: 'Ren Makara',
+      authorTag: '@renmakara',
+      authorAvatar: 'assets/images/ren_makara_profile.png',
+      isVerified: false,
+      timeAgo: '5h ago',
+      content:
+          '🚀 មកស្គាល់គម្រោង «AuthGate»\n\nAuthGate គឺជាប្រព័ន្ធគ្រប់គ្រងសិទ្ធិចូលប្រើប្រាស់ និងផ្ទៀងផ្ទាត់អត្តសញ្ញាណ (Authentication & Access Control System) ដែលអភិវឌ្ឍដោយប្រើ Spring Boot Microservices។\n\nFeatures:\n• Secure Login & Authentication\n• Role-Based Access Control (RBAC)\n• JWT Authentication\n• Refresh Token\n• REST API\n• Spring Boot Microservices\n• Docker\n• Swagger API Documentation\n\n#SpringBoot #Microservices #Java #BackendDevelopment #Docker #JWT #AuthGate',
+      imageUrls: ['assets/images/authgate_project.png'],
+      location: 'ACLEDA University of Business',
+      likesCount: 65,
+      commentsCount: 14,
+      sharesCount: 8,
+      isLiked: false,
+      isBookmarked: false,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+    ),
+    CommunityPostModel(
+      id: 'post_ai_seminar_event',
+      userId: 'user_cadt',
+      authorName: 'CADT Innovation Lab',
+      authorTag: '@cadt_lab',
+      authorAvatar: 'assets/images/user_profile.png',
+      isVerified: true,
+      timeAgo: '1d ago',
+      content:
+          '🌐 Join us for an inspiring session on AI in Everyday Life! Explore practical LLM tooling and automation strategies for student builders. Free virtual attendance via Google Meet 🤖💡',
+      likesCount: 142,
+      commentsCount: 29,
+      sharesCount: 22,
+      isLiked: true,
+      isBookmarked: false,
+      isOwner: false,
+      community: 'All GenLink',
+      postType: 'event',
+      attachedEvent: EventModel(
+        id: 'ev2',
+        title: 'AI in Everyday Life',
+        subtitle:
+            'Exploring practical AI applications for students & creators.',
+        organizerName: 'CADT Innovation Lab',
+        eventType: 'Online',
+        onlineLink: 'https://meet.google.com/genlink-ai-2026',
+        location: '',
+        dateString: '28 Jul 2026',
+        timeString: '2:00 PM – 5:00 PM',
+        description:
+            'Discover how artificial intelligence is transforming everyday productivity, software development, and campus workflows. Live demos, Q&A with industry engineers, and resource giveaways.',
+        category: 'Seminar',
+        imageUrl:
+            'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200&auto=format&fit=crop&q=80',
+        attendeesCount: 245,
+        attendeeAvatars: [
+          'assets/images/user_profile.png',
+          'assets/images/heng_chansela_profile.png',
+        ],
+      ),
+    ),
+  ];
+
+  Future<List<CommunityPostModel>> fetchPosts({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityFeed,
+        queryParameters: {'page': page - 1, 'size': limit},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData;
+      if (body is Map<String, dynamic>) {
+        rawData = body['data'];
+      } else {
+        rawData = body;
+      }
+
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      return content
+          .map(
+            (json) => CommunityPostModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+    }
+    return const <CommunityPostModel>[];
+  }
+
+  Future<CommunityPostModel> createPost({
+    required String content,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String visibility = 'Public',
+    String community = 'All GenLink',
+  }) async {
+    String resolvedVisibility;
+    switch (visibility.toUpperCase()) {
+      case 'FRIENDS':
+        resolvedVisibility = 'FRIENDS';
+        break;
+      case 'COMMUNITY':
+        resolvedVisibility = 'COMMUNITY';
+        break;
+      default:
+        resolvedVisibility = 'PUBLIC';
+    }
+
+    final postType = videoUrl != null && videoUrl.isNotEmpty
+        ? 'VIDEO'
+        : (imageUrls.isNotEmpty ? 'IMAGE' : 'TEXT');
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPosts,
+        data: {
+          'contentText': content,
+          'imageUrl': imageUrls.isNotEmpty ? imageUrls.join(',') : null,
+          'videoUrl': videoUrl != null && videoUrl.isNotEmpty ? videoUrl : null,
+          'visibility': resolvedVisibility,
+          'postType': postType,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(body);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create post on server.',
+      errorCode: 'POST_CREATION_FAILED',
+    );
+  }
+
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) async {
+    final resolvedVisibility = switch (visibility.toUpperCase()) {
+      'FRIENDS' => 'FRIENDS',
+      'COMMUNITY' => 'COMMUNITY',
+      _ => 'PUBLIC',
+    };
+    final payload = <String, dynamic>{
+      'question': question.trim(),
+      'options': options
+          .map((option) => option.trim())
+          .where((option) => option.isNotEmpty)
+          .toList(),
+      if (caption != null && caption.trim().isNotEmpty)
+        'caption': caption.trim(),
+      'visibility': resolvedVisibility,
+      if (communityId != null && communityId.isNotEmpty)
+        'communityId': communityId,
+    };
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(ApiEndpoints.communityPoll, data: payload),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(body);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create poll on server.',
+      errorCode: 'POLL_CREATION_FAILED',
+    );
+  }
+
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPollVote(postId),
+        data: {'optionId': optionId},
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('pollId') || data.containsKey('options')) {
+          return CommunityPostModel.fromJson({'postId': postId, 'poll': data});
+        }
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson({'postId': postId, 'poll': body});
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to record vote on server.',
+      errorCode: 'POLL_VOTE_FAILED',
+    );
+  }
+
+  Future<bool> deletePost(String postId) async {
+    try {
+      await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityPostDetail(postId)),
+      );
+    } catch (_) {}
+    _mockPosts.removeWhere((p) => p.id == postId);
+    return true;
+  }
+
+  Future<bool> toggleLike(
+    String postId, {
+    bool isCurrentlyLiked = false,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyLiked
+          ? dio.delete<dynamic>(ApiEndpoints.communityPostLike(postId))
+          : dio.post<dynamic>(ApiEndpoints.communityPostLike(postId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        final p = _mockPosts[idx];
+        p.isLiked = !isCurrentlyLiked;
+        p.likesCount = (p.likesCount + (!isCurrentlyLiked ? 1 : -1)).clamp(
+          0,
+          9999999,
+        );
+      }
+      return true;
+    }
+    throw AppError(
+      message: 'Failed to update post like',
+      errorCode: 'POST_LIKE_FAILED',
+    );
+  }
+
+  Future<List<PostLikerModel>> fetchPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (postId.trim().isEmpty) {
+      return [];
+    }
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityPostLikes(postId),
+        queryParameters: {'page': page, 'size': size},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(PostLikerModel.fromJson)
+          .toList();
+    }
+    throw AppError(
+      message: 'Failed to fetch post likes',
+      errorCode: 'FETCH_POST_LIKES_FAILED',
+    );
+  }
+
+  Future<bool> toggleBookmark(
+    String postId, {
+    bool? isCurrentlyBookmarked,
+  }) async {
+    if (isCurrentlyBookmarked != null) {
+      try {
+        final response = await guardDio(
+          () => isCurrentlyBookmarked
+              ? dio.delete<dynamic>(
+                  ApiEndpoints.profileSavedItem('POST', postId),
+                )
+              : dio.post<dynamic>(
+                  ApiEndpoints.profileSaved,
+                  data: {'itemType': 'POST', 'itemId': postId},
+                ),
+        );
+        if (response.statusCode == 200 ||
+            response.statusCode == 201 ||
+            response.statusCode == 204) {
+          final idx = _mockPosts.indexWhere((p) => p.id == postId);
+          if (idx != -1) {
+            _mockPosts[idx].isBookmarked = !isCurrentlyBookmarked;
+          }
+          return true;
+        }
+      } catch (_) {}
+    }
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(ApiEndpoints.communityPostBookmark(postId)),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _mockPosts[idx].isBookmarked = !_mockPosts[idx].isBookmarked;
+      }
+      return true;
+    }
+
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<bool> isPostBookmarked(String postId) async {
+    final cleanId = postId.trim();
+    if (cleanId.isEmpty) return false;
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSavedCheck,
+          queryParameters: {
+            'itemType': 'POST',
+            'itemId': cleanId,
+          },
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (data is Map<String, dynamic>) {
+          return data['saved'] as bool? ?? false;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> repostPost(
+    String postId, {
+    String? caption,
+    String? reposterId,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityPostRepost(postId),
+          data: (caption != null && caption.trim().isNotEmpty)
+              ? {'caption': caption.trim()}
+              : <String, dynamic>{},
+        ),
+      );
+      final ok = response.statusCode == 200 || response.statusCode == 201;
+      if (ok) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: true,
+          caption: caption,
+          reposterId: reposterId,
+        );
+      }
+      return ok;
+    } catch (e) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: true,
+          caption: caption,
+          reposterId: reposterId,
+        );
+        return true;
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> unrepostPost(String postId, {String? reposterId}) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityPostRepost(postId)),
+      );
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      if (ok) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: false,
+          reposterId: reposterId,
+        );
+      }
+      return ok;
+    } catch (e) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: false,
+          reposterId: reposterId,
+        );
+        return true;
+      }
+      rethrow;
+    }
+  }
+
+  void _updateMockPostRepost(
+    String postId, {
+    required bool isReposted,
+    String? caption,
+    String? reposterId,
+  }) {
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      final p = _mockPosts[idx];
+      if (isReposted) {
+        final currentUserName =
+            CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+            ? CurrentUser.name
+            : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
+        final effectiveReposterId =
+            reposterId ??
+            (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
+        _mockPosts[idx] = p.copyWith(
+          sharesCount: p.sharesCount + 1,
+          isRepostedByMe: true,
+          repostedBy: currentUserName,
+          repostCaption: caption,
+          reposterId: effectiveReposterId,
+          originalPostId: p.id,
+        );
+      } else {
+        _mockPosts[idx] = p.copyWith(
+          sharesCount: p.sharesCount > 0 ? p.sharesCount - 1 : 0,
+          clearRepostInfo: true,
+        );
+      }
+    }
+  }
+
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  }) async {
+    try {
+      await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityPostReport(postId),
+          data: {'reason': reason},
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<List<CommentModel>> fetchComments(String postId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.communityPostComments(postId)),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      final parsed = content.whereType<Map<String, dynamic>>().map((json) {
+        final map = Map<String, dynamic>.from(json);
+        if (map['postId'] == null && map['discussionId'] == null) {
+          map['postId'] = postId;
+        }
+        return CommentModel.fromJson(map);
+      }).toList();
+
+      final reconstructed = _reconstructCommentHierarchy(parsed);
+
+      final commentsWithReplies = await Future.wait(
+        reconstructed.map((comment) async {
+          if (comment.replies.isNotEmpty) return comment;
+          try {
+            final replies = await fetchCommentReplies(comment.id);
+            if (replies.isNotEmpty) {
+              return comment.copyWith(replies: replies);
+            }
+          } catch (_) {}
+          return comment;
+        }),
+      );
+
+      return commentsWithReplies;
+    }
+    return [];
+  }
+
+  Future<List<CommentModel>> fetchCommentReplies(String commentId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(ApiEndpoints.communityCommentReplies(commentId)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final content = rawData is Map<String, dynamic>
+            ? (rawData['content'] as List<dynamic>?) ?? const []
+            : rawData is List
+            ? rawData
+            : const [];
+        return content.whereType<Map<String, dynamic>>().map((json) {
+          final map = Map<String, dynamic>.from(json);
+          if (map['parentCommentId'] == null) {
+            map['parentCommentId'] = commentId;
+          }
+          return CommentModel.fromJson(map);
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch replies for comment $commentId: $e');
+    }
+    return [];
+  }
+
+  List<CommentModel> _reconstructCommentHierarchy(List<CommentModel> comments) {
+    if (comments.isEmpty) return const [];
+
+    final Map<String, List<CommentModel>> repliesByParent = {};
+    final List<CommentModel> topLevelComments = [];
+
+    for (final comment in comments) {
+      final parentId = comment.parentCommentId;
+      if (parentId != null && parentId.isNotEmpty) {
+        repliesByParent.putIfAbsent(parentId, () => []).add(comment);
+      } else {
+        topLevelComments.add(comment);
+      }
+    }
+
+    if (repliesByParent.isEmpty) {
+      return comments;
+    }
+
+    List<CommentModel> buildReplies(String parentId) {
+      final direct = repliesByParent[parentId] ?? [];
+      return direct.map((reply) {
+        final nested = buildReplies(reply.id);
+        final merged = [
+          ...reply.replies,
+          ...nested.where((n) => !reply.replies.any((r) => r.id == n.id)),
+        ];
+        return reply.copyWith(replies: merged);
+      }).toList();
+    }
+
+    final result = topLevelComments.map((parent) {
+      final replies = buildReplies(parent.id);
+      final merged = [
+        ...parent.replies,
+        ...replies.where(
+          (r) => !parent.replies.any((existing) => existing.id == r.id),
+        ),
+      ];
+      return parent.copyWith(replies: merged);
+    }).toList();
+
+    // Include any orphaned replies whose parent was not in the top-level list
+    final accountedIds = <String>{
+      ...result.map((c) => c.id),
+      ...result.expand((c) => _allCommentDescendantIds(c)),
+    };
+    for (final comment in comments) {
+      if (!accountedIds.contains(comment.id)) {
+        result.add(comment);
+      }
+    }
+
+    return result;
+  }
+
+  Set<String> _allCommentDescendantIds(CommentModel comment) {
+    final ids = <String>{};
+    for (final r in comment.replies) {
+      ids.add(r.id);
+      ids.addAll(_allCommentDescendantIds(r));
+    }
+    return ids;
+  }
+
+  Future<CommentModel> addComment(
+    String postId,
+    String text, {
+    String? parentCommentId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPostComments(postId),
+        data: {
+          'content': text,
+          if (parentCommentId != null && parentCommentId.isNotEmpty)
+            'parentCommentId': parentCommentId,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      Map<String, dynamic>? dataMap;
+      if (body is Map<String, dynamic> &&
+          body['data'] is Map<String, dynamic>) {
+        dataMap = body['data'] as Map<String, dynamic>;
+      } else if (body is Map<String, dynamic>) {
+        dataMap = body;
+      }
+
+      if (dataMap != null) {
+        if (dataMap['postId'] == null && dataMap['discussionId'] == null) {
+          dataMap['postId'] = postId;
+        }
+        return CommentModel.fromJson(dataMap);
+      }
+    }
+
+    throw AppError(
+      message: 'Failed to add comment',
+      errorCode: 'COMMENT_CREATE_FAILED',
+    );
+  }
+
+  Future<bool> deleteComment(String commentId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(ApiEndpoints.communityComment(commentId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to delete comment',
+      errorCode: 'COMMENT_DELETE_FAILED',
+    );
+  }
+
+  Future<List<CommentModel>> fetchDiscussionComments(
+    String discussionId,
+  ) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityDiscussionComments(discussionId),
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      final topLevelComments = content
+          .whereType<Map<String, dynamic>>()
+          .map((json) => CommentModel.fromJson(json))
+          .toList();
+
+      final commentsWithReplies = await Future.wait(
+        topLevelComments.map((comment) async {
+          if (comment.replies.isNotEmpty) return comment;
+          try {
+            final replies = await fetchDiscussionCommentReplies(comment.id);
+            if (replies.isNotEmpty) {
+              return comment.copyWith(replies: replies);
+            }
+          } catch (_) {}
+          return comment;
+        }),
+      );
+      return commentsWithReplies;
+    }
+    return [];
+  }
+
+  Future<CommentModel> addDiscussionComment(
+    String discussionId,
+    String content, {
+    String? parentCommentId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityDiscussionComments(discussionId),
+        data: {
+          'content': content,
+          if (parentCommentId != null && parentCommentId.isNotEmpty)
+            'parentCommentId': parentCommentId,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      if (body is Map<String, dynamic> &&
+          body['data'] is Map<String, dynamic>) {
+        return CommentModel.fromJson(body['data'] as Map<String, dynamic>);
+      } else if (body is Map<String, dynamic>) {
+        return CommentModel.fromJson(body);
+      }
+    }
+
+    throw AppError(
+      message: 'Failed to add comment',
+      errorCode: 'COMMENT_CREATE_FAILED',
+    );
+  }
+
+  Future<List<CommentModel>> fetchDiscussionCommentReplies(
+    String commentId,
+  ) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussionCommentReplies(commentId),
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final content = rawData is Map<String, dynamic>
+            ? (rawData['content'] as List<dynamic>?) ?? const []
+            : rawData is List
+            ? rawData
+            : const [];
+        return content
+            .whereType<Map<String, dynamic>>()
+            .map(CommentModel.fromJson)
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch replies for comment $commentId: $e');
+    }
+    return [];
+  }
+
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) async {
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityDiscussionCommentDetail(commentId),
+        data: {'content': content},
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      if (data is Map<String, dynamic>) {
+        return CommentModel.fromJson(data);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to update comment',
+      errorCode: 'COMMENT_UPDATE_FAILED',
+    );
+  }
+
+  Future<List<ForumTopicModel>> fetchDiscussions({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final query = <String, dynamic>{'page': page - 1, 'size': limit};
+    if (category != null && category.isNotEmpty && category != 'All') {
+      query['category'] = category;
+    }
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityDiscussions,
+        queryParameters: query,
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+      return content
+          .map((json) => ForumTopicModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityDiscussions,
+        data: {
+          'title': title,
+          'content': content,
+          'category': category,
+          'anonymous': anonymous,
+        },
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      if (data is Map<String, dynamic>) {
+        final topic = ForumTopicModel.fromJson(data);
+        if (anonymous) {
+          return topic.copyWith(
+            isAnonymous: true,
+            authorName: 'Anonymous',
+            authorAvatar: '',
+          );
+        }
+        return topic;
+      }
+    }
+    throw AppError(
+      message: 'Failed to create discussion',
+      errorCode: 'DISCUSSION_CREATE_FAILED',
+    );
+  }
+
+  Future<ForumTopicModel> updateDiscussion(
+    String discussionId, {
+    required String title,
+    required String content,
+    required String category,
+    bool? anonymous,
+  }) async {
+    final payload = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'category': category,
+      'anonymous': ?anonymous,
+    };
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityDiscussionDetail(discussionId),
+        data: payload,
+      ),
+    );
+    if (response.statusCode == 200) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      if (data is Map<String, dynamic>) {
+        final topic = ForumTopicModel.fromJson(data);
+        if (anonymous == true || (anonymous == null && topic.isAnonymous)) {
+          return topic.copyWith(
+            isAnonymous: true,
+            authorName: 'Anonymous',
+            authorAvatar: '',
+          );
+        }
+        return topic;
+      }
+    }
+    throw AppError(
+      message: 'Failed to update discussion',
+      errorCode: 'DISCUSSION_UPDATE_FAILED',
+    );
+  }
+
+  Future<bool> deleteDiscussion(String discussionId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(
+        ApiEndpoints.communityDiscussionDetail(discussionId),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw AppError(
+      message: 'Failed to delete discussion',
+      errorCode: 'DISCUSSION_DELETE_FAILED',
+    );
+  }
+
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyLiked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.communityDiscussionReact(discussionId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.communityDiscussionReact(discussionId),
+            ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw AppError(
+      message: 'Failed to update reaction',
+      errorCode: 'DISCUSSION_REACT_FAILED',
+    );
+  }
+
+  Future<List<ForumLikerModel>> fetchDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    final cleanId = discussionId.trim();
+    if (cleanId.isEmpty) {
+      return [];
+    }
+    Response<dynamic> response;
+    try {
+      response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussionReactions(cleanId),
+          queryParameters: {
+            'page': page,
+            'size': size,
+          },
+        ),
+      );
+    } on AppError catch (e) {
+      if (e.statusCode == 404) {
+        try {
+          response = await guardDio(
+            () => dio.get<dynamic>(
+              '/api/v1/community/discussions/$cleanId/likes',
+              queryParameters: {
+                'page': page,
+                'size': size,
+              },
+            ),
+          );
+        } catch (_) {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+    }
+    if (response.statusCode == 200 && response.data != null) {
+      dynamic body = response.data;
+      if (body is String) {
+        try {
+          body = jsonDecode(body);
+        } catch (_) {}
+      }
+
+      dynamic rawData = body;
+      if (body is Map) {
+        final map = Map<String, dynamic>.from(body);
+        if (map['success'] == false) {
+          throw AppError(
+            message: map['message']?.toString() ??
+                'Failed to fetch discussion reactions',
+            errorCode: map['errorCode']?.toString() ??
+                'FETCH_DISCUSSION_REACTIONS_FAILED',
+          );
+        }
+        rawData = map['data'] ?? map;
+      }
+
+      List<dynamic> content = [];
+      if (rawData is Map) {
+        final dataMap = Map<String, dynamic>.from(rawData);
+        final list = dataMap['content'] ??
+            dataMap['items'] ??
+            dataMap['likers'] ??
+            dataMap['reactions'];
+        if (list is List) {
+          content = list;
+        }
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      final List<ForumLikerModel> likers = [];
+      for (final item in content) {
+        if (item is Map) {
+          likers.add(
+            ForumLikerModel.fromJson(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
+      return likers;
+    }
+    throw AppError(
+      message: 'Failed to fetch discussion reactions',
+      errorCode: 'FETCH_DISCUSSION_REACTIONS_FAILED',
+    );
+  }
+
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyBookmarked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.profileSavedItem('DISCUSSION', discussionId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.profileSaved,
+              data: {'itemType': 'DISCUSSION', 'itemId': discussionId},
+            ),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<bool> isDiscussionBookmarked(String discussionId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSavedCheck,
+          queryParameters: {'itemType': 'DISCUSSION', 'itemId': discussionId},
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        if (data is Map<String, dynamic>) {
+          return data['saved'] as bool? ?? false;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityDiscussionDetail(discussionId),
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      if (data is Map<String, dynamic>) {
+        return ForumTopicModel.fromJson(data);
+      }
+    }
+    throw AppError(
+      message: 'Failed to load discussion details',
+      errorCode: 'DISCUSSION_NOT_FOUND',
+    );
+  }
+
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityDiscussionReport(discussionId),
+        data: {
+          'reason': reason,
+          if (details != null && details.isNotEmpty) 'details': details,
+        },
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    }
+    throw AppError(
+      message: 'Failed to report discussion',
+      errorCode: 'DISCUSSION_REPORT_FAILED',
+    );
+  }
+
+  Future<bool> toggleDiscussionCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyLiked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.communityDiscussionCommentLike(commentId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.communityDiscussionCommentLike(commentId),
+            ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw AppError(
+      message: 'Failed to update comment reaction',
+      errorCode: 'COMMENT_LIKE_FAILED',
+    );
+  }
+
+  Future<bool> deleteDiscussionComment(String commentId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(
+        ApiEndpoints.communityDiscussionCommentDetail(commentId),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw AppError(
+      message: 'Failed to delete comment',
+      errorCode: 'COMMENT_DELETE_FAILED',
+    );
+  }
+
+  final Set<String> _mockFollowedUserIds = <String>{};
+
+  Future<bool> followUser(String userId) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(ApiEndpoints.communityFollowUser(userId)),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _mockFollowedUserIds.add(userId);
+        _updateMockPostsFollowStatus(userId, true);
+        return true;
+      }
+    } catch (e) {
+      if (e is AppError && e.errorCode == 'NETWORK_ERROR') {
+        _mockFollowedUserIds.add(userId);
+        _updateMockPostsFollowStatus(userId, true);
+        return true;
+      }
+      rethrow;
+    }
+    _mockFollowedUserIds.add(userId);
+    _updateMockPostsFollowStatus(userId, true);
+    return true;
+  }
+
+  Future<bool> unfollowUser(String userId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityFollowUser(userId)),
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _mockFollowedUserIds.remove(userId);
+        _updateMockPostsFollowStatus(userId, false);
+        return true;
+      }
+    } catch (e) {
+      if (e is AppError && e.errorCode == 'NETWORK_ERROR') {
+        _mockFollowedUserIds.remove(userId);
+        _updateMockPostsFollowStatus(userId, false);
+        return true;
+      }
+      rethrow;
+    }
+    _mockFollowedUserIds.remove(userId);
+    _updateMockPostsFollowStatus(userId, false);
+    return true;
+  }
+
+  Future<bool> checkIsFollowing(String userId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(ApiEndpoints.communityFollowStats(userId)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data = body is Map<String, dynamic> ? body['data'] : null;
+        if (data is Map<String, dynamic>) {
+          final followStatus = data['followStatus'];
+          final isFollowing =
+              followStatus == 'ACCEPTED' || followStatus == 'PENDING';
+          if (isFollowing) {
+            _mockFollowedUserIds.add(userId);
+          } else {
+            _mockFollowedUserIds.remove(userId);
+          }
+          _updateMockPostsFollowStatus(userId, isFollowing);
+          return isFollowing;
+        }
+      }
+    } catch (_) {}
+    return _mockFollowedUserIds.contains(userId);
+  }
+
+  Future<List<FollowUserModel>> getFollowers(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFollowers(userId),
+          queryParameters: {'page': page, 'size': size},
+        ),
+      );
+      final list = _extractContentList(response.data);
+      return list
+          .whereType<Map>()
+          .map((item) => FollowUserModel.fromJson(item.cast<String, dynamic>()))
+          .where((item) => item.userId.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<FollowUserModel>> getFollowing(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFollowing(userId),
+          queryParameters: {'page': page, 'size': size},
+        ),
+      );
+      final list = _extractContentList(response.data);
+      return list
+          .whereType<Map>()
+          .map((item) => FollowUserModel.fromJson(item.cast<String, dynamic>()))
+          .where((item) => item.userId.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<FollowUserModel>> getPendingFollowRequests({
+    int page = 0,
+    int size = 50,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFollowRequests,
+          queryParameters: {'page': page, 'size': size},
+        ),
+      );
+      final list = _extractContentList(response.data);
+      return list
+          .whereType<Map>()
+          .map((item) => FollowUserModel.fromJson(item.cast<String, dynamic>()))
+          .where((item) => item.userId.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> acceptFollowRequest(String followerUserId) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityFollowRequestAccept(followerUserId),
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> rejectFollowRequest(String followerUserId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(
+          ApiEndpoints.communityFollowRequestReject(followerUserId),
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static List<dynamic> _extractContentList(dynamic body) {
+    if (body is List) return body;
+    if (body is Map) {
+      final payload = body['data'] ?? body;
+      if (payload is Map) {
+        final content =
+            payload['content'] ?? payload['items'] ?? payload['list'];
+        if (content is List) return content;
+      }
+      if (payload is List) return payload;
+    }
+    return const [];
+  }
+
+  void _updateMockPostsFollowStatus(String userId, bool isFollowing) {
+    for (int i = 0; i < _mockPosts.length; i++) {
+      if (_mockPosts[i].userId == userId) {
+        _mockPosts[i].isFollowing = isFollowing;
+      }
+    }
+  }
+
+  Future<RsvpResponseModel> rsvpEvent(
+    String eventId, {
+    EventRegistrationRequest? request,
+  }) async {
+    if (request == null) {
+      // The backend requires a complete @RequestBody. Do not send a null body
+      // and let a transport/server error obscure the client contract.
+      throw const AppError(
+        message: 'Complete event registration is required.',
+        errorCode: 'RSVP_REQUEST_REQUIRED',
+      );
+    }
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityEventRsvp(eventId),
+        data: request.toJson(),
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      dynamic rawData;
+      if (body is Map<String, dynamic>) {
+        rawData = body['data'] ?? body;
+      } else {
+        rawData = body;
+      }
+      if (rawData is Map<String, dynamic>) {
+        return RsvpResponseModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to complete event RSVP.',
+      errorCode: 'RSVP_FAILED',
+    );
+  }
+
+  Future<bool> cancelRsvpEvent(String eventId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(ApiEndpoints.communityEventRsvp(eventId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+
+    throw const AppError(
+      message: 'Failed to cancel event RSVP.',
+      errorCode: 'CANCEL_RSVP_FAILED',
+    );
+  }
+
+  Future<EventModel> createEvent(EventCreateRequest request) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityEvents,
+        data: request.toJson(),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create event.',
+      errorCode: 'EVENT_CREATION_FAILED',
+    );
+  }
+
+  Future<List<EventModel>> fetchEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+  }) async {
+    final result = await fetchEventsPage(
+      page: page,
+      limit: limit,
+      category: category,
+    );
+    return result.content;
+  }
+
+  Future<EventPageModel<EventModel>> fetchEventsPage({
+    int page = 1,
+    int limit = 20,
+    String? category,
+  }) async {
+    final query = <String, dynamic>{'page': page - 1, 'size': limit};
+    if (category != null && category.isNotEmpty && category != 'All') {
+      query['category'] = category;
+    }
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityEvents,
+        queryParameters: query,
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      return EventPageModel<EventModel>.fromJson(rawData, EventModel.fromJson);
+    }
+    throw const AppError(
+      message: 'Failed to load events.',
+      errorCode: 'EVENT_LIST_FAILED',
+    );
+  }
+
+  Future<List<EventModel>> fetchMyEvents({int page = 1, int limit = 20}) async {
+    final result = await fetchMyEventsPage(page: page, limit: limit);
+    return result.content;
+  }
+
+  Future<EventPageModel<EventModel>> fetchMyEventsPage({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityMyEvents,
+        queryParameters: {'page': page - 1, 'size': limit},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      return EventPageModel<EventModel>.fromJson(rawData, EventModel.fromJson);
+    }
+    throw const AppError(
+      message: 'Failed to load your events.',
+      errorCode: 'MY_EVENTS_FAILED',
+    );
+  }
+
+  Future<EventModel> getEventDetails(String eventId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.communityEventDetail(eventId)),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to load event details.',
+      errorCode: 'EVENT_DETAIL_FAILED',
+    );
+  }
+
+  Future<bool> deleteEvent(String eventId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(ApiEndpoints.communityEventDetail(eventId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to delete event.',
+      errorCode: 'EVENT_DELETE_FAILED',
+    );
+  }
+
+  Future<EventModel> updateEvent(
+    String eventId,
+    EventCreateRequest request,
+  ) async {
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityEventDetail(eventId),
+        data: request.toJson(),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to update event.',
+      errorCode: 'EVENT_UPDATE_FAILED',
+    );
+  }
+
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final result = await getEventAttendeesPage(
+      eventId,
+      page: page,
+      limit: limit,
+    );
+    return result.content;
+  }
+
+  Future<EventPageModel<EventAttendeeModel>> getEventAttendeesPage(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityEventAttendees(eventId),
+        queryParameters: {'page': page - 1, 'size': limit},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      return EventPageModel<EventAttendeeModel>.fromJson(
+        rawData,
+        EventAttendeeModel.fromJson,
+      );
+    }
+    throw const AppError(
+      message: 'Failed to load event attendees.',
+      errorCode: 'EVENT_ATTENDEES_FAILED',
+    );
+  }
+
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyBookmarked
+          ? dio.delete<dynamic>(ApiEndpoints.profileSavedItem('EVENT', eventId))
+          : dio.post<dynamic>(
+              ApiEndpoints.profileSaved,
+              data: {'itemType': 'EVENT', 'itemId': eventId},
+            ),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<Set<String>> getSavedEventIds() async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSaved,
+          queryParameters: {'type': 'EVENT'},
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final list = rawData is List
+            ? rawData
+            : (rawData is Map<String, dynamic> && rawData['content'] is List
+                  ? rawData['content'] as List
+                  : const []);
+        final set = <String>{};
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            final id = item['itemId']?.toString() ?? item['id']?.toString();
+            if (id != null && id.isNotEmpty) {
+              set.add(id);
+            }
+          }
+        }
+        return set;
+      }
+    } catch (_) {}
+    return const <String>{};
+  }
+
+  // ── Opportunities (Career) ──────────────────────────────────────────
+
+  Future<List<OpportunityModel>> getOpportunities({
+    String? type,
+    bool includeExpired = false,
+    int page = 0,
+    int size = 20,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'includeExpired': includeExpired,
+        'page': page,
+        'size': size,
+      };
+      if (type != null && type.trim().isNotEmpty && type.toUpperCase() != 'ALL') {
+        queryParams['type'] = type.trim().toUpperCase();
+      }
+
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityOpportunities,
+          queryParameters: queryParams,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final list = rawData is Map<String, dynamic> && rawData['content'] is List
+            ? rawData['content'] as List
+            : (rawData is List ? rawData : const []);
+
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(OpportunityModel.fromJson)
+            .toList();
+      }
+      return const [];
+    } catch (e) {
+      debugPrint('[CommunityRemoteDataSource] getOpportunities error: $e');
+      rethrow;
+    }
+  }
+
+  Future<OpportunityModel> getOpportunityById(String opportunityId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityOpportunityDetail(opportunityId),
+      ),
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return OpportunityModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to load opportunity',
+      errorCode: 'OPPORTUNITY_NOT_FOUND',
+    );
+  }
+
+  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) async {
+    if (currentlySaved) {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(
+          ApiEndpoints.profileSavedItem('OPPORTUNITY', opportunityId),
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 204 ? false : true;
+    } else {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.profileSaved,
+          data: {
+            'itemType': 'OPPORTUNITY',
+            'itemId': opportunityId,
+          },
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 201 ? true : false;
+    }
+  }
+
+  Future<OpportunityModel> createOpportunity({
+    required String title,
+    String? organization,
+    String? type,
+    String? description,
+    DateTime? deadline,
+    String? location,
+    String? applyLink,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityOpportunities,
+        data: {
+          'title': title.trim(),
+          if (organization != null && organization.trim().isNotEmpty)
+            'organization': organization.trim(),
+          if (type != null && type.trim().isNotEmpty)
+            'type': type.trim().toUpperCase(),
+          if (description != null && description.trim().isNotEmpty)
+            'description': description.trim(),
+          if (deadline != null)
+            'deadline':
+                '${deadline.year.toString().padLeft(4, '0')}-${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}',
+          if (location != null && location.trim().isNotEmpty)
+            'location': location.trim(),
+          if (applyLink != null && applyLink.trim().isNotEmpty)
+            'applyLink': applyLink.trim(),
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return OpportunityModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to create opportunity',
+      errorCode: 'CREATE_OPPORTUNITY_FAILED',
+    );
+  }
+}

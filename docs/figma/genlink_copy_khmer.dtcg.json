@@ -1,0 +1,1462 @@
+{
+  "common": {
+    "continue": {
+      "$type": "string",
+      "$value": "បន្ត",
+      "$description": "app_translations.dart • common.continue • Khmer"
+    },
+    "cancel": {
+      "$type": "string",
+      "$value": "បោះបង់",
+      "$description": "app_translations.dart • common.cancel • Khmer"
+    },
+    "save": {
+      "$type": "string",
+      "$value": "រក្សាទុក",
+      "$description": "app_translations.dart • common.save • Khmer"
+    },
+    "retry": {
+      "$type": "string",
+      "$value": "ព្យាយាមម្តងទៀត",
+      "$description": "app_translations.dart • common.retry • Khmer"
+    },
+    "skip": {
+      "$type": "string",
+      "$value": "រំលង",
+      "$description": "app_translations.dart • common.skip • Khmer"
+    },
+    "next": {
+      "$type": "string",
+      "$value": "បន្ទាប់",
+      "$description": "app_translations.dart • common.next • Khmer"
+    },
+    "back": {
+      "$type": "string",
+      "$value": "ត្រឡប់ក្រោយ",
+      "$description": "app_translations.dart • common.back • Khmer"
+    },
+    "done": {
+      "$type": "string",
+      "$value": "រួចរាល់",
+      "$description": "app_translations.dart • common.done • Khmer"
+    },
+    "delete": {
+      "$type": "string",
+      "$value": "លុប",
+      "$description": "app_translations.dart • common.delete • Khmer"
+    },
+    "edit": {
+      "$type": "string",
+      "$value": "កែសម្រួល",
+      "$description": "app_translations.dart • common.edit • Khmer"
+    },
+    "show": {
+      "$type": "string",
+      "$value": "បង្ហាញ",
+      "$description": "app_translations.dart • common.show • Khmer"
+    },
+    "hide": {
+      "$type": "string",
+      "$value": "លាក់",
+      "$description": "app_translations.dart • common.hide • Khmer"
+    },
+    "loading": {
+      "$type": "string",
+      "$value": "កំពុងផ្ទុក…",
+      "$description": "app_translations.dart • common.loading • Khmer"
+    },
+    "loadingShort": {
+      "$type": "string",
+      "$value": "កំពុងផ្ទុក",
+      "$description": "app_translations.dart • common.loadingShort • Khmer"
+    },
+    "error": {
+      "$type": "string",
+      "$value": "មានបញ្ហាកើតឡើង",
+      "$description": "app_translations.dart • common.error • Khmer"
+    },
+    "required": {
+      "$type": "string",
+      "$value": "ត្រូវបំពេញប្រអប់នេះ",
+      "$description": "app_translations.dart • common.required • Khmer"
+    },
+    "optional": {
+      "$type": "string",
+      "$value": "ស្រេចចិត្ត",
+      "$description": "app_translations.dart • common.optional • Khmer"
+    }
+  },
+  "onboarding": {
+    "stepOf": {
+      "$type": "string",
+      "$value": "ជំហានទី @step ក្នុងចំណោម @total",
+      "$description": "app_translations.dart • onboarding.stepOf • Khmer"
+    },
+    "chooseLanguage": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសភាសារបស់អ្នក",
+      "$description": "app_translations.dart • onboarding.chooseLanguage • Khmer"
+    },
+    "chooseLanguageHint": {
+      "$type": "string",
+      "$value": "អ្នកអាចប្តូរវានៅពេលណាក៏បាន ក្នុងការកំណត់។",
+      "$description": "app_translations.dart • onboarding.chooseLanguageHint • Khmer"
+    },
+    "bothLanguages": {
+      "$type": "string",
+      "$value": "ភាសាទាំងពីរត្រូវបានគាំទ្រពេញកម្មវិធី។",
+      "$description": "app_translations.dart • onboarding.bothLanguages • Khmer"
+    },
+    "getStarted": {
+      "$type": "string",
+      "$value": "ចាប់ផ្តើម",
+      "$description": "app_translations.dart • onboarding.getStarted • Khmer"
+    },
+    "skipForNow": {
+      "$type": "string",
+      "$value": "រំលងសិន",
+      "$description": "app_translations.dart • onboarding.skipForNow • Khmer"
+    },
+    "networkTitle": {
+      "$type": "string",
+      "$value": "បណ្តាញយុវជនរបស់អ្នក\nក្នុងកន្លែងតែមួយ",
+      "$description": "app_translations.dart • onboarding.networkTitle • Khmer"
+    },
+    "networkBody": {
+      "$type": "string",
+      "$value": "ភ្ជាប់ជាមួយសហគមន៍ ព្រឹត្តិការណ៍ អ្នកណែនាំ និងឱកាស ដែលបង្កើតឡើងសម្រាប់យុវជនកម្ពុជា។",
+      "$description": "app_translations.dart • onboarding.networkBody • Khmer"
+    },
+    "rowCommunity": {
+      "$type": "string",
+      "$value": "សហគមន៍",
+      "$description": "app_translations.dart • onboarding.rowCommunity • Khmer"
+    },
+    "rowCommunityDetail": {
+      "$type": "string",
+      "$value": "Design Guild · សមាជិក ៣៨០ នាក់",
+      "$description": "app_translations.dart • onboarding.rowCommunityDetail • Khmer"
+    },
+    "rowEvents": {
+      "$type": "string",
+      "$value": "ព្រឹត្តិការណ៍",
+      "$description": "app_translations.dart • onboarding.rowEvents • Khmer"
+    },
+    "rowEventsDetail": {
+      "$type": "string",
+      "$value": "ព្រឹត្តិការណ៍ ៣ នៅជិតអ្នក",
+      "$description": "app_translations.dart • onboarding.rowEventsDetail • Khmer"
+    },
+    "rowMentors": {
+      "$type": "string",
+      "$value": "អ្នកណែនាំ",
+      "$description": "app_translations.dart • onboarding.rowMentors • Khmer"
+    },
+    "rowMentorsDetail": {
+      "$type": "string",
+      "$value": "ភ្ជាប់ជាមួយអ្នកដឹកនាំ",
+      "$description": "app_translations.dart • onboarding.rowMentorsDetail • Khmer"
+    },
+    "growTitle": {
+      "$type": "string",
+      "$value": "បង្កើនលុយ ការផ្តោតអារម្មណ៍\nនិងអនាគតរបស់អ្នក",
+      "$description": "app_translations.dart • onboarding.growTitle • Khmer"
+    },
+    "growBody": {
+      "$type": "string",
+      "$value": "តាមដានគោលដៅ រៀនហិរញ្ញវត្ថុ បំពេញបញ្ហាប្រឈម និងកសាងប្រវត្តិរូបរបស់អ្នក — មួយថ្ងៃម្តងៗ",
+      "$description": "app_translations.dart • onboarding.growBody • Khmer"
+    },
+    "rowFinance": {
+      "$type": "string",
+      "$value": "ហិរញ្ញវត្ថុ",
+      "$description": "app_translations.dart • onboarding.rowFinance • Khmer"
+    },
+    "rowFinanceDetail": {
+      "$type": "string",
+      "$value": "សន្សំបាន $1,240",
+      "$description": "app_translations.dart • onboarding.rowFinanceDetail • Khmer"
+    },
+    "rowFocus": {
+      "$type": "string",
+      "$value": "ពិន្ទុផ្តោតអារម្មណ៍",
+      "$description": "app_translations.dart • onboarding.rowFocus • Khmer"
+    },
+    "rowFocusDetail": {
+      "$type": "string",
+      "$value": "ថ្ងៃនេះ ២ម៉ោង ១៨នាទី",
+      "$description": "app_translations.dart • onboarding.rowFocusDetail • Khmer"
+    },
+    "rowXp": {
+      "$type": "string",
+      "$value": "ពិន្ទុរីកចម្រើន",
+      "$description": "app_translations.dart • onboarding.rowXp • Khmer"
+    },
+    "rowXpDetail": {
+      "$type": "string",
+      "$value": "កម្រិត ៤ អ្នកកសាង",
+      "$description": "app_translations.dart • onboarding.rowXpDetail • Khmer"
+    }
+  },
+  "auth": {
+    "login": {
+      "$type": "string",
+      "$value": "ចូលគណនី",
+      "$description": "app_translations.dart • auth.login • Khmer"
+    },
+    "welcomeTo": {
+      "$type": "string",
+      "$value": "សូមស្វាគមន៍មកកាន់",
+      "$description": "app_translations.dart • auth.welcomeTo • Khmer"
+    },
+    "choiceSubtitle": {
+      "$type": "string",
+      "$value": "លិខិតឆ្លងដែនឌីជីថលរបស់កម្ពុជា សម្រាប់យុវជនជំនាន់ក្រោយ។",
+      "$description": "app_translations.dart • auth.choiceSubtitle • Khmer"
+    },
+    "continueWithMail": {
+      "$type": "string",
+      "$value": "បន្តជាមួយអ៊ីមែល",
+      "$description": "app_translations.dart • auth.continueWithMail • Khmer"
+    },
+    "encryptedNotice": {
+      "$type": "string",
+      "$value": "ទិន្នន័យរបស់អ្នកត្រូវបានអ៊ិនគ្រីប និងមិនចែករំលែកដោយគ្មានការយល់ព្រម។",
+      "$description": "app_translations.dart • auth.encryptedNotice • Khmer"
+    },
+    "loginTitle": {
+      "$type": "string",
+      "$value": "សូមស្វាគមន៍ការត្រឡប់មកវិញ",
+      "$description": "app_translations.dart • auth.loginTitle • Khmer"
+    },
+    "loginSubtitle": {
+      "$type": "string",
+      "$value": "ចូលគណនីដើម្បីបន្តការងាររបស់អ្នក",
+      "$description": "app_translations.dart • auth.loginSubtitle • Khmer"
+    },
+    "register": {
+      "$type": "string",
+      "$value": "បង្កើតគណនី",
+      "$description": "app_translations.dart • auth.register • Khmer"
+    },
+    "registerTitle": {
+      "$type": "string",
+      "$value": "បង្កើតគណនីរបស់អ្នក",
+      "$description": "app_translations.dart • auth.registerTitle • Khmer"
+    },
+    "registerSubtitle": {
+      "$type": "string",
+      "$value": "ចំណាយពេលតិចជាងមួយនាទី",
+      "$description": "app_translations.dart • auth.registerSubtitle • Khmer"
+    },
+    "email": {
+      "$type": "string",
+      "$value": "អ៊ីមែល",
+      "$description": "app_translations.dart • auth.email • Khmer"
+    },
+    "password": {
+      "$type": "string",
+      "$value": "ពាក្យសម្ងាត់",
+      "$description": "app_translations.dart • auth.password • Khmer"
+    },
+    "confirmPassword": {
+      "$type": "string",
+      "$value": "បញ្ជាក់ពាក្យសម្ងាត់",
+      "$description": "app_translations.dart • auth.confirmPassword • Khmer"
+    },
+    "fullName": {
+      "$type": "string",
+      "$value": "ឈ្មោះពេញ",
+      "$description": "app_translations.dart • auth.fullName • Khmer"
+    },
+    "username": {
+      "$type": "string",
+      "$value": "ឈ្មោះអ្នកប្រើប្រាស់",
+      "$description": "app_translations.dart • auth.username • Khmer"
+    },
+    "phoneNumber": {
+      "$type": "string",
+      "$value": "លេខទូរស័ព្ទ",
+      "$description": "app_translations.dart • auth.phoneNumber • Khmer"
+    },
+    "forgotPassword": {
+      "$type": "string",
+      "$value": "ភ្លេចពាក្យសម្ងាត់?",
+      "$description": "app_translations.dart • auth.forgotPassword • Khmer"
+    },
+    "forgotTitle": {
+      "$type": "string",
+      "$value": "កំណត់ពាក្យសម្ងាត់ឡើងវិញ",
+      "$description": "app_translations.dart • auth.forgotTitle • Khmer"
+    },
+    "forgotSubtitle": {
+      "$type": "string",
+      "$value": "បញ្ចូលអ៊ីមែល យើងនឹងផ្ញើលេខកូដទៅអ្នក។",
+      "$description": "app_translations.dart • auth.forgotSubtitle • Khmer"
+    },
+    "newPasswordSubtitle": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសពាក្យសម្ងាត់ដែលអ្នកមិនធ្លាប់ប្រើ។",
+      "$description": "app_translations.dart • auth.newPasswordSubtitle • Khmer"
+    },
+    "passwordResetDone": {
+      "$type": "string",
+      "$value": "បានប្តូរពាក្យសម្ងាត់។ សូមចូលដោយប្រើពាក្យសម្ងាត់ថ្មី។",
+      "$description": "app_translations.dart • auth.passwordResetDone • Khmer"
+    },
+    "resetTitle": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសពាក្យសម្ងាត់ថ្មី",
+      "$description": "app_translations.dart • auth.resetTitle • Khmer"
+    },
+    "resetSubtitle": {
+      "$type": "string",
+      "$value": "បញ្ចូលលេខកូដពីអ៊ីមែល និងពាក្យសម្ងាត់ថ្មី។",
+      "$description": "app_translations.dart • auth.resetSubtitle • Khmer"
+    },
+    "newPassword": {
+      "$type": "string",
+      "$value": "ពាក្យសម្ងាត់ថ្មី",
+      "$description": "app_translations.dart • auth.newPassword • Khmer"
+    },
+    "sendCode": {
+      "$type": "string",
+      "$value": "ផ្ញើលេខកូដ",
+      "$description": "app_translations.dart • auth.sendCode • Khmer"
+    },
+    "resetPassword": {
+      "$type": "string",
+      "$value": "កំណត់ពាក្យសម្ងាត់ឡើងវិញ",
+      "$description": "app_translations.dart • auth.resetPassword • Khmer"
+    },
+    "createAccount": {
+      "$type": "string",
+      "$value": "បង្កើតគណនី",
+      "$description": "app_translations.dart • auth.createAccount • Khmer"
+    },
+    "verifyEmail": {
+      "$type": "string",
+      "$value": "ផ្ទៀងផ្ទាត់អ៊ីមែល",
+      "$description": "app_translations.dart • auth.verifyEmail • Khmer"
+    },
+    "fullNameHint": {
+      "$type": "string",
+      "$value": "សុខ វិធាវី",
+      "$description": "app_translations.dart • auth.fullNameHint • Khmer"
+    },
+    "usernameHint": {
+      "$type": "string",
+      "$value": "username123",
+      "$description": "app_translations.dart • auth.usernameHint • Khmer"
+    },
+    "emailHint": {
+      "$type": "string",
+      "$value": "example@email.com",
+      "$description": "app_translations.dart • auth.emailHint • Khmer"
+    },
+    "passwordHint": {
+      "$type": "string",
+      "$value": "បញ្ចូលពាក្យសម្ងាត់",
+      "$description": "app_translations.dart • auth.passwordHint • Khmer"
+    },
+    "verifySentTo": {
+      "$type": "string",
+      "$value": "យើងបានផ្ញើលេខកូដ ៦ ខ្ទង់ទៅ",
+      "$description": "app_translations.dart • auth.verifySentTo • Khmer"
+    },
+    "resendCodeIn": {
+      "$type": "string",
+      "$value": "ផ្ញើលេខកូដឡើងវិញក្នុង",
+      "$description": "app_translations.dart • auth.resendCodeIn • Khmer"
+    },
+    "legalNotice": {
+      "$type": "string",
+      "$value": "ការបង្កើតគណនី មានន័យថាអ្នកយល់ព្រមតាមលក្ខខណ្ឌប្រើប្រាស់ និងគោលការណ៍ឯកជនភាពរបស់យើង",
+      "$description": "app_translations.dart • auth.legalNotice • Khmer"
+    },
+    "verifyTitle": {
+      "$type": "string",
+      "$value": "ផ្ទៀងផ្ទាត់អ៊ីមែលរបស់អ្នក",
+      "$description": "app_translations.dart • auth.verifyTitle • Khmer"
+    },
+    "verifySubtitle": {
+      "$type": "string",
+      "$value": "យើងបានផ្ញើលេខកូដ ៦ ខ្ទង់ទៅ @email",
+      "$description": "app_translations.dart • auth.verifySubtitle • Khmer"
+    },
+    "otpCode": {
+      "$type": "string",
+      "$value": "លេខកូដផ្ទៀងផ្ទាត់",
+      "$description": "app_translations.dart • auth.otpCode • Khmer"
+    },
+    "otpEmptyDigit": {
+      "$type": "string",
+      "$value": "ខ្ទង់ OTP ទី @position ទទេ",
+      "$description": "app_translations.dart • auth.otpEmptyDigit • Khmer"
+    },
+    "otpEnteredDigit": {
+      "$type": "string",
+      "$value": "ខ្ទង់ OTP ទី @position៖ @digit",
+      "$description": "app_translations.dart • auth.otpEnteredDigit • Khmer"
+    },
+    "otpSymbol": {
+      "$type": "string",
+      "$value": "មិនអាចប្រើនិមិត្តសញ្ញាបានទេ",
+      "$description": "app_translations.dart • auth.otpSymbol • Khmer"
+    },
+    "otpHelp": {
+      "$type": "string",
+      "$value": "មិនបានទទួលទេ? សូមពិនិត្យថតសារឥតបានការ ឬសាកល្បងអាសយដ្ឋានអ៊ីមែលផ្សេង",
+      "$description": "app_translations.dart • auth.otpHelp • Khmer"
+    },
+    "verify": {
+      "$type": "string",
+      "$value": "ផ្ទៀងផ្ទាត់",
+      "$description": "app_translations.dart • auth.verify • Khmer"
+    },
+    "resendCode": {
+      "$type": "string",
+      "$value": "ផ្ញើលេខកូដម្តងទៀត",
+      "$description": "app_translations.dart • auth.resendCode • Khmer"
+    },
+    "resendIn": {
+      "$type": "string",
+      "$value": "ផ្ញើឡើងវិញក្នុង @seconds វិនាទី",
+      "$description": "app_translations.dart • auth.resendIn • Khmer"
+    },
+    "continueWithGoogle": {
+      "$type": "string",
+      "$value": "បន្តជាមួយ Google",
+      "$description": "app_translations.dart • auth.continueWithGoogle • Khmer"
+    },
+    "orDivider": {
+      "$type": "string",
+      "$value": "ឬ",
+      "$description": "app_translations.dart • auth.orDivider • Khmer"
+    },
+    "haveAccount": {
+      "$type": "string",
+      "$value": "មានគណនីរួចហើយ?",
+      "$description": "app_translations.dart • auth.haveAccount • Khmer"
+    },
+    "noAccount": {
+      "$type": "string",
+      "$value": "មិនទាន់មានគណនី?",
+      "$description": "app_translations.dart • auth.noAccount • Khmer"
+    },
+    "logout": {
+      "$type": "string",
+      "$value": "ចាកចេញ",
+      "$description": "app_translations.dart • auth.logout • Khmer"
+    },
+    "logoutConfirm": {
+      "$type": "string",
+      "$value": "ចាកចេញពី GenLink KH?",
+      "$description": "app_translations.dart • auth.logoutConfirm • Khmer"
+    },
+    "switchAccount": {
+      "$type": "string",
+      "$value": "ប្តូរគណនី",
+      "$description": "app_translations.dart • auth.switchAccount • Khmer"
+    },
+    "invalidEmail": {
+      "$type": "string",
+      "$value": "សូមបញ្ចូលអ៊ីមែលឲ្យបានត្រឹមត្រូវ",
+      "$description": "app_translations.dart • auth.invalidEmail • Khmer"
+    },
+    "passwordTooShort": {
+      "$type": "string",
+      "$value": "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច ៨ តួ",
+      "$description": "app_translations.dart • auth.passwordTooShort • Khmer"
+    },
+    "passwordsDoNotMatch": {
+      "$type": "string",
+      "$value": "ពាក្យសម្ងាត់មិនដូចគ្នា",
+      "$description": "app_translations.dart • auth.passwordsDoNotMatch • Khmer"
+    },
+    "usernameTooShort": {
+      "$type": "string",
+      "$value": "ឈ្មោះអ្នកប្រើប្រាស់ត្រូវមានយ៉ាងតិច ៣ តួ",
+      "$description": "app_translations.dart • auth.usernameTooShort • Khmer"
+    },
+    "otpLength": {
+      "$type": "string",
+      "$value": "សូមបញ្ចូលលេខកូដ ៦ ខ្ទង់",
+      "$description": "app_translations.dart • auth.otpLength • Khmer"
+    },
+    "googleUnavailable": {
+      "$type": "string",
+      "$value": "Google Sign-In មិនទាន់បានកំណត់ក្នុងកំណែនេះទេ",
+      "$description": "app_translations.dart • auth.googleUnavailable • Khmer"
+    }
+  },
+  "nav": {
+    "home": {
+      "$type": "string",
+      "$value": "ទំព័រដើម",
+      "$description": "app_translations.dart • nav.home • Khmer"
+    },
+    "community": {
+      "$type": "string",
+      "$value": "សហគមន៍",
+      "$description": "app_translations.dart • nav.community • Khmer"
+    },
+    "growth": {
+      "$type": "string",
+      "$value": "ការរីកចម្រើន",
+      "$description": "app_translations.dart • nav.growth • Khmer"
+    },
+    "levelUp": {
+      "$type": "string",
+      "$value": "ឡើងកម្រិត",
+      "$description": "app_translations.dart • nav.levelUp • Khmer"
+    },
+    "create": {
+      "$type": "string",
+      "$value": "បង្កើត",
+      "$description": "app_translations.dart • nav.create • Khmer"
+    },
+    "finance": {
+      "$type": "string",
+      "$value": "ហិរញ្ញវត្ថុ",
+      "$description": "app_translations.dart • nav.finance • Khmer"
+    },
+    "financial": {
+      "$type": "string",
+      "$value": "ហិរញ្ញវត្ថុ",
+      "$description": "app_translations.dart • nav.financial • Khmer"
+    },
+    "profile": {
+      "$type": "string",
+      "$value": "ប្រវត្តិរូប",
+      "$description": "app_translations.dart • nav.profile • Khmer"
+    }
+  },
+  "profile": {
+    "title": {
+      "$type": "string",
+      "$value": "ប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.title • Khmer"
+    },
+    "edit": {
+      "$type": "string",
+      "$value": "កែសម្រួលប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.edit • Khmer"
+    },
+    "bio": {
+      "$type": "string",
+      "$value": "អំពីខ្ញុំ",
+      "$description": "app_translations.dart • profile.bio • Khmer"
+    },
+    "location": {
+      "$type": "string",
+      "$value": "ទីតាំង",
+      "$description": "app_translations.dart • profile.location • Khmer"
+    },
+    "university": {
+      "$type": "string",
+      "$value": "សាកលវិទ្យាល័យ",
+      "$description": "app_translations.dart • profile.university • Khmer"
+    },
+    "workStatus": {
+      "$type": "string",
+      "$value": "ស្ថានភាព",
+      "$description": "app_translations.dart • profile.workStatus • Khmer"
+    },
+    "dateOfBirth": {
+      "$type": "string",
+      "$value": "ថ្ងៃខែឆ្នាំកំណើត",
+      "$description": "app_translations.dart • profile.dateOfBirth • Khmer"
+    },
+    "gender": {
+      "$type": "string",
+      "$value": "ភេទ",
+      "$description": "app_translations.dart • profile.gender • Khmer"
+    },
+    "avatarUrl": {
+      "$type": "string",
+      "$value": "តំណរូបភាពប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.avatarUrl • Khmer"
+    },
+    "level": {
+      "$type": "string",
+      "$value": "កម្រិត @level",
+      "$description": "app_translations.dart • profile.level • Khmer"
+    },
+    "xp": {
+      "$type": "string",
+      "$value": "@xp XP",
+      "$description": "app_translations.dart • profile.xp • Khmer"
+    },
+    "interests": {
+      "$type": "string",
+      "$value": "ចំណាប់អារម្មណ៍",
+      "$description": "app_translations.dart • profile.interests • Khmer"
+    },
+    "portfolio": {
+      "$type": "string",
+      "$value": "ស្នាដៃ",
+      "$description": "app_translations.dart • profile.portfolio • Khmer"
+    },
+    "socialLinks": {
+      "$type": "string",
+      "$value": "តំណបណ្តាញសង្គម",
+      "$description": "app_translations.dart • profile.socialLinks • Khmer"
+    },
+    "saved": {
+      "$type": "string",
+      "$value": "បានរក្សាទុក",
+      "$description": "app_translations.dart • profile.saved • Khmer"
+    },
+    "emptyInterests": {
+      "$type": "string",
+      "$value": "មិនទាន់បានជ្រើសរើសចំណាប់អារម្មណ៍",
+      "$description": "app_translations.dart • profile.emptyInterests • Khmer"
+    },
+    "emptyPortfolio": {
+      "$type": "string",
+      "$value": "មិនទាន់មានស្នាដៃ",
+      "$description": "app_translations.dart • profile.emptyPortfolio • Khmer"
+    },
+    "emptySocialLinks": {
+      "$type": "string",
+      "$value": "មិនទាន់មានតំណបណ្តាញសង្គម",
+      "$description": "app_translations.dart • profile.emptySocialLinks • Khmer"
+    },
+    "completion": {
+      "$type": "string",
+      "$value": "ភាពពេញលេញនៃប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.completion • Khmer"
+    },
+    "percentComplete": {
+      "$type": "string",
+      "$value": "ពេញលេញ @percent%",
+      "$description": "app_translations.dart • profile.percentComplete • Khmer"
+    },
+    "nextLevelHint": {
+      "$type": "string",
+      "$value": "បំពេញប្រវត្តិរូបរបស់អ្នក ដើម្បីឈានដល់កម្រិត @level។",
+      "$description": "app_translations.dart • profile.nextLevelHint • Khmer"
+    },
+    "achievements": {
+      "$type": "string",
+      "$value": "សមិទ្ធផល",
+      "$description": "app_translations.dart • profile.achievements • Khmer"
+    },
+    "coreExpertise": {
+      "$type": "string",
+      "$value": "ជំនាញស្នូល",
+      "$description": "app_translations.dart • profile.coreExpertise • Khmer"
+    },
+    "savedContent": {
+      "$type": "string",
+      "$value": "ខ្លឹមសារដែលបានរក្សាទុក",
+      "$description": "app_translations.dart • profile.savedContent • Khmer"
+    },
+    "viewAll": {
+      "$type": "string",
+      "$value": "មើលទាំងអស់",
+      "$description": "app_translations.dart • profile.viewAll • Khmer"
+    },
+    "careerPath": {
+      "$type": "string",
+      "$value": "ផ្លូវអាជីព",
+      "$description": "app_translations.dart • profile.careerPath • Khmer"
+    },
+    "currentTrack": {
+      "$type": "string",
+      "$value": "ផ្លូវបច្ចុប្បន្ន",
+      "$description": "app_translations.dart • profile.currentTrack • Khmer"
+    },
+    "editCareer": {
+      "$type": "string",
+      "$value": "កែសម្រួលអាជីព",
+      "$description": "app_translations.dart • profile.editCareer • Khmer"
+    },
+    "noCareerDetails": {
+      "$type": "string",
+      "$value": "បន្ថែមផ្លូវអាជីពរបស់អ្នក",
+      "$description": "app_translations.dart • profile.noCareerDetails • Khmer"
+    },
+    "publicProfile": {
+      "$type": "string",
+      "$value": "ប្រវត្តិរូបសាធារណៈ",
+      "$description": "app_translations.dart • profile.publicProfile • Khmer"
+    },
+    "professionalBio": {
+      "$type": "string",
+      "$value": "ប្រវត្តិវិជ្ជាជីវៈ",
+      "$description": "app_translations.dart • profile.professionalBio • Khmer"
+    },
+    "coreCompetencies": {
+      "$type": "string",
+      "$value": "ជំនាញស្នូល",
+      "$description": "app_translations.dart • profile.coreCompetencies • Khmer"
+    },
+    "portfolioPreview": {
+      "$type": "string",
+      "$value": "ការមើលស្នាដៃជាមុន",
+      "$description": "app_translations.dart • profile.portfolioPreview • Khmer"
+    },
+    "careerInterests": {
+      "$type": "string",
+      "$value": "ចំណាប់អារម្មណ៍អាជីព",
+      "$description": "app_translations.dart • profile.careerInterests • Khmer"
+    },
+    "connect": {
+      "$type": "string",
+      "$value": "ភ្ជាប់",
+      "$description": "app_translations.dart • profile.connect • Khmer"
+    },
+    "shareProfile": {
+      "$type": "string",
+      "$value": "ចែករំលែកប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.shareProfile • Khmer"
+    },
+    "shareCopied": {
+      "$type": "string",
+      "$value": "បានចម្លងឈ្មោះប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.shareCopied • Khmer"
+    },
+    "connectUnavailable": {
+      "$type": "string",
+      "$value": "មុខងារភ្ជាប់មិនទាន់មានទេ។",
+      "$description": "app_translations.dart • profile.connectUnavailable • Khmer"
+    },
+    "projects": {
+      "$type": "string",
+      "$value": "គម្រោង",
+      "$description": "app_translations.dart • profile.projects • Khmer"
+    },
+    "emptySaved": {
+      "$type": "string",
+      "$value": "មិនទាន់មានអ្វីបានរក្សាទុក",
+      "$description": "app_translations.dart • profile.emptySaved • Khmer"
+    },
+    "savedUnavailable": {
+      "$type": "string",
+      "$value": "លែងមានទៀតហើយ",
+      "$description": "app_translations.dart • profile.savedUnavailable • Khmer"
+    },
+    "displayName": {
+      "$type": "string",
+      "$value": "ឈ្មោះបង្ហាញ",
+      "$description": "app_translations.dart • profile.displayName • Khmer"
+    },
+    "role": {
+      "$type": "string",
+      "$value": "តួនាទី",
+      "$description": "app_translations.dart • profile.role • Khmer"
+    },
+    "universityWorkplace": {
+      "$type": "string",
+      "$value": "សាកលវិទ្យាល័យ / កន្លែងធ្វើការ",
+      "$description": "app_translations.dart • profile.universityWorkplace • Khmer"
+    },
+    "socialPresence": {
+      "$type": "string",
+      "$value": "វត្តមានលើបណ្តាញសង្គម",
+      "$description": "app_translations.dart • profile.socialPresence • Khmer"
+    },
+    "linkedIn": {
+      "$type": "string",
+      "$value": "LinkedIn",
+      "$description": "app_translations.dart • profile.linkedIn • Khmer"
+    },
+    "website": {
+      "$type": "string",
+      "$value": "គេហទំព័រ",
+      "$description": "app_translations.dart • profile.website • Khmer"
+    },
+    "saveChanges": {
+      "$type": "string",
+      "$value": "រក្សាទុកការផ្លាស់ប្តូរ",
+      "$description": "app_translations.dart • profile.saveChanges • Khmer"
+    },
+    "updatePicture": {
+      "$type": "string",
+      "$value": "ប្តូររូបភាពប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.updatePicture • Khmer"
+    },
+    "chooseFromGallery": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសពីវិចិត្រសាល",
+      "$description": "app_translations.dart • profile.chooseFromGallery • Khmer"
+    },
+    "takePhoto": {
+      "$type": "string",
+      "$value": "ថតរូប",
+      "$description": "app_translations.dart • profile.takePhoto • Khmer"
+    },
+    "updated": {
+      "$type": "string",
+      "$value": "បានធ្វើបច្ចុប្បន្នភាពប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.updated • Khmer"
+    },
+    "viewAvatar": {
+      "$type": "string",
+      "$value": "មើលរូបភាពប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.viewAvatar • Khmer"
+    },
+    "changeAvatar": {
+      "$type": "string",
+      "$value": "ប្តូររូបភាពប្រវត្តិរូប",
+      "$description": "app_translations.dart • profile.changeAvatar • Khmer"
+    },
+    "addPortfolio": {
+      "$type": "string",
+      "$value": "បន្ថែមស្នាដៃ",
+      "$description": "app_translations.dart • profile.addPortfolio • Khmer"
+    },
+    "portfolioTitle": {
+      "$type": "string",
+      "$value": "ចំណងជើង",
+      "$description": "app_translations.dart • profile.portfolioTitle • Khmer"
+    },
+    "portfolioDescription": {
+      "$type": "string",
+      "$value": "ការពិពណ៌នា",
+      "$description": "app_translations.dart • profile.portfolioDescription • Khmer"
+    },
+    "portfolioLink": {
+      "$type": "string",
+      "$value": "តំណ",
+      "$description": "app_translations.dart • profile.portfolioLink • Khmer"
+    },
+    "platform": {
+      "$type": "string",
+      "$value": "វេទិកា",
+      "$description": "app_translations.dart • profile.platform • Khmer"
+    },
+    "url": {
+      "$type": "string",
+      "$value": "តំណ URL",
+      "$description": "app_translations.dart • profile.url • Khmer"
+    },
+    "xpStat": {
+      "$type": "string",
+      "$value": "XP សរុប",
+      "$description": "app_translations.dart • profile.xpStat • Khmer"
+    }
+  },
+  "profileSetup": {
+    "stepOf": {
+      "$type": "string",
+      "$value": "ជំហានទី @step ក្នុងចំណោម @total",
+      "$description": "app_translations.dart • profileSetup.stepOf • Khmer"
+    },
+    "step1Title": {
+      "$type": "string",
+      "$value": "រៀបចំប្រវត្តិរូបរបស់អ្នក",
+      "$description": "app_translations.dart • profileSetup.step1Title • Khmer"
+    },
+    "step1Subtitle": {
+      "$type": "string",
+      "$value": "ចំណាយពេលតិចជាងមួយនាទី។",
+      "$description": "app_translations.dart • profileSetup.step1Subtitle • Khmer"
+    },
+    "uploadPhoto": {
+      "$type": "string",
+      "$value": "បញ្ចូលរូបភាព",
+      "$description": "app_translations.dart • profileSetup.uploadPhoto • Khmer"
+    },
+    "photoHint": {
+      "$type": "string",
+      "$value": "JPG, PNG ឬ GIF",
+      "$description": "app_translations.dart • profileSetup.photoHint • Khmer"
+    },
+    "iAmA": {
+      "$type": "string",
+      "$value": "ខ្ញុំគឺជា",
+      "$description": "app_translations.dart • profileSetup.iAmA • Khmer"
+    },
+    "universityOptional": {
+      "$type": "string",
+      "$value": "សាកលវិទ្យាល័យ ឬកន្លែងធ្វើការ (ស្រេចចិត្ត)",
+      "$description": "app_translations.dart • profileSetup.universityOptional • Khmer"
+    },
+    "universityHint": {
+      "$type": "string",
+      "$value": "ឧ. សាកលវិទ្យាល័យភូមិន្ទភ្នំពេញ",
+      "$description": "app_translations.dart • profileSetup.universityHint • Khmer"
+    },
+    "locationOptional": {
+      "$type": "string",
+      "$value": "ទីតាំង (ស្រេចចិត្ត)",
+      "$description": "app_translations.dart • profileSetup.locationOptional • Khmer"
+    },
+    "locationHint": {
+      "$type": "string",
+      "$value": "ឧ. ភ្នំពេញ កម្ពុជា",
+      "$description": "app_translations.dart • profileSetup.locationHint • Khmer"
+    },
+    "step2Title": {
+      "$type": "string",
+      "$value": "ប្រាប់យើងបន្ថែមអំពីអ្នក",
+      "$description": "app_translations.dart • profileSetup.step2Title • Khmer"
+    },
+    "step2Subtitle": {
+      "$type": "string",
+      "$value": "ជួយឲ្យអ្នកដទៃយល់ថាអ្នកជានរណា និងធ្វើអ្វីខ្លះ។",
+      "$description": "app_translations.dart • profileSetup.step2Subtitle • Khmer"
+    },
+    "shortBio": {
+      "$type": "string",
+      "$value": "ប្រវត្តិសង្ខេប",
+      "$description": "app_translations.dart • profileSetup.shortBio • Khmer"
+    },
+    "bioHint": {
+      "$type": "string",
+      "$value": "ឧ. និស្សិតឆ្នាំចុងក្រោយ ចូលចិត្តការរចនា និងបច្ចេកវិទ្យា…",
+      "$description": "app_translations.dart • profileSetup.bioHint • Khmer"
+    },
+    "linksOptional": {
+      "$type": "string",
+      "$value": "តំណ (ស្រេចចិត្ត)",
+      "$description": "app_translations.dart • profileSetup.linksOptional • Khmer"
+    },
+    "step3Title": {
+      "$type": "string",
+      "$value": "អ្នកចង់រីកចម្រើនផ្នែកណា?",
+      "$description": "app_translations.dart • profileSetup.step3Title • Khmer"
+    },
+    "step3Subtitle": {
+      "$type": "string",
+      "$value": "យើងនឹងកែសម្រួលបទពិសោធន៍តាមចំណាប់អារម្មណ៍របស់អ្នក។ សូមជ្រើសរើសយ៉ាងតិច @count។",
+      "$description": "app_translations.dart • profileSetup.step3Subtitle • Khmer"
+    },
+    "selectedCount": {
+      "$type": "string",
+      "$value": "បានជ្រើសរើស @count",
+      "$description": "app_translations.dart • profileSetup.selectedCount • Khmer"
+    },
+    "finish": {
+      "$type": "string",
+      "$value": "បញ្ចប់ការរៀបចំ",
+      "$description": "app_translations.dart • profileSetup.finish • Khmer"
+    }
+  },
+  "role": {
+    "STUDENT": {
+      "$type": "string",
+      "$value": "និស្សិត",
+      "$description": "app_translations.dart • role.STUDENT • Khmer"
+    },
+    "YOUNG_PROFESSIONAL": {
+      "$type": "string",
+      "$value": "អ្នកជំនាញ",
+      "$description": "app_translations.dart • role.YOUNG_PROFESSIONAL • Khmer"
+    },
+    "CREATOR": {
+      "$type": "string",
+      "$value": "អ្នកបង្កើតមាតិកា",
+      "$description": "app_translations.dart • role.CREATOR • Khmer"
+    },
+    "FREELANCER": {
+      "$type": "string",
+      "$value": "អ្នកធ្វើការឯករាជ្យ",
+      "$description": "app_translations.dart • role.FREELANCER • Khmer"
+    }
+  },
+  "achievements": {
+    "level": {
+      "$type": "string",
+      "$value": "កម្រិត",
+      "$description": "app_translations.dart • achievements.level • Khmer"
+    },
+    "totalXp": {
+      "$type": "string",
+      "$value": "XP សរុប",
+      "$description": "app_translations.dart • achievements.totalXp • Khmer"
+    },
+    "badges": {
+      "$type": "string",
+      "$value": "ស្លាកសញ្ញា",
+      "$description": "app_translations.dart • achievements.badges • Khmer"
+    },
+    "toNextLevel": {
+      "$type": "string",
+      "$value": "@xp XP ទៀតដល់កម្រិត @level",
+      "$description": "app_translations.dart • achievements.toNextLevel • Khmer"
+    },
+    "myBadges": {
+      "$type": "string",
+      "$value": "ស្លាកសញ្ញារបស់ខ្ញុំ",
+      "$description": "app_translations.dart • achievements.myBadges • Khmer"
+    },
+    "empty": {
+      "$type": "string",
+      "$value": "មិនទាន់មានស្លាកសញ្ញា — ចាប់ផ្តើមប្រមូល XP!",
+      "$description": "app_translations.dart • achievements.empty • Khmer"
+    }
+  },
+  "saved": {
+    "all": {
+      "$type": "string",
+      "$value": "ទាំងអស់",
+      "$description": "app_translations.dart • saved.all • Khmer"
+    }
+  },
+  "savedType": {
+    "POST": {
+      "$type": "string",
+      "$value": "ប្រកាស",
+      "$description": "app_translations.dart • savedType.POST • Khmer"
+    },
+    "DISCUSSION": {
+      "$type": "string",
+      "$value": "ការពិភាក្សា",
+      "$description": "app_translations.dart • savedType.DISCUSSION • Khmer"
+    },
+    "EVENT": {
+      "$type": "string",
+      "$value": "ព្រឹត្តិការណ៍",
+      "$description": "app_translations.dart • savedType.EVENT • Khmer"
+    },
+    "OPPORTUNITY": {
+      "$type": "string",
+      "$value": "ឱកាស",
+      "$description": "app_translations.dart • savedType.OPPORTUNITY • Khmer"
+    },
+    "MOTIVATION": {
+      "$type": "string",
+      "$value": "ការលើកទឹកចិត្ត",
+      "$description": "app_translations.dart • savedType.MOTIVATION • Khmer"
+    },
+    "LESSON": {
+      "$type": "string",
+      "$value": "មេរៀន",
+      "$description": "app_translations.dart • savedType.LESSON • Khmer"
+    },
+    "SHORT_CONTENT": {
+      "$type": "string",
+      "$value": "វីដេអូ",
+      "$description": "app_translations.dart • savedType.SHORT_CONTENT • Khmer"
+    }
+  },
+  "portfolio": {
+    "add": {
+      "$type": "string",
+      "$value": "បន្ថែមស្នាដៃ",
+      "$description": "app_translations.dart • portfolio.add • Khmer"
+    },
+    "edit": {
+      "$type": "string",
+      "$value": "កែស្នាដៃ",
+      "$description": "app_translations.dart • portfolio.edit • Khmer"
+    },
+    "imageUrl": {
+      "$type": "string",
+      "$value": "តំណរូបភាព",
+      "$description": "app_translations.dart • portfolio.imageUrl • Khmer"
+    },
+    "deleteConfirm": {
+      "$type": "string",
+      "$value": "លុប \"@title\"?",
+      "$description": "app_translations.dart • portfolio.deleteConfirm • Khmer"
+    }
+  },
+  "interests": {
+    "hint": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសប្រធានបទដែលអ្នកចាប់អារម្មណ៍ — វានឹងកែសម្រួលមាតិកា និងការណែនាំរបស់អ្នក។",
+      "$description": "app_translations.dart • interests.hint • Khmer"
+    },
+    "saveCount": {
+      "$type": "string",
+      "$value": "រក្សាទុកចំណាប់អារម្មណ៍ @count",
+      "$description": "app_translations.dart • interests.saveCount • Khmer"
+    },
+    "title": {
+      "$type": "string",
+      "$value": "ជំនាញរបស់ខ្ញុំ",
+      "$description": "app_translations.dart • interests.title • Khmer"
+    },
+    "subtitle": {
+      "$type": "string",
+      "$value": "បំពេញប្រវត្តិរូបដោយបន្ថែមជំនាញវិជ្ជាជីវៈ និងចំណាប់អារម្មណ៍ផ្ទាល់ខ្លួន។",
+      "$description": "app_translations.dart • interests.subtitle • Khmer"
+    },
+    "searchHint": {
+      "$type": "string",
+      "$value": "ស្វែងរកជំនាញ និងចំណាប់អារម្មណ៍…",
+      "$description": "app_translations.dart • interests.searchHint • Khmer"
+    },
+    "add": {
+      "$type": "string",
+      "$value": "បន្ថែម",
+      "$description": "app_translations.dart • interests.add • Khmer"
+    },
+    "technicalSkills": {
+      "$type": "string",
+      "$value": "ជំនាញបច្ចេកទេស",
+      "$description": "app_translations.dart • interests.technicalSkills • Khmer"
+    },
+    "selectedCount": {
+      "$type": "string",
+      "$value": "បានជ្រើស @count",
+      "$description": "app_translations.dart • interests.selectedCount • Khmer"
+    },
+    "coreInterests": {
+      "$type": "string",
+      "$value": "ចំណាប់អារម្មណ៍ស្នូល",
+      "$description": "app_translations.dart • interests.coreInterests • Khmer"
+    },
+    "suggested": {
+      "$type": "string",
+      "$value": "ណែនាំសម្រាប់អ្នក",
+      "$description": "app_translations.dart • interests.suggested • Khmer"
+    },
+    "selectionProgress": {
+      "$type": "string",
+      "$value": "បានជ្រើស @count / @max",
+      "$description": "app_translations.dart • interests.selectionProgress • Khmer"
+    },
+    "saveContinue": {
+      "$type": "string",
+      "$value": "រក្សាទុក និងបន្ត",
+      "$description": "app_translations.dart • interests.saveContinue • Khmer"
+    },
+    "limit": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសបានរហូតដល់ @max ចំណាប់អារម្មណ៍។",
+      "$description": "app_translations.dart • interests.limit • Khmer"
+    },
+    "noResults": {
+      "$type": "string",
+      "$value": "រកមិនឃើញចំណាប់អារម្មណ៍ដែលត្រូវគ្នា។",
+      "$description": "app_translations.dart • interests.noResults • Khmer"
+    }
+  },
+  "settings": {
+    "accountSettings": {
+      "$type": "string",
+      "$value": "ការកំណត់គណនី",
+      "$description": "app_translations.dart • settings.accountSettings • Khmer"
+    },
+    "accountSettingsHint": {
+      "$type": "string",
+      "$value": "អ៊ីមែល ឈ្មោះអ្នកប្រើ ទូរស័ព្ទ",
+      "$description": "app_translations.dart • settings.accountSettingsHint • Khmer"
+    },
+    "preferences": {
+      "$type": "string",
+      "$value": "ចំណូលចិត្ត",
+      "$description": "app_translations.dart • settings.preferences • Khmer"
+    },
+    "privacySettings": {
+      "$type": "string",
+      "$value": "ការកំណត់ឯកជនភាព",
+      "$description": "app_translations.dart • settings.privacySettings • Khmer"
+    },
+    "privacySettingsHint": {
+      "$type": "string",
+      "$value": "ការមើលឃើញ សារ ការតាមដាន",
+      "$description": "app_translations.dart • settings.privacySettingsHint • Khmer"
+    },
+    "support": {
+      "$type": "string",
+      "$value": "ជំនួយ",
+      "$description": "app_translations.dart • settings.support • Khmer"
+    },
+    "about": {
+      "$type": "string",
+      "$value": "អំពី GenLink KH",
+      "$description": "app_translations.dart • settings.about • Khmer"
+    },
+    "aboutLegalese": {
+      "$type": "string",
+      "$value": "ភ្ជាប់។ រីកចម្រើន។ រុងរឿង។",
+      "$description": "app_translations.dart • settings.aboutLegalese • Khmer"
+    },
+    "languageHint": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសភាសាកម្មវិធី។ អ្នកអាចប្តូរនៅពេលណាក៏បាន។",
+      "$description": "app_translations.dart • settings.languageHint • Khmer"
+    },
+    "appearanceHint": {
+      "$type": "string",
+      "$value": "ជ្រើសរើសរូបរាង GenLink KH នៅលើឧបករណ៍នេះ។",
+      "$description": "app_translations.dart • settings.appearanceHint • Khmer"
+    },
+    "editProfileHint": {
+      "$type": "string",
+      "$value": "ឈ្មោះ ប្រវត្តិ តួនាទី តំណ",
+      "$description": "app_translations.dart • settings.editProfileHint • Khmer"
+    },
+    "allowMessagesHint": {
+      "$type": "string",
+      "$value": "អ្នកដទៃអាចផ្ញើសារមកអ្នកដោយផ្ទាល់",
+      "$description": "app_translations.dart • settings.allowMessagesHint • Khmer"
+    },
+    "allowFollowRequestHint": {
+      "$type": "string",
+      "$value": "អ្នកដទៃអាចស្នើសុំតាមដានអ្នក",
+      "$description": "app_translations.dart • settings.allowFollowRequestHint • Khmer"
+    },
+    "title": {
+      "$type": "string",
+      "$value": "ការកំណត់",
+      "$description": "app_translations.dart • settings.title • Khmer"
+    },
+    "appearance": {
+      "$type": "string",
+      "$value": "រូបរាង",
+      "$description": "app_translations.dart • settings.appearance • Khmer"
+    },
+    "theme": {
+      "$type": "string",
+      "$value": "ផ្ទាំងពណ៌",
+      "$description": "app_translations.dart • settings.theme • Khmer"
+    },
+    "themeLight": {
+      "$type": "string",
+      "$value": "ភ្លឺ",
+      "$description": "app_translations.dart • settings.themeLight • Khmer"
+    },
+    "themeDark": {
+      "$type": "string",
+      "$value": "ងងឹត",
+      "$description": "app_translations.dart • settings.themeDark • Khmer"
+    },
+    "themeSystem": {
+      "$type": "string",
+      "$value": "តាមប្រព័ន្ធ",
+      "$description": "app_translations.dart • settings.themeSystem • Khmer"
+    },
+    "language": {
+      "$type": "string",
+      "$value": "ភាសា",
+      "$description": "app_translations.dart • settings.language • Khmer"
+    },
+    "languageEnglish": {
+      "$type": "string",
+      "$value": "English",
+      "$description": "app_translations.dart • settings.languageEnglish • Khmer"
+    },
+    "languageKhmer": {
+      "$type": "string",
+      "$value": "ភាសាខ្មែរ",
+      "$description": "app_translations.dart • settings.languageKhmer • Khmer"
+    },
+    "notifications": {
+      "$type": "string",
+      "$value": "ការជូនដំណឹង",
+      "$description": "app_translations.dart • settings.notifications • Khmer"
+    },
+    "notificationsEnabled": {
+      "$type": "string",
+      "$value": "បើកការជូនដំណឹង",
+      "$description": "app_translations.dart • settings.notificationsEnabled • Khmer"
+    },
+    "interface": {
+      "$type": "string",
+      "$value": "ចំណុចប្រទាក់",
+      "$description": "app_translations.dart • settings.interface • Khmer"
+    },
+    "interfaceHint": {
+      "$type": "string",
+      "$value": "កំណត់ការរុករក និងបែបផែនរបស់អ្នក",
+      "$description": "app_translations.dart • settings.interfaceHint • Khmer"
+    },
+    "glassmorphism": {
+      "$type": "string",
+      "$value": "បែបផែនកញ្ចក់ (Glassmorphism)",
+      "$description": "app_translations.dart • settings.glassmorphism • Khmer"
+    },
+    "glassmorphismHint": {
+      "$type": "string",
+      "$value": "បើកភាពស្រអាប់ និងតម្លាភាព",
+      "$description": "app_translations.dart • settings.glassmorphismHint • Khmer"
+    },
+    "dynamicIslands": {
+      "$type": "string",
+      "$value": "Dynamic Islands",
+      "$description": "app_translations.dart • settings.dynamicIslands • Khmer"
+    },
+    "dynamicIslandsHint": {
+      "$type": "string",
+      "$value": "ចលនាអន្តរកម្មក្បាលទំព័រ",
+      "$description": "app_translations.dart • settings.dynamicIslandsHint • Khmer"
+    },
+    "privacy": {
+      "$type": "string",
+      "$value": "ឯកជនភាព",
+      "$description": "app_translations.dart • settings.privacy • Khmer"
+    },
+    "privacyProfile": {
+      "$type": "string",
+      "$value": "ការមើលឃើញប្រវត្តិរូប",
+      "$description": "app_translations.dart • settings.privacyProfile • Khmer"
+    },
+    "allowMessages": {
+      "$type": "string",
+      "$value": "អនុញ្ញាតឲ្យផ្ញើសារ",
+      "$description": "app_translations.dart • settings.allowMessages • Khmer"
+    },
+    "allowFollowRequest": {
+      "$type": "string",
+      "$value": "អនុញ្ញាតសំណើតាមដាន",
+      "$description": "app_translations.dart • settings.allowFollowRequest • Khmer"
+    },
+    "security": {
+      "$type": "string",
+      "$value": "សុវត្ថិភាព",
+      "$description": "app_translations.dart • settings.security • Khmer"
+    },
+    "biometric": {
+      "$type": "string",
+      "$value": "ដោះសោដោយជីវមាត្រ",
+      "$description": "app_translations.dart • settings.biometric • Khmer"
+    },
+    "account": {
+      "$type": "string",
+      "$value": "គណនី",
+      "$description": "app_translations.dart • settings.account • Khmer"
+    },
+    "saved": {
+      "$type": "string",
+      "$value": "បានរក្សាទុកការកំណត់",
+      "$description": "app_translations.dart • settings.saved • Khmer"
+    }
+  },
+  "privacy": {
+    "PUBLIC": {
+      "$type": "string",
+      "$value": "សាធារណៈ",
+      "$description": "app_translations.dart • privacy.PUBLIC • Khmer"
+    },
+    "PUBLICHint": {
+      "$type": "string",
+      "$value": "នរណាក៏អាចមើលប្រវត្តិរូបរបស់អ្នក",
+      "$description": "app_translations.dart • privacy.PUBLICHint • Khmer"
+    },
+    "FRIENDS": {
+      "$type": "string",
+      "$value": "មិត្តភក្តិ",
+      "$description": "app_translations.dart • privacy.FRIENDS • Khmer"
+    },
+    "FRIENDSHint": {
+      "$type": "string",
+      "$value": "តែអ្នកដែលអ្នកតាមដានត្រឡប់",
+      "$description": "app_translations.dart • privacy.FRIENDSHint • Khmer"
+    },
+    "PRIVATE": {
+      "$type": "string",
+      "$value": "ឯកជន",
+      "$description": "app_translations.dart • privacy.PRIVATE • Khmer"
+    },
+    "PRIVATEHint": {
+      "$type": "string",
+      "$value": "តែអ្នកប៉ុណ្ណោះ",
+      "$description": "app_translations.dart • privacy.PRIVATEHint • Khmer"
+    }
+  },
+  "notification": {
+    "title": {
+      "$type": "string",
+      "$value": "ការជូនដំណឹង",
+      "$description": "app_translations.dart • notification.title • Khmer"
+    },
+    "markAllRead": {
+      "$type": "string",
+      "$value": "សម្គាល់ទាំងអស់ថាបានអាន",
+      "$description": "app_translations.dart • notification.markAllRead • Khmer"
+    },
+    "tabAll": {
+      "$type": "string",
+      "$value": "ទាំងអស់",
+      "$description": "app_translations.dart • notification.tabAll • Khmer"
+    },
+    "tabMentions": {
+      "$type": "string",
+      "$value": "បានលើកឡើង",
+      "$description": "app_translations.dart • notification.tabMentions • Khmer"
+    },
+    "tabActivity": {
+      "$type": "string",
+      "$value": "សកម្មភាព",
+      "$description": "app_translations.dart • notification.tabActivity • Khmer"
+    },
+    "tabSystem": {
+      "$type": "string",
+      "$value": "ប្រព័ន្ធ",
+      "$description": "app_translations.dart • notification.tabSystem • Khmer"
+    },
+    "empty": {
+      "$type": "string",
+      "$value": "មិនមានការជូនដំណឹង",
+      "$description": "app_translations.dart • notification.empty • Khmer"
+    },
+    "emptyDesc": {
+      "$type": "string",
+      "$value": "អ្នកបានឡើងទៅពេញ។ ប្រតិកម្ម មតិ និងការអាប់ដេតនឹងបង្ហាញនៅទីនេះ។",
+      "$description": "app_translations.dart • notification.emptyDesc • Khmer"
+    },
+    "errorRetry": {
+      "$type": "string",
+      "$value": "មានបញ្ហាកើតឡើង។ ទាញចុះក្រោមដើម្បីព្យាយាមម្តងទៀត។",
+      "$description": "app_translations.dart • notification.errorRetry • Khmer"
+    },
+    "typeLike": {
+      "$type": "string",
+      "$value": "ប្រតិកម្មការបង្ហោះ",
+      "$description": "app_translations.dart • notification.typeLike • Khmer"
+    },
+    "typeComment": {
+      "$type": "string",
+      "$value": "មតិ",
+      "$description": "app_translations.dart • notification.typeComment • Khmer"
+    },
+    "typeMention": {
+      "$type": "string",
+      "$value": "បានលើកឡើងអ្នក",
+      "$description": "app_translations.dart • notification.typeMention • Khmer"
+    },
+    "typeFollow": {
+      "$type": "string",
+      "$value": "អ្នកតាមដានថ្មី",
+      "$description": "app_translations.dart • notification.typeFollow • Khmer"
+    },
+    "typeGroup": {
+      "$type": "string",
+      "$value": "ការអាប់ដេតក្រុម",
+      "$description": "app_translations.dart • notification.typeGroup • Khmer"
+    },
+    "typeEvent": {
+      "$type": "string",
+      "$value": "ព្រឹត្តិការណ៍",
+      "$description": "app_translations.dart • notification.typeEvent • Khmer"
+    },
+    "typeSystem": {
+      "$type": "string",
+      "$value": "ប្រព័ន្ធ",
+      "$description": "app_translations.dart • notification.typeSystem • Khmer"
+    },
+    "today": {
+      "$type": "string",
+      "$value": "ថ្ងៃនេះ",
+      "$description": "app_translations.dart • notification.today • Khmer"
+    },
+    "earlier": {
+      "$type": "string",
+      "$value": "មុននេះ",
+      "$description": "app_translations.dart • notification.earlier • Khmer"
+    },
+    "justNow": {
+      "$type": "string",
+      "$value": "ទើបតែ",
+      "$description": "app_translations.dart • notification.justNow • Khmer"
+    },
+    "back": {
+      "$type": "string",
+      "$value": "ត្រឡប់",
+      "$description": "app_translations.dart • notification.back • Khmer"
+    },
+    "deleteHint": {
+      "$type": "string",
+      "$value": "អូសទៅឆ្វេងដើម្បីលុប",
+      "$description": "app_translations.dart • notification.deleteHint • Khmer"
+    }
+  }
+}

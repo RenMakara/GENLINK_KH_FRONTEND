@@ -1,9 +1,5 @@
-/// Centralized error model matching backend ApiResponse error format.
-///
-/// Every backend error response is wrapped in:
-/// `{ success, message, data, errorCode, timestamp }`
-///
-/// [AppError] represents the failure side of that contract.
+import 'package:dio/dio.dart';
+
 class AppError implements Exception {
   const AppError({
     required this.message,
@@ -30,7 +26,6 @@ class AppError implements Exception {
   bool get isOtpExpired => errorCode == 'OTP_EXPIRED';
   bool get isValidation => errorCode == 'VALIDATION_ERROR';
 
-  /// Whether this error should trigger a logout / session clear.
   bool get shouldLogout =>
       isTokenExpired ||
       isTokenRevoked ||
@@ -40,12 +35,30 @@ class AppError implements Exception {
   @override
   String toString() => 'AppError($errorCode): $message';
 
-  /// Parse an [AppError] from a backend JSON response body.
   factory AppError.fromResponse(Map<String, dynamic> json, int statusCode) {
     return AppError(
       message: json['message'] as String? ?? 'Unknown error',
       errorCode: json['errorCode'] as String? ?? 'API_ERROR',
       statusCode: statusCode,
     );
+  }
+
+  factory AppError.fromDio(DioException exception) {
+    final inner = exception.error;
+    if (inner is AppError) return inner;
+
+    return AppError(
+      message: exception.message ?? 'Unable to reach the server.',
+      errorCode: 'NETWORK_ERROR',
+      statusCode: exception.response?.statusCode,
+    );
+  }
+}
+
+Future<T> guardDio<T>(Future<T> Function() request) async {
+  try {
+    return await request();
+  } on DioException catch (e) {
+    throw AppError.fromDio(e);
   }
 }

@@ -1,7 +1,3 @@
-/// Auth feature root.
-///
-/// Owns authentication flows, identity state, and access-related presentation.
-/// Keep auth data, domain, and presentation code inside this feature module.
 library;
 
 export 'data/datasources/auth_remote_datasource.dart';
@@ -16,6 +12,8 @@ export 'data/models/resend_otp_request_model.dart';
 export 'data/models/resend_verification_otp_request_model.dart';
 export 'data/models/forgot_password_request_model.dart';
 export 'data/models/reset_password_request_model.dart';
+export 'data/models/set_password_request_model.dart';
+export 'data/models/change_password_request_model.dart';
 export 'data/models/refresh_token_request_model.dart';
 export 'data/repositories/auth_repository_impl.dart';
 export 'domain/entities/user_entity.dart';
@@ -24,3 +22,4 @@ export 'domain/repositories/auth_repository.dart';
 export 'presentation/controllers/auth_controller.dart';
 export 'presentation/bindings/auth_binding.dart';
 export 'presentation/middleware/auth_middleware.dart';
+export 'presentation/screens/set_password_screen.dart';

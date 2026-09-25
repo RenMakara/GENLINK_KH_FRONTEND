@@ -1,53 +1,52 @@
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:genlink_frontend/features/notification/domain/mobile_push_registration_service.dart';
 
-import '../../../../core/network/dio_provider.dart';
-import '../../../../core/network/interceptors/auth_interceptor.dart';
-import '../../../../core/network/interceptors/error_interceptor.dart';
+import '../../../../core/localization/localization_service.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/services/google_auth_service_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../settings/data/datasources/settings_remote_datasource.dart';
+import '../../../settings/data/repositories/settings_repository_impl.dart';
 import '../controllers/auth_controller.dart';
 
-/// GetX binding for the auth feature.
-///
-/// Registers the full dependency chain:
-/// SecureStorage -> Dio -> AuthInterceptor -> AuthRemoteDatasource ->
-/// AuthRepository -> AuthController
 class AuthBinding extends Bindings {
+  AuthBinding({
+    this.onSessionCleared,
+    this.onSessionEstablished,
+    this.mobilePushRegistrationService,
+  });
+
+  final void Function()? onSessionCleared;
+  final void Function()? onSessionEstablished;
+  final MobilePushRegistrationService? mobilePushRegistrationService;
+
   @override
   void dependencies() {
-    // Core
-    final storage = SecureStorage();
-    Get.put<SecureStorage>(storage, permanent: true);
-
-    // Dio with interceptors
-    final errorInterceptor = ErrorInterceptor();
-    final dio = DioProvider.create(
-      errorInterceptor: errorInterceptor,
+    final authRepository = AuthRepositoryImpl(
+      AuthRemoteDatasource(Get.find<Dio>()),
     );
-
-    // Auth interceptor depends on both storage and repository.
-    // We use a lazy registration to break the circular dependency:
-    // the interceptor needs the repository, but the repository needs Dio.
-    final remoteDatasource = AuthRemoteDatasource(dio);
-    final authRepository = AuthRepositoryImpl(remoteDatasource);
-
-    // Now wire the auth interceptor and re-add it to Dio.
-    final authInterceptor = AuthInterceptor(
-      secureStorage: storage,
-      authRepository: authRepository,
+    final settingsRepository = SettingsRepositoryImpl(
+      SettingsRemoteDatasource(Get.find<ApiClient>()),
     );
-    dio.interceptors.add(authInterceptor);
-
-    // Register repositories
     Get.put<AuthRepository>(authRepository, permanent: true);
-
-    // Controller
     Get.put<AuthController>(
       AuthController(
         authRepository: authRepository,
-        secureStorage: storage,
+        settingsRepository: settingsRepository,
+        secureStorage: Get.find<SecureStorage>(),
+        localization: Get.find<LocalizationService>(),
+        themeController: Get.find<ThemeController>(),
+        localStorage: Get.find<LocalStorage>(),
+        googleAuthService: GoogleAuthServiceImpl(),
+        mobilePushRegistrationService: mobilePushRegistrationService,
+        onSessionCleared: onSessionCleared,
+        onSessionEstablished: onSessionEstablished,
       ),
       permanent: true,
     );

@@ -1,0 +1,88 @@
+{
+  "file": {
+    "name": "GenLink KH Design System",
+    "url": "https://www.figma.com/design/KZ1MTVeYjfyP4RX4E33PAg/GenLink-KH-Design-System",
+    "pages": ["Foundations", "Theme Playground", "Translations"]
+  },
+  "collections": {
+    "GenLink / Colors": {
+      "modes": ["Light", "Dark"],
+      "variableCount": 29,
+      "status": "verified"
+    },
+    "GenLink / Typography": {
+      "modes": ["English", "Khmer"],
+      "variableCount": 5,
+      "status": "verified"
+    },
+    "GenLink / Copy": {
+      "modes": ["English", "Khmer"],
+      "variableCount": 286,
+      "source": "lib/core/localization/app_translations.dart",
+      "scope": [
+        "common",
+        "onboarding",
+        "auth",
+        "nav",
+        "profile",
+        "profileSetup",
+        "role",
+        "achievements",
+        "saved",
+        "savedType",
+        "portfolio",
+        "interests",
+        "settings",
+        "privacy",
+        "notification"
+      ],
+      "status": "verified"
+    }
+  },
+  "textStyles": {
+    "sourceCount": 15,
+    "localeStyleCount": 30,
+    "fillVariables": ["text/primary", "text/secondary"],
+    "status": "created"
+  },
+  "themePlayground": {
+    "frame": "Frame 1",
+    "bindings": [
+      "bg/primary",
+      "surface/primary",
+      "border/subtle"
+    ],
+    "verifiedCombinations": [
+      "Light + English",
+      "Dark + English",
+      "Light + Khmer",
+      "Dark + Khmer"
+    ],
+    "status": "verified",
+    "localeNote": "English and Khmer styles are explicit style objects; use the matching locale style in the style picker when changing font and metrics."
+  },
+  "translationPlayground": {
+    "page": "Translations",
+    "frame": "Translation Reference / Locale Playground",
+    "bindings": [
+      "auth/login",
+      "auth/verifyEmail",
+      "auth/verifySubtitle"
+    ],
+    "verifiedModes": ["English", "Khmer"],
+    "status": "verified",
+    "placeholderPolicy": "Runtime placeholders such as @email, @count, and @seconds are preserved."
+  },
+  "imports": [
+    "genlink_colors_light.dtcg.json",
+    "genlink_colors_dark.dtcg.json",
+    "genlink_typography_english.dtcg.json",
+    "genlink_typography_khmer.dtcg.json",
+    "genlink_copy_english.dtcg.json",
+    "genlink_copy_khmer.dtcg.json"
+  ],
+  "notes": [
+    "Color alpha values were preserved during DTCG import.",
+    "Flutter numeric weights map to the closest installed Figma font styles."
+  ]
+}

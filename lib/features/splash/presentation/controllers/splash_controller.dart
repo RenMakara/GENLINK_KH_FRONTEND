@@ -15,7 +15,13 @@ class SplashController extends GetxController {
   final AuthController _auth;
   final LocalStorage _storage;
 
-  static const _minimumDisplay = Duration(seconds: 2);
+  static const _minimumDisplay = Duration(milliseconds: 1700);
+
+  /// Callback registered by [SplashScreen] to coordinate the exit animation sequence.
+  void Function(String route)? onReadyToExit;
+
+  /// Holds the resolved destination route once initialization is complete.
+  String? resolvedDestination;
 
   @override
   void onReady() {
@@ -56,15 +62,18 @@ class SplashController extends GetxController {
     await minimumElapsed;
     debugPrint('[SPLASH] Minimum display time elapsed');
 
-    if (restored) {
-      debugPrint('[SPLASH] Navigating to Home');
-      Get.offAllNamed<void>(AppRoutes.home);
-    } else if (!initialPreferencesSeen) {
-      debugPrint('[SPLASH] Navigating to Welcome');
-      Get.offAllNamed<void>(AppRoutes.welcome);
+    final targetRoute = restored
+        ? AppRoutes.home
+        : (!initialPreferencesSeen ? AppRoutes.welcome : AppRoutes.authChoice);
+
+    resolvedDestination = targetRoute;
+    debugPrint('[SPLASH] Destination resolved: $targetRoute');
+
+    if (onReadyToExit != null) {
+      onReadyToExit!(targetRoute);
     } else {
-      debugPrint('[SPLASH] Navigating to Auth Choice');
-      Get.offAllNamed<void>(AppRoutes.authChoice);
+      Get.offAllNamed<void>(targetRoute, arguments: const {'fromSplash': true});
     }
   }
 }
+

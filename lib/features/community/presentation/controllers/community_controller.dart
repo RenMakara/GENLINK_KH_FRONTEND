@@ -1119,6 +1119,8 @@ class CommunityController extends GetxController {
     }
   }
 
+  RxList<ForumTopicModel> get discussions => forumLatestDiscussions;
+
   Future<void> fetchDiscussions({bool isRefresh = false}) async {
     if (isRefresh) {
       isRefreshingForumDiscussions.value = true;
@@ -1657,6 +1659,20 @@ class CommunityController extends GetxController {
     } finally {
       isLoadingFeed.value = false;
       isRefreshingFeed.value = false;
+    }
+  }
+
+  Future<CommunityPostModel?> fetchPostDetails(String postId) async {
+    try {
+      final post = await repository.getPostDetails(postId);
+      final idx = posts.indexWhere((p) => p.id == post.id);
+      if (idx != -1) {
+        posts[idx] = post;
+      }
+      return post;
+    } catch (e) {
+      debugPrint('[COMMUNITY] fetchPostDetails failed for $postId: $e');
+      rethrow;
     }
   }
 

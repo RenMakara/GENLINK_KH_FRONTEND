@@ -28,6 +28,9 @@ class AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final routeAnimation = ModalRoute.of(context)?.animation;
+    final reducedMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final shouldAnimate = routeAnimation != null && !reducedMotion;
 
     return Scaffold(
       body: AuthBackgroundShell(
@@ -47,42 +50,81 @@ class AuthScaffold extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (showBack) ...[
-                            const Align(
-                              alignment: Alignment.centerLeft,
-                              child: AppBackButton(),
-                            ),
-                            SizedBox(height: backBottomSpacing),
-                          ],
-                          if (title != null) ...[
-                            Text(title!, style: theme.textTheme.displayMedium),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: AppSpacing.sm),
-                              Text(
-                                subtitle!,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.65,
-                                  ),
-                                ),
+                          if (showBack || title != null)
+                            _StaggeredSection(
+                              animation: shouldAnimate ? routeAnimation : null,
+                              interval: const Interval(
+                                0.0,
+                                0.85,
+                                curve: Curves.easeOutCubic,
                               ),
-                            ],
-                            const SizedBox(height: AppSpacing.xl),
-                          ],
-                          ...children,
+                              offsetY: 10.0,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (showBack) ...[
+                                    const Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: AppBackButton(),
+                                    ),
+                                    SizedBox(height: backBottomSpacing),
+                                  ],
+                                  if (title != null) ...[
+                                    Text(
+                                      title!,
+                                      style: theme.textTheme.displayMedium,
+                                    ),
+                                    if (subtitle != null) ...[
+                                      const SizedBox(height: AppSpacing.sm),
+                                      Text(
+                                        subtitle!,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.65),
+                                            ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: AppSpacing.xl),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          _StaggeredSection(
+                            animation: shouldAnimate ? routeAnimation : null,
+                            interval: const Interval(
+                              0.08,
+                              0.92,
+                              curve: Curves.easeOutCubic,
+                            ),
+                            offsetY: 14.0,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: children,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
                   if (footer != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        0,
-                        AppSpacing.lg,
-                        AppSpacing.md,
+                    _StaggeredSection(
+                      animation: shouldAnimate ? routeAnimation : null,
+                      interval: const Interval(
+                        0.15,
+                        1.0,
+                        curve: Curves.easeOutCubic,
                       ),
-                      child: footer,
+                      offsetY: 12.0,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          0,
+                          AppSpacing.lg,
+                          AppSpacing.md,
+                        ),
+                        child: footer,
+                      ),
                     ),
                 ],
               ),
@@ -92,10 +134,7 @@ class AuthScaffold extends StatelessWidget {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: SafeArea(
-                  bottom: false,
-                  child: overlay!,
-                ),
+                child: SafeArea(bottom: false, child: overlay!),
               ),
           ],
         ),
@@ -191,6 +230,47 @@ class AuthErrorBanner extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StaggeredSection extends StatelessWidget {
+  const _StaggeredSection({
+    required this.animation,
+    required this.interval,
+    required this.offsetY,
+    required this.child,
+  });
+
+  final Animation<double>? animation;
+  final Interval interval;
+  final double offsetY;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final anim = animation;
+    if (anim == null ||
+        anim.isCompleted ||
+        anim.status == AnimationStatus.reverse) {
+      return child;
+    }
+
+    final curved = CurvedAnimation(parent: anim, curve: interval);
+
+    return AnimatedBuilder(
+      animation: curved,
+      builder: (context, staticChild) {
+        final t = curved.value;
+        if (t >= 1.0) return staticChild!;
+        final opacity = t.clamp(0.0, 1.0);
+        final dy = offsetY * (1.0 - t);
+        return Opacity(
+          opacity: opacity,
+          child: Transform.translate(offset: Offset(0, dy), child: staticChild),
+        );
+      },
+      child: child,
     );
   }
 }

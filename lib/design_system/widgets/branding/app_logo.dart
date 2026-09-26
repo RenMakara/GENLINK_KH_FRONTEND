@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -27,17 +29,9 @@ class AppLogoMark extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final assetPath = isDark ? AppLogoAssets.glDark : AppLogoAssets.glLight;
     if (assetPath.endsWith('.svg')) {
-      return SvgPicture.asset(
-        assetPath,
-        height: size,
-        fit: BoxFit.contain,
-      );
+      return SvgPicture.asset(assetPath, height: size, fit: BoxFit.contain);
     }
-    return Image.asset(
-      assetPath,
-      height: size,
-      fit: BoxFit.contain,
-    );
+    return Image.asset(assetPath, height: size, fit: BoxFit.contain);
   }
 }
 
@@ -76,17 +70,19 @@ class AuthBrandLockup extends StatelessWidget {
     this.markSize = 52,
     this.wordmarkHeight = 26,
     this.alignment = MainAxisAlignment.start,
+    this.enableHero = true,
   });
 
   final double markSize;
   final double wordmarkHeight;
   final MainAxisAlignment alignment;
+  final bool enableHero;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Semantics(
+    final content = Semantics(
       image: true,
       label: 'GenLink KH',
       child: Row(
@@ -102,9 +98,9 @@ class AuthBrandLockup extends StatelessWidget {
               borderRadius: BorderRadius.circular(markSize * 0.28),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0EA5E9).withValues(
-                    alpha: isDark ? 0.35 : 0.18,
-                  ),
+                  color: const Color(
+                    0xFF0EA5E9,
+                  ).withValues(alpha: isDark ? 0.35 : 0.18),
                   blurRadius: markSize * 0.35,
                   spreadRadius: 1,
                   offset: const Offset(0, 3),
@@ -117,6 +113,40 @@ class AuthBrandLockup extends StatelessWidget {
           AppWordmark(height: wordmarkHeight),
         ],
       ),
+    );
+
+    if (!enableHero) return content;
+
+    return Hero(
+      tag: 'genlink-auth-brand-lockup',
+      flightShuttleBuilder:
+          (
+            flightContext,
+            animation,
+            flightDirection,
+            fromHeroContext,
+            toHeroContext,
+          ) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            );
+            return AnimatedBuilder(
+              animation: curved,
+              builder: (context, _) {
+                final dip = math.sin(math.pi * curved.value);
+                final opacity = (1.0 - (0.15 * dip)).clamp(0.0, 1.0);
+                return Opacity(
+                  opacity: opacity,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: content,
+                  ),
+                );
+              },
+            );
+          },
+      child: Material(type: MaterialType.transparency, child: content),
     );
   }
 }
@@ -159,4 +189,3 @@ class AppLogoPlate extends StatelessWidget {
     );
   }
 }
-

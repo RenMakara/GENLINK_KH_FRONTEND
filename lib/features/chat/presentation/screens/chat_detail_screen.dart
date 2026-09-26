@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/typography/app_typography.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
@@ -15,10 +16,59 @@ import '../bindings/chat_binding.dart';
 import '../controllers/chat_controller.dart';
 import '../widgets/chat_avatar.dart';
 import '../widgets/chat_attachment_sheet.dart';
+import '../widgets/chat_content_picker_sheet.dart';
 import '../widgets/chat_system_message.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import 'group_profile_screen.dart';
+
+class _PressableScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const _PressableScale({
+    required this.child,
+    this.onTap,
+  });
+
+  @override
+  State<_PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<_PressableScale> {
+  bool _isPressed = false;
+  static const double _scaleFactor = 0.94;
+  static const Duration _duration = Duration(milliseconds: 140);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) {
+        if (widget.onTap != null) {
+          setState(() => _isPressed = true);
+        }
+      },
+      onTapUp: (_) {
+        if (widget.onTap != null) {
+          setState(() => _isPressed = false);
+          widget.onTap!();
+        }
+      },
+      onTapCancel: () {
+        if (_isPressed) {
+          setState(() => _isPressed = false);
+        }
+      },
+      child: AnimatedScale(
+        scale: _isPressed ? _scaleFactor : 1.0,
+        duration: _duration,
+        curve: Curves.easeInOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
 
 class ChatDetailScreen extends StatefulWidget {
   const ChatDetailScreen({super.key, this.roomId});
@@ -181,17 +231,28 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       return Scaffold(
         backgroundColor: bgColor,
         appBar: AppBar(
+          toolbarHeight: 68,
           backgroundColor: surfaceColor,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leading: Center(
-            child: AppBackButton(onPressed: () => Get.back()),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(0.5),
+            child: Container(
+              color: borderColor.withValues(alpha: 0.6),
+              height: 0.5,
+            ),
           ),
-          leadingWidth: 72,
+          leading: Center(
+            child: _PressableScale(
+              onTap: () => Get.back(),
+              child: AppBackButton(onPressed: () => Get.back()),
+            ),
+          ),
+          leadingWidth: 56,
           titleSpacing: 0,
           title: InkWell(
             onTap: () => _onHeaderTap(conv),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
               child: Row(
@@ -199,7 +260,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ChatAvatar(
                     avatarUrl: conv.avatar,
                     name: conv.name,
-                    radius: 19,
+                    radius: 21,
                     isOnline: conv.isOnline,
                     isEventChat: conv.isEventChat,
                   ),
@@ -212,17 +273,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           conv.name,
                           style: TextStyle(
                             color: textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTypography.englishFontFamily,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 1.5),
                         Text(
                           statusText,
                           style: TextStyle(
                             color: conv.isOnline ? AppColors.success : textMuted,
-                            fontSize: 11,
-                            fontWeight: conv.isOnline ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 12.5,
+                            fontWeight: conv.isOnline ? FontWeight.w500 : FontWeight.normal,
+                            fontFamily: AppTypography.englishFontFamily,
                           ),
                         ),
                       ],
@@ -233,31 +297,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ),
           actions: [
-            IconButton(
-              icon: Icon(
-                _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                color: textPrimary,
-                size: 22,
+            _PressableScale(
+              child: IconButton(
+                icon: Icon(
+                  _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
+                tooltip: 'chat.search'.tr.isNotEmpty && 'chat.search'.tr != 'chat.search'
+                    ? 'chat.search'.tr
+                    : 'Search in Chat',
+                onPressed: () {
+                  setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) {
+                      _inChatSearchController.clear();
+                      _inChatSearchQuery = '';
+                    }
+                  });
+                },
               ),
-              tooltip: 'chat.search'.tr.isNotEmpty && 'chat.search'.tr != 'chat.search'
-                  ? 'chat.search'.tr
-                  : 'Search in Chat',
-              onPressed: () {
-                setState(() {
-                  _isSearching = !_isSearching;
-                  if (!_isSearching) {
-                    _inChatSearchController.clear();
-                    _inChatSearchQuery = '';
-                  }
-                });
-              },
             ),
 
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: textPrimary, size: 20),
-              color: surfaceColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onSelected: (val) {
+              icon: Icon(Icons.more_vert_rounded, color: textPrimary, size: 21),
+                color: surfaceColor,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: borderColor.withValues(alpha: 0.7), width: 0.8),
+                ),
+                onSelected: (val) {
                 if (val == 'info') {
                   _onHeaderTap(conv);
                 } else if (val == 'mute') {
@@ -677,7 +747,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       onCancelReply: () => chatController.cancelReply(),
                       onSend: () => chatController.sendMessage(),
                       onAttachmentTap: () => _openAttachmentSheet(context, chatController),
-                      onVoiceTap: () async => chatController.sendMessage(type: 'voice'),
                     )),
               ],
             ),
@@ -694,20 +763,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       onGalleryTap: () => _pickAndSendImage(controller, ImageSource.gallery),
       onFileTap: () => _sendSimulatedAttachment(controller, 'file', 'Document attachment'),
       onLocationTap: () => _sendSimulatedAttachment(controller, 'text', '📍 Shared location: Phnom Penh, Cambodia'),
-      onSendMoneyTap: () => _sendSimulatedAttachment(controller, 'finance', 'Sent \$5.00: Lunch share'),
-      onRequestMoneyTap: () => _sendSimulatedAttachment(controller, 'finance', 'Requested \$10.00: Project printouts'),
-      onScanKhqrTap: () {
-        AppNotificationBanner.showSuccess(
-          context: context,
-          title: "Scan KHQR",
-          message: "Opening KHQR camera scanner...",
-          icon: Icons.qr_code_scanner_rounded,
+      onSharePostTap: () {
+        ChatContentPickerSheet.show(
+          context,
+          type: SharedContentType.post,
+          onSelected: (content) => controller.sendMessage(sharedContent: content),
         );
       },
-      onSharePostTap: () => _sendSimulatedAttachment(controller, 'post_share', 'Shared Post: Campus Tech Expo 2026'),
-      onShareEventTap: () => _sendSimulatedAttachment(controller, 'event_share', 'Shared Event: Flutter Devs Meetup'),
-      onShareDiscussionTap: () => _sendSimulatedAttachment(controller, 'shared_discussion', 'Shared Discussion: AI in Education'),
-      onShareProfileTap: () => _sendSimulatedAttachment(controller, 'shared_profile', 'Shared Profile: Dara Heng'),
+      onShareEventTap: () {
+        ChatContentPickerSheet.show(
+          context,
+          type: SharedContentType.event,
+          onSelected: (content) => controller.sendMessage(sharedContent: content),
+        );
+      },
+      onShareDiscussionTap: () {
+        ChatContentPickerSheet.show(
+          context,
+          type: SharedContentType.discussion,
+          onSelected: (content) => controller.sendMessage(sharedContent: content),
+        );
+      },
+      onShareProfileTap: () {
+        ChatContentPickerSheet.show(
+          context,
+          type: SharedContentType.profile,
+          onSelected: (content) => controller.sendMessage(sharedContent: content),
+        );
+      },
     );
   }
 
@@ -760,6 +843,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final pillBg = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderColor = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
     final now = DateTime.now();
     final yesterday = now.subtract(const Duration(days: 1));
 
@@ -779,18 +863,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
     return Center(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        margin: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
           color: pillBg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: borderColor.withValues(alpha: 0.5),
+            width: 0.6,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: textMuted,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w500,
+            fontFamily: AppTypography.englishFontFamily,
           ),
         ),
       ),

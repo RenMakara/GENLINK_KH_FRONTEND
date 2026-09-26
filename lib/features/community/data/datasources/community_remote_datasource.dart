@@ -320,6 +320,49 @@ class CommunityRemoteDataSource {
     );
   }
 
+  Future<CommunityPostModel> fetchPostDetail(String postId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(ApiEndpoints.communityPostDetail(postId)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        if (rawData is Map<String, dynamic>) {
+          return CommunityPostModel.fromJson(rawData);
+        }
+      }
+    } catch (e) {
+      if (e is AppError) {
+        if (e.statusCode == 404 || e.errorCode == 'POST_NOT_FOUND') {
+          throw const AppError(
+            message: 'This content is no longer available.',
+            errorCode: 'POST_NOT_FOUND',
+            statusCode: 404,
+          );
+        }
+        if (e.statusCode == 403 || e.errorCode == 'FORBIDDEN') {
+          throw const AppError(
+            message: 'Content unavailable',
+            errorCode: 'FORBIDDEN',
+            statusCode: 403,
+          );
+        }
+      }
+    }
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      return _mockPosts[idx];
+    }
+    throw const AppError(
+      message: 'This content is no longer available.',
+      errorCode: 'POST_NOT_FOUND',
+      statusCode: 404,
+    );
+  }
+
   Future<bool> deletePost(String postId) async {
     try {
       await guardDio(

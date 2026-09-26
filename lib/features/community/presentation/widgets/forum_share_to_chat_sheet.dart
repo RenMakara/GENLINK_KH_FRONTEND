@@ -13,24 +13,47 @@ import '../../domain/models/community_post_model.dart';
 class ForumShareToChatSheet extends StatefulWidget {
   final ForumTopicModel? topic;
   final CommunityPostModel? post;
+  final EventModel? event;
+  final SharedContentModel? customSharedContent;
 
   const ForumShareToChatSheet({
     super.key,
     this.topic,
     this.post,
-  }) : assert(topic != null || post != null, 'Either topic or post must be provided');
+    this.event,
+    this.customSharedContent,
+  }) : assert(
+          topic != null ||
+              post != null ||
+              event != null ||
+              customSharedContent != null,
+          'Either topic, post, event or customSharedContent must be provided',
+        );
 
   static void show(
     BuildContext context, {
     ForumTopicModel? topic,
     CommunityPostModel? post,
+    EventModel? event,
+    SharedContentModel? customSharedContent,
   }) {
-    assert(topic != null || post != null, 'Either topic or post must be provided');
+    assert(
+      topic != null ||
+          post != null ||
+          event != null ||
+          customSharedContent != null,
+      'Either topic, post, event or customSharedContent must be provided',
+    );
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => ForumShareToChatSheet(topic: topic, post: post),
+      builder: (ctx) => ForumShareToChatSheet(
+        topic: topic,
+        post: post,
+        event: event,
+        customSharedContent: customSharedContent,
+      ),
     );
   }
 
@@ -73,20 +96,73 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
 
     try {
       await _chatController.openConversation(conv);
-      final String sharedText;
-      if (widget.post != null) {
+
+      final SharedContentModel sharedContent;
+      if (widget.customSharedContent != null) {
+        sharedContent = widget.customSharedContent!;
+      } else if (widget.post != null) {
         final p = widget.post!;
-        sharedText = p.content.trim().isNotEmpty
-            ? p.content.trim()
-            : 'Shared post by ${p.authorName}';
-      } else {
+        final firstLine = p.content.trim().split('\n').first.trim();
+        final title = firstLine.isNotEmpty
+            ? (firstLine.length > 60
+                ? '${firstLine.substring(0, 57)}...'
+                : firstLine)
+            : 'Post by ${p.authorName}';
+        String? thumb;
+        if (p.imageUrls.isNotEmpty) {
+          final img = p.imageUrls.firstWhere(
+            (u) => !CommunityPostModel.isVideoUrl(u),
+            orElse: () => '',
+          );
+          if (img.isNotEmpty) thumb = img;
+        }
+        if (thumb == null && p.mediaUrls != null && p.mediaUrls!.isNotEmpty) {
+          final img = p.mediaUrls!.firstWhere(
+            (u) => !CommunityPostModel.isVideoUrl(u),
+            orElse: () => '',
+          );
+          if (img.isNotEmpty) thumb = img;
+        }
+        thumb ??= (p.mediaUrls != null && p.mediaUrls!.isNotEmpty)
+            ? p.mediaUrls!.first
+            : (p.imageUrls.isNotEmpty ? p.imageUrls.first : null);
+        sharedContent = SharedContentModel(
+          type: SharedContentType.post,
+          id: p.id,
+          title: title,
+          previewText: p.content.trim(),
+          thumbnailUrl: thumb,
+          authorName: p.authorName,
+          authorAvatar: p.authorAvatar,
+          subtitle: p.community.isNotEmpty ? p.community : null,
+        );
+      } else if (widget.topic != null) {
         final t = widget.topic!;
-        sharedText = [
-          t.title.trim(),
-          if (t.content.trim().isNotEmpty) t.content.trim(),
-        ].join('\n\n');
+        sharedContent = SharedContentModel(
+          type: SharedContentType.discussion,
+          id: t.id,
+          title: t.title.trim(),
+          previewText: t.content.trim(),
+          authorName: t.authorName,
+          authorAvatar: t.authorAvatar,
+          subtitle: t.category.isNotEmpty ? t.category : null,
+        );
+      } else if (widget.event != null) {
+        final e = widget.event!;
+        sharedContent = SharedContentModel(
+          type: SharedContentType.event,
+          id: e.id,
+          title: e.title.trim(),
+          previewText: e.description.trim(),
+          thumbnailUrl: e.imageUrl,
+          authorName: e.organizerName,
+          subtitle: e.location.isNotEmpty ? e.location : e.dateString,
+        );
+      } else {
+        throw StateError('No content provided to share');
       }
-      await _chatController.sendSharedText(conv, sharedText);
+
+      await _chatController.sendSharedContent(conv, sharedContent);
 
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();

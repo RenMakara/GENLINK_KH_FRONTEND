@@ -8,6 +8,7 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/reset_otp_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/verify_otp_screen.dart';
+import '../../features/auth/presentation/transitions/genlink_auth_transition.dart';
 import '../../features/onboarding/presentation/screens/language_select_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/onboarding/presentation/screens/completion_screen.dart';
@@ -32,6 +33,7 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/settings/presentation/screens/notification_preferences_screen.dart';
 import '../../features/chat/chat_feature.dart';
 import '../../features/community/presentation/screens/friend_requests_screen.dart';
+import '../../features/community/presentation/screens/post_detail_screen.dart';
 import '../../features/notification/notification_feature.dart';
 import '../../features/quiz/presentation/bindings/quiz_binding.dart';
 import '../../features/quiz/presentation/screens/quiz_dashboard_screen.dart';
@@ -54,6 +56,7 @@ import '../../features/leaderboard/presentation/screens/top_rank_detail_screen.d
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/splash/presentation/screens/welcome_screen.dart';
+import '../../features/splash/presentation/transitions/splash_to_auth_transition.dart';
 import '../../main_screen.dart';
 import '../bindings/main_binding.dart';
 import 'app_routes.dart';
@@ -71,6 +74,8 @@ abstract final class AppPages {
       name: AppRoutes.welcome,
       page: () => const WelcomeScreen(),
       binding: WelcomeBinding(),
+      customTransition: SplashToAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 650),
     ),
     GetPage<dynamic>(
       name: AppRoutes.languageSelect,
@@ -91,27 +96,44 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.authChoice,
       page: () => const AuthChoiceScreen(),
+      customTransition: SplashToAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 650),
     ),
-    GetPage<dynamic>(name: AppRoutes.login, page: () => const LoginScreen()),
+    GetPage<dynamic>(
+      name: AppRoutes.login,
+      page: () => const LoginScreen(),
+      customTransition: GenLinkAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 400),
+    ),
     GetPage<dynamic>(
       name: AppRoutes.register,
       page: () => const RegisterScreen(),
+      customTransition: GenLinkAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 400),
     ),
     GetPage<dynamic>(
       name: AppRoutes.verifyEmail,
       page: () => const VerifyOtpScreen(),
+      customTransition: GenLinkAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 400),
     ),
     GetPage<dynamic>(
       name: AppRoutes.forgotPassword,
       page: () => const ForgotPasswordScreen(),
+      customTransition: GenLinkAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 380),
     ),
     GetPage<dynamic>(
       name: AppRoutes.resetOtp,
       page: () => const ResetOtpScreen(),
+      customTransition: GenLinkAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 380),
     ),
     GetPage<dynamic>(
       name: AppRoutes.resetPassword,
       page: () => const ResetPasswordScreen(),
+      customTransition: GenLinkAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 380),
     ),
     GetPage<dynamic>(
       name: AppRoutes.setPassword,
@@ -129,6 +151,8 @@ abstract final class AppPages {
       page: () => const MainScreen(),
       binding: MainBinding(),
       middlewares: [AuthMiddleware()],
+      customTransition: SplashToAuthTransition(),
+      transitionDuration: const Duration(milliseconds: 650),
     ),
     GetPage<dynamic>(
       name: AppRoutes.notifications,
@@ -151,6 +175,16 @@ abstract final class AppPages {
       name: AppRoutes.chatDetail,
       page: () => const ChatDetailScreen(),
       binding: ChatBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.postDetail,
+      page: () {
+        final args = Get.arguments as Map<String, dynamic>?;
+        final params = Get.parameters;
+        final postId = args?['postId'] as String? ?? params['postId'] ?? '';
+        return PostDetailScreen(postId: postId);
+      },
       middlewares: [AuthMiddleware()],
     ),
 

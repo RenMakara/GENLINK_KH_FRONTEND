@@ -45,10 +45,12 @@ class _MockChatRepository implements ChatRepositoryImpl {
     String messageType = 'text',
     String? mediaUrl,
     ChatReplyReference? replyTo,
+    String? localId,
+    SharedContentModel? sharedContent,
   }) async {
     sentMessages.add({
       'conversationId': conversationId,
-      'content': content,
+      'content': content.isNotEmpty ? content : (sharedContent != null ? '${sharedContent.title}\n\n${sharedContent.previewText ?? ""}'.trim() : ''),
       'messageType': messageType,
     });
     return ChatMessageModel(

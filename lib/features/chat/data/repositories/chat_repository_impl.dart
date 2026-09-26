@@ -112,6 +112,7 @@ class ChatRepositoryImpl {
     String messageType = 'text',
     String? mediaUrl,
     ChatReplyReference? replyTo,
+    SharedContentModel? sharedContent,
   }) async {
     final msg = await remoteDataSource.sendMessage(
       conversationId,
@@ -119,6 +120,7 @@ class ChatRepositoryImpl {
       messageType: messageType,
       mediaUrl: mediaUrl,
       replyTo: replyTo,
+      sharedContent: sharedContent,
     );
     await localDataSource?.saveMessage(conversationId, msg);
     return msg;

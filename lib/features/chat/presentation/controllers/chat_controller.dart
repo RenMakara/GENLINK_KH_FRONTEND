@@ -540,9 +540,10 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     String type = 'text',
     String? mediaUrl,
     ChatReplyReference? replyTo,
+    SharedContentModel? sharedContent,
   }) async {
     final text = textController.text.trim();
-    if (text.isEmpty && mediaUrl == null) return;
+    if (text.isEmpty && mediaUrl == null && sharedContent == null) return;
 
     final conv = activeConversation.value;
     if (conv == null) return;
@@ -566,11 +567,14 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       final newMsg = await repository.sendMessage(
         conv.id,
         text.isEmpty
-            ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
+            ? (sharedContent != null
+                ? ''
+                : (type == 'image' ? '📷 Photo' : 'Shared attachment'))
             : text,
         messageType: type,
         mediaUrl: mediaUrl,
         replyTo: effectiveReplyTo,
+        sharedContent: sharedContent,
       );
 
       final currentRoom = activeRoomId.value ?? activeConversation.value?.id;
@@ -578,7 +582,9 @@ class ChatController extends GetxController with WidgetsBindingObserver {
           !activeMessages.any((m) => m.id == newMsg.id)) {
         activeMessages.add(newMsg);
       }
-      conv.lastMessage = newMsg.content;
+      conv.lastMessage = newMsg.content.isNotEmpty
+          ? newMsg.content
+          : (newMsg.sharedContent?.title ?? 'Shared content');
       conv.lastMessageTime = 'Just now';
       conv.unreadCount = 0;
       _moveConversationToTop(conv);
@@ -610,6 +616,50 @@ class ChatController extends GetxController with WidgetsBindingObserver {
           snackPosition: SnackPosition.BOTTOM,
         );
       }
+    } finally {
+      isSendingMessage.value = false;
+    }
+  }
+
+  /// Sends rich shared content (Post, Discussion, Event, Profile) into a conversation.
+  Future<void> sendSharedContent(
+    ChatConversationModel conv,
+    SharedContentModel sharedContent, {
+    String text = '',
+  }) async {
+    isSendingMessage.value = true;
+    try {
+      final newMsg = await repository.sendMessage(
+        conv.id,
+        text,
+        messageType: 'text',
+        sharedContent: sharedContent,
+      );
+      final currentRoom = activeRoomId.value ?? activeConversation.value?.id;
+      if (currentRoom == conv.id &&
+          !activeMessages.any((message) => message.id == newMsg.id)) {
+        activeMessages.add(newMsg);
+      }
+      conv.lastMessage = text.isNotEmpty
+          ? text
+          : (newMsg.sharedContent?.title ?? 'Shared content');
+      conv.lastMessageTime = 'Just now';
+      conv.unreadCount = 0;
+      _moveConversationToTop(conv);
+      conversations.refresh();
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('[CHAT-API] sendSharedContent failed: $e');
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Failed to share',
+          'Unable to share content to chat. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      rethrow;
     } finally {
       isSendingMessage.value = false;
     }
@@ -869,7 +919,9 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     final idx = conversations.indexWhere((c) => c.id == message.conversationId);
     if (idx != -1) {
       final conv = conversations[idx];
-      conv.lastMessage = message.content;
+      conv.lastMessage = message.content.isNotEmpty
+          ? message.content
+          : (message.sharedContent?.title ?? 'Shared content');
       conv.lastMessageTime = 'Just now';
       if (activeId != message.conversationId && !isDuplicate) {
         conv.unreadCount += 1;

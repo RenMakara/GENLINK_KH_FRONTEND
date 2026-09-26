@@ -62,28 +62,53 @@ void main() {
   });
 
   group('QuickCreatePostCard Widget Tests', () {
-    testWidgets('renders compact share composer when userName is null', (
+    testWidgets('renders compact share composer with prompt and action icons', (
       tester,
     ) async {
-      bool tapped = false;
+      bool textTapped = false;
+      bool photoTapped = false;
+      bool cameraTapped = false;
+      bool moreTapped = false;
 
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
-          home: Scaffold(body: QuickCreatePostCard(onTap: () => tapped = true)),
+          home: Scaffold(
+            body: QuickCreatePostCard(
+              onTap: () => textTapped = true,
+              onTapPhoto: () => photoTapped = true,
+              onTapCamera: () => cameraTapped = true,
+              onTapMore: () => moreTapped = true,
+            ),
+          ),
         ),
       );
 
-      expect(find.text('Share something with your community.'), findsOneWidget);
+      expect(find.text("What's on your mind?"), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
 
-      await tester.tap(find.byType(QuickCreatePostCard));
+      await tester.tap(find.text("What's on your mind?"));
       await tester.pumpAndSettle();
-      expect(tapped, isTrue);
+      expect(textTapped, isTrue);
+
+      await tester.tap(find.byIcon(Icons.image_outlined));
+      await tester.pumpAndSettle();
+      expect(photoTapped, isTrue);
+
+      await tester.tap(find.byIcon(Icons.camera_alt_outlined));
+      await tester.pumpAndSettle();
+      expect(cameraTapped, isTrue);
+
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+      expect(moreTapped, isTrue);
     });
 
-    testWidgets('keeps the compact share composer when userName is provided', (
+    testWidgets('renders user avatar fallback when userName is provided', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -94,7 +119,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Share something with your community.'), findsOneWidget);
+      expect(find.text("What's on your mind?"), findsOneWidget);
+      expect(find.text('S'), findsOneWidget);
     });
   });
 

@@ -9,6 +9,7 @@ import 'package:genlink_frontend/features/splash/presentation/widgets/splash_loa
 import 'package:genlink_frontend/features/splash/presentation/widgets/splash_orbit_system.dart';
 import 'package:genlink_frontend/features/splash/presentation/widgets/splash_tagline.dart';
 import 'package:genlink_frontend/features/splash/presentation/widgets/splash_wordmark.dart';
+import 'package:genlink_frontend/features/splash/presentation/transitions/splash_to_auth_transition.dart';
 
 void main() {
   setUp(() {
@@ -172,5 +173,103 @@ void main() {
     // Advance another 10 seconds
     await tester.pump(const Duration(seconds: 10));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('SplashOrbitSystem handles exitAnimation phases cleanly', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final orbitController = AnimationController(
+      vsync: const TestVSync(),
+      duration: const Duration(seconds: 22),
+    );
+    final breathingController = AnimationController(
+      vsync: const TestVSync(),
+      duration: const Duration(milliseconds: 4500),
+    );
+    final exitController = AnimationController(
+      vsync: const TestVSync(),
+      duration: const Duration(milliseconds: 1400),
+    );
+
+    await tester.pumpWidget(
+      GetMaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SplashOrbitSystem(
+              orbitAnimation: orbitController,
+              breathingAnimation: breathingController,
+              exitAnimation: exitController,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(SplashOrbitSystem), findsOneWidget);
+    expect(find.byType(SplashFeatureTile), findsNWidgets(4));
+
+    // Phase 2: Orbit Acceleration (t: 0.0 -> 0.18)
+    exitController.value = 0.10;
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    // Phase 3: Fly-out (t: 0.18 -> 0.52)
+    exitController.value = 0.35;
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    // Phase 4: Logo pulse (t: 0.45 -> 0.55)
+    exitController.value = 0.50;
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    orbitController.dispose();
+    breathingController.dispose();
+    exitController.dispose();
+  });
+
+  testWidgets('SplashToAuthTransition provides zooming logo bridge and reveals auth screen', (
+    tester,
+  ) async {
+    final animationController = AnimationController(
+      vsync: const TestVSync(),
+      duration: const Duration(milliseconds: 650),
+    );
+
+    await tester.pumpWidget(
+      GetMaterialApp(
+        home: Builder(
+          builder: (context) {
+            return SplashToAuthTransition().buildTransition(
+              context,
+              null,
+              null,
+              animationController,
+              const AlwaysStoppedAnimation(0.0),
+              const Scaffold(body: Text('Welcome Screen Content')),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Welcome Screen Content'), findsOneWidget);
+
+    animationController.value = 0.5;
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    animationController.value = 1.0;
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    animationController.dispose();
   });
 }

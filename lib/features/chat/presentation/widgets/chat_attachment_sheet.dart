@@ -7,13 +7,13 @@ class ChatAttachmentSheet extends StatelessWidget {
   final VoidCallback onGalleryTap;
   final VoidCallback onFileTap;
   final VoidCallback onLocationTap;
-  final VoidCallback onSendMoneyTap;
-  final VoidCallback onRequestMoneyTap;
-  final VoidCallback onScanKhqrTap;
   final VoidCallback onSharePostTap;
   final VoidCallback onShareEventTap;
   final VoidCallback onShareDiscussionTap;
   final VoidCallback onShareProfileTap;
+  final VoidCallback? onSendMoneyTap;
+  final VoidCallback? onRequestMoneyTap;
+  final VoidCallback? onScanKhqrTap;
 
   const ChatAttachmentSheet({
     super.key,
@@ -21,13 +21,13 @@ class ChatAttachmentSheet extends StatelessWidget {
     required this.onGalleryTap,
     required this.onFileTap,
     required this.onLocationTap,
-    required this.onSendMoneyTap,
-    required this.onRequestMoneyTap,
-    required this.onScanKhqrTap,
     required this.onSharePostTap,
     required this.onShareEventTap,
     required this.onShareDiscussionTap,
     required this.onShareProfileTap,
+    this.onSendMoneyTap,
+    this.onRequestMoneyTap,
+    this.onScanKhqrTap,
   });
 
   static void show(
@@ -36,13 +36,13 @@ class ChatAttachmentSheet extends StatelessWidget {
     required VoidCallback onGalleryTap,
     required VoidCallback onFileTap,
     required VoidCallback onLocationTap,
-    required VoidCallback onSendMoneyTap,
-    required VoidCallback onRequestMoneyTap,
-    required VoidCallback onScanKhqrTap,
     required VoidCallback onSharePostTap,
     required VoidCallback onShareEventTap,
     required VoidCallback onShareDiscussionTap,
     required VoidCallback onShareProfileTap,
+    VoidCallback? onSendMoneyTap,
+    VoidCallback? onRequestMoneyTap,
+    VoidCallback? onScanKhqrTap,
   }) {
     Get.bottomSheet(
       ChatAttachmentSheet(
@@ -50,13 +50,13 @@ class ChatAttachmentSheet extends StatelessWidget {
         onGalleryTap: onGalleryTap,
         onFileTap: onFileTap,
         onLocationTap: onLocationTap,
-        onSendMoneyTap: onSendMoneyTap,
-        onRequestMoneyTap: onRequestMoneyTap,
-        onScanKhqrTap: onScanKhqrTap,
         onSharePostTap: onSharePostTap,
         onShareEventTap: onShareEventTap,
         onShareDiscussionTap: onShareDiscussionTap,
         onShareProfileTap: onShareProfileTap,
+        onSendMoneyTap: onSendMoneyTap,
+        onRequestMoneyTap: onRequestMoneyTap,
+        onScanKhqrTap: onScanKhqrTap,
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -183,73 +183,9 @@ class ChatAttachmentSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Text(
-                'chat.genlinkFinance'.tr.isNotEmpty &&
-                        'chat.genlinkFinance'.tr != 'chat.genlinkFinance'
-                    ? 'chat.genlinkFinance'.tr
-                    : 'GenLink Finance (KHQR / Bakong)',
-                style: TextStyle(
-                  color: textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildActionItem(
-                    icon: Icons.payments_rounded,
-                    label: 'chat.sendMoney'.tr.isNotEmpty && 'chat.sendMoney'.tr != 'chat.sendMoney'
-                        ? 'chat.sendMoney'.tr
-                        : 'Send Money',
-                    color: AppColors.chatPrimary,
-                    isDark: isDark,
-                    onTap: () {
-                      Get.back();
-                      onSendMoneyTap();
-                    },
-                  ),
-                  _buildActionItem(
-                    icon: Icons.request_quote_rounded,
-                    label: 'chat.requestMoney'.tr.isNotEmpty && 'chat.requestMoney'.tr != 'chat.requestMoney'
-                        ? 'chat.requestMoney'.tr
-                        : 'Request Money',
-                    color: AppColors.chatPrimary,
-                    isDark: isDark,
-                    onTap: () {
-                      Get.back();
-                      onRequestMoneyTap();
-                    },
-                  ),
-                  _buildActionItem(
-                    icon: Icons.qr_code_scanner_rounded,
-                    label: 'chat.scanKhqr'.tr.isNotEmpty && 'chat.scanKhqr'.tr != 'chat.scanKhqr'
-                        ? 'chat.scanKhqr'.tr
-                        : 'Scan KHQR',
-                    color: AppColors.chatPrimary,
-                    isDark: isDark,
-                    onTap: () {
-                      Get.back();
-                      onScanKhqrTap();
-                    },
-                  ),
-                  const SizedBox(width: 60),
-                ],
-              ),
-            ),
-
-            Divider(height: 28, color: dividerColor),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text(
                 'chat.shareContent'.tr.isNotEmpty && 'chat.shareContent'.tr != 'chat.shareContent'
                     ? 'chat.shareContent'.tr
-                    : 'Share GenLink Content',
+                    : 'Share on GenLink',
                 style: TextStyle(
                   color: textMuted,
                   fontSize: 12,

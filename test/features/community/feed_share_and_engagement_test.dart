@@ -133,6 +133,8 @@ class _MockChatRepository implements ChatRepositoryImpl {
   @override
   Future<List<ChatMessageModel>> getMessages(String conversationId, {int page = 1, int limit = 50}) async => [];
 
+  final List<SharedContentModel> sentSharedContents = [];
+
   @override
   Future<ChatMessageModel> sendMessage(
     String conversationId,
@@ -141,8 +143,15 @@ class _MockChatRepository implements ChatRepositoryImpl {
     String? mediaUrl,
     ChatReplyReference? replyTo,
     String? localId,
+    SharedContentModel? sharedContent,
   }) async {
-    sentMessages.add('$conversationId: $content');
+    final effectiveContent = content.isNotEmpty
+        ? content
+        : (sharedContent?.previewText ?? '');
+    sentMessages.add('$conversationId: $effectiveContent');
+    if (sharedContent != null) {
+      sentSharedContents.add(sharedContent);
+    }
     return ChatMessageModel(
       id: 'msg-1',
       conversationId: conversationId,

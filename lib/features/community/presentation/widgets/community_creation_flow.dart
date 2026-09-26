@@ -42,6 +42,22 @@ abstract final class CommunityCreationFlow {
     );
   }
 
+  static Future<T?> openCreatePostWithPhoto<T>([BuildContext? context]) async {
+    return Get.to<T>(
+      () => const CreatePostScreen(autoOpenGallery: true),
+      routeName: '/CreatePostScreen',
+      transition: Transition.cupertino,
+    );
+  }
+
+  static Future<T?> openCreatePostWithCamera<T>([BuildContext? context]) async {
+    return Get.to<T>(
+      () => const CreatePostScreen(autoOpenCamera: true),
+      routeName: '/CreatePostScreen',
+      transition: Transition.cupertino,
+    );
+  }
+
   static Future<T?> openCreateStory<T>([BuildContext? context]) async {
     final ctx = context ?? Get.context;
     if (ctx != null) {

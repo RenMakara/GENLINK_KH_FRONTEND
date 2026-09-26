@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 
@@ -21,6 +22,73 @@ class AuthBackgroundShell extends StatelessWidget {
   }
 }
 
+/// Independent [TickerProvider] for the shared auth background animation.
+class _SharedAuthBackgroundTickerProvider implements TickerProvider {
+  const _SharedAuthBackgroundTickerProvider();
+
+  @override
+  Ticker createTicker(TickerCallback onTick) =>
+      Ticker(onTick, debugLabel: 'SharedAuthBackgroundTicker');
+}
+
+/// Global coordinator that maintains a single, continuous 12-second wave loop
+/// shared across all active authentication screens.
+///
+/// Benefits:
+/// 1. Route transitions (e.g. Login -> Register -> Forgot Password) do NOT
+///    reset the background wave animation. The waves remain at the exact same
+///    position and phase across screen switches.
+/// 2. Eliminates duplicate animation loops during page transitions, saving CPU
+///    and GPU cycles.
+/// 3. Automatically disposed when the last auth screen unmounts.
+class SharedAuthBackgroundCoordinator {
+  SharedAuthBackgroundCoordinator._();
+  static final SharedAuthBackgroundCoordinator instance =
+      SharedAuthBackgroundCoordinator._();
+
+  static const _masterDuration = Duration(seconds: 12);
+  static const _staticFrame = 0.23;
+
+  AnimationController? _controller;
+  int _refCount = 0;
+
+  Animation<double> acquire({required bool reduceMotion}) {
+    if (_controller == null) {
+      _controller = AnimationController(
+        vsync: const _SharedAuthBackgroundTickerProvider(),
+        duration: _masterDuration,
+      );
+      if (reduceMotion) {
+        _controller!.value = _staticFrame;
+      } else {
+        _controller!.repeat();
+      }
+    }
+    _refCount++;
+    return _controller!;
+  }
+
+  void release() {
+    _refCount--;
+    if (_refCount <= 0) {
+      _controller?.dispose();
+      _controller = null;
+      _refCount = 0;
+    }
+  }
+
+  void updateReducedMotion(bool reduceMotion) {
+    final c = _controller;
+    if (c == null) return;
+    if (reduceMotion) {
+      c.stop();
+      c.value = _staticFrame;
+    } else if (!c.isAnimating) {
+      c.repeat();
+    }
+  }
+}
+
 class AnimatedAuthBackground extends StatefulWidget {
   const AnimatedAuthBackground({super.key});
 
@@ -28,16 +96,8 @@ class AnimatedAuthBackground extends StatefulWidget {
   State<AnimatedAuthBackground> createState() => _AnimatedAuthBackgroundState();
 }
 
-class _AnimatedAuthBackgroundState extends State<AnimatedAuthBackground>
-    with SingleTickerProviderStateMixin {
-  static const _masterDuration = Duration(seconds: 12);
-  static const _staticFrame = 0.23;
-
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: _masterDuration,
-  );
-
+class _AnimatedAuthBackgroundState extends State<AnimatedAuthBackground> {
+  Animation<double>? _progress;
   bool? _reduceMotion;
 
   @override
@@ -48,21 +108,22 @@ class _AnimatedAuthBackgroundState extends State<AnimatedAuthBackground>
         (media?.disableAnimations ?? false) ||
         (media?.accessibleNavigation ?? false);
 
-    if (_reduceMotion == shouldReduceMotion) return;
-    _reduceMotion = shouldReduceMotion;
-
-    if (shouldReduceMotion) {
-      _controller
-        ..stop()
-        ..value = _staticFrame;
-    } else {
-      _controller.repeat();
+    if (_progress == null) {
+      _reduceMotion = shouldReduceMotion;
+      _progress = SharedAuthBackgroundCoordinator.instance.acquire(
+        reduceMotion: shouldReduceMotion,
+      );
+    } else if (_reduceMotion != shouldReduceMotion) {
+      _reduceMotion = shouldReduceMotion;
+      SharedAuthBackgroundCoordinator.instance.updateReducedMotion(
+        shouldReduceMotion,
+      );
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    SharedAuthBackgroundCoordinator.instance.release();
     super.dispose();
   }
 
@@ -70,13 +131,18 @@ class _AnimatedAuthBackgroundState extends State<AnimatedAuthBackground>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final progressAnim = _progress;
+
+    if (progressAnim == null) {
+      return ColoredBox(color: theme.scaffoldBackgroundColor);
+    }
 
     return ExcludeSemantics(
       child: IgnorePointer(
         child: RepaintBoundary(
           child: CustomPaint(
             painter: _AuthBackgroundPainter(
-              progress: _controller,
+              progress: progressAnim,
               baseColor: theme.scaffoldBackgroundColor,
               cyan: AppColors.communityAccent,
               violet: AppColors.productivityAccent,

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../community/domain/models/community_post_model.dart';
 import '../../domain/models/chat_models.dart';
+import '../utils/shared_content_navigator.dart';
 import 'chat_avatar.dart';
 import 'chat_finance_card.dart';
 import 'chat_story_reply_card.dart';
@@ -66,12 +69,12 @@ class _MessageBubbleState extends State<MessageBubble> {
                 ChatAvatar(
                   avatarUrl: msg.senderAvatar,
                   name: msg.senderName,
-                  radius: 14,
+                  radius: 16,
                   showBadge: false,
                   onTap: widget.onAvatarTap,
                 )
               else
-                const SizedBox(width: 28),
+                const SizedBox(width: 32),
               const SizedBox(width: 8),
             ],
             Flexible(
@@ -133,7 +136,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     }
 
     return Padding(
-      padding: EdgeInsets.only(bottom: widget.showAvatar ? 7 : 3),
+      padding: EdgeInsets.only(bottom: widget.showAvatar ? 10 : 3.5),
       child: Row(
         mainAxisAlignment: isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -143,12 +146,12 @@ class _MessageBubbleState extends State<MessageBubble> {
               ChatAvatar(
                 avatarUrl: msg.senderAvatar,
                 name: msg.senderName,
-                radius: 14,
+                radius: 16,
                 showBadge: false,
                 onTap: widget.onAvatarTap,
               )
             else
-              const SizedBox(width: 28),
+              const SizedBox(width: 32),
             const SizedBox(width: 8),
           ],
 
@@ -163,14 +166,14 @@ class _MessageBubbleState extends State<MessageBubble> {
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width * 0.76,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
                       color: isMine ? AppColors.chatPrimary : incomingBg,
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isMine ? 16 : 4),
-                        bottomRight: Radius.circular(isMine ? 4 : 16),
+                        topLeft: const Radius.circular(18),
+                        topRight: const Radius.circular(18),
+                        bottomLeft: Radius.circular(isMine ? 18 : 4),
+                        bottomRight: Radius.circular(isMine ? 4 : 18),
                       ),
                       border: Border.all(
                         color: isMine ? AppColors.chatPrimary : incomingBorder,
@@ -178,7 +181,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.04),
+                          color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.04),
                           blurRadius: 3,
                           offset: const Offset(0, 1),
                         ),
@@ -215,7 +218,20 @@ class _MessageBubbleState extends State<MessageBubble> {
                               onTap: widget.onStoryTap,
                             ),
 
-                          if (_isSharedContent(msg.messageType))
+                          if (msg.content.isNotEmpty && (msg.sharedContent != null || _isSharedContent(msg.messageType)))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                msg.content,
+                                style: TextStyle(
+                                  color: isMine ? Colors.white : textPrimary,
+                                  fontSize: 15,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+
+                          if (msg.sharedContent != null || _isSharedContent(msg.messageType))
                             _buildSharedContentCard(msg, isMine, isDark, textPrimary, textMuted),
 
                           if (msg.messageType == 'image' && msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty)
@@ -224,12 +240,12 @@ class _MessageBubbleState extends State<MessageBubble> {
                           if (msg.messageType == 'voice')
                             _buildVoiceWidget(msg, isMine, textMuted),
 
-                          if (msg.content.isNotEmpty && msg.messageType != 'story_reply' && !_isSharedContent(msg.messageType))
+                          if (msg.content.isNotEmpty && msg.messageType != 'story_reply' && msg.sharedContent == null && !_isSharedContent(msg.messageType))
                             Text(
                               msg.content,
                               style: TextStyle(
                                 color: isMine ? Colors.white : textPrimary,
-                                fontSize: 14,
+                                fontSize: 15,
                                 height: 1.35,
                               ),
                             )
@@ -240,7 +256,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                 msg.content,
                                 style: TextStyle(
                                   color: isMine ? Colors.white : textPrimary,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                   height: 1.35,
                                 ),
                               ),
@@ -255,27 +271,27 @@ class _MessageBubbleState extends State<MessageBubble> {
                             Text(
                               msg.timeAgo,
                               style: TextStyle(
-                                color: isMine ? Colors.white70 : textMuted,
-                                fontSize: 10,
+                                color: isMine ? Colors.white.withValues(alpha: 0.72) : textMuted,
+                                fontSize: 11,
                               ),
                             ),
                             if (msg.isPinned) ...[
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.push_pin_rounded,
-                                size: 10.5,
-                                color: isMine ? Colors.white70 : AppColors.chatPrimary,
+                                size: 11,
+                                color: isMine ? Colors.white.withValues(alpha: 0.75) : AppColors.chatPrimary,
                               ),
                             ],
                             if (isMine && !msg.isDeleted) ...[
                               const SizedBox(width: 4),
                               Icon(
                                 _getDeliveryIcon(msg.deliveryStatus),
-                                size: 13,
+                                size: 13.5,
                                 color: (msg.deliveryStatus == 'failed' ||
                                         msg.deliveryStatus == 'error')
                                     ? AppColors.danger
-                                    : Colors.white70,
+                                    : Colors.white.withValues(alpha: 0.75),
                               ),
                             ],
                           ],
@@ -466,6 +482,20 @@ class _MessageBubbleState extends State<MessageBubble> {
         type == 'shared_profile';
   }
 
+  static String _resolveUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return '';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      if (trimmed.contains('.cdn.digitaloceanspaces.com')) {
+        return trimmed.replaceFirst('.cdn.digitaloceanspaces.com', '.digitaloceanspaces.com');
+      }
+      return trimmed;
+    }
+    if (trimmed.startsWith('assets/')) return trimmed;
+    final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    return '${AppConfig.apiBaseUrl}$clean';
+  }
+
   Widget _buildSharedContentCard(
     ChatMessageModel msg,
     bool isMine,
@@ -473,6 +503,248 @@ class _MessageBubbleState extends State<MessageBubble> {
     Color textPrimary,
     Color textMuted,
   ) {
+    if (msg.sharedContent != null) {
+      final sc = msg.sharedContent!;
+      final type = sc.type;
+      final typeLabel = type.label;
+      final actionLabel = 'Open $typeLabel →';
+
+      final IconData typeIcon = switch (type) {
+        SharedContentType.post => Icons.article_rounded,
+        SharedContentType.discussion => Icons.forum_rounded,
+        SharedContentType.event => Icons.event_rounded,
+        SharedContentType.profile => Icons.person_rounded,
+      };
+
+      return GestureDetector(
+        onTap: () {
+          if (widget.onSharedContentTap != null) {
+            widget.onSharedContentTap!();
+          } else {
+            SharedContentNavigator.open(context, sc);
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          constraints: const BoxConstraints(maxWidth: 270),
+          decoration: BoxDecoration(
+            color: isMine
+                ? Colors.black.withValues(alpha: 0.18)
+                : (isDark ? AppColors.darkSurfacePrimary : Colors.white),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isMine
+                  ? Colors.white.withValues(alpha: 0.22)
+                  : (isDark
+                      ? AppColors.darkBorderSubtle
+                      : AppColors.lightBorderSubtle),
+            ),
+            boxShadow: isMine
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (sc.thumbnailUrl != null && sc.thumbnailUrl!.trim().isNotEmpty) ...[
+                  if (CommunityPostModel.isVideoUrl(sc.thumbnailUrl!))
+                    Container(
+                      height: 100,
+                      width: double.infinity,
+                      color: isDark ? Colors.black38 : Colors.black12,
+                      child: Center(
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.chatPrimary.withValues(alpha: 0.85),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                      ),
+                    )
+                  else () {
+                    final resolvedThumb = _resolveUrl(sc.thumbnailUrl!);
+                    if (resolvedThumb.isEmpty) return const SizedBox.shrink();
+                    return SizedBox(
+                      height: 110,
+                      width: double.infinity,
+                      child: resolvedThumb.startsWith('assets/')
+                          ? Image.asset(
+                              resolvedThumb,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            )
+                          : Image.network(
+                              resolvedThumb,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
+                    );
+                  }(),
+                ],
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.chatPrimary
+                                  .withValues(alpha: isMine ? 0.35 : 0.14),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  typeIcon,
+                                  size: 11,
+                                  color: isMine
+                                      ? Colors.white
+                                      : AppColors.chatPrimary,
+                                ),
+                                const SizedBox(width: 3.5),
+                                Text(
+                                  typeLabel.toUpperCase(),
+                                  style: TextStyle(
+                                    color: isMine
+                                        ? Colors.white
+                                        : AppColors.chatPrimary,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (sc.authorName != null &&
+                              sc.authorName!.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                sc.authorName!,
+                                style: TextStyle(
+                                  color: isMine
+                                      ? Colors.white.withValues(alpha: 0.85)
+                                      : textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        sc.title,
+                        style: TextStyle(
+                          color: isMine ? Colors.white : textPrimary,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (sc.previewText != null &&
+                          sc.previewText!.isNotEmpty &&
+                          sc.previewText != sc.title) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          sc.previewText!,
+                          style: TextStyle(
+                            color: isMine
+                                ? Colors.white.withValues(alpha: 0.78)
+                                : textMuted,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (sc.subtitle != null && sc.subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              type == SharedContentType.event
+                                  ? Icons.location_on_rounded
+                                  : Icons.alternate_email_rounded,
+                              size: 11,
+                              color: isMine
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : textMuted,
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                sc.subtitle!,
+                                style: TextStyle(
+                                  color: isMine
+                                      ? Colors.white.withValues(alpha: 0.7)
+                                      : textMuted,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            actionLabel,
+                            style: TextStyle(
+                              color: isMine
+                                  ? Colors.white
+                                  : AppColors.chatPrimary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     IconData icon = Icons.share_rounded;
     String badge = 'GenLink';
 

@@ -139,7 +139,7 @@ void main() {
           reason: 'Story badge must not use bright blue — use neutral dark/light adaptive color');
     });
 
-    testWidgets('3. Quick Create Post Card is simplified to avatar + prompt without action icon row', (tester) async {
+    testWidgets('3. Quick Create Post Card is single compact row with avatar, prompt, and compact action icons', (tester) async {
       bool tapped = false;
 
       await tester.pumpWidget(
@@ -161,9 +161,12 @@ void main() {
       expect(find.byType(QuickCreatePostCard), findsOneWidget);
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-      // Verify NONE of the 8 colorful action icons exist
-      expect(find.byIcon(Icons.image_outlined), findsNothing);
-      expect(find.byIcon(Icons.camera_alt_outlined), findsNothing);
+      // Verify compact single-row actions exist
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+
+      // Verify bloated multi-row icons do NOT exist
       expect(find.byIcon(Icons.gif_box_outlined), findsNothing);
       expect(find.byIcon(Icons.bar_chart_rounded), findsNothing);
       expect(find.byIcon(Icons.sentiment_satisfied_alt_outlined), findsNothing);
@@ -171,8 +174,8 @@ void main() {
       expect(find.byIcon(Icons.location_on_outlined), findsNothing);
       expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
 
-      // Tap card
-      await tester.tap(find.byType(QuickCreatePostCard));
+      // Tap card prompt
+      await tester.tap(find.text("What's on your mind?"));
       await tester.pumpAndSettle();
       expect(tapped, isTrue);
     });

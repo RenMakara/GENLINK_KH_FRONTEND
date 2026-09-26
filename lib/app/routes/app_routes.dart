@@ -23,6 +23,7 @@ abstract final class AppRoutes {
   static const friendRequests = '/friend-requests';
   static const chat = '/chat';
   static const chatDetail = '/chat/detail';
+  static const postDetail = '/post/detail';
 
   static const quizDashboard = '/quiz/dashboard';
   static const quizCategories = '/quiz/categories';

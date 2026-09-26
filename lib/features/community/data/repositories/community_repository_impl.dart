@@ -71,9 +71,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<CommunityPostModel> getPostDetails(String postId) async {
-    final posts = await remoteDataSource.fetchPosts();
-    return posts.firstWhere((p) => p.id == postId, orElse: () => posts.first);
+  Future<CommunityPostModel> getPostDetails(String postId) {
+    return remoteDataSource.fetchPostDetail(postId);
   }
 
   @override

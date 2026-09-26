@@ -85,7 +85,7 @@ class AuthChoiceScreen extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
             children: [
-              TextSpan(text: '${'auth.welcomeTo'.tr} '),
+              TextSpan(text: '${'auth.welcomeTo'.tr} \n'),
               const WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
                 child: AppWordmark(height: 26),

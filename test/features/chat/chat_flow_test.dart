@@ -863,9 +863,9 @@ void main() {
       expect(find.text('Hello! How are you doing today?'), findsOneWidget);
       expect(find.text('Doing great! Thanks for asking.'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.emoji_emotions_outlined), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Testing message');
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(find.byIcon(Icons.send_rounded), findsOneWidget);
     });
 
@@ -2286,7 +2286,7 @@ void main() {
         (_) async => Response(
           requestOptions: RequestOptions(path: '/unread-count'),
           statusCode: 200,
-          data: {'success': true, 'data': {'unreadCount': 5}},
+          data: {'success': true, 'data': {'unreadCount': 0}},
         ),
       );
 

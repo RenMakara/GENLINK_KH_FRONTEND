@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../controllers/splash_controller.dart';
 import '../widgets/splash_background.dart';
 import '../widgets/splash_loading_indicator.dart';
 import '../widgets/splash_orbit_system.dart';
@@ -14,6 +17,13 @@ import '../widgets/splash_wordmark.dart';
 /// - 3D orbital ecosystem with the 4 upright feature icons (Community, Growth, Learning, Opportunity).
 /// - Central GL logo with subtle breathing animation.
 /// - 5-phase smooth entrance animation.
+/// - Fluid exit animation sequence:
+///   - Phase 1: Normal orbit
+///   - Phase 2: Orbit acceleration
+///   - Phase 3: Physical tile fly-out with momentum and swell
+///   - Phase 4: Center logo reaction (subtle squeeze -> 1.04 pulse)
+///   - Phase 5: Smooth logo zoom bridge into First Auth Screen
+///   - Phase 6: First Auth Screen coordinated reveal
 /// - Responsive layout adapting smoothly to compact and large devices.
 /// - Dark Mode and Reduced Motion support.
 class SplashScreen extends StatefulWidget {
@@ -26,6 +36,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _entranceController;
+  late final AnimationController _exitController;
   late final AnimationController _orbitController;
   late final AnimationController _breathingController;
   late final AnimationController _ambientController;
@@ -39,6 +50,12 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<Offset> _taglineSlide;
   late final Animation<double> _taglineFade;
   late final Animation<double> _loadingFade;
+
+  // Exit Animations
+  late final Animation<double> _surroundingExitFade;
+
+  bool _hasNavigated = false;
+  String? _destinationRoute;
 
   @override
   void initState() {
@@ -129,16 +146,88 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 18),
     );
 
-    // Launch animations
+    // 5. Exit Animation Controller (Duration: ~1400ms)
+    _exitController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+
+    // Surrounding UI fades out during Phase 4 (0.36 -> 0.54)
+    _surroundingExitFade = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _exitController,
+        curve: const Interval(0.36, 0.54, curve: Curves.easeOut),
+      ),
+    );
+
+    _exitController.addListener(_onExitTick);
+    _exitController.addStatusListener(_onExitStatus);
+
+    // Register callback with SplashController if available
+    if (Get.isRegistered<SplashController>()) {
+      final controller = Get.find<SplashController>();
+      controller.onReadyToExit = _startExitSequence;
+      if (controller.resolvedDestination != null) {
+        _startExitSequence(controller.resolvedDestination!);
+      }
+    }
+
+    // Launch entrance and continuous animations
     _entranceController.forward();
     _orbitController.repeat();
     _breathingController.repeat(reverse: true);
     _ambientController.repeat();
   }
 
+  void _startExitSequence(String route) {
+    if (!mounted || _hasNavigated) return;
+    _destinationRoute = route;
+
+    final reducedMotion =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reducedMotion) {
+      _hasNavigated = true;
+      Get.offAllNamed<void>(route, arguments: const {'fromSplash': true});
+      return;
+    }
+
+    if (!_exitController.isAnimating && _exitController.value == 0.0) {
+      _exitController.forward();
+    }
+  }
+
+  void _onExitTick() {
+    if (_hasNavigated || !mounted) return;
+    // When logo hits pulse peak at t >= 0.55, trigger the custom route transition
+    if (_exitController.value >= 0.55 && _destinationRoute != null) {
+      _hasNavigated = true;
+      Get.offAllNamed<void>(
+        _destinationRoute!,
+        arguments: const {'fromSplash': true},
+      );
+    }
+  }
+
+  void _onExitStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && !_hasNavigated && mounted) {
+      _hasNavigated = true;
+      final target = _destinationRoute ?? AppRoutes.welcome;
+      Get.offAllNamed<void>(target, arguments: const {'fromSplash': true});
+    }
+  }
+
   @override
   void dispose() {
+    if (Get.isRegistered<SplashController>()) {
+      final controller = Get.find<SplashController>();
+      if (controller.onReadyToExit == _startExitSequence) {
+        controller.onReadyToExit = null;
+      }
+    }
+    _exitController.removeListener(_onExitTick);
+    _exitController.removeStatusListener(_onExitStatus);
     _entranceController.dispose();
+    _exitController.dispose();
     _orbitController.dispose();
     _breathingController.dispose();
     _ambientController.dispose();
@@ -206,16 +295,20 @@ class _SplashScreenState extends State<SplashScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Top Section: Wordmark (Phase 1)
+                        // Top Section: Wordmark (Phase 1 Entrance, Phase 4 Exit Fade)
                         Align(
                           alignment: Alignment.centerLeft,
                           child: AnimatedBuilder(
-                            animation: _entranceController,
+                            animation: Listenable.merge([
+                              _entranceController,
+                              _exitController,
+                            ]),
                             builder: (context, child) {
                               return Opacity(
                                 opacity: reducedMotion
                                     ? 1.0
-                                    : _wordmarkFade.value,
+                                    : (_wordmarkFade.value *
+                                        _surroundingExitFade.value),
                                 child: child,
                               );
                             },
@@ -225,7 +318,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
 
-                        // Center Section: Orbit System & Central GL Logo (Phase 2 & 3)
+                        // Center Section: Orbit System & Central GL Logo (Phase 2 & 3 Entrance & Exit)
                         Padding(
                           padding: EdgeInsets.symmetric(
                             vertical: compact ? AppSpacing.sm : AppSpacing.md,
@@ -236,6 +329,7 @@ class _SplashScreenState extends State<SplashScreen>
                               return SplashOrbitSystem(
                                 orbitAnimation: _orbitController,
                                 breathingAnimation: _breathingController,
+                                exitAnimation: _exitController,
                                 entranceScale: reducedMotion
                                     ? 1.0
                                     : (_glScale.value * _orbitScale.value),
@@ -250,18 +344,22 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
 
-                        // Bottom Section: Tagline & Loading Indicator (Phase 4 & 5)
+                        // Bottom Section: Tagline & Loading Indicator (Phase 4 & 5 Entrance, Phase 4 Exit Fade)
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // Tagline: Connect Grow Thrive
                             AnimatedBuilder(
-                              animation: _entranceController,
+                              animation: Listenable.merge([
+                                _entranceController,
+                                _exitController,
+                              ]),
                               builder: (context, child) {
                                 return Opacity(
                                   opacity: reducedMotion
                                       ? 1.0
-                                      : _taglineFade.value,
+                                      : (_taglineFade.value *
+                                          _surroundingExitFade.value),
                                   child: SlideTransition(
                                     position: reducedMotion
                                         ? const AlwaysStoppedAnimation(
@@ -281,12 +379,16 @@ class _SplashScreenState extends State<SplashScreen>
 
                             // Loading Progress Indicator
                             AnimatedBuilder(
-                              animation: _entranceController,
+                              animation: Listenable.merge([
+                                _entranceController,
+                                _exitController,
+                              ]),
                               builder: (context, child) {
                                 return Opacity(
                                   opacity: reducedMotion
                                       ? 1.0
-                                      : _loadingFade.value,
+                                      : (_loadingFade.value *
+                                          _surroundingExitFade.value),
                                   child: child,
                                 );
                               },
@@ -310,3 +412,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

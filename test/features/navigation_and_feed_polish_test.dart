@@ -94,17 +94,17 @@ void main() {
   testWidgets('QuickCreatePostCard triggers callbacks with tactile feedback', (
     tester,
   ) async {
-    bool postTapped = false;
-    bool discussionTapped = false;
-    bool eventTapped = false;
+    bool photoTapped = false;
+    bool cameraTapped = false;
+    bool moreTapped = false;
 
     await tester.pumpWidget(
       createTestApp(
         home: Scaffold(
           body: QuickCreatePostCard(
-            onTapPost: () => postTapped = true,
-            onTapDiscussion: () => discussionTapped = true,
-            onTapEvent: () => eventTapped = true,
+            onTapPhoto: () => photoTapped = true,
+            onTapCamera: () => cameraTapped = true,
+            onTapMore: () => moreTapped = true,
           ),
         ),
       ),
@@ -113,15 +113,15 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.image_outlined));
     await tester.pumpAndSettle();
-    expect(postTapped, isTrue);
+    expect(photoTapped, isTrue);
 
-    await tester.tap(find.byIcon(Icons.bar_chart_rounded));
+    await tester.tap(find.byIcon(Icons.camera_alt_outlined));
     await tester.pumpAndSettle();
-    expect(discussionTapped, isTrue);
+    expect(cameraTapped, isTrue);
 
-    await tester.tap(find.byIcon(Icons.add_box_outlined));
+    await tester.tap(find.byIcon(Icons.add_circle_outline));
     await tester.pumpAndSettle();
-    expect(eventTapped, isTrue);
+    expect(moreTapped, isTrue);
   });
 
   testWidgets(

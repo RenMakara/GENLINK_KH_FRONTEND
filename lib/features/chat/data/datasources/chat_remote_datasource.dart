@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_endpoints.dart';
@@ -128,6 +129,7 @@ class ChatRemoteDataSource {
     String messageType = 'text',
     String? mediaUrl,
     ChatReplyReference? replyTo,
+    SharedContentModel? sharedContent,
   }) async {
     final response = await guardDio(
       () => dio.post<dynamic>(
@@ -136,6 +138,7 @@ class ChatRemoteDataSource {
           'type': _toBackendType(messageType),
           'content': content,
           'mediaUrl': mediaUrl,
+          if (sharedContent != null) 'sharedContent': jsonEncode(sharedContent.toJson()),
           if (replyTo != null) ...{
             'replyToMessageId': replyTo.messageId,
             'replyTo': replyTo.toJson(),
@@ -147,6 +150,9 @@ class ChatRemoteDataSource {
     var msg = ChatMessageModel.fromJson(data, conversationId: conversationId);
     if (replyTo != null && msg.replyTo == null) {
       msg = msg.copyWith(replyTo: replyTo);
+    }
+    if (sharedContent != null && msg.sharedContent == null) {
+      msg = msg.copyWith(sharedContent: sharedContent);
     }
     if (messageType != 'text' && (msg.messageType == 'text' || msg.messageType.isEmpty)) {
       msg = msg.copyWith(messageType: messageType);

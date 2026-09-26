@@ -22,8 +22,20 @@ import '../../../media/presentation/media_picker.dart';
 class CreatePostScreen extends StatefulWidget {
   final CommunityPostModel? initialPost;
   final MediaPicker? mediaPicker;
+  final List<String>? initialImages;
+  final String? initialVideo;
+  final bool autoOpenGallery;
+  final bool autoOpenCamera;
 
-  const CreatePostScreen({super.key, this.initialPost, this.mediaPicker});
+  const CreatePostScreen({
+    super.key,
+    this.initialPost,
+    this.mediaPicker,
+    this.initialImages,
+    this.initialVideo,
+    this.autoOpenGallery = false,
+    this.autoOpenCamera = false,
+  });
 
   @override
   State<CreatePostScreen> createState() => CreatePostScreenState();
@@ -88,6 +100,27 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         ..._attachedImages,
         ?_attachedVideo,
       ];
+    } else {
+      if (widget.initialImages != null && widget.initialImages!.isNotEmpty) {
+        _attachedImages = List.from(widget.initialImages!);
+        _attachedMediaOrder = List.from(widget.initialImages!);
+      }
+      if (widget.initialVideo != null && widget.initialVideo!.isNotEmpty) {
+        _attachedVideo = widget.initialVideo;
+        _attachedMediaOrder.add(widget.initialVideo!);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _setVideoFile(widget.initialVideo!);
+        });
+      }
+      if (widget.autoOpenGallery) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _pickGalleryMedia();
+        });
+      } else if (widget.autoOpenCamera) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _pickCameraImage();
+        });
+      }
     }
     _textController.addListener(() {
       setState(() {});

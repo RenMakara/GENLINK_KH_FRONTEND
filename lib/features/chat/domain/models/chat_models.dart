@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class StoryReference {
   final String? storyId;
   final String? mediaUrl;
@@ -145,6 +147,80 @@ class ChatReactionModel {
       };
 }
 
+enum SharedContentType {
+  post,
+  discussion,
+  event,
+  profile;
+
+  String get label => switch (this) {
+        SharedContentType.post => 'Post',
+        SharedContentType.discussion => 'Discussion',
+        SharedContentType.event => 'Event',
+        SharedContentType.profile => 'Profile',
+      };
+}
+
+class SharedContentModel {
+  final SharedContentType type;
+  final String id;
+  final String title;
+  final String? previewText;
+  final String? thumbnailUrl;
+  final String? authorName;
+  final String? authorAvatar;
+  final String? subtitle;
+  final Map<String, dynamic>? metadata;
+
+  const SharedContentModel({
+    required this.type,
+    required this.id,
+    required this.title,
+    this.previewText,
+    this.thumbnailUrl,
+    this.authorName,
+    this.authorAvatar,
+    this.subtitle,
+    this.metadata,
+  });
+
+  factory SharedContentModel.fromJson(Map<String, dynamic> json) {
+    final rawType = (json['type'] ?? json['contentType'] ?? '').toString().toUpperCase();
+    final type = switch (rawType) {
+      'POST' => SharedContentType.post,
+      'DISCUSSION' || 'TOPIC' => SharedContentType.discussion,
+      'EVENT' => SharedContentType.event,
+      'PROFILE' || 'USER' => SharedContentType.profile,
+      _ => SharedContentType.post,
+    };
+    return SharedContentModel(
+      type: type,
+      id: (json['id'] ?? json['contentId'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      previewText: json['previewText']?.toString() ?? json['description']?.toString() ?? json['preview_text']?.toString(),
+      thumbnailUrl: json['thumbnailUrl']?.toString() ?? json['imageUrl']?.toString() ?? json['avatarUrl']?.toString() ?? json['thumbnail_url']?.toString(),
+      authorName: json['authorName']?.toString() ?? json['author']?.toString() ?? json['displayName']?.toString() ?? json['author_name']?.toString(),
+      authorAvatar: json['authorAvatar']?.toString() ?? json['author_avatar']?.toString(),
+      subtitle: json['subtitle']?.toString(),
+      metadata: json['metadata'] is Map<String, dynamic> ? json['metadata'] as Map<String, dynamic> : null,
+    );
+  }
+
+  String get deepLink => 'genlink://${type.name}/$id';
+
+  Map<String, dynamic> toJson() => {
+        'type': type.name.toUpperCase(),
+        'id': id,
+        'title': title,
+        if (previewText != null) 'previewText': previewText,
+        if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
+        if (authorName != null) 'authorName': authorName,
+        if (authorAvatar != null) 'authorAvatar': authorAvatar,
+        if (subtitle != null) 'subtitle': subtitle,
+        if (metadata != null) 'metadata': metadata,
+      };
+}
+
 class ChatMessageModel {
   final String id;
   final String conversationId;
@@ -160,6 +236,7 @@ class ChatMessageModel {
   final String? mediaUrl;
   final StoryReference? storyReference;
   final ChatFinanceTransaction? financeTransaction;
+  final SharedContentModel? sharedContent;
   final int? voiceDurationSeconds;
   final String deliveryStatus;
   final bool isSystemMessage;
@@ -183,6 +260,7 @@ class ChatMessageModel {
     this.mediaUrl,
     this.storyReference,
     this.financeTransaction,
+    this.sharedContent,
     this.voiceDurationSeconds,
     this.deliveryStatus = 'read',
     this.isSystemMessage = false,
@@ -233,6 +311,24 @@ class ChatMessageModel {
               json['financeTransaction'] as Map<String, dynamic>,
             )
           : null,
+      sharedContent: () {
+        final raw = json['sharedContent'] ?? json['shared_content'];
+        if (raw is Map<String, dynamic>) {
+          return SharedContentModel.fromJson(raw);
+        }
+        if (raw is Map) {
+          return SharedContentModel.fromJson(raw.cast<String, dynamic>());
+        }
+        if (raw is String && raw.trim().isNotEmpty) {
+          try {
+            final decoded = jsonDecode(raw);
+            if (decoded is Map) {
+              return SharedContentModel.fromJson(decoded.cast<String, dynamic>());
+            }
+          } catch (_) {}
+        }
+        return null;
+      }(),
       voiceDurationSeconds: (json['voiceDurationSeconds'] as num?)?.toInt(),
       deliveryStatus: (json['deliveryStatus'] as String?) ?? 'read',
       isSystemMessage: (json['isSystemMessage'] as bool?) ??
@@ -268,6 +364,7 @@ class ChatMessageModel {
     String? mediaUrl,
     StoryReference? storyReference,
     ChatFinanceTransaction? financeTransaction,
+    SharedContentModel? sharedContent,
     int? voiceDurationSeconds,
     String? deliveryStatus,
     bool? isSystemMessage,
@@ -291,6 +388,7 @@ class ChatMessageModel {
       mediaUrl: mediaUrl ?? this.mediaUrl,
       storyReference: storyReference ?? this.storyReference,
       financeTransaction: financeTransaction ?? this.financeTransaction,
+      sharedContent: sharedContent ?? this.sharedContent,
       voiceDurationSeconds: voiceDurationSeconds ?? this.voiceDurationSeconds,
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
       isSystemMessage: isSystemMessage ?? this.isSystemMessage,
@@ -319,6 +417,10 @@ class ChatMessageModel {
       if (storyReference != null) 'storyReference': storyReference!.toJson(),
       if (financeTransaction != null)
         'financeTransaction': financeTransaction!.toJson(),
+      if (sharedContent != null) ...{
+        'sharedContent': sharedContent!.toJson(),
+        'shared_content': sharedContent!.toJson(),
+      },
       if (voiceDurationSeconds != null)
         'voiceDurationSeconds': voiceDurationSeconds,
       'deliveryStatus': deliveryStatus,

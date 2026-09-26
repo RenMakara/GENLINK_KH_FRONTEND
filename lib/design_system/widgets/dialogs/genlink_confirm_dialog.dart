@@ -10,12 +10,12 @@ enum GenLinkDialogType {
   /// Examples: Delete item, Quit Quiz, Cancel Registration.
   danger,
 
-  /// Actions where data might be lost or important reversible actions (orange #F59E0B).
+  /// Actions where data might be lost or important reversible actions (red #E41414).
   /// Examples: Unsaved changes, Reset, Log Out.
   warning,
 
-  /// Discarding unsaved drafts or edits (purple #8B7CF6).
-  /// Examples: Discard Draft, Discard Changes.
+  /// Discarding unsaved drafts or edits (red #E41414).
+  /// Examples: Discard Draft, Discard Changes, Discard Story.
   discard,
 
   /// Standard neutral confirmation (brand blue #1F6FEB).
@@ -265,7 +265,7 @@ class GenLinkConfirmDialog extends StatelessWidget {
       title: title ?? 'auth.logout'.tr,
       message: message ?? 'auth.logoutConfirm'.tr,
       content: content,
-      type: GenLinkDialogType.warning,
+      type: GenLinkDialogType.danger,
       icon: icon ?? Icons.logout_rounded,
       confirmLabel: confirmLabel ?? 'auth.logout'.tr,
       cancelLabel: cancelLabel ?? 'common.cancel'.tr,
@@ -663,22 +663,22 @@ class GenLinkConfirmDialog extends StatelessWidget {
 
       case GenLinkDialogType.warning:
         return _VisualTokens(
-          accentColor: const Color(0xFFF59E0B),
+          accentColor: const Color(0xFFE41414),
           iconContainerColor: isDark
-              ? const Color(0xFF451A03).withValues(alpha: 0.45)
-              : const Color(0xFFFFFBEB),
-          primaryButtonColor: const Color(0xFFEA580C),
+              ? const Color(0xFF450A0A).withValues(alpha: 0.45)
+              : const Color(0xFFFEF2F2),
+          primaryButtonColor: const Color(0xFFE41414),
           defaultIcon: Icons.warning_amber_rounded,
           defaultConfirmLabel: 'common.continue'.tr,
         );
 
       case GenLinkDialogType.discard:
         return _VisualTokens(
-          accentColor: const Color(0xFF8B7CF6),
+          accentColor: const Color(0xFFE41414),
           iconContainerColor: isDark
-              ? const Color(0xFF3B0764).withValues(alpha: 0.45)
-              : const Color(0xFFF5F3FF),
-          primaryButtonColor: const Color(0xFF7C3AED),
+              ? const Color(0xFF450A0A).withValues(alpha: 0.45)
+              : const Color(0xFFFEF2F2),
+          primaryButtonColor: const Color(0xFFE41414),
           defaultIcon: Icons.description_outlined,
           defaultConfirmLabel: 'community.discard'.tr,
         );

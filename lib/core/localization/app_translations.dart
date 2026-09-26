@@ -2587,6 +2587,9 @@ class AppTranslations extends Translations {
     'levelup.streakAtRiskMessage':
         "Complete today's habit check-in to protect your streak!",
     'levelup.streakAtRiskAction': 'Tap → Check in habits',
+    'levelup.checkInNow': 'Check in now →',
+    'levelup.trackDailyProgress': 'Track your daily progress',
+    'levelup.today': 'Today',
     'levelup.grow': 'GROW',
     'levelup.exploreAll': 'Explore all',
     'levelup.habits': 'Habits',
@@ -5246,6 +5249,9 @@ class AppTranslations extends Translations {
     'levelup.streakAtRiskMessage':
         'បញ្ចប់ការចុះឈ្មោះទម្លាប់ថ្ងៃនេះ ដើម្បីការពារការបន្តរបស់អ្នក!',
     'levelup.streakAtRiskAction': 'ចុច → ចុះឈ្មោះទម្លាប់',
+    'levelup.checkInNow': 'កត់ត្រាឥឡូវនេះ →',
+    'levelup.trackDailyProgress': 'តាមដានការរីកចម្រើនប្រចាំថ្ងៃ',
+    'levelup.today': 'ថ្ងៃនេះ',
     'levelup.grow': 'លូតលាស់',
     'levelup.exploreAll': 'រុករកទាំងអស់',
     'levelup.habits': 'ទម្លាប់',

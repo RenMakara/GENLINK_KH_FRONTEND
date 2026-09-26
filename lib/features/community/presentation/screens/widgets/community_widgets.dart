@@ -671,176 +671,210 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 320;
                     final hPad = isCompact ? 4.0 : 6.0;
-                    final gap = isCompact ? 8.0 : 16.0;
 
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // 1. Like (icon + real count)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            onTap: _handleLike,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 40),
+                          child: Material(
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  ScaleTransition(
-                                    scale: _likeScaleAnim,
-                                    child: Icon(
-                                      widget.isLiked
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: widget.isLiked
-                                          ? AppColors.likedAccent
-                                          : textSecondary,
-                                      size: 18,
+                            child: InkWell(
+                              onTap: _handleLike,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    ScaleTransition(
+                                      scale: _likeScaleAnim,
+                                      child: Icon(
+                                        widget.isLiked
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: widget.isLiked
+                                            ? AppColors.likedAccent
+                                            : textSecondary,
+                                        size: 20,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${widget.likes}",
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                          color: widget.isLiked
-                                              ? AppColors.likedAccent
-                                              : textSecondary,
-                                          fontWeight: widget.isLiked
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                          fontSize: 12.5,
-                                        ) ??
-                                        TextStyle(
-                                          color: widget.isLiked
-                                              ? AppColors.likedAccent
-                                              : textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: widget.isLiked
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        // 2. Comment (icon + real count, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            onTap: widget.onCommentTap ?? widget.onTap,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline_rounded,
-                                    color: textSecondary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${widget.replies}",
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                          color: textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w600,
-                                        ) ??
-                                        TextStyle(
-                                          color: textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        // 3. Repost (icon only, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            key: const Key('forum_card_repost_button'),
-                            onTap: widget.onRepostTap ?? () => _handleRepost(context),
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: Icon(
-                                Icons.repeat_rounded,
-                                color: textSecondary,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        // 4. Save (icon only, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            key: const Key('forum_card_save_button'),
-                            onTap: _handleSave,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: ScaleTransition(
-                                scale: _bookmarkScaleAnim,
-                                child: Icon(
-                                  widget.isBookmarked
-                                      ? Icons.bookmark_rounded
-                                      : Icons.bookmark_border_rounded,
-                                  color: widget.isBookmarked
-                                      ? AppColors.warning
-                                      : textSecondary,
-                                  size: 18,
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${widget.likes}",
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                            color: widget.isLiked
+                                                ? AppColors.likedAccent
+                                                : textSecondary,
+                                            fontWeight: widget.isLiked
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                            fontSize: 12.5,
+                                          ) ??
+                                          TextStyle(
+                                            color: widget.isLiked
+                                                ? AppColors.likedAccent
+                                                : textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: widget.isLiked
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(width: gap),
-                        // 5. Share to Chat (icon only, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            key: const Key('forum_card_share_to_chat_button'),
-                            onTap: () => _handleShareToChat(context),
+                        const SizedBox(width: 4),
+                        // 2. Comment (icon + real count, no text)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 40),
+                          child: Material(
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
+                            child: InkWell(
+                              onTap: widget.onCommentTap ?? widget.onTap,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      color: textSecondary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${widget.replies}",
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                            color: textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                          ) ??
+                                          TextStyle(
+                                            color: textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Icon(
-                                Icons.ios_share_rounded,
-                                color: textSecondary,
-                                size: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // 3. Repost (icon only, matching Feed style)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: InkWell(
+                              key: const Key('forum_card_repost_button'),
+                              onTap: widget.onRepostTap ?? () => _handleRepost(context),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 4,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.repeat_rounded,
+                                    color: textSecondary,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Alignment: Spacer pushes Save & Share to the far right, matching Feed
+                        const Spacer(),
+
+                        // 4. Save (icon only, right-aligned)
+                        Tooltip(
+                          message: widget.isBookmarked
+                              ? 'community.removeBookmark'.tr
+                              : 'community.saveBookmark'.tr,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: InkWell(
+                                key: const Key('forum_card_save_button'),
+                                onTap: _handleSave,
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: hPad,
+                                      vertical: 4,
+                                    ),
+                                    child: ScaleTransition(
+                                      scale: _bookmarkScaleAnim,
+                                      child: Icon(
+                                        widget.isBookmarked
+                                            ? Icons.bookmark_rounded
+                                            : Icons.bookmark_border_rounded,
+                                        color: widget.isBookmarked
+                                            ? AppColors.warning
+                                            : textSecondary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // 5. Share to Chat (icon only, right-aligned)
+                        Tooltip(
+                          message: 'community.shareToChat'.tr.isNotEmpty &&
+                                  'community.shareToChat'.tr != 'community.shareToChat'
+                              ? 'community.shareToChat'.tr
+                              : 'Share',
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: InkWell(
+                                key: const Key('forum_card_share_to_chat_button'),
+                                onTap: () => _handleShareToChat(context),
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: hPad,
+                                      vertical: 4,
+                                    ),
+                                    child: Icon(
+                                      Icons.ios_share_rounded,
+                                      color: textSecondary,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),

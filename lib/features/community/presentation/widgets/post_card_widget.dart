@@ -913,7 +913,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               children: [
                 ConstrainedBox(
                   constraints: const BoxConstraints(
-                    minWidth: 44,
                     minHeight: 44,
                   ),
                   child: Material(
@@ -924,7 +923,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                       onTap: _onLikeTap,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                        padding: const EdgeInsets.only(left: 6, right: 2, top: 6, bottom: 6),
                         child: Center(
                           child: ScaleTransition(
                             scale: _likeScaleAnim,
@@ -959,7 +958,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                       },
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        padding: const EdgeInsets.only(left: 2, right: 6, top: 6, bottom: 6),
                         child: Center(
                           child: Text(
                             "${widget.post.likesCount}",

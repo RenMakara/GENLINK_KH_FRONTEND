@@ -115,6 +115,7 @@ flutter:
 
     # General Images
     - assets/images/
+    - assets/images/level_up/
     - assets/images/profile_covers/
     - assets/splash/
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
+import '../../../../core/services/video_cache_service.dart';
 import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 typedef ShortContentVideoControllerFactory =
@@ -185,7 +186,19 @@ class _ShortContentVideoPlayerState extends State<ShortContentVideoPlayer>
 
     late final ShortContentVideoController nextController;
     try {
-      nextController = widget.controllerFactory(uri);
+      if (identical(widget.controllerFactory, createShortContentVideoController)) {
+        final cached = await VideoCacheService.instance.getCachedFile(widget.videoUrl);
+        if (!_isCurrentGeneration(token)) return;
+        if (cached != null) {
+          nextController = _VideoPlayerControllerAdapter(
+            VideoPlayerController.file(cached),
+          );
+        } else {
+          nextController = widget.controllerFactory(uri);
+        }
+      } else {
+        nextController = widget.controllerFactory(uri);
+      }
     } catch (_) {
       if (mounted && token == _generation) {
         setState(() {
@@ -270,6 +283,15 @@ class _ShortContentVideoPlayerState extends State<ShortContentVideoPlayer>
       }
       return;
     }
+
+    if (controller.isPlaying && controller is _VideoPlayerControllerAdapter) {
+      VideoCacheService.instance.trackPlaybackProgress(
+        widget.videoUrl,
+        controller._controller.value.position,
+        controller._controller.value.duration,
+      );
+    }
+
     setState(() {});
   }
 

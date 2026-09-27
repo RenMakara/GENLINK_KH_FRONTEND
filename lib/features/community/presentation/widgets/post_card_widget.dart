@@ -27,6 +27,7 @@ import 'forum_share_to_chat_sheet.dart';
 import 'repost/repost_bottom_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/storage/genlink_image_cache_manager.dart';
+import '../../../../core/services/video_cache_service.dart';
 import '../../../../core/utils/media_url_resolver.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/images/app_cached_image.dart';
@@ -2064,13 +2065,11 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     }
 
     VideoPlayerController ctrl;
-    final isRemote =
-        trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://');
     try {
-      if (isRemote) {
-        ctrl = VideoPlayerController.networkUrl(Uri.parse(trimmedUrl));
-      } else {
-        ctrl = VideoPlayerController.file(File(trimmedUrl));
+      ctrl = await VideoCacheService.instance.createController(trimmedUrl);
+      if (!mounted || currentToken != _initToken) {
+        ctrl.dispose();
+        return;
       }
     } catch (e) {
       debugPrint('[VideoPostMedia] Failed to create VideoPlayerController: $e');
@@ -2092,7 +2091,7 @@ class _VideoPostMediaState extends State<VideoPostMedia>
 
     try {
       debugPrint(
-          '[VideoPostMedia] Initializing controller for: $trimmedUrl (isRemote: $isRemote)');
+          '[VideoPostMedia] Initializing controller for: $trimmedUrl (${ctrl.dataSourceType.name})');
       await ctrl.initialize();
       if (!mounted || currentToken != _initToken) {
         debugPrint(
@@ -2141,6 +2140,14 @@ class _VideoPostMediaState extends State<VideoPostMedia>
         setState(() => _error = true);
       }
       return;
+    }
+
+    if (ctrl.value.isPlaying) {
+      VideoCacheService.instance.trackPlaybackProgress(
+        widget.videoUrl,
+        ctrl.value.position,
+        ctrl.value.duration,
+      );
     }
 
     setState(() {});

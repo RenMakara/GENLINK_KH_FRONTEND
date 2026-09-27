@@ -8,6 +8,9 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../core/services/video_cache_service.dart';
+import '../../../../core/storage/genlink_image_cache_manager.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/entities/user_settings_entity.dart';
@@ -158,6 +161,29 @@ class SettingsScreen extends GetView<SettingsController> {
                   title: 'settings.about'.tr,
                   subtitle: 'settings.version'.tr,
                   onTap: () => Get.toNamed<void>(AppRoutes.settingsAbout),
+                ),
+              ],
+            ),
+
+            _SectionLabel(text: 'settings.storage'.tr.isNotEmpty && 'settings.storage'.tr != 'settings.storage' ? 'settings.storage'.tr : 'Data & Storage'),
+            _SettingsGroup(
+              rows: [
+                _SettingsRow(
+                  icon: Icons.cleaning_services_rounded,
+                  accent: AppColors.growthAccent,
+                  title: 'Clear Media Cache',
+                  subtitle: 'Free up local video and image disk storage',
+                  onTap: () async {
+                    await VideoCacheService.instance.clearCache();
+                    await GenLinkImageCacheManager().emptyCache();
+                    if (context.mounted) {
+                      AppNotificationBanner.showSuccess(
+                        context: context,
+                        title: 'Cache Cleared',
+                        message: 'Media disk cache has been cleared successfully.',
+                      );
+                    }
+                  },
                 ),
               ],
             ),

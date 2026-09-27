@@ -11,7 +11,7 @@ import '../../../community/presentation/controllers/story_controller.dart';
 import '../../../community/presentation/screens/events_screen.dart';
 import '../../../community/presentation/screens/friend_requests_screen.dart';
 import '../../../community/presentation/screens/story_viewer_screen.dart';
-import '../../../community/presentation/widgets/comments_bottom_sheet.dart';
+import '../../../community/presentation/screens/post_detail_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/finance_screen.dart';
@@ -530,14 +530,36 @@ class NotificationController extends GetxController
           if (!Get.isRegistered<CommunityController>()) {
             CommunityBinding().dependencies();
           }
-          showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => CommentsBottomSheet(postId: targetId),
+          final isCommentOrReply = notif.type == NotificationType.comment ||
+              notif.type == NotificationType.reply ||
+              targetType == 'COMMENT' ||
+              (notif.metadata?['dedupeKey']?.toString().contains('comment') ?? false);
+
+          Get.to<void>(
+            () => PostDetailScreen(
+              postId: targetId,
+              autoOpenComments: isCommentOrReply,
+              highlightCommentId: notif.commentId,
+            ),
           );
           return;
         } catch (_) {}
+      } else {
+        if (context.mounted) {
+          AppNotificationBanner.showInfo(
+            context: context,
+            title: 'chat.contentUnavailable'.tr.isNotEmpty &&
+                    'chat.contentUnavailable'.tr != 'chat.contentUnavailable'
+                ? 'chat.contentUnavailable'.tr
+                : 'Content unavailable',
+            message: 'chat.contentNoLongerAvailable'.tr.isNotEmpty &&
+                    'chat.contentNoLongerAvailable'.tr !=
+                        'chat.contentNoLongerAvailable'
+                ? 'chat.contentNoLongerAvailable'.tr
+                : 'This content is no longer available.',
+          );
+        }
+        return;
       }
     }
 

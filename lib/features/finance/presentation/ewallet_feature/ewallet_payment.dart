@@ -57,7 +57,7 @@ class _PaymentState extends State<Payment> {
     final merchant = widget.merchant?.trim();
 
     if (merchant == null || merchant.isEmpty) {
-      return 'Merchant';
+      return 'finance.ewallet.defaultMerchant'.tr;
     }
 
     return merchant;

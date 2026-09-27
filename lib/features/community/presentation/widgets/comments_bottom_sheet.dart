@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../design_system/colors/app_colors.dart';
@@ -8,14 +10,23 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
+import '../screens/post_detail_screen.dart';
 
 class CommentsBottomSheet extends StatefulWidget {
   final String postId;
+  final CommunityPostModel? post;
+  final String? highlightCommentId;
 
-  const CommentsBottomSheet({super.key, required this.postId});
+  const CommentsBottomSheet({
+    super.key,
+    required this.postId,
+    this.post,
+    this.highlightCommentId,
+  });
 
   @override
   State<CommentsBottomSheet> createState() => _CommentsBottomSheetState();
@@ -29,12 +40,70 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   bool _isSending = false;
   bool _hasText = false;
 
+  CommunityPostModel? _post;
+  bool _isLoadingPost = false;
+  String? _highlightedCommentId;
+  bool _hasScrolledToHighlight = false;
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _commentKeys = {};
+  Timer? _highlightTimer;
+
   @override
   void initState() {
     super.initState();
     controller = Get.find<CommunityController>();
     controller.fetchComments(widget.postId);
     _commentController.addListener(_onTextChanged);
+    _post = widget.post;
+    _highlightedCommentId = widget.highlightCommentId;
+
+    if (_post == null) {
+      final inMemory = controller.posts.firstWhereOrNull((p) => p.id == widget.postId);
+      if (inMemory != null) {
+        _post = inMemory;
+      } else {
+        _isLoadingPost = true;
+        controller.fetchPostDetails(widget.postId).then((fetched) {
+          if (mounted) {
+            setState(() {
+              _post = fetched;
+              _isLoadingPost = false;
+            });
+          }
+        }).catchError((_) {
+          if (mounted) {
+            setState(() => _isLoadingPost = false);
+          }
+        });
+      }
+    }
+
+    if (_highlightedCommentId != null) {
+      _highlightTimer = Timer(const Duration(milliseconds: 3000), () {
+        if (mounted) {
+          setState(() {
+            _highlightedCommentId = null;
+          });
+        }
+      });
+    }
+  }
+
+  void _scrollToHighlightIfNeeded() {
+    if (_highlightedCommentId == null || _hasScrolledToHighlight) return;
+    final key = _commentKeys[_highlightedCommentId];
+    if (key?.currentContext != null) {
+      _hasScrolledToHighlight = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || key?.currentContext == null) return;
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.2,
+        );
+      });
+    }
   }
 
   void _onTextChanged() {
@@ -48,9 +117,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   @override
   void dispose() {
+    _highlightTimer?.cancel();
     _commentController.removeListener(_onTextChanged);
     _commentController.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -352,6 +423,15 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             ),
           ),
           Divider(height: 1, color: borderSubtle),
+          _buildOriginalPostPreview(
+            context,
+            isDark,
+            textPrimary,
+            textSecondary,
+            textMuted,
+            surfaceSecondary,
+            borderSubtle,
+          ),
 
           Expanded(
             child: Obx(() {
@@ -400,7 +480,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 return !hasParent;
               }).toList();
 
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollToHighlightIfNeeded();
+              });
+
               return ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 itemCount: topLevelComments.length,
                 itemBuilder: (context, index) {
@@ -631,8 +716,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final currentUserId = controller.currentUserId ??
         (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     final isCommentOwner = comment.checkIsOwner(currentUserId);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final commentKey = _commentKeys.putIfAbsent(comment.id, () => GlobalKey());
+    final isHighlighted = _highlightedCommentId == comment.id;
 
     return Padding(
+      key: commentKey,
       padding: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,12 +736,21 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: surfaceSecondary,
+                    color: isHighlighted
+                        ? AppColors.communityAccent
+                            .withValues(alpha: isDark ? 0.22 : 0.12)
+                        : surfaceSecondary,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: borderSubtle, width: 0.8),
+                    border: Border.all(
+                      color: isHighlighted
+                          ? AppColors.communityAccent
+                          : borderSubtle,
+                      width: isHighlighted ? 1.5 : 0.8,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,8 +930,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final currentUserId = controller.currentUserId ??
         (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     final isReplyOwner = reply.checkIsOwner(currentUserId);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final replyKey = _commentKeys.putIfAbsent(reply.id, () => GlobalKey());
+    final isHighlighted = _highlightedCommentId == reply.id;
 
     return Padding(
+      key: replyKey,
       padding: const EdgeInsets.only(bottom: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -848,12 +950,21 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               ),
           const SizedBox(width: AppSpacing.sm - 2),
           Expanded(
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                color: surfaceSecondary,
+                color: isHighlighted
+                    ? AppColors.communityAccent
+                        .withValues(alpha: isDark ? 0.22 : 0.12)
+                    : surfaceSecondary,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: borderSubtle, width: 0.8),
+                border: Border.all(
+                  color: isHighlighted
+                      ? AppColors.communityAccent
+                      : borderSubtle,
+                  width: isHighlighted ? 1.5 : 0.8,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1016,6 +1127,249 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildOriginalPostPreview(
+    BuildContext context,
+    bool isDark,
+    Color textPrimary,
+    Color textSecondary,
+    Color textMuted,
+    Color surfaceSecondary,
+    Color borderSubtle,
+  ) {
+    final post = _post;
+    if (post == null) {
+      if (_isLoadingPost) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.sm + 2),
+          decoration: BoxDecoration(
+            color: surfaceSecondary,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: borderSubtle, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 160,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    final hasImages = post.imageUrls.isNotEmpty;
+    final hasVideo = post.videoUrl != null && post.videoUrl!.isNotEmpty;
+    final mediaThumb = hasImages
+        ? post.imageUrls.first
+        : (hasVideo ? post.videoUrl! : (post.mediaUrls?.isNotEmpty == true ? post.mediaUrls!.first : null));
+    final isVideo = hasVideo || (mediaThumb != null && CommunityPostModel.isVideoUrl(mediaThumb));
+
+    return InkWell(
+      key: const ValueKey('comments_sheet_original_post_preview'),
+      onTap: () {
+        Navigator.pop(context);
+        if (Get.currentRoute != AppRoutes.postDetail) {
+          Get.to<void>(() => PostDetailScreen(postId: widget.postId, initialPost: _post));
+        }
+      },
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm + 2),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
+            width: 0.9,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AppAvatar(
+                  imageUrl: post.authorAvatar,
+                  name: post.authorName,
+                  size: 32,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              post.authorName,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (post.timeAgo.isNotEmpty) ...[
+                            Text(
+                              ' · ',
+                              style: TextStyle(color: textMuted, fontSize: 11),
+                            ),
+                            Text(
+                              post.timeAgo,
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (post.authorTag.isNotEmpty)
+                        Text(
+                          '@${post.authorTag}',
+                          style: TextStyle(
+                            color: textMuted,
+                            fontSize: 10.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.article_outlined,
+                        size: 11,
+                        color: textMuted,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'community.originalPost'.tr.isNotEmpty &&
+                                'community.originalPost'.tr != 'community.originalPost'
+                            ? 'community.originalPost'.tr
+                            : 'Original Post',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: textMuted,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (post.content.isNotEmpty || mediaThumb != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      post.content.isEmpty ? (mediaThumb != null ? '[Media]' : '') : post.content,
+                      style: TextStyle(
+                        color: textPrimary.withValues(alpha: 0.9),
+                        fontSize: 12.5,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (mediaThumb != null && mediaThumb.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            AppCachedImage(
+                              imageUrl: mediaThumb,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              errorWidget: Container(
+                                color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
+                                child: Icon(Icons.image_outlined, size: 20, color: textMuted),
+                              ),
+                            ),
+                            if (isVideo)
+                              Container(
+                                color: Colors.black26,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 import '../../../../core/services/video_cache_service.dart';
+import 'safe_video_player.dart';
 
 /// A resilient fallback implementation of [VideoPlayerPlatform] that satisfies the
 /// platform interface contract on platforms/environments where native video_player
@@ -571,7 +572,10 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
                 child: SizedBox(
                   width: width,
                   height: height,
-                  child: VideoPlayer(ctrl),
+                  child: SafeVideoPlayer(
+                    key: ValueKey('safe_story_vp_${identityHashCode(ctrl)}_${widget.videoUrl}'),
+                    controller: ctrl,
+                  ),
                 ),
               ),
             ),

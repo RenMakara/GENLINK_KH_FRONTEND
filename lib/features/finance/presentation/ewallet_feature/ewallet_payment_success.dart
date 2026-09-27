@@ -210,7 +210,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Transaction Details',
+                        'finance.transactions.details'.tr,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 15,

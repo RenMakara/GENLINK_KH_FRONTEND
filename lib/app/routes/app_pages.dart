@@ -183,7 +183,13 @@ abstract final class AppPages {
         final args = Get.arguments as Map<String, dynamic>?;
         final params = Get.parameters;
         final postId = args?['postId'] as String? ?? params['postId'] ?? '';
-        return PostDetailScreen(postId: postId);
+        final autoOpenComments = args?['autoOpenComments'] as bool? ?? false;
+        final highlightCommentId = args?['highlightCommentId'] as String?;
+        return PostDetailScreen(
+          postId: postId,
+          autoOpenComments: autoOpenComments,
+          highlightCommentId: highlightCommentId,
+        );
       },
       middlewares: [AuthMiddleware()],
     ),

@@ -102,6 +102,43 @@ class NotificationModel {
     this.metadata,
   }) : category = category ?? _resolveCategory(type);
 
+  /// Returns the comment ID associated with this notification if available.
+  String? get commentId {
+    if (metadata != null && metadata!['commentId'] != null) {
+      return metadata!['commentId']?.toString();
+    }
+    final dedupe = metadata?['dedupeKey']?.toString() ?? '';
+    if (dedupe.startsWith('post-comment:') || dedupe.startsWith('comment-reply:')) {
+      final parts = dedupe.split(':');
+      if (parts.length >= 2 && parts[1].isNotEmpty) return parts[1];
+    }
+    return null;
+  }
+
+  /// Returns the parent comment ID if this notification is a reply.
+  String? get parentCommentId {
+    if (metadata != null && metadata!['parentCommentId'] != null) {
+      return metadata!['parentCommentId']?.toString();
+    }
+    final dedupe = metadata?['dedupeKey']?.toString() ?? '';
+    if (dedupe.startsWith('comment-reply:')) {
+      final parts = dedupe.split(':');
+      if (parts.length >= 3 && parts[2].isNotEmpty) return parts[2];
+    }
+    return null;
+  }
+
+  /// Returns the post ID associated with this notification if available.
+  String? get postId {
+    if (metadata != null && metadata!['postId'] != null) {
+      return metadata!['postId']?.toString();
+    }
+    if (targetType?.toUpperCase() == 'POST' && targetId != null && targetId!.isNotEmpty) {
+      return targetId;
+    }
+    return null;
+  }
+
   static NotificationCategory _resolveCategory(NotificationType type) {
     switch (type) {
       case NotificationType.like:
@@ -233,9 +270,21 @@ class NotificationModel {
       }
     }
 
-    final parsedType = parseType(
+    final templateKey = (json['templateKey'] ?? json['template'])?.toString().toLowerCase() ?? '';
+    final dedupeKeyStr = json['dedupeKey']?.toString().toLowerCase() ?? '';
+
+    NotificationType parsedType = parseType(
       json['type'] as String? ?? json['notificationType'] as String?,
     );
+    if (parsedType == NotificationType.system) {
+      if (templateKey.contains('reply') || dedupeKeyStr.contains('reply')) {
+        parsedType = NotificationType.reply;
+      } else if (templateKey.contains('comment') || dedupeKeyStr.contains('comment')) {
+        parsedType = NotificationType.comment;
+      } else if (templateKey.contains('like') || dedupeKeyStr.contains('like')) {
+        parsedType = NotificationType.like;
+      }
+    }
     final parsedCategory =
         parseCategory(json['category'] as String?) ??
         _resolveCategory(parsedType);
@@ -295,8 +344,14 @@ class NotificationModel {
     final metadata = <String, dynamic>{
       if (json['metadata'] is Map)
         ...Map<String, dynamic>.from(json['metadata'] as Map),
+      if (json['parameters'] is Map)
+        ...Map<String, dynamic>.from(json['parameters'] as Map),
       if (json['deliveryId'] != null) 'deliveryId': json['deliveryId'],
       if (json['dedupeKey'] != null) 'dedupeKey': json['dedupeKey'],
+      if (json['commentId'] != null) 'commentId': json['commentId'],
+      if (json['parentCommentId'] != null)
+        'parentCommentId': json['parentCommentId'],
+      if (json['postId'] != null) 'postId': json['postId'],
     };
     final stableId =
         (json['id'] ??

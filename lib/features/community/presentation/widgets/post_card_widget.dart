@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'poll_widget.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import 'full_screen_image_viewer.dart';
 import 'post_liked_by_sheet.dart';
 import 'forum_share_to_chat_sheet.dart';
 import 'repost/repost_bottom_sheet.dart';
+import 'safe_video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/storage/genlink_image_cache_manager.dart';
 import '../../../../core/services/video_cache_service.dart';
@@ -987,7 +989,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
-                          builder: (_) => CommentsBottomSheet(postId: widget.post.id),
+                          builder: (_) => CommentsBottomSheet(
+                            postId: widget.post.id,
+                            post: widget.post,
+                          ),
                         );
                       },
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -1991,30 +1996,46 @@ class _VideoPostMediaState extends State<VideoPostMedia>
   BuildContext? get clientContext => mounted ? context : null;
 
   @override
-  bool get isEligible => widget.isCurrentPage && _initialized && !_error;
+  bool get isEligible =>
+      widget.isCurrentPage &&
+      _initialized &&
+      !_error &&
+      _ctrl != null &&
+      _ctrl!.value.isInitialized;
 
   @override
   bool get isManuallyPaused => _manuallyPaused;
 
   @override
-  bool get isPlaying => _ctrl != null && _ctrl!.value.isPlaying;
+  bool get isPlaying =>
+      _ctrl != null && _initialized && !_error && _ctrl!.value.isPlaying;
 
   @override
   void playVideo() {
-    if (_ctrl != null && _initialized && !_ctrl!.value.isPlaying) {
+    final ctrl = _ctrl;
+    if (ctrl != null &&
+        _initialized &&
+        !_error &&
+        ctrl.value.isInitialized &&
+        !ctrl.value.isPlaying) {
       try {
-        _ctrl!.play();
-      } catch (_) {}
+        ctrl.play();
+      } catch (e) {
+        debugPrint('[VideoPostMedia] playVideo error: $e');
+      }
       if (mounted) setState(() {});
     }
   }
 
   @override
   void pauseVideo() {
-    if (_ctrl != null && _ctrl!.value.isPlaying) {
+    final ctrl = _ctrl;
+    if (ctrl != null && ctrl.value.isInitialized && ctrl.value.isPlaying) {
       try {
-        _ctrl!.pause();
-      } catch (_) {}
+        ctrl.pause();
+      } catch (e) {
+        debugPrint('[VideoPostMedia] pauseVideo error: $e');
+      }
       if (mounted) setState(() {});
     }
   }
@@ -2054,21 +2075,44 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     }
   }
 
+  void _cleanupController() {
+    final oldCtrl = _ctrl;
+    _ctrl = null;
+    _initialized = false;
+    if (oldCtrl != null) {
+      oldCtrl.removeListener(_onControllerUpdate);
+      try {
+        oldCtrl.dispose();
+      } catch (e) {
+        debugPrint('[VideoPostMedia] Old controller dispose note: $e');
+      }
+    }
+  }
+
   Future<void> _initController(String url) async {
     final currentToken = ++_initToken;
     _cleanupController();
 
+    if (mounted) {
+      setState(() {
+        _initialized = false;
+        _error = false;
+      });
+    }
+
     final trimmedUrl = url.trim();
     if (trimmedUrl.isEmpty) {
-      if (mounted) setState(() => _error = true);
+      if (mounted && currentToken == _initToken) {
+        setState(() => _error = true);
+      }
       return;
     }
 
-    VideoPlayerController ctrl;
+    VideoPlayerController? ctrl;
     try {
       ctrl = await VideoCacheService.instance.createController(trimmedUrl);
       if (!mounted || currentToken != _initToken) {
-        ctrl.dispose();
+        unawaited(ctrl.dispose());
         return;
       }
     } catch (e) {
@@ -2079,16 +2123,7 @@ class _VideoPostMediaState extends State<VideoPostMedia>
       return;
     }
 
-    _ctrl = ctrl;
-    ctrl.addListener(_onControllerUpdate);
-
-    if (mounted) {
-      setState(() {
-        _initialized = false;
-        _error = false;
-      });
-    }
-
+    bool initSuccess = false;
     try {
       debugPrint(
           '[VideoPostMedia] Initializing controller for: $trimmedUrl (${ctrl.dataSourceType.name})');
@@ -2096,23 +2131,80 @@ class _VideoPostMediaState extends State<VideoPostMedia>
       if (!mounted || currentToken != _initToken) {
         debugPrint(
             '[VideoPostMedia] Widget unmounted or superseded during init for: $trimmedUrl');
-        await ctrl.dispose();
+        unawaited(ctrl.dispose());
         return;
       }
-      debugPrint(
-          '[VideoPostMedia] Controller initialized successfully: size=${ctrl.value.size}, duration=${ctrl.value.duration}');
+      initSuccess = true;
+    } catch (e) {
+      debugPrint('[VideoPostMedia] Controller initialize error: $e');
+      // If a cached file failed to initialize, evict cache and retry with direct network streaming
+      if (ctrl.dataSourceType == DataSourceType.file &&
+          MediaUrlResolver.isRemoteUrl(trimmedUrl)) {
+        unawaited(ctrl.dispose());
+        if (!mounted || currentToken != _initToken) return;
 
-      final ratio = ctrl.value.aspectRatio;
-      if (ratio > 0) {
-        widget.onAspectRatioResolved?.call(ratio);
+        debugPrint(
+            '[VideoPostMedia] Evicting corrupt cache and retrying via network for: $trimmedUrl');
+        await VideoCacheService.instance.removeFile(trimmedUrl);
+        try {
+          final resolved = MediaUrlResolver.resolve(trimmedUrl);
+          final uri =
+              Uri.tryParse(resolved) ?? Uri.parse(Uri.encodeFull(resolved));
+          ctrl = VideoPlayerController.networkUrl(uri);
+          await ctrl.initialize();
+          if (!mounted || currentToken != _initToken) {
+            unawaited(ctrl.dispose());
+            return;
+          }
+          initSuccess = true;
+        } catch (retryError) {
+          debugPrint('[VideoPostMedia] Network retry failed: $retryError');
+          final retryCtrl = ctrl;
+          if (retryCtrl != null) {
+            unawaited(retryCtrl.dispose());
+          }
+          ctrl = null;
+        }
+      } else {
+        unawaited(ctrl.dispose());
+        ctrl = null;
       }
+    }
 
-      if (!widget.isCurrentPage) {
-        ctrl.pause();
+    if (!mounted || currentToken != _initToken) {
+      if (ctrl != null) {
+        unawaited(ctrl.dispose());
       }
+      return;
+    }
 
+    if (!initSuccess || ctrl == null || !ctrl.value.isInitialized) {
+      if (mounted && currentToken == _initToken) {
+        setState(() {
+          _error = true;
+          _initialized = false;
+        });
+      }
+      return;
+    }
+
+    // Publish to _ctrl ONLY after successful initialization
+    _ctrl = ctrl;
+    ctrl.addListener(_onControllerUpdate);
+
+    final ratio = ctrl.value.aspectRatio;
+    if (ratio > 0) {
+      widget.onAspectRatioResolved?.call(ratio);
+    }
+
+    if (!widget.isCurrentPage) {
+      ctrl.pause();
+    }
+
+    if (mounted && currentToken == _initToken) {
       setState(() {
         _initialized = true;
+        _error = false;
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2120,18 +2212,13 @@ class _VideoPostMediaState extends State<VideoPostMedia>
           FeedVideoPlaybackManager.instance.evaluateVisibility();
         }
       });
-    } catch (e) {
-      debugPrint('[VideoPostMedia] Controller initialize error: $e');
-      if (mounted && currentToken == _initToken) {
-        setState(() => _error = true);
-      }
     }
   }
 
   void _onControllerUpdate() {
     if (!mounted) return;
     final ctrl = _ctrl;
-    if (ctrl == null) return;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
 
     if (ctrl.value.hasError) {
       debugPrint(
@@ -2153,17 +2240,6 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     setState(() {});
   }
 
-  void _cleanupController() {
-    final oldCtrl = _ctrl;
-    if (oldCtrl != null) {
-      oldCtrl.removeListener(_onControllerUpdate);
-      try {
-        oldCtrl.dispose();
-      } catch (_) {}
-      _ctrl = null;
-    }
-  }
-
   @override
   void dispose() {
     _initToken++;
@@ -2182,7 +2258,10 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     final ctrl = _ctrl;
     final hasControllerError = ctrl != null && ctrl.value.hasError;
     final isErrorState = _error || hasControllerError;
-    final isInitialized = ctrl != null && _initialized && !isErrorState;
+    final isInitialized = ctrl != null &&
+        _initialized &&
+        !isErrorState &&
+        ctrl.value.isInitialized;
     final isBuffering = ctrl != null && ctrl.value.isBuffering;
     final isPlaying = ctrl != null && ctrl.value.isPlaying;
 
@@ -2197,7 +2276,15 @@ class _VideoPostMediaState extends State<VideoPostMedia>
               child: SizedBox(
                 width: ctrl.value.size.width > 0 ? ctrl.value.size.width : 16,
                 height: ctrl.value.size.height > 0 ? ctrl.value.size.height : 9,
-                child: VideoPlayer(ctrl),
+                child: SafeVideoPlayer(
+                  key: ValueKey('safe_feed_vp_${identityHashCode(ctrl)}_${widget.videoUrl}'),
+                  controller: ctrl,
+                  onError: () {
+                    if (mounted && !_error) {
+                      setState(() => _error = true);
+                    }
+                  },
+                ),
               ),
             ),
           )
@@ -2210,7 +2297,7 @@ class _VideoPostMediaState extends State<VideoPostMedia>
         if (!isErrorState && (!_initialized || isBuffering))
           const CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
 
-        // Error
+        // Error with retry option
         if (isErrorState)
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -2223,6 +2310,32 @@ class _VideoPostMediaState extends State<VideoPostMedia>
                     ? 'community.videoLoadError'.tr
                     : 'Unable to play video',
                 style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _initController(widget.videoUrl),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white12,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.refresh_rounded,
+                          color: Colors.white70, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Retry',
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

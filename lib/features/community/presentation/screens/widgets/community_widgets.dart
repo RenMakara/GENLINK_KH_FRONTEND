@@ -1189,7 +1189,7 @@ class CareerTabView extends StatelessWidget {
             const SizedBox(height: 12),
             const JobCard(
               title: "Junior Flutter Developer",
-              company: "ABA Bank • Phnom Penh",
+              company: "Community Finance Lab • Phnom Penh",
               type: "Full-Time",
               salary: "\$600 - \$900 / mo",
               logoColor: AppColors.brandPrimary,
@@ -1228,7 +1228,7 @@ class CareerTabView extends StatelessWidget {
                   ),
                   MentorCard(
                     name: "Bopha V.",
-                    role: "Lead UX Designer @ ABA",
+                    role: "Lead UX Designer",
                     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
                   ),
                   MentorCard(
@@ -1247,4 +1247,3 @@ class CareerTabView extends StatelessWidget {
     );
   }
 }
-

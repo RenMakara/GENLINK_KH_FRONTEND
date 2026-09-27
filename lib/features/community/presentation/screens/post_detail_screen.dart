@@ -7,15 +7,20 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/post_card_widget.dart';
+import '../widgets/comments_bottom_sheet.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
   final CommunityPostModel? initialPost;
+  final bool autoOpenComments;
+  final String? highlightCommentId;
 
   const PostDetailScreen({
     super.key,
     required this.postId,
     this.initialPost,
+    this.autoOpenComments = false,
+    this.highlightCommentId,
   });
 
   @override
@@ -29,6 +34,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _isNotFound = false;
   bool _isForbidden = false;
   String _errorMessage = '';
+  bool _hasOpenedComments = false;
 
   @override
   void initState() {
@@ -43,8 +49,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       _post = widget.initialPost;
       _isLoading = false;
       _loadPost(background: true);
+      _checkAutoOpenComments();
     } else {
       _loadPost(background: false);
+    }
+  }
+
+  void _checkAutoOpenComments() {
+    if (widget.autoOpenComments && !_hasOpenedComments && _post != null && mounted) {
+      _hasOpenedComments = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _post == null) return;
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => CommentsBottomSheet(
+            postId: widget.postId,
+            post: _post,
+            highlightCommentId: widget.highlightCommentId,
+          ),
+        );
+      });
     }
   }
 
@@ -66,6 +92,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           _isLoading = false;
           _isNotFound = fetched == null;
         });
+        if (fetched != null) {
+          _checkAutoOpenComments();
+        }
       }
     } catch (e) {
       if (!mounted) return;

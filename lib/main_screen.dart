@@ -18,51 +18,70 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late final MainController controller;
-
-  late final List<Widget> pages = [
-    KeyedSubtree(
-      key: const PageStorageKey<String>('page_home'),
-      child: PageStorage(
-        bucket: PageStorageBucket(),
-        child: CommunityScreen(
-          isHomeScreen: true,
-          onNavigateTab: (index) => controller.changeIndex(index),
-        ),
-      ),
-    ),
-    KeyedSubtree(
-      key: const PageStorageKey<String>('page_growth'),
-      child: PageStorage(
-        bucket: PageStorageBucket(),
-        child: LevelUpScreen(
-          onNavigateTab: (index) => controller.changeIndex(index),
-        ),
-      ),
-    ),
-    KeyedSubtree(
-      key: const PageStorageKey<String>('page_finance'),
-      child: PageStorage(
-        bucket: PageStorageBucket(),
-        child: const FinanceScreen(),
-      ),
-    ),
-    KeyedSubtree(
-      key: const PageStorageKey<String>('page_profile'),
-      child: PageStorage(
-        bucket: PageStorageBucket(),
-        child: const ProfileScreen(),
-      ),
-    ),
-  ];
+  late final List<Widget Function()> _pageBuilders;
+  final List<Widget?> _pages = List<Widget?>.filled(
+    MainController.tabCount,
+    null,
+  );
 
   @override
   void initState() {
     super.initState();
     controller = Get.find<MainController>();
+    _pageBuilders = [
+      () => KeyedSubtree(
+        key: const PageStorageKey<String>('page_home'),
+        child: PageStorage(
+          bucket: PageStorageBucket(),
+          child: CommunityScreen(
+            isHomeScreen: true,
+            onNavigateTab: controller.changeIndex,
+          ),
+        ),
+      ),
+      () => KeyedSubtree(
+        key: const PageStorageKey<String>('page_growth'),
+        child: PageStorage(
+          bucket: PageStorageBucket(),
+          child: LevelUpScreen(onNavigateTab: controller.changeIndex),
+        ),
+      ),
+      () => KeyedSubtree(
+        key: PageStorageKey<String>('page_finance'),
+        child: PageStorage(
+          bucket: PageStorageBucket(),
+          child: const FinanceScreen(),
+        ),
+      ),
+      () => KeyedSubtree(
+        key: PageStorageKey<String>('page_profile'),
+        child: PageStorage(
+          bucket: PageStorageBucket(),
+          child: const ProfileScreen(),
+        ),
+      ),
+    ];
   }
 
   void _onCenterTap() {
     CommunityCreationFlow.openCreatePost(context);
+  }
+
+  Widget _pageAt(int index) {
+    return _pages[index] ??= _pageBuilders[index]();
+  }
+
+  List<Widget> _pageSlots(int currentIndex) {
+    return List<Widget>.generate(_pageBuilders.length, (index) {
+      // Keep visited pages alive so scroll position and form state survive tab
+      // switches, but do not build every feature on the first frame.
+      if (index == currentIndex || _pages[index] != null) {
+        return _pageAt(index);
+      }
+      return SizedBox.shrink(
+        key: ValueKey<String>('unvisited-main-page-$index'),
+      );
+    });
   }
 
   @override
@@ -75,6 +94,15 @@ class _MainScreenState extends State<MainScreen> {
         body: NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification notification) {
             if (notification.metrics.axis != Axis.vertical) {
+              return false;
+            }
+
+            // Keep navigation persistent on the secondary destinations. These
+            // screens contain forms, dashboards, and detail flows where
+            // hiding the only tab switcher can make the app feel stuck. The
+            // feed can still reclaim vertical space while the user browses.
+            if (controller.currentIndex.value != MainController.homeIndex) {
+              controller.setNavBarVisibility(true);
               return false;
             }
 
@@ -97,7 +125,10 @@ class _MainScreenState extends State<MainScreen> {
             }
             return false;
           },
-          child: FadeIndexedStack(index: currentIndex, children: pages),
+          child: FadeIndexedStack(
+            index: currentIndex,
+            children: _pageSlots(currentIndex),
+          ),
         ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: currentIndex,
@@ -137,8 +168,8 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.index;
-    _previousIndex = widget.index;
+    _currentIndex = _normalizedIndex(widget.index);
+    _previousIndex = _currentIndex;
     _controller = AnimationController(
       vsync: this,
       duration: _transitionDuration,
@@ -155,7 +186,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
   }
 
   void _onAnimationStatusChanged(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
+    if (status == AnimationStatus.completed && mounted) {
       setState(() {});
     }
   }
@@ -163,11 +194,17 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
   @override
   void didUpdateWidget(covariant FadeIndexedStack oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.index != oldWidget.index) {
+    final nextIndex = _normalizedIndex(widget.index);
+    if (nextIndex != _currentIndex) {
       _previousIndex = _currentIndex;
-      _currentIndex = widget.index;
+      _currentIndex = nextIndex;
       _controller.forward(from: 0.0);
     }
+  }
+
+  int _normalizedIndex(int index) {
+    if (widget.children.isEmpty) return 0;
+    return index.clamp(0, widget.children.length - 1);
   }
 
   @override
@@ -179,47 +216,76 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.children.isEmpty) return const SizedBox.shrink();
+
     final isAnimating = _controller.isAnimating;
+    final hasPreviousLayer = isAnimating && _previousIndex != _currentIndex;
+    final activeIndices = <int>{_currentIndex};
+    if (hasPreviousLayer) activeIndices.add(_previousIndex);
 
-    return Stack(
-      fit: StackFit.expand,
-      children: List.generate(widget.children.length, (i) {
-        final isCurrent = i == _currentIndex;
-        final isPrevious = i == _previousIndex && isAnimating;
+    final layers = <Widget>[];
 
-        if (!isCurrent && !isPrevious) {
-          return Offstage(
+    // Inactive children stay mounted for state preservation, but do not tick
+    // animations or participate in hit testing.
+    for (var i = 0; i < widget.children.length; i++) {
+      if (activeIndices.contains(i)) continue;
+      layers.add(
+        KeyedSubtree(
+          key: ValueKey<String>('fade-indexed-stack-child-$i'),
+          child: Offstage(
             offstage: true,
             child: HeroMode(
               enabled: false,
               child: TickerMode(enabled: false, child: widget.children[i]),
             ),
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        if (isPrevious) {
-          return IgnorePointer(
+    // Always paint the previous page first and the current page last. This is
+    // important when navigating to a lower tab index (LevelUp -> Home): the
+    // selected tab and visible page must not disagree during the fade.
+    if (hasPreviousLayer) {
+      layers.add(
+        KeyedSubtree(
+          key: ValueKey<String>('fade-indexed-stack-child-$_previousIndex'),
+          child: IgnorePointer(
+            ignoring: true,
             child: FadeTransition(
               opacity: _reverseFadeAnimation,
               child: HeroMode(
                 enabled: false,
-                child: TickerMode(enabled: false, child: widget.children[i]),
+                child: TickerMode(
+                  enabled: false,
+                  child: widget.children[_previousIndex],
+                ),
               ),
             ),
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        return IgnorePointer(
+    layers.add(
+      KeyedSubtree(
+        key: ValueKey<String>('fade-indexed-stack-child-$_currentIndex'),
+        child: IgnorePointer(
           ignoring: isAnimating,
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: HeroMode(
               enabled: true,
-              child: TickerMode(enabled: true, child: widget.children[i]),
+              child: TickerMode(
+                enabled: true,
+                child: widget.children[_currentIndex],
+              ),
             ),
           ),
-        );
-      }),
+        ),
+      ),
     );
+
+    return Stack(fit: StackFit.expand, children: layers);
   }
 }

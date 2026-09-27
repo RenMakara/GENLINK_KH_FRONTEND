@@ -823,10 +823,6 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     String? storyId,
     String? userId,
   }) async {
-    final uuidRegex = RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-    );
-
     // 1. Find existing conversation with a valid backend room ID
     var convIndex = conversations.indexWhere((c) {
       if (userId != null && userId.isNotEmpty) {

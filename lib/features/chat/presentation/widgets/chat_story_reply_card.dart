@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:genlink_frontend/core/storage/genlink_image_cache_manager.dart';
+import 'package:genlink_frontend/core/utils/media_url_resolver.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class ChatStoryReplyCard extends StatelessWidget {
@@ -67,20 +70,29 @@ class ChatStoryReplyCard extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.15)
                     : AppColors.chatPrimary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(7),
-                image: (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
-                    ? DecorationImage(
-                        image: (mediaUrl!.startsWith('http://') ||
-                                mediaUrl!.startsWith('https://'))
-                            ? NetworkImage(mediaUrl!.trim()) as ImageProvider
-                            : (mediaUrl!.startsWith('assets/')
-                                ? AssetImage(mediaUrl!.trim())
-                                : FileImage(File(mediaUrl!
-                                    .trim()
-                                    .replaceFirst('file://', '')))),
-                        fit: BoxFit.cover,
-                        onError: (_, __) {},
-                      )
-                    : null,
+                image: () {
+                  final resolved = MediaUrlResolver.resolve(mediaUrl);
+                  if (resolved.isEmpty) return null;
+                  final ImageProvider provider;
+                  if (MediaUrlResolver.isRemoteUrl(resolved)) {
+                    provider = CachedNetworkImageProvider(
+                      resolved,
+                      cacheManager: GenLinkImageCacheManager(),
+                      maxWidth: 108,
+                      maxHeight: 108,
+                    );
+                  } else if (MediaUrlResolver.isAsset(resolved)) {
+                    provider = AssetImage(resolved);
+                  } else {
+                    final clean = resolved.replaceFirst('file://', '');
+                    provider = FileImage(File(clean));
+                  }
+                  return DecorationImage(
+                    image: provider,
+                    fit: BoxFit.cover,
+                    onError: (exception, stackTrace) {},
+                  );
+                }(),
               ),
               child: (mediaUrl == null || mediaUrl!.isEmpty)
                   ? Center(

@@ -78,9 +78,11 @@ class BottomNavBar extends StatelessWidget {
     if (_defaultRefreshingTabs.contains(index)) return;
     _defaultRefreshingTabs.add(index);
     try {
-      if (index == 0 && Get.isRegistered<CommunityController>()) {
+      if (index == MainController.homeIndex &&
+          Get.isRegistered<CommunityController>()) {
         final c = Get.find<CommunityController>();
-        final hasScrolledPosition = c.scrollController.hasClients &&
+        final hasScrolledPosition =
+            c.scrollController.hasClients &&
             c.scrollController.positions.any((position) => position.pixels > 0);
         if (hasScrolledPosition) {
           await c.scrollController.animateTo(
@@ -90,11 +92,14 @@ class BottomNavBar extends StatelessWidget {
           );
         }
         await c.refreshFeed();
-      } else if (index == 1 && Get.isRegistered<HomeController>()) {
+      } else if (index == MainController.levelUpIndex &&
+          Get.isRegistered<HomeController>()) {
         await Get.find<HomeController>().reload();
-      } else if (index == 2 && Get.isRegistered<FinanceController>()) {
+      } else if (index == MainController.financeIndex &&
+          Get.isRegistered<FinanceController>()) {
         await Get.find<FinanceController>().reload();
-      } else if (index == 3 && Get.isRegistered<ProfileController>()) {
+      } else if (index == MainController.profileIndex &&
+          Get.isRegistered<ProfileController>()) {
         await Get.find<ProfileController>().reload();
       }
     } catch (_) {
@@ -118,7 +123,7 @@ class BottomNavBar extends StatelessWidget {
         ? Get.find<AuthController>()
         : null;
 
-    Widget buildBar(bool isVisible, String? avatarUrl) {
+    Widget buildBar(bool isVisible, int selectedIndex, String? avatarUrl) {
       return AnimatedSlide(
         offset: isVisible ? Offset.zero : const Offset(0, 1.0),
         duration: const Duration(milliseconds: 300),
@@ -127,7 +132,7 @@ class BottomNavBar extends StatelessWidget {
           opacity: isVisible ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 300),
           child: _NavBarContent(
-            currentIndex: currentIndex,
+            currentIndex: selectedIndex,
             onTap: onTap,
             onDoubleTapActive: onDoubleTapActive,
             onCenterTap: onCenterTap,
@@ -138,13 +143,17 @@ class BottomNavBar extends StatelessWidget {
     }
 
     if (mainController == null && authController == null) {
-      return buildBar(true, null);
+      return buildBar(true, currentIndex, null);
     }
 
     return Obx(() {
       final isVisible = mainController?.isNavBarVisible.value ?? true;
+      // Read the same observable that drives MainScreen's page stack. This
+      // keeps the selected lens correct even if the parent is rebuilt while a
+      // tab transition or auth refresh is in flight.
+      final selectedIndex = mainController?.currentIndex.value ?? currentIndex;
       final user = authController?.currentUser.value;
-      return buildBar(isVisible, user?.avatarUrl);
+      return buildBar(isVisible, selectedIndex, user?.avatarUrl);
     });
   }
 
@@ -262,9 +271,6 @@ class _NavBarContentState extends State<_NavBarContent>
       duration: const Duration(milliseconds: 320),
     );
     _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
-    _ctrl.addListener(() {
-      setState(() {});
-    });
   }
 
   @override
@@ -370,7 +376,9 @@ class _NavBarContentState extends State<_NavBarContent>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0x281C2028), // deep translucent charcoal with optical depth
+                  Color(
+                    0x281C2028,
+                  ), // deep translucent charcoal with optical depth
                   Color(0x18090B0E), // translucent charcoal base
                 ],
               )
@@ -410,12 +418,13 @@ class _NavBarContentState extends State<_NavBarContent>
         ];
 
         // Text / Icon colors — strictly neutral monochrome (no feature colors)
-        final iconColor =
-            isDark ? Colors.white : const Color(0xFF121212);
-        final activeLabelColor =
-            isDark ? Colors.white : const Color(0xFF121212);
-        final inactiveLabelColor =
-            isDark ? const Color(0x8AFFFFFF) : const Color(0x8A121212);
+        final iconColor = isDark ? Colors.white : const Color(0xFF121212);
+        final activeLabelColor = isDark
+            ? Colors.white
+            : const Color(0xFF121212);
+        final inactiveLabelColor = isDark
+            ? const Color(0x8AFFFFFF)
+            : const Color(0x8A121212);
 
         // Scaffold gives a bottomNavigationBar loose height constraints. Keep
         // this slot limited to the actual bar plus its safe-area margin so a
@@ -448,21 +457,21 @@ class _NavBarContentState extends State<_NavBarContent>
                               final slotWidth = barWidth / _kTabs.length;
 
                               // Responsive active glass lens dimensions
-                              final horizontalInset =
-                                  (slotWidth * 0.08).clamp(3.5, 6.0);
+                              final horizontalInset = (slotWidth * 0.08).clamp(
+                                3.5,
+                                6.0,
+                              );
                               final capsuleWidth =
                                   slotWidth - (horizontalInset * 2);
-                              final verticalInset =
-                                  (barHeight * 0.11).clamp(6.0, 8.5);
+                              final verticalInset = (barHeight * 0.11).clamp(
+                                6.0,
+                                8.5,
+                              );
                               final capsuleHeight =
                                   barHeight - (verticalInset * 2);
-                              final capsuleRadius =
-                                  Radius.circular(capsuleHeight / 2);
-
-                              final pos = currentPos;
-                              final capsuleCenter = (pos + 0.5) * slotWidth;
-                              final capsuleLeft =
-                                  capsuleCenter - capsuleWidth / 2;
+                              final capsuleRadius = Radius.circular(
+                                capsuleHeight / 2,
+                              );
 
                               return Stack(
                                 clipBehavior: Clip.none,
@@ -494,8 +503,8 @@ class _NavBarContentState extends State<_NavBarContent>
                                               gradient: pillSurfaceGradient,
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                barHeight / 2,
-                                              ),
+                                                    barHeight / 2,
+                                                  ),
                                               border: Border.all(
                                                 color: pillBorder,
                                                 width: 0.75,
@@ -513,13 +522,16 @@ class _NavBarContentState extends State<_NavBarContent>
                                                     decoration: BoxDecoration(
                                                       borderRadius:
                                                           BorderRadius.vertical(
-                                                        top: Radius.circular(
-                                                          barHeight / 2,
-                                                        ),
-                                                      ),
+                                                            top:
+                                                                Radius.circular(
+                                                                  barHeight / 2,
+                                                                ),
+                                                          ),
                                                       gradient: LinearGradient(
-                                                        begin: Alignment.topCenter,
-                                                        end: Alignment.bottomCenter,
+                                                        begin:
+                                                            Alignment.topCenter,
+                                                        end: Alignment
+                                                            .bottomCenter,
                                                         colors: isDark
                                                             ? [
                                                                 const Color(
@@ -549,136 +561,177 @@ class _NavBarContentState extends State<_NavBarContent>
                                     ),
                                   ),
 
-                                  // Layer 2: ONE Shared Sliding Active Glass Lens (wrapped in IgnorePointer)
-                                  Positioned(
-                                    left: capsuleLeft,
-                                    top: verticalInset,
-                                    width: capsuleWidth,
-                                    height: capsuleHeight,
-                                    child: IgnorePointer(
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.all(
-                                            capsuleRadius,
-                                          ),
-                                          boxShadow: capsuleShadow,
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.all(
-                                            capsuleRadius,
-                                          ),
-                                          child: BackdropFilter(
-                                            filter: ImageFilter.blur(
-                                              sigmaX: 18,
-                                              sigmaY: 18,
-                                            ),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: isDark
-                                                      ? [
-                                                          const Color(0x1AFFFFFF),
-                                                          const Color(0x06FFFFFF),
-                                                        ]
-                                                      : [
-                                                          const Color(0x9AFFFFFF),
-                                                          const Color(0x50FFFFFF),
-                                                        ],
+                                  AnimatedBuilder(
+                                    animation: _ctrl,
+                                    builder: (context, child) {
+                                      final pos = currentPos;
+                                      final capsuleCenter =
+                                          (pos + 0.5) * slotWidth;
+                                      final capsuleLeft =
+                                          capsuleCenter - capsuleWidth / 2;
+
+                                      return Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          // Layer 2: ONE Shared Sliding Active Glass Lens (wrapped in IgnorePointer)
+                                          Positioned(
+                                            left: capsuleLeft,
+                                            top: verticalInset,
+                                            width: capsuleWidth,
+                                            height: capsuleHeight,
+                                            child: IgnorePointer(
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                        capsuleRadius,
+                                                      ),
+                                                  boxShadow: capsuleShadow,
                                                 ),
-                                                borderRadius:
-                                                    BorderRadius.all(
-                                                  capsuleRadius,
-                                                ),
-                                                border: Border.all(
-                                                  color: isDark
-                                                      ? const Color(0x20FFFFFF)
-                                                      : const Color(0x24000000),
-                                                  width: 0.75,
-                                                ),
-                                              ),
-                                              child: Stack(
-                                                children: [
-                                                  // Soft inner specular highlight (liquid glass reflection arc)
-                                                  Positioned(
-                                                    top: 0,
-                                                    left: 0,
-                                                    right: 0,
-                                                    height: capsuleHeight * 0.46,
-                                                    child: DecoratedBox(
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                        capsuleRadius,
+                                                      ),
+                                                  child: BackdropFilter(
+                                                    filter: ImageFilter.blur(
+                                                      sigmaX: 18,
+                                                      sigmaY: 18,
+                                                    ),
+                                                    child: Container(
                                                       decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius.vertical(
-                                                          top: capsuleRadius,
-                                                        ),
                                                         gradient: LinearGradient(
-                                                          begin: Alignment.topCenter,
-                                                          end: Alignment.bottomCenter,
+                                                          begin: Alignment
+                                                              .topCenter,
+                                                          end: Alignment
+                                                              .bottomCenter,
                                                           colors: isDark
                                                               ? [
                                                                   const Color(
-                                                                    0x12FFFFFF,
+                                                                    0x1AFFFFFF,
                                                                   ),
                                                                   const Color(
-                                                                    0x00FFFFFF,
+                                                                    0x06FFFFFF,
                                                                   ),
                                                                 ]
                                                               : [
                                                                   const Color(
-                                                                    0x75FFFFFF,
+                                                                    0x9AFFFFFF,
                                                                   ),
                                                                   const Color(
-                                                                    0x00FFFFFF,
+                                                                    0x50FFFFFF,
                                                                   ),
                                                                 ],
                                                         ),
+                                                        borderRadius:
+                                                            BorderRadius.all(
+                                                              capsuleRadius,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: isDark
+                                                              ? const Color(
+                                                                  0x20FFFFFF,
+                                                                )
+                                                              : const Color(
+                                                                  0x24000000,
+                                                                ),
+                                                          width: 0.75,
+                                                        ),
+                                                      ),
+                                                      child: Stack(
+                                                        children: [
+                                                          // Soft inner specular highlight (liquid glass reflection arc)
+                                                          Positioned(
+                                                            top: 0,
+                                                            left: 0,
+                                                            right: 0,
+                                                            height:
+                                                                capsuleHeight *
+                                                                0.46,
+                                                            child: DecoratedBox(
+                                                              decoration: BoxDecoration(
+                                                                borderRadius:
+                                                                    BorderRadius.vertical(
+                                                                      top:
+                                                                          capsuleRadius,
+                                                                    ),
+                                                                gradient: LinearGradient(
+                                                                  begin: Alignment
+                                                                      .topCenter,
+                                                                  end: Alignment
+                                                                      .bottomCenter,
+                                                                  colors: isDark
+                                                                      ? [
+                                                                          const Color(
+                                                                            0x12FFFFFF,
+                                                                          ),
+                                                                          const Color(
+                                                                            0x00FFFFFF,
+                                                                          ),
+                                                                        ]
+                                                                      : [
+                                                                          const Color(
+                                                                            0x75FFFFFF,
+                                                                          ),
+                                                                          const Color(
+                                                                            0x00FFFFFF,
+                                                                          ),
+                                                                        ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                   ),
-                                                ],
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
 
-                                  // Layer 3: 4 Tab Items (Strictly Monochrome Icons + Labels)
-                                  // Each _TabItem has its own spring-bounce
-                                  // animation that triggers when it becomes active.
-                                  Positioned.fill(
-                                    child: Row(
-                                      children: List.generate(_kTabs.length, (
-                                        i,
-                                      ) {
-                                        final dist = (pos - i).abs();
-                                        final weight = (1.0 - dist).clamp(
-                                          0.0,
-                                          1.0,
-                                        );
-                                        return _TabItem(
-                                          tab: _kTabs[i],
-                                          isSelected: widget.currentIndex == i,
-                                          activeWeight: weight,
-                                          iconSize: iconSize,
-                                          fontSize: fontSize,
-                                          iconColor: iconColor,
-                                          activeLabelColor: activeLabelColor,
-                                          inactiveLabelColor: inactiveLabelColor,
-                                          onTap: () => _handleTabTap(i),
-                                          onLongPress: i == 3
-                                              ? () =>
-                                                    BottomNavBar._showProfileMenu(
-                                                      context,
-                                                    )
-                                              : null,
-                                          avatarUrl: widget.avatarUrl,
-                                          isProfile: i == 3,
-                                        );
-                                      }),
-                                    ),
+                                          // Layer 3: 4 Tab Items (Strictly Monochrome Icons + Labels)
+                                          // Each _TabItem has its own spring-bounce
+                                          // animation that triggers when it becomes active.
+                                          Positioned.fill(
+                                            child: Row(
+                                              children: List.generate(
+                                                _kTabs.length,
+                                                (i) {
+                                                  final dist = (pos - i).abs();
+                                                  final weight = (1.0 - dist)
+                                                      .clamp(0.0, 1.0);
+                                                  return _TabItem(
+                                                    tab: _kTabs[i],
+                                                    isSelected:
+                                                        widget.currentIndex ==
+                                                        i,
+                                                    activeWeight: weight,
+                                                    iconSize: iconSize,
+                                                    fontSize: fontSize,
+                                                    iconColor: iconColor,
+                                                    activeLabelColor:
+                                                        activeLabelColor,
+                                                    inactiveLabelColor:
+                                                        inactiveLabelColor,
+                                                    onTap: () =>
+                                                        _handleTabTap(i),
+                                                    onLongPress: i == 3
+                                                        ? () =>
+                                                              BottomNavBar._showProfileMenu(
+                                                                context,
+                                                              )
+                                                        : null,
+                                                    avatarUrl: widget.avatarUrl,
+                                                    isProfile: i == 3,
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ],
                               );
@@ -872,9 +925,9 @@ class _TabItemState extends State<_TabItem>
                         maxLines: 1,
                         softWrap: false,
                         textAlign: TextAlign.center,
-                        textScaler: MediaQuery.textScalerOf(context).clamp(
-                          maxScaleFactor: 1.15,
-                        ),
+                        textScaler: MediaQuery.textScalerOf(
+                          context,
+                        ).clamp(maxScaleFactor: 1.15),
                         style: TextStyle(
                           color: labelColor,
                           fontWeight: showActive
@@ -978,17 +1031,13 @@ class _PlusButtonState extends State<_PlusButton>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: isDark ? 0.28 : 0.08,
-                  ),
+                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
                   blurRadius: isDark ? 26 : 22,
                   offset: Offset(0, isDark ? 8 : 7),
                   spreadRadius: -3,
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: isDark ? 0.10 : 0.03,
-                  ),
+                  color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.03),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -1004,14 +1053,8 @@ class _PlusButtonState extends State<_PlusButton>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: isDark
-                          ? [
-                              const Color(0x281C2028),
-                              const Color(0x18090B0E),
-                            ]
-                          : [
-                              const Color(0x75FFFFFF),
-                              const Color(0x4AFFFFFF),
-                            ],
+                          ? [const Color(0x281C2028), const Color(0x18090B0E)]
+                          : [const Color(0x75FFFFFF), const Color(0x4AFFFFFF)],
                     ),
                     border: Border.all(color: glassBorder, width: 0.75),
                   ),

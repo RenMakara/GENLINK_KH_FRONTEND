@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final List<String> images;
@@ -56,40 +56,27 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
   }
 
   Widget _buildImageWidget(String url) {
-    if (url.startsWith('assets/')) {
-      return Image.asset(url, fit: BoxFit.contain, alignment: Alignment.center);
-    }
-    if (url.startsWith('http')) {
-      return Image.network(
-        url,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                color: AppColors.communityAccent,
-                strokeWidth: 2.5,
-              ),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) => const Center(
-          child: Icon(
-            Icons.broken_image_rounded,
-            color: Colors.white38,
-            size: 64,
-          ),
-        ),
-      );
-    }
-    return Image.file(
-      File(url),
+    return AppCachedImage(
+      imageUrl: url,
       fit: BoxFit.contain,
       alignment: Alignment.center,
+      placeholder: const Center(
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(
+            color: AppColors.communityAccent,
+            strokeWidth: 2.5,
+          ),
+        ),
+      ),
+      errorWidget: const Center(
+        child: Icon(
+          Icons.broken_image_rounded,
+          color: Colors.white38,
+          size: 64,
+        ),
+      ),
     );
   }
 

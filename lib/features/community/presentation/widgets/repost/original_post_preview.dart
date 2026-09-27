@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-
-import 'package:genlink_frontend/core/config/app_config.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
+import 'package:genlink_frontend/design_system/widgets/avatar/app_avatar.dart';
+import 'package:genlink_frontend/design_system/widgets/images/app_cached_image.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
 
 /// Lightweight, read-only preview of an original post for reposting.
@@ -20,31 +19,7 @@ class OriginalPostPreview extends StatelessWidget {
     required this.post,
   });
 
-  ImageProvider _resolveImageProvider(String url) {
-    final trimmed = url.trim();
-    if (trimmed.startsWith('assets/')) {
-      return AssetImage(trimmed);
-    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      String resolved = trimmed;
-      if (resolved.contains('.cdn.digitaloceanspaces.com')) {
-        resolved = resolved.replaceFirst(
-          '.cdn.digitaloceanspaces.com',
-          '.digitaloceanspaces.com',
-        );
-      }
-      return NetworkImage(resolved);
-    } else {
-      try {
-        final file = File(trimmed);
-        if (file.existsSync() && file.lengthSync() > 0) {
-          return FileImage(file);
-        }
-      } catch (_) {}
 
-      final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
-      return NetworkImage('${AppConfig.apiBaseUrl}$clean');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,29 +56,10 @@ class OriginalPostPreview extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 19,
-                  backgroundColor: isDark
-                      ? AppColors.darkSurfacePrimary
-                      : AppColors.lightSurfacePrimary,
-                  backgroundImage: post.authorAvatar.trim().isNotEmpty
-                      ? _resolveImageProvider(post.authorAvatar)
-                      : null,
-                  onBackgroundImageError:
-                      post.authorAvatar.trim().isNotEmpty ? (_, _) {} : null,
-                  child: post.authorAvatar.trim().isEmpty
-                      ? Text(
-                          post.authorName.trim().isNotEmpty
-                              ? post.authorName.trim()[0].toUpperCase()
-                              : 'U',
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        )
-                      : null,
+                AppAvatar(
+                  imageUrl: post.authorAvatar,
+                  name: post.authorName,
+                  size: 38,
                 ),
                 const SizedBox(width: AppSpacing.sm + 2),
                 // Name & Audience / Timestamp
@@ -219,10 +175,11 @@ class OriginalPostPreview extends StatelessWidget {
               children: [
                 // Base background / Image
                 if (mediaUrl.isNotEmpty && !isVideo)
-                  Image(
-                    image: _resolveImageProvider(mediaUrl),
+                  AppCachedImage(
+                    imageUrl: mediaUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (ctx, error, stackTrace) => Container(
+                    memCacheWidth: 720,
+                    errorWidget: Container(
                       color: surfacePlaceholder,
                       alignment: Alignment.center,
                       child: Icon(
@@ -231,32 +188,17 @@ class OriginalPostPreview extends StatelessWidget {
                         size: 32,
                       ),
                     ),
-                    loadingBuilder: (ctx, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        color: surfacePlaceholder,
-                        alignment: Alignment.center,
-                        child: const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      );
-                    },
                   )
                 else
                   // Video surface or fallback poster
                   Container(
                     color: surfacePlaceholder,
                     child: (post.imageUrls.isNotEmpty)
-                        ? Image(
-                            image: _resolveImageProvider(post.imageUrls.first),
+                        ? AppCachedImage(
+                            imageUrl: post.imageUrls.first,
                             fit: BoxFit.cover,
-                            errorBuilder: (ctx, error, stackTrace) =>
-                                const SizedBox.shrink(),
+                            memCacheWidth: 720,
+                            errorWidget: const SizedBox.shrink(),
                           )
                         : null,
                   ),

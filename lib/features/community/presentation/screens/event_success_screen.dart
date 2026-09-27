@@ -9,6 +9,7 @@ import '../../../../main_controller.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 class EventSuccessScreen extends StatefulWidget {
   final EventModel event;
@@ -524,11 +525,11 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       );
     }
     if (widget.event.imageUrl.isNotEmpty) {
-      return Image.network(
-        widget.event.imageUrl,
+      return AppCachedImage(
+        imageUrl: widget.event.imageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _placeholderThumbnail(isDark, textMuted),
+        memCacheWidth: 600,
+        errorWidget: _placeholderThumbnail(isDark, textMuted),
       );
     }
     return _placeholderThumbnail(isDark, textMuted);

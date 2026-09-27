@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 typedef ShortContentVideoControllerFactory =
     ShortContentVideoController Function(Uri url);
@@ -420,12 +421,12 @@ class _ShortContentThumbnail extends StatelessWidget {
       return const ColoredBox(color: Colors.black);
     }
 
-    return Image.network(
-      thumbnail,
+    return AppCachedImage(
+      imageUrl: thumbnail,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
-      loadingBuilder: (context, child, progress) =>
-          progress == null ? child : const ColoredBox(color: Colors.black),
+      memCacheWidth: 720,
+      placeholder: const ColoredBox(color: Colors.black),
+      errorWidget: const ColoredBox(color: Colors.black),
     );
   }
 }

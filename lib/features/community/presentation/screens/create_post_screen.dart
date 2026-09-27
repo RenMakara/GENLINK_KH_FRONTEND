@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../shared/utils/current_user.dart';
@@ -1010,10 +1011,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    Image.network(
-                                      url,
+                                    AppCachedImage(
+                                      imageUrl: url,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Center(
+                                      memCacheWidth: 300,
+                                      errorWidget: Center(
                                         child: Text(
                                           title,
                                           textAlign: TextAlign.center,
@@ -2221,10 +2223,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       child: ev.coverImageFile != null
                           ? Image.file(ev.coverImageFile!, fit: BoxFit.cover)
                           : (ev.imageUrl.isNotEmpty
-                              ? Image.network(
-                                  ev.imageUrl,
+                              ? AppCachedImage(
+                                  imageUrl: ev.imageUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  memCacheWidth: 150,
+                                  memCacheHeight: 150,
+                                  errorWidget:
                                       Icon(Icons.event, color: textSecondary, size: 24),
                                 )
                               : Icon(Icons.event, color: textSecondary, size: 24)),
@@ -2404,10 +2408,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           fit: StackFit.expand,
           children: [
             imgPath.startsWith('http')
-                ? Image.network(
-                    imgPath,
+                ? AppCachedImage(
+                    imageUrl: imgPath,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
+                    memCacheWidth: 600,
+                    errorWidget:
                         Icon(Icons.broken_image_outlined, color: textSecondary),
                   )
                 : imgPath.startsWith('assets/')

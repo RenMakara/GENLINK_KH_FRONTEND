@@ -12,6 +12,7 @@ import '../../../media/domain/entities/media_entity.dart';
 import '../../../media/domain/media_upload_service.dart';
 import '../../../media/presentation/media_picker.dart';
 import '../../domain/entities/profile_entity.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../controllers/profile_controller.dart';
 
 /// Full-page dedicated screen for creating and editing portfolio projects.
@@ -400,10 +401,11 @@ class _PortfolioFormScreenState extends State<PortfolioFormScreen> {
               children: [
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.network(
-                    imageUrl,
+                  child: AppCachedImage(
+                    imageUrl: imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
+                    memCacheWidth: 720,
+                    errorWidget: Container(
                       color: scheme.surfaceContainerHighest,
                       alignment: Alignment.center,
                       child: Column(

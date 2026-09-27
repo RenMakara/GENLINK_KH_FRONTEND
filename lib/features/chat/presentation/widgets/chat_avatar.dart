@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/core/storage/genlink_image_cache_manager.dart';
+import 'package:genlink_frontend/core/utils/media_url_resolver.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class ChatAvatar extends StatelessWidget {
@@ -36,15 +39,24 @@ class ChatAvatar extends StatelessWidget {
         : AppColors.chatPrimary;
 
     ImageProvider? imageProvider;
-    final url = (avatarUrl ?? '').trim();
-    if (url.isNotEmpty) {
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        imageProvider = NetworkImage(url);
-      } else if (url.startsWith('assets/')) {
-        imageProvider = AssetImage(url);
+    final resolvedUrl = MediaUrlResolver.resolve(avatarUrl);
+    if (resolvedUrl.isNotEmpty) {
+      if (MediaUrlResolver.isRemoteUrl(resolvedUrl)) {
+        final decodedWidth = (radius * 2 * 3).round().clamp(64, 512);
+        imageProvider = CachedNetworkImageProvider(
+          resolvedUrl,
+          cacheManager: GenLinkImageCacheManager(),
+          maxWidth: decodedWidth,
+          maxHeight: decodedWidth,
+        );
+      } else if (MediaUrlResolver.isAsset(resolvedUrl)) {
+        imageProvider = AssetImage(resolvedUrl);
       } else {
         try {
-          final file = File(url);
+          final cleanPath = resolvedUrl.startsWith('file://')
+              ? resolvedUrl.replaceFirst('file://', '')
+              : resolvedUrl;
+          final file = File(cleanPath);
           if (file.existsSync()) {
             imageProvider = FileImage(file);
           }

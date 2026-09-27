@@ -10,6 +10,8 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../../chat/presentation/screens/chat_detail_screen.dart';
@@ -158,25 +160,9 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 11,
-                backgroundColor: isDark
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : AppColors.lightBorderSubtle,
-                backgroundImage: widget.recipientAvatar.isNotEmpty
-                    ? (widget.recipientAvatar.startsWith('assets/')
-                          ? AssetImage(widget.recipientAvatar) as ImageProvider
-                          : NetworkImage(widget.recipientAvatar))
-                    : null,
-                child: widget.recipientAvatar.isEmpty
-                    ? Icon(
-                        Icons.person_rounded,
-                        color: isDark
-                            ? Colors.white70
-                            : AppColors.lightTextMuted,
-                        size: 12,
-                      )
-                    : null,
+              AppAvatar(
+                imageUrl: widget.recipientAvatar,
+                size: 22,
               ),
               const SizedBox(width: 8),
 
@@ -743,12 +729,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       );
     } else if (mediaUrl.startsWith('http://') ||
         mediaUrl.startsWith('https://')) {
-      imageContent = Image.network(
-        mediaUrl,
+      imageContent = AppCachedImage(
+        imageUrl: mediaUrl,
         width: thumbSize,
         height: thumbSize,
         fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Icon(
+        memCacheWidth: (thumbSize * 2).round(),
+        memCacheHeight: (thumbSize * 2).round(),
+        errorWidget: Icon(
           Icons.image_not_supported_rounded,
           color: isDark ? Colors.white54 : AppColors.lightTextMuted,
           size: 16,
@@ -764,12 +752,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           fit: BoxFit.cover,
         );
       } else {
-        imageContent = Image.network(
-          mediaUrl,
+        imageContent = AppCachedImage(
+          imageUrl: mediaUrl,
           width: thumbSize,
           height: thumbSize,
           fit: BoxFit.cover,
-          errorBuilder: (c, e, s) => Icon(
+          memCacheWidth: (thumbSize * 2).round(),
+          memCacheHeight: (thumbSize * 2).round(),
+          errorWidget: Icon(
             Icons.image_not_supported_rounded,
             color: isDark ? Colors.white54 : AppColors.lightTextMuted,
             size: 16,
@@ -870,25 +860,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   ),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: isDark
-                            ? Colors.white.withValues(alpha: 0.15)
-                            : AppColors.lightBorderSubtle,
-                        backgroundImage: group.userAvatar.isNotEmpty
-                            ? (group.userAvatar.startsWith('assets/')
-                                  ? AssetImage(group.userAvatar) as ImageProvider
-                                  : NetworkImage(group.userAvatar))
-                            : null,
-                        child: group.userAvatar.isEmpty
-                            ? Icon(
-                                Icons.person_rounded,
-                                color: isDark
-                                    ? Colors.white70
-                                    : AppColors.lightTextMuted,
-                                size: 20,
-                              )
-                            : null,
+                      AppAvatar(
+                        imageUrl: group.userAvatar,
+                        name: group.userName,
+                        size: 40,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1908,21 +1883,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 else
                   ...viewers.map(
                     (v) => ListTile(
-                      leading: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white12,
-                        backgroundImage: v.userAvatar.isNotEmpty
-                            ? (v.userAvatar.startsWith('assets/')
-                                  ? AssetImage(v.userAvatar) as ImageProvider
-                                  : NetworkImage(v.userAvatar))
-                            : null,
-                        child: v.userAvatar.isEmpty
-                            ? const Icon(
-                                Icons.person_rounded,
-                                color: Colors.white70,
-                                size: 20,
-                              )
-                            : null,
+                      leading: AppAvatar(
+                        imageUrl: v.userAvatar,
+                        name: v.userName,
+                        size: 36,
                       ),
                       title: Text(
                         v.userName,
@@ -2759,28 +2723,24 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             _buildErrorMediaPlaceholder(),
       );
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
-      mediaWidget = Image.network(
-        url,
+      mediaWidget = AppCachedImage(
+        imageUrl: url,
         fit: BoxFit.contain,
         alignment: Alignment.center,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: Colors.black,
-            child: const Center(
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
+        placeholder: Container(
+          color: Colors.black,
+          child: const Center(
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
               ),
             ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) =>
-            _buildErrorMediaPlaceholder(),
+          ),
+        ),
+        errorWidget: _buildErrorMediaPlaceholder(),
       );
     } else {
       final localFile = _resolveFile(url);
@@ -2795,12 +2755,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               _buildErrorMediaPlaceholder(),
         );
       } else {
-        mediaWidget = Image.network(
-          url,
+        mediaWidget = AppCachedImage(
+          imageUrl: url,
           fit: BoxFit.contain,
           alignment: Alignment.center,
-          errorBuilder: (context, error, stackTrace) =>
-              _buildErrorMediaPlaceholder(),
+          errorWidget: _buildErrorMediaPlaceholder(),
         );
       }
     }
@@ -3245,12 +3204,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         } else if (layer.text.startsWith('assets/')) {
           imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.contain);
         } else {
-          imgWidget = Image.network(
-            layer.text,
+          imgWidget = AppCachedImage(
+            imageUrl: layer.text,
             width: 180,
             fit: BoxFit.contain,
-            errorBuilder: (c, e, s) =>
-                const Icon(Icons.broken_image, color: Colors.white54),
+            memCacheWidth: 360,
+            errorWidget: const Icon(Icons.broken_image, color: Colors.white54),
           );
         }
 
@@ -3448,13 +3407,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               );
                               _resumeStory();
                             },
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundImage:
-                                  group.userAvatar.startsWith('assets/')
-                                  ? AssetImage(group.userAvatar)
-                                        as ImageProvider
-                                  : NetworkImage(group.userAvatar),
+                            child: AppAvatar(
+                              imageUrl: group.userAvatar,
+                              name: group.userName,
+                              size: 36,
                             ),
                           ),
                           const SizedBox(width: 10),

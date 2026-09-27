@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 
@@ -353,38 +354,16 @@ class _ForumLikedBySheetState extends State<ForumLikedBySheet> {
         }
 
         final liker = _likers[index];
-        final hasAvatar = liker.avatarUrl.isNotEmpty &&
-            !liker.avatarUrl.contains('default_avatar');
 
         return ListTile(
           key: Key('liker_tile_${liker.id}'),
           dense: true,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          leading: CircleAvatar(
-            radius: 18,
-            backgroundImage: hasAvatar
-                ? (liker.avatarUrl.startsWith('assets/')
-                    ? AssetImage(liker.avatarUrl) as ImageProvider
-                    : NetworkImage(liker.avatarUrl))
-                : null,
-            backgroundColor:
-                AppColors.communityAccent.withValues(alpha: 0.15),
-            child: !hasAvatar
-                ? Text(
-                    liker.fullName.isNotEmpty
-                        ? (liker.fullName.startsWith('@') &&
-                                liker.fullName.length > 1
-                            ? liker.fullName.substring(1, 2).toUpperCase()
-                            : liker.fullName.substring(0, 1).toUpperCase())
-                        : 'U',
-                    style: const TextStyle(
-                      color: AppColors.communityAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  )
-                : null,
+          leading: AppAvatar(
+            imageUrl: liker.avatarUrl,
+            name: liker.fullName,
+            size: 36,
           ),
           title: Text(
             liker.fullName,

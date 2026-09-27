@@ -8,6 +8,7 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
@@ -618,35 +619,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               ),
                             )
                           else
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundImage: (_discussion.authorAvatar.isNotEmpty)
-                                  ? (_discussion.authorAvatar.startsWith('assets/')
-                                      ? AssetImage(_discussion.authorAvatar) as ImageProvider
-                                      : NetworkImage(_discussion.authorAvatar))
-                                  : null,
-                              backgroundColor: AppColors.communityAccent.withValues(
-                                alpha: 0.15,
-                              ),
-                              child: _discussion.authorAvatar.isEmpty
-                                  ? Text(
-                                      _discussion.authorName.isNotEmpty
-                                          ? (_discussion.authorName.startsWith('@') &&
-                                                  _discussion.authorName.length > 1
-                                              ? _discussion.authorName
-                                                  .substring(1, 2)
-                                                  .toUpperCase()
-                                              : _discussion.authorName
-                                                  .substring(0, 1)
-                                                  .toUpperCase())
-                                          : 'U',
-                                      style: const TextStyle(
-                                        color: AppColors.communityAccent,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    )
-                                  : null,
+                            AppAvatar(
+                              imageUrl: _discussion.authorAvatar,
+                              name: _discussion.authorName,
+                              size: 36,
                             ),
                           const SizedBox(width: AppSpacing.sm + 2),
                           Expanded(
@@ -1626,7 +1602,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color textSecondary,
     Color textMuted,
   ) {
-    final hasAvatar = comment.userAvatar.isNotEmpty;
     final currentUserId = _controller.currentUserId ??
         (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     final isCommentOwner = comment.checkIsOwner(currentUserId);
@@ -1639,29 +1614,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 15,
-                backgroundImage: hasAvatar
-                    ? (comment.userAvatar.startsWith('assets/')
-                        ? AssetImage(comment.userAvatar) as ImageProvider
-                        : NetworkImage(comment.userAvatar))
-                    : null,
-                backgroundColor: AppColors.communityAccent.withValues(alpha: 0.15),
-                child: !hasAvatar
-                    ? Text(
-                        comment.userName.isNotEmpty
-                            ? (comment.userName.startsWith('@') &&
-                                    comment.userName.length > 1
-                                ? comment.userName.substring(1, 2).toUpperCase()
-                                : comment.userName.substring(0, 1).toUpperCase())
-                            : 'U',
-                        style: const TextStyle(
-                          color: AppColors.communityAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      )
-                    : null,
+              AppAvatar(
+                imageUrl: comment.userAvatar,
+                name: comment.userName,
+                size: 30,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -1852,7 +1808,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color textSecondary,
     Color textMuted,
   ) {
-    final hasAvatar = reply.userAvatar.isNotEmpty;
     final currentUserId = _controller.currentUserId ??
         (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     final isReplyOwner = reply.checkIsOwner(currentUserId);
@@ -1862,29 +1817,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 12,
-            backgroundImage: hasAvatar
-                ? (reply.userAvatar.startsWith('assets/')
-                    ? AssetImage(reply.userAvatar) as ImageProvider
-                    : NetworkImage(reply.userAvatar))
-                : null,
-            backgroundColor: AppColors.communityAccent.withValues(alpha: 0.15),
-            child: !hasAvatar
-                ? Text(
-                    reply.userName.isNotEmpty
-                        ? (reply.userName.startsWith('@') &&
-                                reply.userName.length > 1
-                            ? reply.userName.substring(1, 2).toUpperCase()
-                            : reply.userName.substring(0, 1).toUpperCase())
-                        : 'U',
-                    style: const TextStyle(
-                      color: AppColors.communityAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  )
-                : null,
+          AppAvatar(
+            imageUrl: reply.userAvatar,
+            name: reply.userName,
+            size: 24,
           ),
           const SizedBox(width: AppSpacing.sm - 2),
           Expanded(

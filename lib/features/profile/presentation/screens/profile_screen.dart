@@ -7,6 +7,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/headers/app_screen_header.dart';
@@ -1854,11 +1855,11 @@ class _PortfolioPreview extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               if (imageUrl != null && imageUrl.isNotEmpty)
-                Image.network(
-                  imageUrl,
+                AppCachedImage(
+                  imageUrl: imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      _PortfolioPlaceholder(scheme: scheme),
+                  memCacheWidth: 450,
+                  errorWidget: _PortfolioPlaceholder(scheme: scheme),
                 )
               else
                 _PortfolioPlaceholder(scheme: scheme),

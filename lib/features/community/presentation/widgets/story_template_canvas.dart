@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/core/storage/genlink_image_cache_manager.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../domain/models/story_template_model.dart';
 
 File _resolveMediaFile(String rawPath) {
@@ -1259,7 +1262,10 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
       return AssetImage(mediaPath);
     } else if (mediaPath.startsWith('http://') ||
         mediaPath.startsWith('https://')) {
-      return NetworkImage(mediaPath);
+      return CachedNetworkImageProvider(
+        mediaPath,
+        cacheManager: GenLinkImageCacheManager(),
+      );
     } else {
       final file = _resolveMediaFile(mediaPath);
       if (file.existsSync() && file.lengthSync() > 0) {
@@ -1346,12 +1352,12 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
       );
     } else if (mediaPath.startsWith('http://') ||
         mediaPath.startsWith('https://')) {
-      return Image.network(
-        mediaPath,
+      return AppCachedImage(
+        imageUrl: mediaPath,
         fit: BoxFit.cover,
         alignment: Alignment.center,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (context, error, stackTrace) => Container(
+        memCacheWidth: 720,
+        errorWidget: Container(
           color: const Color(0xFF1E1E22),
           child: const Center(
             child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 28),

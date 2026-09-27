@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'poll_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../../../core/config/app_config.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -25,6 +25,11 @@ import 'full_screen_image_viewer.dart';
 import 'post_liked_by_sheet.dart';
 import 'forum_share_to_chat_sheet.dart';
 import 'repost/repost_bottom_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/storage/genlink_image_cache_manager.dart';
+import '../../../../core/utils/media_url_resolver.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 class PostCardWidget extends StatefulWidget {
   final CommunityPostModel post;
@@ -58,6 +63,17 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       _currentImageIndex = 0;
       _mediaAspectRatios.clear();
     }
+  }
+
+  void _updateMediaAspectRatio(int index, double ratio) {
+    if (!mounted || _mediaAspectRatios[index] == ratio) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _mediaAspectRatios[index] != ratio) {
+        setState(() {
+          _mediaAspectRatios[index] = ratio;
+        });
+      }
+    });
   }
 
   @override
@@ -466,41 +482,12 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         final username = widget.post.authorTag.replaceAll('@', '');
                         Get.toNamed(AppRoutes.profile, parameters: {'username': username});
                       },
-                      child: CircleAvatar(
-                        radius: avatarRadius,
-                        backgroundImage: () {
-                          final av = widget.post.authorAvatar.trim();
-                          if (av.isEmpty) return null;
-                          if (av.startsWith('assets/')) {
-                            return AssetImage(av) as ImageProvider;
-                          }
-                          String resolved = av;
-                          if (resolved.contains('.cdn.digitaloceanspaces.com')) {
-                            resolved = resolved.replaceFirst(
-                              '.cdn.digitaloceanspaces.com',
-                              '.digitaloceanspaces.com',
-                            );
-                          }
-                          if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
-                            return NetworkImage(resolved);
-                          }
-                          final clean = resolved.startsWith('/') ? resolved : '/$resolved';
-                          return NetworkImage('${AppConfig.apiBaseUrl}$clean');
-                        }(),
-                        onBackgroundImageError: widget.post.authorAvatar.trim().isNotEmpty ? (_, _) {} : null,
-                        backgroundColor: isDark
-                            ? AppColors.darkSurfaceSecondary
-                            : AppColors.lightBgSecondary,
-                        child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
-                            ? Text(
-                                widget.post.authorAvatar.isNotEmpty
-                                    ? widget.post.authorAvatar[0]
-                                    : (widget.post.authorName.trim().isNotEmpty
-                                        ? widget.post.authorName.trim()[0].toUpperCase()
-                                        : 'U'),
-                                style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold),
-                              )
-                            : null,
+                      child: AppAvatar(
+                        imageUrl: widget.post.authorAvatar,
+                        name: widget.post.authorName.isNotEmpty
+                            ? widget.post.authorName
+                            : widget.post.authorTag,
+                        size: avatarRadius * 2,
                       ),
                     ),
                     SizedBox(width: headerGap),
@@ -1206,13 +1193,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           slideIndex: 0,
           isInCarousel: false,
           isCurrentPage: true,
-          onAspectRatioResolved: (ratio) {
-            if (mounted && _mediaAspectRatios[0] != ratio) {
-              setState(() {
-                _mediaAspectRatios[0] = ratio;
-              });
-            }
-          },
+          onAspectRatioResolved: (ratio) => _updateMediaAspectRatio(0, ratio),
         );
       } else {
         return Padding(
@@ -1225,13 +1206,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               allImages: [single.url],
               postId: widget.post.id,
               isSingle: true,
-              onAspectRatioResolved: (ratio) {
-                if (mounted && _mediaAspectRatios[0] != ratio) {
-                  setState(() {
-                    _mediaAspectRatios[0] = ratio;
-                  });
-                }
-              },
+              onAspectRatioResolved: (ratio) => _updateMediaAspectRatio(0, ratio),
               onTap: () => _openFullScreenViewer(0, [single.url]),
             ),
           ),
@@ -1294,13 +1269,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         slideIndex: idx,
                         isInCarousel: true,
                         isCurrentPage: activeIndex == idx,
-                        onAspectRatioResolved: (ratio) {
-                          if (mounted && _mediaAspectRatios[idx] != ratio) {
-                            setState(() {
-                              _mediaAspectRatios[idx] = ratio;
-                            });
-                          }
-                        },
+                        onAspectRatioResolved: (ratio) =>
+                            _updateMediaAspectRatio(idx, ratio),
                       );
                     } else {
                       final imgIndex = allImageUrls.indexOf(item.url);
@@ -1313,13 +1283,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         allImages: allImageUrls,
                         postId: widget.post.id,
                         isSingle: false,
-                        onAspectRatioResolved: (ratio) {
-                          if (mounted && _mediaAspectRatios[idx] != ratio) {
-                            setState(() {
-                              _mediaAspectRatios[idx] = ratio;
-                            });
-                          }
-                        },
+                        onAspectRatioResolved: (ratio) =>
+                            _updateMediaAspectRatio(idx, ratio),
                         onTap: () => _openFullScreenViewer(
                           imgIndex >= 0 ? imgIndex : 0,
                           allImageUrls,
@@ -1643,19 +1608,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         tag: 'post-event-${event.id}-${widget.post.id}',
                         child: hasLocalCover
                             ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
-                            : Image.network(
-                                event.imageUrl,
+                            : AppCachedImage(
+                                imageUrl: event.imageUrl,
                                 fit: BoxFit.cover,
-                                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                                  if (wasSynchronouslyLoaded) return child;
-                                  return AnimatedOpacity(
-                                    opacity: frame == null ? 0.0 : 1.0,
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOut,
-                                    child: child,
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) =>
+                                memCacheWidth: 1080,
+                                errorWidget:
                                     _buildMonochromeEventPlaceholder(isDark, textSecondary),
                               ),
                       ),
@@ -2419,38 +2376,40 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
   }
 
   ImageProvider _resolveProvider(String url) {
-    final trimmed = url.trim();
-    if (trimmed.startsWith('assets/')) {
-      return AssetImage(trimmed);
-    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      String resolved = trimmed;
-      if (resolved.contains('.cdn.digitaloceanspaces.com')) {
-        resolved = resolved.replaceFirst(
-          '.cdn.digitaloceanspaces.com',
-          '.digitaloceanspaces.com',
-        );
-      }
-      return NetworkImage(resolved);
-    } else {
+    final resolved = MediaUrlResolver.resolve(url);
+    if (MediaUrlResolver.isAsset(resolved)) {
+      return AssetImage(resolved);
+    } else if (MediaUrlResolver.isLocalFile(resolved)) {
+      final clean = resolved.startsWith('file://')
+          ? resolved.replaceFirst('file://', '')
+          : resolved;
       try {
-        final file = File(trimmed);
+        final file = File(clean);
         if (file.existsSync() && file.lengthSync() > 0) {
           return FileImage(file);
         }
       } catch (_) {}
-
-      // Fallback for relative backend paths
-      final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
-      return NetworkImage('${AppConfig.apiBaseUrl}$clean');
     }
+
+    return CachedNetworkImageProvider(
+      resolved,
+      cacheManager: GenLinkImageCacheManager(),
+      maxWidth: 1080,
+    );
   }
 
   void _resolveImage() {
     if (widget.url.trim().isEmpty) {
       if (mounted) {
-        setState(() {
-          _hasError = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _hasError = true;
+            });
+          }
         });
+      } else {
+        _hasError = true;
       }
       return;
     }
@@ -2466,29 +2425,44 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
           final h = info.image.height;
           if (w > 0 && h > 0) {
             final ratio = w / h;
-            widget.onAspectRatioResolved?.call(ratio);
-            if (_aspectRatio != ratio) {
-              setState(() {
-                _aspectRatio = ratio;
-              });
+            if (synchronousCall) {
+              _aspectRatio = ratio;
+            } else if (_aspectRatio != ratio) {
+              if (WidgetsBinding.instance.schedulerPhase ==
+                  SchedulerPhase.persistentCallbacks) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _aspectRatio != ratio) {
+                    setState(() {
+                      _aspectRatio = ratio;
+                    });
+                  }
+                });
+              } else {
+                setState(() {
+                  _aspectRatio = ratio;
+                });
+              }
             }
-            // Once the aspect ratio is known, cleanly detach this listener.
-            // Keeping it attached causes MultiFrameImageStreamCompleter (for animated
-            // images/multi-frame sources) to keep running frame callbacks in parallel
-            // with Flutter's Image widget, resulting in `assert(_nextFrame != null)` failure.
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
+                widget.onAspectRatioResolved?.call(ratio);
                 _removeStreamListener();
               }
             });
           }
         },
         onError: (dynamic error, StackTrace? stackTrace) {
-          debugPrint('[_FeedPostImageView] Error loading image ${widget.url}: $error');
+          debugPrint(
+              '[_FeedPostImageView] Error loading image ${widget.url}: $error');
           if (!mounted) return;
           _removeStreamListener();
-          setState(() {
-            _hasError = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _hasError = true;
+              });
+            }
           });
         },
       );
@@ -2496,9 +2470,15 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
     } catch (_) {
       _removeStreamListener();
       if (mounted) {
-        setState(() {
-          _hasError = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _hasError = true;
+            });
+          }
         });
+      } else {
+        _hasError = true;
       }
     }
   }

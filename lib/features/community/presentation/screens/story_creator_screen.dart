@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
@@ -2118,36 +2120,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         ),
                         itemBuilder: (c, idx) {
                           final user = filteredUsers[idx];
-                          final hasAvatar = user.avatarUrl.isNotEmpty;
-                          ImageProvider? imgProvider;
-                          if (hasAvatar) {
-                            if (user.avatarUrl.startsWith('assets/')) {
-                              imgProvider = AssetImage(user.avatarUrl);
-                            } else {
-                              imgProvider = NetworkImage(user.avatarUrl);
-                            }
-                          }
 
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 2,
                             ),
-                            leading: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: AppColors.darkSurfaceSecondary,
-                              backgroundImage: imgProvider,
-                              child: !hasAvatar
-                                  ? Text(
-                                      user.displayName.isNotEmpty
-                                          ? user.displayName[0].toUpperCase()
-                                          : '@',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                  : null,
+                            leading: AppAvatar(
+                              imageUrl: user.avatarUrl,
+                              name: user.displayName,
+                              size: 36,
                             ),
                             title: Text(
                               user.displayName,
@@ -2625,13 +2607,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     } else if (_activeMediaPath != null &&
         (_activeMediaPath!.startsWith('http://') ||
             _activeMediaPath!.startsWith('https://'))) {
-      imgWidget = Image.network(
-        _activeMediaPath!,
+      imgWidget = AppCachedImage(
+        imageUrl: _activeMediaPath!,
         fit: BoxFit.contain,
         alignment: Alignment.center,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (ctx, err, stack) =>
-            _buildErrorMediaPlaceholder(),
+        errorWidget: _buildErrorMediaPlaceholder(),
       );
     } else {
       imgWidget = Image.file(
@@ -3617,12 +3597,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 _buildLayerImageErrorPlaceholder(),
           );
         } else {
-          imgWidget = Image.network(
-            layer.text,
+          imgWidget = AppCachedImage(
+            imageUrl: layer.text,
             width: 180,
             fit: BoxFit.contain,
-            errorBuilder: (ctx, err, stack) =>
-                _buildLayerImageErrorPlaceholder(),
+            memCacheWidth: 360,
+            errorWidget: _buildLayerImageErrorPlaceholder(),
           );
         }
 

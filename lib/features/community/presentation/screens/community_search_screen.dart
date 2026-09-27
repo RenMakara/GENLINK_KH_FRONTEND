@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
@@ -1363,17 +1364,13 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 const SizedBox(height: 7),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    post.imageUrls.first.contains('.cdn.digitaloceanspaces.com')
-                        ? post.imageUrls.first.replaceFirst(
-                            '.cdn.digitaloceanspaces.com',
-                            '.digitaloceanspaces.com',
-                          )
-                        : post.imageUrls.first,
+                  child: AppCachedImage(
+                    imageUrl: post.imageUrls.first,
                     height: 120,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
+                    memCacheWidth: 600,
+                    errorWidget: const SizedBox.shrink(),
                   ),
                 ),
               ],
@@ -1474,10 +1471,12 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 child: event.imageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          event.imageUrl,
+                        child: AppCachedImage(
+                          imageUrl: event.imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Icon(
+                          memCacheWidth: 150,
+                          memCacheHeight: 150,
+                          errorWidget: Icon(
                             Icons.event_available_rounded,
                             color: textSecondary,
                             size: 22,

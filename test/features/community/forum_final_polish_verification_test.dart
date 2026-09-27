@@ -47,6 +47,7 @@ class _MockChatRepository implements ChatRepositoryImpl {
     ChatReplyReference? replyTo,
     String? localId,
     SharedContentModel? sharedContent,
+    StoryReference? storyReference,
   }) async {
     sentMessages.add({
       'conversationId': conversationId,

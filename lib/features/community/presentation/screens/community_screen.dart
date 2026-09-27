@@ -23,6 +23,7 @@ import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
 import 'forum_category_screen.dart';
 import 'forum_discussion_screen.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../widgets/forum_share_to_chat_sheet.dart';
 import 'widgets/community_widgets.dart';
 import '../../../home/presentation/widgets/home_featured_events_carousel.dart';
@@ -2011,29 +2012,26 @@ class _CommunityScreenState extends State<CommunityScreen>
       );
     }
     if (ev.imageUrl.isNotEmpty) {
-      return Image.network(
-        ev.imageUrl,
+      return AppCachedImage(
+        imageUrl: ev.imageUrl,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: isDark
-                ? AppColors.darkSurfaceSecondary
-                : AppColors.lightBgSecondary,
-            child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.0,
-                  color: isDark ? Colors.white24 : Colors.black12,
-                ),
+        memCacheWidth: 600,
+        placeholder: Container(
+          color: isDark
+              ? AppColors.darkSurfaceSecondary
+              : AppColors.lightBgSecondary,
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                color: isDark ? Colors.white24 : Colors.black12,
               ),
             ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) =>
-            _eventPlaceholder(isDark, textMuted),
+          ),
+        ),
+        errorWidget: _eventPlaceholder(isDark, textMuted),
       );
     }
     return _eventPlaceholder(isDark, textMuted);

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../chat/domain/models/chat_models.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
@@ -466,25 +467,10 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                           horizontal: 8,
                           vertical: 2,
                         ),
-                        leading: CircleAvatar(
-                          radius: 20,
-                          backgroundColor: cardBg,
-                          backgroundImage: conv.avatar.isNotEmpty
-                              ? (conv.avatar.startsWith('assets/')
-                                  ? AssetImage(conv.avatar) as ImageProvider
-                                  : NetworkImage(conv.avatar))
-                              : null,
-                          child: conv.avatar.isEmpty
-                              ? Text(
-                                  conv.name.isNotEmpty
-                                      ? conv.name[0].toUpperCase()
-                                      : '?',
-                                  style: TextStyle(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              : null,
+                        leading: AppAvatar(
+                          imageUrl: conv.avatar,
+                          name: conv.name,
+                          size: 40,
                         ),
                         title: Text(
                           conv.name,

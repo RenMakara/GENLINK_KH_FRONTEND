@@ -4,16 +4,34 @@ import 'features/profile/presentation/controllers/profile_controller.dart';
 class MainController extends GetxController {
   static MainController get to => Get.find<MainController>();
 
-  static const defaultIndex = 0;
+  static const homeIndex = 0;
+  static const levelUpIndex = 1;
+  static const financeIndex = 2;
+  static const profileIndex = 3;
+  static const tabCount = 4;
+  static const defaultIndex = homeIndex;
 
   final currentIndex = defaultIndex.obs;
   final isNavBarVisible = true.obs;
 
   void changeIndex(int index) {
-    if (index < 0 || index > 3) return;
-    currentIndex.value = index;
-    isNavBarVisible.value = true;
-    if (index == 3 && Get.isRegistered<ProfileController>()) {
+    if (index < 0 || index >= tabCount) return;
+
+    final didChangeTab = currentIndex.value != index;
+    if (didChangeTab) {
+      currentIndex.value = index;
+    }
+
+    // A tab selection is also an explicit request to reveal navigation.
+    if (!isNavBarVisible.value) {
+      isNavBarVisible.value = true;
+    }
+
+    // Avoid starting a duplicate network refresh when the active Profile tab
+    // is tapped again. Its double-tap handler owns explicit refreshes.
+    if (didChangeTab &&
+        index == profileIndex &&
+        Get.isRegistered<ProfileController>()) {
       Get.find<ProfileController>().refreshFollowStats();
     }
   }
@@ -24,5 +42,8 @@ class MainController extends GetxController {
     }
   }
 
-  void reset() => currentIndex.value = defaultIndex;
+  void reset() {
+    currentIndex.value = defaultIndex;
+    isNavBarVisible.value = true;
+  }
 }

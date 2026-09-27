@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 
 import 'demo_stories_data.dart';
 
@@ -135,13 +136,10 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Colors.white24,
-                          backgroundImage: story.author.avatarUrl.startsWith('assets/')
-                              ? AssetImage(story.author.avatarUrl) as ImageProvider
-                              : NetworkImage(story.author.avatarUrl),
-                          onBackgroundImageError: (_, _) {},
+                        child: AppAvatar(
+                          imageUrl: story.author.avatarUrl,
+                          name: story.userName,
+                          size: 36,
                         ),
                       ),
                       const SizedBox(width: 10),

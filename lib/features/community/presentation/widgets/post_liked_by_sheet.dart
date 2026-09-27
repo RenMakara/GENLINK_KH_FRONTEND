@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 
@@ -356,10 +357,6 @@ class _PostLikedBySheetState extends State<PostLikedBySheet> {
         }
 
         final liker = _likers[index];
-        final hasAvatar = liker.avatarUrl.isNotEmpty;
-        final initial = liker.fullName.isNotEmpty
-            ? liker.fullName.substring(0, 1).toUpperCase()
-            : 'U';
 
         return InkWell(
           onTap: () {
@@ -369,25 +366,10 @@ class _PostLikedBySheetState extends State<PostLikedBySheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor:
-                      AppColors.communityAccent.withValues(alpha: 0.15),
-                  backgroundImage: hasAvatar
-                      ? (liker.avatarUrl.startsWith('assets/')
-                          ? AssetImage(liker.avatarUrl) as ImageProvider
-                          : NetworkImage(liker.avatarUrl))
-                      : null,
-                  child: !hasAvatar
-                      ? Text(
-                          initial,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.communityAccent,
-                          ),
-                        )
-                      : null,
+                AppAvatar(
+                  imageUrl: liker.avatarUrl,
+                  name: liker.fullName,
+                  size: 40,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

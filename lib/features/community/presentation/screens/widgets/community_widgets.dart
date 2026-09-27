@@ -4,6 +4,7 @@ import 'package:genlink_frontend/core/utils/date_formatter.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
+import 'package:genlink_frontend/design_system/widgets/avatar/app_avatar.dart';
 import '../../widgets/community_design_tokens.dart';
 import '../../widgets/forum_liked_by_sheet.dart';
 import '../../widgets/forum_repost_dialog.dart';
@@ -202,7 +203,6 @@ class ForumLikedByPreview extends StatelessWidget {
                 child: Stack(
                   children: List.generate(displayLikers.length, (i) {
                     final l = displayLikers[i];
-                    final hasAvatar = l.avatarUrl.isNotEmpty;
                     return Positioned(
                       left: i * 14.0,
                       child: Container(
@@ -210,27 +210,10 @@ class ForumLikedByPreview extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: surface, width: 1.5),
                         ),
-                        child: CircleAvatar(
-                          radius: 9,
-                          backgroundImage: hasAvatar
-                              ? (l.avatarUrl.startsWith('assets/')
-                                  ? AssetImage(l.avatarUrl) as ImageProvider
-                                  : NetworkImage(l.avatarUrl))
-                              : null,
-                          backgroundColor:
-                              AppColors.communityAccent.withValues(alpha: 0.2),
-                          child: !hasAvatar
-                              ? Text(
-                                  l.fullName.isNotEmpty
-                                      ? l.fullName.substring(0, 1).toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.communityAccent,
-                                  ),
-                                )
-                              : null,
+                        child: AppAvatar(
+                          imageUrl: l.avatarUrl,
+                          name: l.fullName,
+                          size: 18,
                         ),
                       ),
                     );
@@ -496,44 +479,23 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   children: [
                     GestureDetector(
                       onTap: effectiveAuthorTap,
-                      child: CircleAvatar(
-                        radius: 19,
-                        backgroundColor: isDark
-                            ? AppColors.darkSurfaceSecondary
-                            : AppColors.lightBgSecondary,
-                        onBackgroundImageError: (!effectiveAnonymous &&
-                                widget.avatarUrl != null &&
-                                widget.avatarUrl!.isNotEmpty)
-                            ? (exception, stackTrace) {}
-                            : null,
-                        backgroundImage: (!effectiveAnonymous &&
-                                widget.avatarUrl != null &&
-                                widget.avatarUrl!.isNotEmpty)
-                            ? (widget.avatarUrl!.startsWith('assets/')
-                                ? AssetImage(widget.avatarUrl!) as ImageProvider
-                                : NetworkImage(widget.avatarUrl!))
-                            : null,
-                        child: effectiveAnonymous
-                            ? Icon(
+                      child: effectiveAnonymous
+                          ? CircleAvatar(
+                              radius: 19,
+                              backgroundColor: isDark
+                                  ? AppColors.darkSurfaceSecondary
+                                  : AppColors.lightBgSecondary,
+                              child: Icon(
                                 Icons.person_outline,
                                 size: 20,
                                 color: textMuted,
-                              )
-                            : ((widget.avatarUrl == null ||
-                                    widget.avatarUrl!.isEmpty)
-                                ? Text(
-                                    widget.author.isNotEmpty
-                                        ? widget.author.characters.first
-                                            .toUpperCase()
-                                        : 'U',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: textSecondary,
-                                    ),
-                                  )
-                                : null),
-                      ),
+                              ),
+                            )
+                          : AppAvatar(
+                              imageUrl: widget.avatarUrl,
+                              name: widget.author,
+                              size: 38,
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -1120,7 +1082,11 @@ class MentorCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            CircleAvatar(radius: 26, backgroundImage: NetworkImage(avatarUrl)),
+            AppAvatar(
+              imageUrl: avatarUrl,
+              name: name,
+              size: 52,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               name,

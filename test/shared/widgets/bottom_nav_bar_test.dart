@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
 import 'package:genlink_frontend/design_system/theme/app_theme.dart';
+import 'package:genlink_frontend/main_controller.dart';
 import 'package:genlink_frontend/shared/widgets/bottom_nav_bar.dart';
 import 'package:get/get.dart';
 
@@ -166,6 +167,22 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('selected tab follows MainController changes', (tester) async {
+    final mainController = Get.put(MainController());
+
+    await tester.pumpWidget(createNavBar(currentIndex: 0));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
+
+    mainController.changeIndex(1);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+  });
 
   testWidgets('tapping center button triggers onCenterTap callback', (
     tester,
@@ -842,41 +859,40 @@ void main() {
       },
     );
 
-    testWidgets(
-      'labels never collide or overlap across all phone widths',
-      (tester) async {
-        const testWidths = [320.0, 360.0, 375.0, 390.0, 412.0, 430.0];
+    testWidgets('labels never collide or overlap across all phone widths', (
+      tester,
+    ) async {
+      const testWidths = [320.0, 360.0, 375.0, 390.0, 412.0, 430.0];
 
-        for (final width in testWidths) {
-          tester.view.physicalSize = Size(width, 800);
-          tester.view.devicePixelRatio = 1.0;
+      for (final width in testWidths) {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1.0;
 
-          await tester.pumpWidget(createNavBar(currentIndex: 1));
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(createNavBar(currentIndex: 1));
+        await tester.pumpAndSettle();
 
-          final homeRect = tester.getRect(find.bySemanticsLabel('Home'));
-          final levelUpRect = tester.getRect(find.bySemanticsLabel('LevelUp'));
-          final financeRect = tester.getRect(find.bySemanticsLabel('Finance'));
-          final profileRect = tester.getRect(find.bySemanticsLabel('Profile'));
+        final homeRect = tester.getRect(find.bySemanticsLabel('Home'));
+        final levelUpRect = tester.getRect(find.bySemanticsLabel('LevelUp'));
+        final financeRect = tester.getRect(find.bySemanticsLabel('Finance'));
+        final profileRect = tester.getRect(find.bySemanticsLabel('Profile'));
 
-          // Non-overlapping horizontal ordering: Home < LevelUp < Finance < Profile
-          expect(homeRect.right, lessThanOrEqualTo(levelUpRect.left));
-          expect(levelUpRect.right, lessThanOrEqualTo(financeRect.left));
-          expect(financeRect.right, lessThanOrEqualTo(profileRect.left));
+        // Non-overlapping horizontal ordering: Home < LevelUp < Finance < Profile
+        expect(homeRect.right, lessThanOrEqualTo(levelUpRect.left));
+        expect(levelUpRect.right, lessThanOrEqualTo(financeRect.left));
+        expect(financeRect.right, lessThanOrEqualTo(profileRect.left));
 
-          // Each tab has positive width
-          expect(homeRect.width, greaterThan(30.0));
-          expect(levelUpRect.width, greaterThan(30.0));
-          expect(financeRect.width, greaterThan(30.0));
-          expect(profileRect.width, greaterThan(30.0));
-        }
+        // Each tab has positive width
+        expect(homeRect.width, greaterThan(30.0));
+        expect(levelUpRect.width, greaterThan(30.0));
+        expect(financeRect.width, greaterThan(30.0));
+        expect(profileRect.width, greaterThan(30.0));
+      }
 
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-      },
-    );
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+    });
 
     testWidgets(
       'active glass lens smoothly animates and centers over the selected tab',

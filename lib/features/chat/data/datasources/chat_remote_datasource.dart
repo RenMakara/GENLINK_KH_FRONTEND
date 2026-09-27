@@ -157,7 +157,7 @@ class ChatRemoteDataSource {
           'type': _toBackendType(messageType),
           'content': content,
           'mediaUrl': effectiveMediaUrl,
-          if (payloadSharedContent != null) 'sharedContent': payloadSharedContent,
+          'sharedContent': ?payloadSharedContent,
           if (replyTo != null) ...{
             'replyToMessageId': replyTo.messageId,
             'replyTo': replyTo.toJson(),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import '../../../../core/config/app_config.dart';
+import '../../../../core/utils/media_url_resolver.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../community/domain/models/community_post_model.dart';
 import '../../domain/models/chat_models.dart';
 import '../utils/shared_content_navigator.dart';
@@ -483,19 +484,7 @@ class _MessageBubbleState extends State<MessageBubble> {
         type == 'shared_profile';
   }
 
-  static String _resolveUrl(String url) {
-    final trimmed = url.trim();
-    if (trimmed.isEmpty) return '';
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      if (trimmed.contains('.cdn.digitaloceanspaces.com')) {
-        return trimmed.replaceFirst('.cdn.digitaloceanspaces.com', '.digitaloceanspaces.com');
-      }
-      return trimmed;
-    }
-    if (trimmed.startsWith('assets/')) return trimmed;
-    final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
-    return '${AppConfig.apiBaseUrl}$clean';
-  }
+  static String _resolveUrl(String url) => MediaUrlResolver.resolve(url);
 
   Widget _buildSharedContentCard(
     ChatMessageModel msg,
@@ -584,17 +573,12 @@ class _MessageBubbleState extends State<MessageBubble> {
                     return SizedBox(
                       height: 110,
                       width: double.infinity,
-                      child: resolvedThumb.startsWith('assets/')
-                          ? Image.asset(
-                              resolvedThumb,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                            )
-                          : Image.network(
-                              resolvedThumb,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                            ),
+                      child: AppCachedImage(
+                        imageUrl: resolvedThumb,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 600,
+                        errorWidget: const SizedBox.shrink(),
+                      ),
                     );
                   }(),
                 ],
@@ -842,9 +826,10 @@ class _MessageBubbleState extends State<MessageBubble> {
             insetPadding: const EdgeInsets.all(12),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: url.startsWith('http')
-                  ? Image.network(url, fit: BoxFit.contain)
-                  : Image.asset(url, fit: BoxFit.contain),
+              child: AppCachedImage(
+                imageUrl: url,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         );
@@ -854,29 +839,26 @@ class _MessageBubbleState extends State<MessageBubble> {
         child: Container(
           constraints: const BoxConstraints(maxHeight: 200, maxWidth: 260),
           margin: const EdgeInsets.only(bottom: 6),
-          child: url.startsWith('http')
-              ? Image.network(
-                  url,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (ctx, child, progress) {
-                    if (progress == null) return child;
-                    return Container(
-                      height: 120,
-                      color: Colors.black12,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.chatPrimary),
-                      ),
-                    );
-                  },
-                  errorBuilder: (ctx, err, stack) => Container(
-                    height: 90,
-                    color: Colors.black12,
-                    child: const Center(
-                      child: Icon(Icons.broken_image_rounded, color: Colors.white54),
-                    ),
-                  ),
-                )
-              : Image.asset(url, fit: BoxFit.cover),
+          child: AppCachedImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            memCacheWidth: 600,
+            memCacheHeight: 600,
+            placeholder: Container(
+              height: 120,
+              color: Colors.black12,
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.chatPrimary),
+              ),
+            ),
+            errorWidget: Container(
+              height: 90,
+              color: Colors.black12,
+              child: const Center(
+                child: Icon(Icons.broken_image_rounded, color: Colors.white54),
+              ),
+            ),
+          ),
         ),
       ),
     );

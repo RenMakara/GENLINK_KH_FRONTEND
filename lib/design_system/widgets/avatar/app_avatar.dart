@@ -1,9 +1,18 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/config/app_config.dart';
+import '../../../core/storage/genlink_image_cache_manager.dart';
+import '../../../core/utils/media_url_resolver.dart';
 
 class AppAvatar extends StatelessWidget {
-  const AppAvatar({super.key, this.imageUrl, this.name, this.size = 44});
+  const AppAvatar({
+    super.key,
+    this.imageUrl,
+    this.name,
+    this.size = 44,
+  });
 
   final String? imageUrl;
   final String? name;
@@ -12,26 +21,29 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final url = imageUrl?.trim();
+    final resolved = MediaUrlResolver.resolve(imageUrl);
 
     ImageProvider? imageProvider;
-    if (url != null && url.isNotEmpty) {
-      if (url.startsWith('assets/')) {
-        imageProvider = AssetImage(url);
+    if (resolved.isNotEmpty) {
+      if (MediaUrlResolver.isAsset(resolved)) {
+        imageProvider = AssetImage(resolved);
+      } else if (MediaUrlResolver.isLocalFile(resolved)) {
+        final cleanPath = resolved.startsWith('file://')
+            ? resolved.replaceFirst('file://', '')
+            : resolved;
+        final file = File(cleanPath);
+        if (file.existsSync()) {
+          imageProvider = FileImage(file);
+        }
       } else {
-        String resolved = url;
-        if (resolved.contains('.cdn.digitaloceanspaces.com')) {
-          resolved = resolved.replaceFirst(
-            '.cdn.digitaloceanspaces.com',
-            '.digitaloceanspaces.com',
-          );
-        }
-        if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
-          imageProvider = NetworkImage(resolved);
-        } else {
-          final clean = resolved.startsWith('/') ? resolved : '/$resolved';
-          imageProvider = NetworkImage('${AppConfig.apiBaseUrl}$clean');
-        }
+        // High density decode size limit (3x pixel ratio cap between 64 and 512 px)
+        final decodeDimension = (size * 3).round().clamp(64, 512);
+        imageProvider = CachedNetworkImageProvider(
+          resolved,
+          cacheManager: GenLinkImageCacheManager(),
+          maxHeight: decodeDimension,
+          maxWidth: decodeDimension,
+        );
       }
     }
 
@@ -39,6 +51,8 @@ class AppAvatar extends StatelessWidget {
       radius: size / 2,
       backgroundColor: scheme.surfaceContainerHighest,
       foregroundImage: imageProvider,
+      onForegroundImageError:
+          imageProvider != null ? (exception, stackTrace) {} : null,
       child: Text(
         _initials(name),
         style: TextStyle(

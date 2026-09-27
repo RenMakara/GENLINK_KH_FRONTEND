@@ -8,6 +8,8 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
@@ -596,24 +598,10 @@ class _CreatorHeader extends StatelessWidget {
                   ProfileNavigation.open(username: username, userId: creatorId),
                 )
               : null,
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.white24,
-            backgroundImage: avatarUrl == null || avatarUrl.isEmpty
-                ? null
-                : NetworkImage(avatarUrl),
-            onBackgroundImageError: avatarUrl == null || avatarUrl.isEmpty
-                ? null
-                : (_, _) {},
-            child: avatarUrl == null || avatarUrl.isEmpty
-                ? Text(
-                    _initials(name),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  )
-                : null,
+          child: AppAvatar(
+            imageUrl: avatarUrl,
+            name: name,
+            size: 40,
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -680,17 +668,6 @@ class _CreatorHeader extends StatelessWidget {
           ),
       ],
     );
-  }
-
-  static String _initials(String value) {
-    final parts = value
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .take(2)
-        .toList(growable: false);
-    if (parts.isEmpty) return '?';
-    return parts.map((part) => part.substring(0, 1).toUpperCase()).join();
   }
 }
 
@@ -905,12 +882,11 @@ class _ShortContentImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final value = url?.trim();
     if (value == null || value.isEmpty) return _fallback(errorMessage);
-    return Image.network(
-      value,
+    return AppCachedImage(
+      imageUrl: value,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _fallback(errorMessage),
-      loadingBuilder: (context, child, progress) =>
-          progress == null ? child : const ColoredBox(color: Colors.black),
+      placeholder: const ColoredBox(color: Colors.black),
+      errorWidget: _fallback(errorMessage),
     );
   }
 

@@ -10,6 +10,7 @@ import 'event_details_screen.dart';
 import '../../../../shared/utils/current_user.dart';
 import 'create_event_screen.dart';
 import 'my_events_screen.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -840,26 +841,24 @@ class _EventCardState extends State<EventCard>
       );
     }
     if (event.imageUrl.isNotEmpty) {
-      return Image.network(
-        event.imageUrl,
+      return AppCachedImage(
+        imageUrl: event.imageUrl,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            color: isDark ? const Color(0xFF1E2228) : const Color(0xFFE9ECF0),
-            child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.0,
-                  color: isDark ? Colors.white24 : Colors.black12,
-                ),
+        memCacheWidth: 600,
+        placeholder: Container(
+          color: isDark ? const Color(0xFF1E2228) : const Color(0xFFE9ECF0),
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                color: isDark ? Colors.white24 : Colors.black12,
               ),
             ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) => _placeholder(),
+          ),
+        ),
+        errorWidget: _placeholder(),
       );
     }
     return _placeholder();

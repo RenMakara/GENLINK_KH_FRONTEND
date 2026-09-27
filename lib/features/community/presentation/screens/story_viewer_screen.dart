@@ -23,8 +23,6 @@ import '../controllers/story_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_interactive_like_button.dart';
 import '../widgets/demo_stories_data.dart';
-import '../../../notification/presentation/controllers/notification_controller.dart';
-import '../../../notification/domain/models/notification_model.dart';
 import 'package:video_player/video_player.dart';
 import '../widgets/story_video_player_widget.dart';
 
@@ -1216,25 +1214,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         userId: group.userId,
       );
 
-      if (Get.isRegistered<NotificationController>()) {
-        final notifCtrl = Get.find<NotificationController>();
-        notifCtrl.addActivityNotification(
-          NotificationModel(
-            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
-            type: NotificationType.comment,
-            title: 'Story Reply',
-            body: '${group.userName} replied to your story: "$message"',
-            senderName: group.userName,
-            senderAvatar: group.userAvatar,
-            timeAgo: 'Just now',
-            timestamp: DateTime.now(),
-            isRead: false,
-            targetId: story.id,
-            targetType: 'story',
-          ),
-        );
-      }
-
       if (mounted) {
         _showCompactReplyToast(context, group.userName, group.userAvatar);
         await Get.to(() => const ChatDetailScreen());
@@ -1271,25 +1250,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
 
     _triggerDoubleTapLike();
-
-    if (Get.isRegistered<NotificationController>()) {
-      final notifCtrl = Get.find<NotificationController>();
-      notifCtrl.addActivityNotification(
-        NotificationModel(
-          id: 'notif_react_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
-          type: NotificationType.like,
-          title: 'Story Reaction',
-          body: '${group.userName} reacted $emoji to your story.',
-          senderName: group.userName,
-          senderAvatar: group.userAvatar,
-          timeAgo: 'Just now',
-          timestamp: DateTime.now(),
-          isRead: false,
-          targetId: story.id,
-          targetType: 'story',
-        ),
-      );
-    }
 
     AppNotificationBanner.showSuccess(
       context: context,

@@ -50,6 +50,7 @@ abstract final class ProfileMapper {
       following: (json['following'] as num?)?.toInt() ?? 0,
       followStatus: json['followStatus'] as String?,
       friend: json['friend'] as bool? ?? false,
+      followsViewer: json['followsViewer'] as bool? ?? false,
     );
   }
 

@@ -16,6 +16,7 @@ import '../../data/repositories/community_repository_impl.dart';
 import '../../domain/models/community_post_model.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/repositories/community_repository.dart';
+import '../../../profile/presentation/controllers/profile_controller.dart';
 import 'story_controller.dart';
 
 class CommunityController extends GetxController {
@@ -67,6 +68,10 @@ class CommunityController extends GetxController {
   final uploadProgress = 0.0.obs;
 
   final posts = <CommunityPostModel>[].obs;
+  /// Reposts are loaded separately so they never become part of the main feed.
+  final repostedPosts = <CommunityPostModel>[].obs;
+  final isLoadingRepostedPosts = false.obs;
+  bool _hasLoadedRepostedPosts = false;
   final activeComments = <CommentModel>[].obs;
   final isLoadingComments = false.obs;
   final followLoadingUserIds = <String>{}.obs;
@@ -1346,92 +1351,14 @@ class CommunityController extends GetxController {
         (effectiveUserId != null && effectiveUserId.isNotEmpty)
         ? effectiveUserId
         : 'current_user';
-    final effectiveReposterName =
-        (currentUserName.isNotEmpty && currentUserName != 'Guest')
-        ? currentUserName
-        : (CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
-              ? CurrentUser.name
-              : 'You');
-
-    final idx = posts.indexWhere((p) => p.id == discussion.id);
-    CommunityPostModel? originalPost;
-    CommunityPostModel? newlyCreatedPost;
-
-    if (idx != -1) {
-      originalPost = posts[idx];
-      posts[idx] = originalPost.copyWith(
-        sharesCount: originalPost.sharesCount + 1,
-        isRepostedByMe: true,
-        repostedBy: effectiveReposterName,
-        repostCaption: caption,
-        reposterId: effectiveReposterId,
-        originalPostId: originalPost.id,
-      );
-      posts.refresh();
-    } else {
-      final isAnonDiscussion =
-          discussion.isAnonymous ||
-          discussion.authorName.trim().toLowerCase() == 'anonymous' ||
-          ('community.anonymous'.tr.isNotEmpty &&
-              discussion.authorName.trim().toLowerCase() ==
-                  'community.anonymous'.tr.toLowerCase());
-      newlyCreatedPost = CommunityPostModel(
-        id: 'repost_${DateTime.now().millisecondsSinceEpoch}',
-        userId: isAnonDiscussion
-            ? 'anonymous'
-            : (discussion.authorId ?? 'unknown'),
-        authorName: isAnonDiscussion ? 'Anonymous' : discussion.authorName,
-        authorTag: isAnonDiscussion
-            ? 'anonymous'
-            : discussion.authorName.replaceAll('@', ''),
-        authorAvatar: isAnonDiscussion ? '' : discussion.authorAvatar,
-        timeAgo: 'Just now',
-        content:
-            discussion.title +
-            (discussion.content.isNotEmpty ? '\n${discussion.content}' : ''),
-        community: discussion.category,
-        sharesCount: 1,
-        isRepostedByMe: true,
-        repostedBy: effectiveReposterName,
-        repostCaption: caption,
-        reposterId: effectiveReposterId,
-        originalPostId: discussion.id,
-      );
-      posts.insert(0, newlyCreatedPost);
-      posts.refresh();
-    }
-
     try {
-      final success = await repository.repostPost(
+      final success = await repository.repostDiscussion(
         discussion.id,
         caption: caption,
         reposterId: effectiveReposterId,
       );
-      if (!success) {
-        if (idx != -1 && originalPost != null) {
-          final revertIdx = posts.indexWhere((p) => p.id == discussion.id);
-          if (revertIdx != -1) {
-            posts[revertIdx] = originalPost;
-            posts.refresh();
-          }
-        } else if (newlyCreatedPost != null) {
-          posts.removeWhere((p) => p.id == newlyCreatedPost!.id);
-          posts.refresh();
-        }
-        return false;
-      }
-      return true;
+      return success;
     } catch (e) {
-      if (idx != -1 && originalPost != null) {
-        final revertIdx = posts.indexWhere((p) => p.id == discussion.id);
-        if (revertIdx != -1) {
-          posts[revertIdx] = originalPost;
-          posts.refresh();
-        }
-      } else if (newlyCreatedPost != null) {
-        posts.removeWhere((p) => p.id == newlyCreatedPost!.id);
-        posts.refresh();
-      }
       return false;
     } finally {
       inFlightDiscussionReposts.remove(discussion.id);
@@ -1659,6 +1586,23 @@ class CommunityController extends GetxController {
     } finally {
       isLoadingFeed.value = false;
       isRefreshingFeed.value = false;
+    }
+  }
+
+  Future<void> fetchRepostedPosts({bool force = false}) async {
+    if (isLoadingRepostedPosts.value ||
+        (!force && _hasLoadedRepostedPosts)) {
+      return;
+    }
+
+    isLoadingRepostedPosts.value = true;
+    try {
+      repostedPosts.assignAll(await repository.getRepostedPosts());
+      _hasLoadedRepostedPosts = true;
+    } catch (e) {
+      debugPrint('[CommunityController] fetchRepostedPosts error: $e');
+    } finally {
+      isLoadingRepostedPosts.value = false;
     }
   }
 
@@ -2325,6 +2269,7 @@ class CommunityController extends GetxController {
         originalPostId: original.id,
       );
       posts[idx] = updated;
+      _upsertRepostedPost(updated);
 
       repository
           .repostPost(postId, caption: caption, reposterId: currentUserId)
@@ -2334,6 +2279,7 @@ class CommunityController extends GetxController {
               if (revertIdx != -1) {
                 posts[revertIdx] = original;
               }
+              _removeRepostedPost(postId);
             }
           })
           .catchError((_) {
@@ -2341,11 +2287,14 @@ class CommunityController extends GetxController {
             if (revertIdx != -1) {
               posts[revertIdx] = original;
             }
+            _removeRepostedPost(postId);
           });
     } else {
       repository
           .repostPost(postId, caption: caption, reposterId: currentUserId)
-          .then<void>((_) {})
+          .then<void>((success) {
+            if (success) fetchRepostedPosts(force: true);
+          })
           .catchError((_) {});
     }
   }
@@ -2361,6 +2310,7 @@ class CommunityController extends GetxController {
         clearRepostInfo: true,
       );
       posts[idx] = updated;
+      _removeRepostedPost(postId);
 
       repository
           .unrepostPost(postId, reposterId: currentUserId)
@@ -2370,6 +2320,7 @@ class CommunityController extends GetxController {
               if (revertIdx != -1) {
                 posts[revertIdx] = original;
               }
+              _upsertRepostedPost(original);
             }
           })
           .catchError((_) {
@@ -2377,12 +2328,28 @@ class CommunityController extends GetxController {
             if (revertIdx != -1) {
               posts[revertIdx] = original;
             }
+            _upsertRepostedPost(original);
           });
     } else {
+      final repostedIndex = repostedPosts.indexWhere((p) => p.id == postId);
+      final repostedOriginal = repostedIndex == -1
+          ? null
+          : repostedPosts[repostedIndex];
+      if (repostedOriginal != null) {
+        _removeRepostedPost(postId);
+      }
       repository
           .unrepostPost(postId, reposterId: currentUserId)
-          .then<void>((_) {})
-          .catchError((_) {});
+          .then<void>((success) {
+            if (!success && repostedOriginal != null) {
+              _upsertRepostedPost(repostedOriginal);
+            }
+          })
+          .catchError((_) {
+            if (repostedOriginal != null) {
+              _upsertRepostedPost(repostedOriginal);
+            }
+          });
     }
   }
 
@@ -2398,7 +2365,12 @@ class CommunityController extends GetxController {
   }
 
   List<CommunityPostModel> getUserPosts(String userId, {String? username}) {
-    return posts.where((p) {
+    // Prefer the repost copy because the same original may also be present in
+    // the feed without the viewer-specific repost metadata.
+    final candidates = <CommunityPostModel>[...repostedPosts, ...posts];
+    final seenIds = <String>{};
+    return candidates.where((p) {
+      if (!seenIds.add(p.id)) return false;
       if (userId.isNotEmpty && p.userId == userId) {
         return true;
       }
@@ -2417,6 +2389,20 @@ class CommunityController extends GetxController {
       }
       return false;
     }).toList();
+  }
+
+  void _upsertRepostedPost(CommunityPostModel post) {
+    final index = repostedPosts.indexWhere((item) => item.id == post.id);
+    if (index == -1) {
+      repostedPosts.insert(0, post);
+    } else {
+      repostedPosts[index] = post;
+    }
+    repostedPosts.refresh();
+  }
+
+  void _removeRepostedPost(String postId) {
+    repostedPosts.removeWhere((item) => item.id == postId);
   }
 
   Future<void> fetchComments(String postId) async {
@@ -2919,6 +2905,9 @@ class CommunityController extends GetxController {
           message: 'Failed to update follow status',
           errorCode: 'FOLLOW_FAILED',
         );
+      }
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().refreshFollowStats();
       }
       return true;
     } catch (e) {

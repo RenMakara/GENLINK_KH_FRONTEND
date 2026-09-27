@@ -10,6 +10,7 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../profile/presentation/controllers/profile_controller.dart';
 import '../../../profile/presentation/utils/profile_navigation.dart';
 import '../../data/datasources/community_remote_datasource.dart';
 import '../../data/repositories/community_repository_impl.dart';
@@ -155,6 +156,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         return;
       }
 
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().refreshFollowStats();
+      }
+
       if (mounted) {
         if (willFollow) {
           AppNotificationBanner.showSuccess(
@@ -213,6 +218,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
           );
         }
       });
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().refreshFollowStats();
+      }
       if (mounted) {
         AppNotificationBanner.showSuccess(
           context: context,

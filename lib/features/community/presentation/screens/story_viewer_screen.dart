@@ -257,6 +257,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   bool _isMorePressed = false;
   DateTime? _lastLikeTapTime;
+  Timer? _viewersRefreshTimer;
 
   StoryGroupModel? get _currentGroup {
     if (_currentGroupIdx < 0 || _currentGroupIdx >= widget.groups.length) {
@@ -285,6 +286,28 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     }
     return group.isOwner;
+  }
+
+  void _loadViewersForCurrentStory() {
+    final story = _currentStory;
+    if (story == null || !_isOwnStory) return;
+    if (story.id.startsWith('demo_')) return;
+
+    final storyRepo = Get.isRegistered<StoryRepository>()
+        ? Get.find<StoryRepository>()
+        : StoryRepositoryImpl();
+
+    storyRepo.getStoryViewers(story.id).then((viewers) {
+      if (mounted && _currentStory?.id == story.id) {
+        if (story.viewersCount != viewers.length || story.viewers.length != viewers.length) {
+          setState(() {
+            story.viewersCount = viewers.length;
+          });
+        }
+      }
+    }).catchError((e) {
+      debugPrint('[StoryViewer] Error loading viewers: $e');
+    });
   }
 
   @override
@@ -324,6 +347,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   @override
   void dispose() {
+    _viewersRefreshTimer?.cancel();
     _progressAnimController.stop();
     _progressAnimController.dispose();
     _activeVideoController?.pause();
@@ -349,6 +373,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void _closeViewer() {
     if (_isClosing) return;
     _isClosing = true;
+    _viewersRefreshTimer?.cancel();
     _markCurrentStoryViewed();
     _progressAnimController.stop();
     _activeVideoController?.pause();
@@ -383,6 +408,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _progressAnimController.stop();
     final story = _currentStory;
     _markCurrentStoryViewed();
+
+    _viewersRefreshTimer?.cancel();
+    if (_isOwnStory && story != null && !story.id.startsWith('demo_')) {
+      _loadViewersForCurrentStory();
+      _viewersRefreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (mounted && !_isClosing && _isOwnStory) {
+          _loadViewersForCurrentStory();
+        }
+      });
+    }
 
     final isVideo = story != null &&
         (story.type == StoryType.video ||
@@ -1781,6 +1816,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           builder: (context, snapshot) {
             final isLoading =
                 snapshot.connectionState == ConnectionState.waiting;
+            if (snapshot.hasData && snapshot.data != null) {
+              final loadedViewers = snapshot.data!;
+              if (story.viewersCount != loadedViewers.length) {
+                story.viewersCount = loadedViewers.length;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() {});
+                });
+              }
+            }
+
             final viewers = snapshot.data ?? story.viewers;
 
             return Column(
@@ -1870,9 +1915,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                             ? (v.userAvatar.startsWith('assets/')
                                   ? AssetImage(v.userAvatar) as ImageProvider
                                   : NetworkImage(v.userAvatar))
-                            : const AssetImage(
-                                'assets/images/user_profile.png',
-                              ) as ImageProvider,
+                            : null,
+                        child: v.userAvatar.isEmpty
+                            ? const Icon(
+                                Icons.person_rounded,
+                                color: Colors.white70,
+                                size: 20,
+                              )
+                            : null,
                       ),
                       title: Text(
                         v.userName,
@@ -3238,6 +3288,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       body: GestureDetector(
         onLongPressStart: (_) => _pauseStory(),
         onLongPressEnd: (_) => _resumeStory(),

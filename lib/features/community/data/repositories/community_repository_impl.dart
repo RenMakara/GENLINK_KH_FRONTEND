@@ -14,6 +14,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<List<CommunityPostModel>> getRepostedPosts({
+    int page = 1,
+    int limit = 20,
+  }) {
+    return remoteDataSource.fetchRepostedPosts(page: page, limit: limit);
+  }
+
+  @override
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
@@ -264,6 +272,30 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<bool> isDiscussionBookmarked(String discussionId) {
     return remoteDataSource.isDiscussionBookmarked(discussionId);
+  }
+
+  @override
+  Future<bool> repostDiscussion(
+    String discussionId, {
+    String? caption,
+    String? reposterId,
+  }) {
+    return remoteDataSource.repostDiscussion(
+      discussionId,
+      caption: caption,
+      reposterId: reposterId,
+    );
+  }
+
+  @override
+  Future<bool> unrepostDiscussion(
+    String discussionId, {
+    String? reposterId,
+  }) {
+    return remoteDataSource.unrepostDiscussion(
+      discussionId,
+      reposterId: reposterId,
+    );
   }
 
   @override

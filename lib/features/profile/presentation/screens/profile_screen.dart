@@ -398,14 +398,31 @@ class _OwnerProfile extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Obx(
-          () => _ProfileStats(
-            totalXp: profile.totalXp,
-            projects: controller.portfolio.length,
-            interests: controller.interests.length,
-            followers: controller.followStats.value?.followers ?? 0,
-          ),
-        ),
+        Obx(() {
+          final stats = controller.followStats.value;
+          return Column(
+            children: [
+              _ProfileStats(
+                totalXp: profile.totalXp,
+                projects: controller.portfolio.length,
+                interests: controller.interests.length,
+                followers: stats?.followers ?? 0,
+                onFollowersTap: () =>
+                    Get.toNamed<void>(AppRoutes.friendRequests),
+              ),
+              if (stats != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                GestureDetector(
+                  onTap: () => Get.toNamed<void>(AppRoutes.friendRequests),
+                  child: Text(
+                    '${stats.following} ${'profile.followingCount'.tr}',
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                ),
+              ],
+            ],
+          );
+        }),
         const SizedBox(height: AppSpacing.lg),
         _CompletionCard(profile: profile),
         const SizedBox(height: AppSpacing.lg),
@@ -619,13 +636,16 @@ class _OwnerProfile extends StatelessWidget {
                   ),
           ),
         ),
-        Builder(
-          builder: (context) {
-            final commCtrl = Get.isRegistered<CommunityController>()
-                ? Get.find<CommunityController>()
-                : null;
-            if (commCtrl == null) return const SizedBox.shrink();
-            return Obx(() {
+         Builder(
+           builder: (context) {
+             final commCtrl = Get.isRegistered<CommunityController>()
+                 ? Get.find<CommunityController>()
+                 : null;
+             if (commCtrl == null) return const SizedBox.shrink();
+             if (profile.userId == commCtrl.currentUserId) {
+               commCtrl.fetchRepostedPosts();
+             }
+             return Obx(() {
               final userPosts = commCtrl.getUserPosts(
                 profile.userId,
                 username: profile.fullName,
@@ -997,39 +1017,93 @@ class _PublicActionRowState extends State<_PublicActionRow> {
       final stats = widget.controller.followStats.value;
       final status = stats?.followStatus;
       final isFollowing = stats?.isFollowing ?? false;
-      final label = status == 'PENDING'
-          ? 'profile.requested'.tr
-          : isFollowing
-          ? 'profile.following'.tr
-          : 'profile.follow'.tr;
+      final followsViewer = stats?.followsViewer ?? false;
+      final isFriend =
+          (stats?.friend ?? false) || (isFollowing && followsViewer);
 
-      final chatLabel = 'profile.chat'.tr.isNotEmpty && 'profile.chat'.tr != 'profile.chat'
+      final String label;
+      final IconData icon;
+
+      if (status == 'PENDING') {
+        label = 'profile.requested'.tr;
+        icon = Icons.hourglass_top_rounded;
+      } else if (isFriend) {
+        label = 'friends.friend'.tr.isNotEmpty &&
+                'friends.friend'.tr != 'friends.friend'
+            ? 'friends.friend'.tr
+            : ('profile.friend'.tr.isNotEmpty &&
+                    'profile.friend'.tr != 'profile.friend'
+                ? 'profile.friend'.tr
+                : 'Friend');
+        icon = Icons.people_alt_rounded;
+      } else if (isFollowing) {
+        label = 'profile.following'.tr;
+        icon = Icons.check_rounded;
+      } else if (followsViewer) {
+        label = 'friends.followBack'.tr.isNotEmpty &&
+                'friends.followBack'.tr != 'friends.followBack'
+            ? 'friends.followBack'.tr
+            : 'Follow Back';
+        icon = Icons.swap_horiz_rounded;
+      } else {
+        label = 'profile.follow'.tr;
+        icon = Icons.person_add_alt_1_outlined;
+      }
+
+      final chatLabel = 'profile.chat'.tr.isNotEmpty &&
+              'profile.chat'.tr != 'profile.chat'
           ? 'profile.chat'.tr
           : 'Chat';
 
-      return Row(
+      return Column(
         children: [
-          Expanded(
-            child: AppButton(
-              label: label,
-              icon: isFollowing
-                  ? Icons.check_rounded
-                  : Icons.person_add_alt_1_outlined,
-              height: 44,
-              loading: widget.controller.isRelationshipSaving.value,
-              onPressed: () => widget.controller.toggleFollow(),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: label,
+                  icon: icon,
+                  height: 44,
+                  loading: widget.controller.isRelationshipSaving.value,
+                  onPressed: () => widget.controller.toggleFollow(),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppButton.secondary(
+                  label: chatLabel,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  height: 44,
+                  loading: _isOpeningChat,
+                  onPressed: _handleChatTap,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: AppButton.secondary(
-              label: chatLabel,
-              icon: Icons.chat_bubble_outline_rounded,
-              height: 44,
-              loading: _isOpeningChat,
-              onPressed: _handleChatTap,
+          if (followsViewer && !isFollowing) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'friends.followsYou'.tr.isNotEmpty &&
+                          'friends.followsYou'.tr != 'friends.followsYou'
+                      ? 'friends.followsYou'.tr
+                      : 'Follows you',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ],
             ),
-          ),
+          ],
         ],
       );
     });
@@ -1524,12 +1598,14 @@ class _ProfileStats extends StatelessWidget {
     required this.projects,
     required this.interests,
     required this.followers,
+    this.onFollowersTap,
   });
 
   final int totalXp;
   final int projects;
   final int interests;
   final int followers;
+  final VoidCallback? onFollowersTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1565,11 +1641,15 @@ class _ProfileStats extends StatelessWidget {
         ),
         _ProfileStatDivider(color: divider),
         Expanded(
-          child: _ProfileMetric(
-            value: '$followers',
-            label: 'profile.followers'.tr,
-            icon: Icons.groups_2_outlined,
-            color: AppColors.success,
+          child: GestureDetector(
+            onTap: onFollowersTap,
+            behavior: HitTestBehavior.opaque,
+            child: _ProfileMetric(
+              value: '$followers',
+              label: 'profile.followers'.tr,
+              icon: Icons.groups_2_outlined,
+              color: AppColors.success,
+            ),
           ),
         ),
       ],

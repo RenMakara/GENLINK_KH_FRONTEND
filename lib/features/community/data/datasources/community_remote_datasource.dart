@@ -192,6 +192,31 @@ class CommunityRemoteDataSource {
     return const <CommunityPostModel>[];
   }
 
+  Future<List<CommunityPostModel>> fetchRepostedPosts({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityReposts,
+        queryParameters: {'page': page - 1, 'size': limit},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic> ? body['data'] : body;
+      final content = rawData is Map<String, dynamic>
+          ? (rawData['content'] as List<dynamic>?) ?? <dynamic>[]
+          : rawData is List
+          ? rawData
+          : <dynamic>[];
+      return content
+          .map((json) => CommunityPostModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    return const <CommunityPostModel>[];
+  }
+
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
@@ -573,6 +598,34 @@ class CommunityRemoteDataSource {
       }
       rethrow;
     }
+  }
+
+  Future<bool> repostDiscussion(
+    String discussionId, {
+    String? caption,
+    String? reposterId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityDiscussionRepost(discussionId),
+        data: (caption != null && caption.trim().isNotEmpty)
+            ? {'caption': caption.trim()}
+            : <String, dynamic>{},
+      ),
+    );
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  Future<bool> unrepostDiscussion(
+    String discussionId, {
+    String? reposterId,
+  }) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(
+        ApiEndpoints.communityDiscussionRepost(discussionId),
+      ),
+    );
+    return response.statusCode == 200 || response.statusCode == 204;
   }
 
   void _updateMockPostRepost(

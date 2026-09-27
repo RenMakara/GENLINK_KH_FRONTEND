@@ -278,18 +278,32 @@ class StoryRepositoryImpl implements StoryRepository {
     }
 
     debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories} with mediaUrl: $finalMediaUrl');
-    final serverStory = await client.post(
-      ApiEndpoints.stories,
-      body: {
-        'mediaUrl': finalMediaUrl,
-        'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
-        'caption': textContent,
-        'visibility': _toBackendVisibility(resolvedSettings.visibility),
-        'replyPermission': _toBackendReplyPermission(resolvedSettings.replyPermission),
-        'allowReactions': resolvedSettings.allowReactions,
-      },
-      parse: (data) => _storyFromJson(ApiClient.asMap(data)),
-    );
+    final StoryItemModel serverStory;
+    try {
+      serverStory = await client.post(
+        ApiEndpoints.stories,
+        body: {
+          'mediaUrl': finalMediaUrl,
+          'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
+          'caption': textContent,
+          'visibility': _toBackendVisibility(resolvedSettings.visibility),
+          'replyPermission': _toBackendReplyPermission(resolvedSettings.replyPermission),
+          'allowReactions': resolvedSettings.allowReactions,
+        },
+        parse: (data) => _storyFromJson(ApiClient.asMap(data)),
+      );
+    } on AppError catch (e) {
+      if (resolvedSettings.visibility == StoryPrivacy.onlyMe &&
+          (e.statusCode == 400 || e.message.contains('400') || e.errorCode.contains('400'))) {
+        debugPrint('[StoryUpload] Live server rejected ONLY_ME (requires backend redeployment): $e');
+        throw const AppError(
+          message: 'The live server does not support "Only Me" stories yet. Please select "Friends" or "Public", or redeploy the backend.',
+          errorCode: 'UNSUPPORTED_STORY_VISIBILITY',
+          statusCode: 400,
+        );
+      }
+      rethrow;
+    }
     debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
 
     if (serverStory.id.trim().isEmpty) {
@@ -437,6 +451,9 @@ class StoryRepositoryImpl implements StoryRepository {
       allowReactions: rawAllowReactions,
     );
 
+    final rawViewersCount = (json['viewersCount'] ?? json['viewsCount'] ?? json['viewCount'] as num?)?.toInt() ?? 0;
+    final rawLikesCount = (json['likesCount'] ?? json['likeCount'] as num?)?.toInt() ?? 0;
+
     return StoryItemModel(
       id: storyId,
       type: mediaType == 'VIDEO' ? StoryType.video : StoryType.photo,
@@ -445,6 +462,8 @@ class StoryRepositoryImpl implements StoryRepository {
       timeAgo: _timeAgo(createdAt),
       createdAt: createdAt,
       isViewed: seen,
+      viewersCount: rawViewersCount,
+      likesCount: rawLikesCount,
       settings: settings,
       visibility: settings.visibilityLabel,
       replyPrivacy: settings.replyPermissionLabel,

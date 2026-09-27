@@ -1,17 +1,5 @@
 import 'package:get/get.dart';
 
-/// GetX translation table for UI labels.
-///
-/// Scope: **interface labels only**. Per the localization strategy, system
-/// content (lessons, tips, badges, interest names) is localized by the
-/// backend and arrives pre-resolved, and user-generated content is always
-/// displayed exactly as written.
-///
-/// Usage: `'auth.login'.tr`
-///
-/// NOTE: the Khmer strings below need a native-speaker review pass before
-/// release. They are placed here so the plumbing is complete and every
-/// screen already reads from the table rather than hardcoding English.
 class AppTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {'en_US': _en, 'km_KH': _km};
@@ -456,6 +444,8 @@ class AppTranslations extends Translations {
     'profile.memberSince': 'Member since',
     'profile.follow': 'Follow',
     'profile.following': 'Following',
+    'profile.friend': 'Friend',
+    'profile.friends': 'Friends',
     'profile.requested': 'Requested',
     'profile.followers': 'Followers',
     'profile.followingCount': 'Following',
@@ -1053,6 +1043,8 @@ class AppTranslations extends Translations {
     'friends.followers': 'Followers',
     'friends.followBack': 'Follow Back',
     'friends.following': 'Following',
+    'friends.friend': 'Friend',
+    'friends.friends': 'Friends',
     'friends.followsYou': 'Follows you',
     'friends.mutualFollow': 'You follow each other',
     'friends.remove': 'Remove',
@@ -2861,7 +2853,7 @@ class AppTranslations extends Translations {
     'community.noResultsForQuery': "យើងរកមិនឃើញអ្វីសម្រាប់ '@query' ទេ",
     'community.searchError': 'មិនអាចទាញយកលទ្ធផលស្វែងរកបានទេ។',
     'community.searchErrorSub':
-        'សូមពិនិត្យមើលការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត។',
+        'សូមពិនិត្យមើលការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត',
     'community.retry': 'ព្យាយាមម្តងទៀត',
     'community.recentSearches': 'ការស្វែងរកថ្មីៗ',
     'community.clear': 'សម្អាត',
@@ -3105,6 +3097,8 @@ class AppTranslations extends Translations {
     'profile.memberSince': 'ជាសមាជិកចាប់ពី',
     'profile.follow': 'តាមដាន',
     'profile.following': 'កំពុងតាមដាន',
+    'profile.friend': 'មិត្តភក្តិ',
+    'profile.friends': 'មិត្តភក្តិ',
     'profile.requested': 'បានស្នើសុំ',
     'profile.followers': 'អ្នកតាមដាន',
     'profile.followingCount': 'កំពុងតាមដាន',
@@ -3712,6 +3706,8 @@ class AppTranslations extends Translations {
     'friends.followers': 'អ្នកតាមដាន',
     'friends.followBack': 'តាមដានត្រឡប់',
     'friends.following': 'កំពុងតាមដាន',
+    'friends.friend': 'មិត្តភក្តិ',
+    'friends.friends': 'មិត្តភក្តិ',
     'friends.followsYou': 'តាមដានអ្នក',
     'friends.mutualFollow': 'អ្នកតាមដានគ្នាទៅវិញទៅមក',
     'friends.remove': 'លុបចេញ',

@@ -130,15 +130,34 @@ class ChatRemoteDataSource {
     String? mediaUrl,
     ChatReplyReference? replyTo,
     SharedContentModel? sharedContent,
+    StoryReference? storyReference,
   }) async {
+    final effectiveStoryRef = storyReference ??
+        (messageType == 'story_reply'
+            ? StoryReference(mediaUrl: mediaUrl)
+            : null);
+
+    final payloadSharedContent = sharedContent != null
+        ? jsonEncode(sharedContent.toJson())
+        : (effectiveStoryRef != null
+            ? jsonEncode({
+                'type': 'STORY_REPLY',
+                'storyId': effectiveStoryRef.storyId,
+                'mediaUrl': effectiveStoryRef.mediaUrl ?? mediaUrl,
+                'isExpired': effectiveStoryRef.isExpired,
+              })
+            : null);
+
+    final effectiveMediaUrl = mediaUrl ?? effectiveStoryRef?.mediaUrl;
+
     final response = await guardDio(
       () => dio.post<dynamic>(
         '${ApiEndpoints.chats}/$conversationId/messages',
         data: {
           'type': _toBackendType(messageType),
           'content': content,
-          'mediaUrl': mediaUrl,
-          if (sharedContent != null) 'sharedContent': jsonEncode(sharedContent.toJson()),
+          'mediaUrl': effectiveMediaUrl,
+          if (payloadSharedContent != null) 'sharedContent': payloadSharedContent,
           if (replyTo != null) ...{
             'replyToMessageId': replyTo.messageId,
             'replyTo': replyTo.toJson(),
@@ -154,11 +173,18 @@ class ChatRemoteDataSource {
     if (sharedContent != null && msg.sharedContent == null) {
       msg = msg.copyWith(sharedContent: sharedContent);
     }
+    if (effectiveStoryRef != null) {
+      msg = msg.copyWith(
+        messageType: 'story_reply',
+        storyReference: effectiveStoryRef,
+        mediaUrl: effectiveMediaUrl,
+      );
+    }
     if (messageType != 'text' && (msg.messageType == 'text' || msg.messageType.isEmpty)) {
       msg = msg.copyWith(messageType: messageType);
     }
-    if (mediaUrl != null && (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)) {
-      msg = msg.copyWith(mediaUrl: mediaUrl);
+    if (effectiveMediaUrl != null && (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)) {
+      msg = msg.copyWith(mediaUrl: effectiveMediaUrl);
     }
     return msg;
   }

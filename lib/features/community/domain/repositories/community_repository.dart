@@ -4,6 +4,11 @@ import '../models/community_post_model.dart';
 abstract class CommunityRepository {
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10});
 
+  Future<List<CommunityPostModel>> getRepostedPosts({
+    int page = 1,
+    int limit = 20,
+  }) => Future.value(const <CommunityPostModel>[]);
+
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
@@ -125,6 +130,19 @@ abstract class CommunityRepository {
 
   Future<bool> isDiscussionBookmarked(String discussionId) =>
       Future.value(false);
+
+  /// Discussion-specific endpoint. The default keeps existing fakes/source-compatible
+  /// by delegating to the legacy post implementation until they opt in.
+  Future<bool> repostDiscussion(
+    String discussionId, {
+    String? caption,
+    String? reposterId,
+  }) => repostPost(discussionId, caption: caption, reposterId: reposterId);
+
+  Future<bool> unrepostDiscussion(
+    String discussionId, {
+    String? reposterId,
+  }) => unrepostPost(discussionId, reposterId: reposterId);
 
   Future<bool> reportDiscussion(
     String discussionId, {

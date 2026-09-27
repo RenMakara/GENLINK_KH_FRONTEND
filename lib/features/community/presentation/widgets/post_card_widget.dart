@@ -2044,7 +2044,9 @@ class _VideoPostMediaState extends State<VideoPostMedia>
   @override
   void playVideo() {
     if (_ctrl != null && _initialized && !_ctrl!.value.isPlaying) {
-      _ctrl!.play();
+      try {
+        _ctrl!.play();
+      } catch (_) {}
       if (mounted) setState(() {});
     }
   }
@@ -2052,7 +2054,9 @@ class _VideoPostMediaState extends State<VideoPostMedia>
   @override
   void pauseVideo() {
     if (_ctrl != null && _ctrl!.value.isPlaying) {
-      _ctrl!.pause();
+      try {
+        _ctrl!.pause();
+      } catch (_) {}
       if (mounted) setState(() {});
     }
   }
@@ -2189,7 +2193,9 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     final oldCtrl = _ctrl;
     if (oldCtrl != null) {
       oldCtrl.removeListener(_onControllerUpdate);
-      oldCtrl.dispose();
+      try {
+        oldCtrl.dispose();
+      } catch (_) {}
       _ctrl = null;
     }
   }

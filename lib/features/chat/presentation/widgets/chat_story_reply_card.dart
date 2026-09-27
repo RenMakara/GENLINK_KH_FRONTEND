@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -66,12 +67,18 @@ class ChatStoryReplyCard extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.15)
                     : AppColors.chatPrimary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(7),
-                image: (mediaUrl != null && mediaUrl!.isNotEmpty)
+                image: (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
                     ? DecorationImage(
-                        image: mediaUrl!.startsWith('http')
-                            ? NetworkImage(mediaUrl!) as ImageProvider
-                            : AssetImage(mediaUrl!),
+                        image: (mediaUrl!.startsWith('http://') ||
+                                mediaUrl!.startsWith('https://'))
+                            ? NetworkImage(mediaUrl!.trim()) as ImageProvider
+                            : (mediaUrl!.startsWith('assets/')
+                                ? AssetImage(mediaUrl!.trim())
+                                : FileImage(File(mediaUrl!
+                                    .trim()
+                                    .replaceFirst('file://', '')))),
                         fit: BoxFit.cover,
+                        onError: (_, __) {},
                       )
                     : null,
               ),

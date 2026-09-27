@@ -314,7 +314,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
   }) async {
     // 1. Check if conversation already exists locally for this user
     final existingIdx = conversations.indexWhere((c) {
-      if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
+      if (c.profileUserId == userId || c.id == userId || c.id == 'room_$userId') {
         return true;
       }
       if (name != null &&
@@ -327,12 +327,14 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
     if (existingIdx != -1) {
       final existing = conversations[existingIdx];
-      final updated = existing.copyWith(isArchived: false);
-      conversations[existingIdx] = updated;
-      _moveConversationToTop(updated);
-      conversations.refresh();
-      await openConversation(updated);
-      return updated;
+      if (!existing.id.startsWith('private_')) {
+        final updated = existing.copyWith(isArchived: false);
+        conversations[existingIdx] = updated;
+        _moveConversationToTop(updated);
+        conversations.refresh();
+        await openConversation(updated);
+        return updated;
+      }
     }
 
     // 2. Otherwise open via repository or create fallback
@@ -821,52 +823,92 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     String? storyId,
     String? userId,
   }) async {
-    // 1. Find existing conversation or create a new one
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+
+    // 1. Find existing conversation with a valid backend room ID
     var convIndex = conversations.indexWhere((c) {
       if (userId != null && userId.isNotEmpty) {
-        if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
+        if (c.profileUserId == userId || c.id == userId) {
           return true;
         }
       }
       return c.name.trim().toLowerCase() == userName.trim().toLowerCase();
     });
 
-    ChatConversationModel conv;
+    ChatConversationModel? conv;
 
     if (convIndex != -1) {
-      conv = conversations.removeAt(convIndex);
-    } else {
-      final safeId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
-      conv = ChatConversationModel(
-        id: 'private_$safeId',
-        name: userName,
-        avatar: userAvatar,
-        isGroup: false,
-        isOnline: true,
-        lastMessage: message,
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      );
+      final existing = conversations[convIndex];
+      if (!existing.id.startsWith('private_')) {
+        conv = conversations.removeAt(convIndex);
+      }
     }
 
-    // 2. Call Repository send message API
+    // 2. If no valid backend room exists, open/create private room on backend
+    if (conv == null && userId != null && userId.isNotEmpty) {
+      try {
+        conv = await repository.openPrivateChat(userId);
+        conversations.removeWhere((c) =>
+            c.id == conv!.id ||
+            (c.profileUserId != null && c.profileUserId == userId) ||
+            c.id == 'private_$userId');
+      } catch (e) {
+        debugPrint('[StoryReply] Failed to open private chat with userId=$userId: $e');
+      }
+    }
+
+    // 3. Fallback if backend chat cannot be opened or offline
+    if (conv == null) {
+      if (convIndex != -1) {
+        conv = conversations.removeAt(convIndex);
+      } else {
+        final safeId = (userId != null && userId.isNotEmpty)
+            ? userId
+            : userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+        conv = ChatConversationModel(
+          id: safeId,
+          name: userName,
+          avatar: userAvatar,
+          profileUserId: userId,
+          isGroup: false,
+          isOnline: true,
+          lastMessage: message,
+          lastMessageTime: 'Just now',
+          unreadCount: 0,
+        );
+      }
+    }
+
+    final storyRef = StoryReference(
+      storyId: storyId ?? '',
+      mediaUrl: mediaUrl,
+    );
+
+    // 4. Call Repository send message API
     final newMsg = await repository.sendMessage(
       conv.id,
       message,
       messageType: 'story_reply',
       mediaUrl: mediaUrl,
+      storyReference: storyRef,
     );
 
-    // 3. Update conversation metadata and place at top of list
+    final finalMsg = newMsg.copyWith(
+      messageType: 'story_reply',
+      mediaUrl: mediaUrl ?? newMsg.mediaUrl,
+      storyReference: storyRef,
+    );
+
+    // 5. Update conversation metadata and place at top of list
     conv.lastMessage = message;
     conv.lastMessageTime = 'Just now';
     conv.unreadCount = 0;
     conversations.insert(0, conv);
     conversations.refresh();
 
-    // 4. Set as active conversation and switch activeMessages cleanly without leaking prior conversation messages
+    // 6. Set as active conversation and switch activeMessages cleanly without leaking prior conversation messages
     if (activeRoomId.value != conv.id) {
       activeRoomId.value = conv.id;
       activeConversation.value = conv;
@@ -884,13 +926,18 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         }
       }
     }
-    if (activeRoomId.value == conv.id &&
-        !activeMessages.any((m) => m.id == newMsg.id)) {
-      activeMessages.add(newMsg);
+    if (activeRoomId.value == conv.id) {
+      final existingIndex =
+          activeMessages.indexWhere((m) => m.id == finalMsg.id);
+      if (existingIndex != -1) {
+        activeMessages[existingIndex] = finalMsg;
+      } else {
+        activeMessages.add(finalMsg);
+      }
     }
     _scrollToBottom();
 
-    return newMsg;
+    return finalMsg;
   }
 
   void onMessageReceived(ChatMessageModel message) {

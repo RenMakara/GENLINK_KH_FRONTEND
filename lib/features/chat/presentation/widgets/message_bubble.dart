@@ -212,7 +212,8 @@ class _MessageBubbleState extends State<MessageBubble> {
                         else ...[
                           if (msg.messageType == 'story_reply')
                             ChatStoryReplyCard(
-                              mediaUrl: msg.mediaUrl,
+                              mediaUrl:
+                                  msg.mediaUrl ?? msg.storyReference?.mediaUrl,
                               isMine: isMine,
                               isExpired: msg.storyReference?.isExpired ?? false,
                               onTap: widget.onStoryTap,

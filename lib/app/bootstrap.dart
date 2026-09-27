@@ -45,10 +45,10 @@ Future<void> bootstrap() async {
   // window and an empty console — the exact failure this file guards against.
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    debugPrint('FlutterError during startup: ${details.exceptionAsString()}');
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
   };
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Uncaught platform error during startup: $error\n$stack');
+    debugPrint('Uncaught platform error: $error\n$stack');
     return true;
   };
 

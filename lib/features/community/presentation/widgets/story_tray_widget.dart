@@ -16,19 +16,19 @@ import '../../../../design_system/widgets/avatar/app_avatar.dart';
 
 // Unviewed story ring — charcoal (dark mode) / near-black (light mode)
 // Subtle but clearly indicates "new content" without Instagram-style gradient
-const _kStoryUnseenRingLight = Color(0xFF1C1C1E);   // near-black
-const _kStoryUnseenRingDark  = Color(0xFFF2F2F7);   // near-white
+const _kStoryUnseenRingLight = Color(0xFF1C1C1E); // near-black
+const _kStoryUnseenRingDark = Color(0xFFF2F2F7); // near-white
 
 // Viewed story ring — muted gray
 const _kStoryViewedRingLight = Color(0xFFCBCDD1);
-const _kStoryViewedRingDark  = Color(0xFF4A4C50);
+const _kStoryViewedRingDark = Color(0xFF4A4C50);
 
 // "+" badge — adaptive: dark bg with white icon in light mode,
 //             white bg with dark icon in dark mode
-const _kPlusBadgeLightBg  = Color(0xFF1C1C1E);   // near-black in light mode
-const _kPlusBadgeDarkBg   = Color(0xFFF2F2F7);   // near-white in dark mode
+const _kPlusBadgeLightBg = Color(0xFF1C1C1E); // near-black in light mode
+const _kPlusBadgeDarkBg = Color(0xFFF2F2F7); // near-white in dark mode
 const _kPlusBadgeLightIcon = Colors.white;
-const _kPlusBadgeDarkIcon  = Color(0xFF1C1C1E);
+const _kPlusBadgeDarkIcon = Color(0xFF1C1C1E);
 
 // ---------------------------------------------------------------------------
 // Main widget
@@ -107,19 +107,24 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       final currentUserAvatar = CurrentUser.avatarUrl;
 
       // Determine the owner's display name from real auth data
-      final ownerName = CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+      final ownerName =
+          CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
           ? CurrentUser.name
           : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'You');
 
       // Find the owner group (marked by backend isOwner flag or matching userId)
       final rawOwnerGroup = allGroups.firstWhereOrNull(
-          (g) => g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
+        (g) =>
+            g.isOwner ||
+            (currentUserId.isNotEmpty && g.userId == currentUserId),
+      );
 
       // Merge real avatar from auth into owner group so it always shows correctly
       final ownerGroup = rawOwnerGroup != null
           ? StoryGroupModel(
               userId: rawOwnerGroup.userId,
-              userName: rawOwnerGroup.userName.isNotEmpty &&
+              userName:
+                  rawOwnerGroup.userName.isNotEmpty &&
                       rawOwnerGroup.userName != 'community.yourStory'.tr &&
                       rawOwnerGroup.userName != 'Your Story'
                   ? rawOwnerGroup.userName
@@ -140,12 +145,14 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
 
       // Other users' stories — real backend data only, no demo injection
       final otherGroups = allGroups
-          .where((g) =>
-              !g.isOwner &&
-              (currentUserId.isEmpty || g.userId != currentUserId) &&
-              // Guard: skip any accidentally-injected demo/mock data
-              !g.userId.startsWith('demo_') &&
-              !g.userId.startsWith('mock_'))
+          .where(
+            (g) =>
+                !g.isOwner &&
+                (currentUserId.isEmpty || g.userId != currentUserId) &&
+                // Guard: skip any accidentally-injected demo/mock data
+                !g.userId.startsWith('demo_') &&
+                !g.userId.startsWith('mock_'),
+          )
           .toList();
 
       // Sort: unseen first
@@ -163,7 +170,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         ...otherGroups,
       ];
 
-      return SizedBox(
+      final tray = SizedBox(
         height: 96,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
@@ -186,6 +193,30 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
             );
           },
         ),
+      );
+      if (!controller.hasStoriesError.value) return tray;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    controller.storiesErrorMessage.value,
+                    style: TextStyle(color: textMuted, fontSize: 12),
+                  ),
+                ),
+                TextButton(
+                  onPressed: controller.fetchStories,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+          tray,
+        ],
       );
     });
   }
@@ -304,8 +335,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     const double badgeSize = 20.0;
 
     // Adaptive badge colors: dark on light bg, light on dark bg
-    final badgeBg   = isDark ? _kPlusBadgeDarkBg   : _kPlusBadgeLightBg;
-    final badgeIcon = isDark ? _kPlusBadgeDarkIcon  : _kPlusBadgeLightIcon;
+    final badgeBg = isDark ? _kPlusBadgeDarkBg : _kPlusBadgeLightBg;
+    final badgeIcon = isDark ? _kPlusBadgeDarkIcon : _kPlusBadgeLightIcon;
 
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -385,7 +416,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                 // Small "You" label — minimal, just enough to identify this slot
                 Text(
                   _shortOwnerLabel(group.userName),
-                  style: widget.theme.textTheme.labelSmall?.copyWith(
+                  style:
+                      widget.theme.textTheme.labelSmall?.copyWith(
                         color: textMuted,
                         fontWeight: FontWeight.w400,
                         fontSize: 10.5,
@@ -442,8 +474,12 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     final isKhmer = _containsKhmer(group.userName);
 
     // Unseen ring color: near-black in light mode, near-white in dark mode
-    final unseenRingColor = isDark ? _kStoryUnseenRingDark : _kStoryUnseenRingLight;
-    final viewedRingColor = isDark ? _kStoryViewedRingDark : _kStoryViewedRingLight;
+    final unseenRingColor = isDark
+        ? _kStoryUnseenRingDark
+        : _kStoryUnseenRingLight;
+    final viewedRingColor = isDark
+        ? _kStoryViewedRingDark
+        : _kStoryViewedRingLight;
 
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -475,7 +511,9 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                           strokeWidth: ringStroke,
                           gapWidth: ringGap,
                           bgColor: bgPrimary,
-                          ringColor: group.hasUnseen ? unseenRingColor : viewedRingColor,
+                          ringColor: group.hasUnseen
+                              ? unseenRingColor
+                              : viewedRingColor,
                         ),
                       ),
                       // Avatar
@@ -505,7 +543,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   width: 64,
                   child: Text(
                     group.userName,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style:
+                        theme.textTheme.labelSmall?.copyWith(
                           color: group.hasUnseen ? textPrimary : textMuted,
                           fontWeight: group.hasUnseen
                               ? FontWeight.w600

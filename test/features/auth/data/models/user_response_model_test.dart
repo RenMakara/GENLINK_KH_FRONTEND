@@ -73,6 +73,31 @@ void main() {
       expect(model.hasPassword, isFalse);
     });
 
+    test('fromJson handles snake_case keys and string booleans', () {
+      final json = {
+        'id': 'uuid-snake',
+        'full_name': 'Snake User',
+        'username': 'snakeuser',
+        'email': 'snake@example.com',
+        'email_verified': 'true',
+        'account_status': 'ACTIVE',
+        'total_xp': 50,
+        'level': 2,
+        'preferred_language': 'ENGLISH',
+        'role': 'USER',
+        'is_active': 'true',
+        'has_password': 'true',
+      };
+
+      final model = UserResponseModel.fromJson(json);
+
+      expect(model.userId, 'uuid-snake');
+      expect(model.fullName, 'Snake User');
+      expect(model.emailVerified, isTrue);
+      expect(model.active, isTrue);
+      expect(model.hasPassword, isTrue);
+    });
+
     test('toEntity maps correctly', () {
       final json = {
         'userId': 'uuid-1',

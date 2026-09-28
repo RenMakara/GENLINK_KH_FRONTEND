@@ -36,7 +36,11 @@ abstract final class ProfileNavigation {
     return normalizedUsername ?? normalizedUserId;
   }
 
-  static Future<void> open({String? username, String? userId}) async {
+  static Future<void> open({
+    String? username,
+    String? userId,
+    String? displayName,
+  }) async {
     final publicUsername = ownerAwareUsername(
       username: username,
       userId: userId,
@@ -47,9 +51,20 @@ abstract final class ProfileNavigation {
       return;
     }
 
+    final trimmedDisplayName = _normalize(displayName);
+    final parameters = <String, String>{
+      'username': publicUsername,
+    };
+    if (trimmedDisplayName != null) {
+      parameters['displayName'] = trimmedDisplayName;
+    }
+
     await Get.toNamed<void>(
       AppRoutes.profile,
-      parameters: {'username': publicUsername},
+      parameters: parameters,
+      arguments: trimmedDisplayName != null
+          ? {'displayName': trimmedDisplayName, 'username': publicUsername}
+          : {'username': publicUsername},
     );
   }
 

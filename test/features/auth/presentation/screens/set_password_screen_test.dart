@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/app/routes/app_routes.dart';
+import 'package:genlink_frontend/core/errors/app_error.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
@@ -220,4 +221,78 @@ void main() {
     verify(() => repository.setPassword(password: 'NewSecurePass123')).called(1);
     expect(find.text('home destination'), findsOneWidget);
   });
+
+  testWidgets(
+    'optional prompt immediately routes to home when user already has password',
+    (tester) async {
+      const userWithPassword = UserEntity(
+        id: 'u1',
+        fullName: 'Test User',
+        username: 'testuser',
+        email: 'test@example.com',
+        emailVerified: true,
+        accountStatus: 'ACTIVE',
+        totalXp: 100,
+        level: 1,
+        preferredLanguage: 'ENGLISH',
+        role: 'USER',
+        active: true,
+        hasPassword: true,
+      );
+
+      await pumpScreen(tester, optionalPrompt: true, user: userWithPassword);
+      await tester.pumpAndSettle();
+
+      expect(find.text('home destination'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'handles AUTH_PASSWORD_ALREADY_SET gracefully on optional prompt by routing to home',
+    (tester) async {
+      when(
+        () => repository.setPassword(password: any(named: 'password')),
+      ).thenThrow(
+        const AppError(
+          message: 'This account already has a password set',
+          errorCode: 'AUTH_PASSWORD_ALREADY_SET',
+        ),
+      );
+
+      const userWithoutPassword = UserEntity(
+        id: 'u1',
+        fullName: 'Test User',
+        username: 'testuser',
+        email: 'test@example.com',
+        emailVerified: true,
+        accountStatus: 'ACTIVE',
+        totalXp: 100,
+        level: 1,
+        preferredLanguage: 'ENGLISH',
+        role: 'USER',
+        active: true,
+        hasPassword: false,
+      );
+
+      await pumpScreen(tester, optionalPrompt: true, user: userWithoutPassword);
+
+      final passwordField = find.descendant(
+        of: find.byKey(const ValueKey('password-input')),
+        matching: find.byType(EditableText),
+      );
+      final confirmField = find.descendant(
+        of: find.byKey(const ValueKey('confirm-password-input')),
+        matching: find.byType(EditableText),
+      );
+
+      await tester.enterText(passwordField, 'NewSecurePass123');
+      await tester.enterText(confirmField, 'NewSecurePass123');
+
+      await tester.tap(find.byKey(const ValueKey('password-submit-button')));
+      await tester.pumpAndSettle();
+
+      expect(controller.currentUser.value?.hasPassword, isTrue);
+      expect(find.text('home destination'), findsOneWidget);
+    },
+  );
 }

@@ -30,6 +30,8 @@ class ProfileController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final isPrivate = false.obs;
+  final isFriendsOnly = false.obs;
 
   final profile = Rxn<ProfileEntity>();
   final publicProfile = Rxn<PublicProfileEntity>();
@@ -54,6 +56,8 @@ class ProfileController extends GetxController {
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
+    isPrivate.value = false;
+    isFriendsOnly.value = false;
     followStats.value = null;
 
     if (isOwner) {
@@ -84,6 +88,10 @@ class ProfileController extends GetxController {
           ),
         );
       } on AppError catch (e) {
+        if (e.isProfilePrivate || e.isProfileFriendsOnly) {
+          isPrivate.value = true;
+          isFriendsOnly.value = e.isProfileFriendsOnly;
+        }
         errorMessage.value = e.message;
       } catch (_) {
         errorMessage.value = 'common.error'.tr;
@@ -130,6 +138,18 @@ class ProfileController extends GetxController {
   }
 
   Future<void> reload() => load();
+
+  /// Refreshes the follow stats independently so follower / following counts
+  /// and relationship status stay fresh when switching tabs or after follow actions.
+  Future<void> refreshFollowStats() async {
+    final targetId =
+        isOwner ? profile.value?.userId : publicProfile.value?.userId;
+    if (targetId == null || targetId.isEmpty) return;
+    try {
+      final fresh = await _repository.getFollowStats(targetId);
+      followStats.value = fresh;
+    } catch (_) {}
+  }
 
   Future<void> reloadSavedItems() async {
     await _loadSection(
@@ -266,19 +286,33 @@ class ProfileController extends GetxController {
           following: current?.following ?? 0,
           followStatus: null,
           friend: false,
+          followsViewer: current?.followsViewer ?? false,
         );
       } else {
         final status = await _repository.followUser(target.userId);
         final accepted = (status ?? 'ACCEPTED') == 'ACCEPTED';
+        final isFriend = (current?.followsViewer ?? false) && accepted;
         followStats.value = FollowStatsEntity(
           followers: accepted
               ? (current?.followers ?? 0) + 1
               : current?.followers ?? 0,
           following: current?.following ?? 0,
           followStatus: status ?? 'ACCEPTED',
-          friend: current?.friend ?? false,
+          friend: isFriend,
+          followsViewer: current?.followsViewer ?? false,
         );
       }
+
+      // Keep owner profile following count in sync
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().refreshFollowStats();
+      }
+
+      // Re-fetch authoritative follow stats in background
+      _repository.getFollowStats(target.userId).then((fresh) {
+        followStats.value = fresh;
+      }).catchError((_) {});
+
       return true;
     } on AppError catch (e) {
       AppSnackbar.error(e.message);

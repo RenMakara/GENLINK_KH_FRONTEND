@@ -8,6 +8,8 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.d
 import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../community/presentation/controllers/story_controller.dart';
+import '../../../community/presentation/screens/story_viewer_screen.dart';
 import '../../../media/domain/entities/media_entity.dart';
 import '../../../media/domain/media_upload_service.dart';
 import '../../../profile/presentation/utils/profile_navigation.dart';
@@ -639,9 +641,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     return ListView.builder(
                       controller: chatController.scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      itemCount: displayMsgs.length,
+                      itemCount: displayMsgs.length +
+                          (chatController.isLoadingOlderMessages.value ? 1 : 0),
                       itemBuilder: (context, index) {
-                        final msg = displayMsgs[index];
+                        if (chatController.isLoadingOlderMessages.value &&
+                            index == 0) {
+                          return const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        final messageIndex = index -
+                            (chatController.isLoadingOlderMessages.value ? 1 : 0);
+                        final msg = displayMsgs[messageIndex];
 
                         if (msg.isSystemMessage) {
                           return ChatSystemMessage(text: msg.content);
@@ -650,8 +662,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         bool showAvatar = true;
                         bool showSenderName = conv.isGroup;
 
-                        if (index > 0) {
-                          final prevMsg = displayMsgs[index - 1];
+                        if (messageIndex > 0) {
+                          final prevMsg = displayMsgs[messageIndex - 1];
                           if (!prevMsg.isSystemMessage &&
                               prevMsg.senderId == msg.senderId &&
                               msg.timestamp.difference(prevMsg.timestamp).inMinutes < 4) {
@@ -660,7 +672,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           }
                         }
 
-                        final showDateSeparator = index == 0 || !_isSameDay(displayMsgs[index - 1].timestamp, msg.timestamp);
+                        final showDateSeparator = messageIndex == 0 || !_isSameDay(displayMsgs[messageIndex - 1].timestamp, msg.timestamp);
 
                         final bubble = MessageBubble(
                           message: msg,
@@ -677,10 +689,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                             );
                           },
                           onStoryTap: () {
-                            AppNotificationBanner.showSuccess(
+                            final storyId = msg.storyReference?.storyId;
+                            if (storyId != null &&
+                                storyId.isNotEmpty &&
+                                Get.isRegistered<StoryController>()) {
+                              final storyCtrl = Get.find<StoryController>();
+                              for (int g = 0;
+                                  g < storyCtrl.storyGroups.length;
+                                  g++) {
+                                final sIdx = storyCtrl.storyGroups[g].stories
+                                    .indexWhere((s) => s.id == storyId);
+                                if (sIdx != -1) {
+                                  Get.to<void>(
+                                    () => StoryViewerScreen(
+                                      initialGroupIndex: g,
+                                      groups: storyCtrl.storyGroups,
+                                      initialStoryIndex: sIdx,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                            }
+                            AppNotificationBanner.showInfo(
                               context: context,
                               title: "Story Preview",
-                              message: "Opening story viewer...",
+                              message: "Story preview unavailable or expired.",
                               icon: Icons.auto_awesome,
                             );
                           },

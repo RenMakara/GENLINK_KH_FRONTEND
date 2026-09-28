@@ -10,10 +10,7 @@ import '../controllers/community_controller.dart';
 class ForumRepostDialog extends StatefulWidget {
   final ForumTopicModel topic;
 
-  const ForumRepostDialog({
-    super.key,
-    required this.topic,
-  });
+  const ForumRepostDialog({super.key, required this.topic});
 
   static Future<bool?> show(
     BuildContext context, {
@@ -22,9 +19,7 @@ class ForumRepostDialog extends StatefulWidget {
     return showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => ForumRepostDialog(
-        topic: topic,
-      ),
+      builder: (ctx) => ForumRepostDialog(topic: topic),
     );
   }
 
@@ -61,7 +56,7 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
       controller = Get.put(CommunityController());
     }
 
-    final quote = _captionController.text;
+    final quote = _captionController.text.trim();
 
     try {
       final success = await controller.repostDiscussion(
@@ -76,17 +71,24 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
       if (success) {
         AppNotificationBanner.showSuccess(
           context: context,
-          title: 'community.reposted'.tr.isNotEmpty &&
+          title:
+              'community.reposted'.tr.isNotEmpty &&
                   'community.reposted'.tr != 'community.reposted'
               ? 'community.reposted'.tr
               : '✓ Reposted',
-          message: 'Discussion has been reposted to your feed.',
+          message:
+              'community.discussionRepostedMsg'.tr.isNotEmpty &&
+                  'community.discussionRepostedMsg'.tr !=
+                      'community.discussionRepostedMsg'
+              ? 'community.discussionRepostedMsg'.tr
+              : 'Discussion has been reposted to your profile.',
           icon: Icons.repeat_rounded,
         );
       } else {
         AppNotificationBanner.showError(
           context: context,
-          title: 'common.error'.tr.isNotEmpty &&
+          title:
+              'common.error'.tr.isNotEmpty &&
                   'common.error'.tr != 'common.error'
               ? 'common.error'.tr
               : 'Error',
@@ -99,8 +101,8 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
 
       AppNotificationBanner.showError(
         context: context,
-        title: 'common.error'.tr.isNotEmpty &&
-                'common.error'.tr != 'common.error'
+        title:
+            'common.error'.tr.isNotEmpty && 'common.error'.tr != 'common.error'
             ? 'common.error'.tr
             : 'Error',
         message: 'Failed to repost discussion. Please try again.',
@@ -112,18 +114,24 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final surfaceSecondary =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightBgSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final mediaQuery = MediaQuery.of(context);
     final maxHeight = mediaQuery.size.height * 0.65;
@@ -176,7 +184,8 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
                       ? 'community.repostContent'.tr
                       : 'Repost this content?',
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style:
+                      theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -190,23 +199,28 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
                 const SizedBox(height: 8),
                 Builder(
                   builder: (context) {
-                    final isAnonymous = widget.topic.isAnonymous ||
-                        widget.topic.authorName.trim().toLowerCase() == 'anonymous';
+                    final isAnonymous =
+                        widget.topic.isAnonymous ||
+                        widget.topic.authorName.trim().toLowerCase() ==
+                            'anonymous';
                     final effectiveAuthor = isAnonymous
                         ? ('community.anonymous'.tr.isNotEmpty &&
-                                'community.anonymous'.tr != 'community.anonymous'
-                            ? 'community.anonymous'.tr
-                            : 'Anonymous')
+                                  'community.anonymous'.tr !=
+                                      'community.anonymous'
+                              ? 'community.anonymous'.tr
+                              : 'Anonymous')
                         : widget.topic.authorName;
                     return Text(
                       'community.repostingOriginal'.tr.isNotEmpty &&
                               'community.repostingOriginal'.tr !=
                                   'community.repostingOriginal'
-                          ? 'community.repostingOriginal'
-                              .trParams({'name': effectiveAuthor})
+                          ? 'community.repostingOriginal'.trParams({
+                              'name': effectiveAuthor,
+                            })
                           : 'This will repost content originally by $effectiveAuthor.',
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style:
+                          theme.textTheme.bodySmall?.copyWith(
                             color: textSecondary,
                             fontSize: 13,
                             height: 1.4,
@@ -230,32 +244,76 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
                     horizontal: 14,
                     vertical: 12,
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.topic.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            theme.textTheme.titleSmall?.copyWith(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                            ) ??
+                            TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                            ),
+                      ),
+                      if (widget.topic.content.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.topic.content.trim(),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              theme.textTheme.bodyMedium?.copyWith(
+                                color: textSecondary,
+                                height: 1.4,
+                              ) ??
+                              TextStyle(color: textSecondary, height: 1.4),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: surfaceSecondary,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: borderSubtle),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   child: TextField(
                     controller: _captionController,
                     minLines: 2,
                     maxLines: 4,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style:
+                        theme.textTheme.bodyMedium?.copyWith(
                           color: textPrimary,
                           fontSize: 14,
                         ) ??
-                        TextStyle(
-                          color: textPrimary,
-                          fontSize: 14,
-                        ),
+                        TextStyle(color: textPrimary, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: 'community.repostQuoteHint'.tr.isNotEmpty &&
+                      hintText:
+                          'community.repostQuoteHint'.tr.isNotEmpty &&
                               'community.repostQuoteHint'.tr !=
                                   'community.repostQuoteHint'
                           ? 'community.repostQuoteHint'.tr
                           : 'Add a quote (optional)...',
-                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      hintStyle:
+                          theme.textTheme.bodyMedium?.copyWith(
                             color: textMuted,
                             fontSize: 14,
                           ) ??
-                          TextStyle(
-                            color: textMuted,
-                            fontSize: 14,
-                          ),
+                          TextStyle(color: textMuted, fontSize: 14),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -270,8 +328,9 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
         ),
         actions: [
           OutlinedButton(
-            onPressed:
-                _isSubmitting ? null : () => Navigator.of(context).pop(false),
+            onPressed: _isSubmitting
+                ? null
+                : () => Navigator.of(context).pop(false),
             style: OutlinedButton.styleFrom(
               foregroundColor: textSecondary,
               side: BorderSide(color: borderSubtle),
@@ -299,8 +358,9 @@ class _ForumRepostDialogState extends State<ForumRepostDialog> {
           ElevatedButton(
             onPressed: _isSubmitting ? null : _handleRepost,
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+              backgroundColor: isDark
+                  ? AppColors.darkPrimary
+                  : AppColors.lightPrimary,
               disabledBackgroundColor:
                   (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
                       .withValues(alpha: 0.6),

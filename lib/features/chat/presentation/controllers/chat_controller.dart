@@ -22,6 +22,12 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   final isLoadingConversations = false.obs;
   final isLoadingMessages = false.obs;
+  final isLoadingOlderMessages = false.obs;
+  final hasOlderMessages = false.obs;
+  final olderMessagesError = ''.obs;
+  static const int _messagesPageSize = 30;
+  int _olderMessagesPage = 0;
+  double _lastMessageScrollOffset = 0;
   final isSendingMessage = false.obs;
   final unreadCount = 0.obs;
 
@@ -38,6 +44,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     _isDisposed = false;
     debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onInit');
     WidgetsBinding.instance.addObserver(this);
+    scrollController.addListener(_onMessageScroll);
     fetchConversations();
     fetchUnreadCount();
   }
@@ -53,6 +60,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     _isDisposed = true;
     debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onClose');
     WidgetsBinding.instance.removeObserver(this);
+    scrollController.removeListener(_onMessageScroll);
     textController.dispose();
     scrollController.dispose();
     super.onClose();
@@ -67,12 +75,22 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       }
       final currentRoomId = activeRoomId.value;
       if (currentRoomId != null && currentRoomId.isNotEmpty) {
-        repository.getMessages(currentRoomId).then((msgs) {
+        final requestId = ++_messageLoadSequence;
+        repository.getMessagesPage(
+          currentRoomId,
+          page: 0,
+          size: _messagesPageSize,
+        ).then((page) {
           if (activeRoomId.value == currentRoomId) {
-            activeMessages.assignAll(msgs);
+            if (_messageLoadSequence != requestId) return;
+            activeMessages.assignAll(page.content);
+            _olderMessagesPage = 0;
+            hasOlderMessages.value = page.hasNext;
+            olderMessagesError.value = '';
           }
         }).catchError((_) {}).whenComplete(() {
-          if (activeRoomId.value == currentRoomId) {
+          if (activeRoomId.value == currentRoomId &&
+              _messageLoadSequence == requestId) {
             isLoadingMessages.value = false;
           }
         });
@@ -165,6 +183,11 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     activeConversation.value = null;
     activeMessages.clear();
     isLoadingMessages.value = false;
+    isLoadingOlderMessages.value = false;
+    hasOlderMessages.value = false;
+    olderMessagesError.value = '';
+    _olderMessagesPage = 0;
+    _lastMessageScrollOffset = 0;
     replyingToMessage.value = null;
     pinnedMessage.value = null;
     typingUserName.value = null;
@@ -250,12 +273,20 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     // 4. Fetch messages directly for this room with race protection
     debugPrint('[CHAT-API] GET messages roomId = $cleanRoomId, requestSequence = $requestId');
     try {
-      final msgs = await repository.getMessages(cleanRoomId);
+      final page = await repository.getMessagesPage(
+        cleanRoomId,
+        page: 0,
+        size: _messagesPageSize,
+      );
+      final msgs = page.content;
       debugPrint('[CHAT-API] response roomId = $cleanRoomId, messageCount = ${msgs.length}, requestSequence = $requestId, currentSequence = $_messageLoadSequence, activeRoomId = ${activeRoomId.value}');
       if (activeRoomId.value == cleanRoomId && _messageLoadSequence == requestId) {
         debugPrint('[CHAT-API] APPLIED roomId = $cleanRoomId, count = ${msgs.length}');
         debugPrint('[CHAT-STATE] activeMessages.assignAll() roomId = $cleanRoomId, count = ${msgs.length}');
         activeMessages.assignAll(msgs);
+        _olderMessagesPage = 0;
+        hasOlderMessages.value = page.hasNext;
+        olderMessagesError.value = '';
         final pinned = msgs.firstWhereOrNull((m) => m.isPinned);
         if (pinned != null) {
           pinnedMessage.value = pinned;
@@ -306,6 +337,72 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     await ensureConversationLoaded(conv.id, conversation: conv);
   }
 
+  void _onMessageScroll() {
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    final movingTowardOlder = position.pixels < _lastMessageScrollOffset;
+    _lastMessageScrollOffset = position.pixels;
+    if (movingTowardOlder && position.pixels <= 90) {
+      loadOlderMessages();
+    }
+  }
+
+  Future<void> loadOlderMessages() async {
+    final roomId = activeRoomId.value;
+    if (roomId == null ||
+        roomId.isEmpty ||
+        !hasOlderMessages.value ||
+        isLoadingOlderMessages.value ||
+        isLoadingMessages.value) {
+      return;
+    }
+
+    final requestSequence = _messageLoadSequence;
+    final pageToLoad = _olderMessagesPage + 1;
+    final beforePixels = scrollController.hasClients
+        ? scrollController.position.pixels
+        : 0.0;
+    final beforeExtent = scrollController.hasClients
+        ? scrollController.position.maxScrollExtent
+        : 0.0;
+    isLoadingOlderMessages.value = true;
+    olderMessagesError.value = '';
+    try {
+      final page = await repository.getMessagesPage(
+        roomId,
+        page: pageToLoad,
+        size: _messagesPageSize,
+      );
+      if (activeRoomId.value != roomId ||
+          _messageLoadSequence != requestSequence) {
+        return;
+      }
+      final existingIds = activeMessages.map((message) => message.id).toSet();
+      final older = page.content
+          .where((message) => message.id.isNotEmpty && existingIds.add(message.id))
+          .toList();
+      final merged = <ChatMessageModel>[...older, ...activeMessages];
+      merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      activeMessages.assignAll(merged);
+      _olderMessagesPage = pageToLoad;
+      hasOlderMessages.value = page.hasNext;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!scrollController.hasClients || activeRoomId.value != roomId) return;
+        final addedExtent = scrollController.position.maxScrollExtent - beforeExtent;
+        if (addedExtent > 0) {
+          scrollController.jumpTo(beforePixels + addedExtent);
+        }
+      });
+    } catch (e) {
+      if (activeRoomId.value == roomId &&
+          _messageLoadSequence == requestSequence) {
+        olderMessagesError.value = e.toString();
+      }
+    } finally {
+      isLoadingOlderMessages.value = false;
+    }
+  }
+
 
   Future<ChatConversationModel?> openPrivateChat(
     String userId, {
@@ -314,7 +411,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
   }) async {
     // 1. Check if conversation already exists locally for this user
     final existingIdx = conversations.indexWhere((c) {
-      if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
+      if (c.profileUserId == userId || c.id == userId || c.id == 'room_$userId') {
         return true;
       }
       if (name != null &&
@@ -327,12 +424,14 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
     if (existingIdx != -1) {
       final existing = conversations[existingIdx];
-      final updated = existing.copyWith(isArchived: false);
-      conversations[existingIdx] = updated;
-      _moveConversationToTop(updated);
-      conversations.refresh();
-      await openConversation(updated);
-      return updated;
+      if (!existing.id.startsWith('private_')) {
+        final updated = existing.copyWith(isArchived: false);
+        conversations[existingIdx] = updated;
+        _moveConversationToTop(updated);
+        conversations.refresh();
+        await openConversation(updated);
+        return updated;
+      }
     }
 
     // 2. Otherwise open via repository or create fallback
@@ -821,52 +920,88 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     String? storyId,
     String? userId,
   }) async {
-    // 1. Find existing conversation or create a new one
+    // 1. Find existing conversation with a valid backend room ID
     var convIndex = conversations.indexWhere((c) {
       if (userId != null && userId.isNotEmpty) {
-        if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
+        if (c.profileUserId == userId || c.id == userId) {
           return true;
         }
       }
       return c.name.trim().toLowerCase() == userName.trim().toLowerCase();
     });
 
-    ChatConversationModel conv;
+    ChatConversationModel? conv;
 
     if (convIndex != -1) {
-      conv = conversations.removeAt(convIndex);
-    } else {
-      final safeId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
-      conv = ChatConversationModel(
-        id: 'private_$safeId',
-        name: userName,
-        avatar: userAvatar,
-        isGroup: false,
-        isOnline: true,
-        lastMessage: message,
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      );
+      final existing = conversations[convIndex];
+      if (!existing.id.startsWith('private_')) {
+        conv = conversations.removeAt(convIndex);
+      }
     }
 
-    // 2. Call Repository send message API
+    // 2. If no valid backend room exists, open/create private room on backend
+    if (conv == null && userId != null && userId.isNotEmpty) {
+      try {
+        conv = await repository.openPrivateChat(userId);
+        conversations.removeWhere((c) =>
+            c.id == conv!.id ||
+            (c.profileUserId != null && c.profileUserId == userId) ||
+            c.id == 'private_$userId');
+      } catch (e) {
+        debugPrint('[StoryReply] Failed to open private chat with userId=$userId: $e');
+      }
+    }
+
+    // 3. Fallback if backend chat cannot be opened or offline
+    if (conv == null) {
+      if (convIndex != -1) {
+        conv = conversations.removeAt(convIndex);
+      } else {
+        final safeId = (userId != null && userId.isNotEmpty)
+            ? userId
+            : userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+        conv = ChatConversationModel(
+          id: safeId,
+          name: userName,
+          avatar: userAvatar,
+          profileUserId: userId,
+          isGroup: false,
+          isOnline: true,
+          lastMessage: message,
+          lastMessageTime: 'Just now',
+          unreadCount: 0,
+        );
+      }
+    }
+
+    final storyRef = StoryReference(
+      storyId: storyId ?? '',
+      mediaUrl: mediaUrl,
+    );
+
+    // 4. Call Repository send message API
     final newMsg = await repository.sendMessage(
       conv.id,
       message,
       messageType: 'story_reply',
       mediaUrl: mediaUrl,
+      storyReference: storyRef,
     );
 
-    // 3. Update conversation metadata and place at top of list
+    final finalMsg = newMsg.copyWith(
+      messageType: 'story_reply',
+      mediaUrl: mediaUrl ?? newMsg.mediaUrl,
+      storyReference: storyRef,
+    );
+
+    // 5. Update conversation metadata and place at top of list
     conv.lastMessage = message;
     conv.lastMessageTime = 'Just now';
     conv.unreadCount = 0;
     conversations.insert(0, conv);
     conversations.refresh();
 
-    // 4. Set as active conversation and switch activeMessages cleanly without leaking prior conversation messages
+    // 6. Set as active conversation and switch activeMessages cleanly without leaking prior conversation messages
     if (activeRoomId.value != conv.id) {
       activeRoomId.value = conv.id;
       activeConversation.value = conv;
@@ -884,13 +1019,18 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         }
       }
     }
-    if (activeRoomId.value == conv.id &&
-        !activeMessages.any((m) => m.id == newMsg.id)) {
-      activeMessages.add(newMsg);
+    if (activeRoomId.value == conv.id) {
+      final existingIndex =
+          activeMessages.indexWhere((m) => m.id == finalMsg.id);
+      if (existingIndex != -1) {
+        activeMessages[existingIndex] = finalMsg;
+      } else {
+        activeMessages.add(finalMsg);
+      }
     }
     _scrollToBottom();
 
-    return newMsg;
+    return finalMsg;
   }
 
   void onMessageReceived(ChatMessageModel message) {

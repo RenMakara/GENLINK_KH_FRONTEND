@@ -165,12 +165,14 @@ class FollowStatsEntity {
     required this.following,
     this.followStatus,
     required this.friend,
+    this.followsViewer = false,
   });
 
   final int followers;
   final int following;
   final String? followStatus;
   final bool friend;
+  final bool followsViewer;
 
   bool get isFollowing =>
       followStatus == 'ACCEPTED' || followStatus == 'PENDING';

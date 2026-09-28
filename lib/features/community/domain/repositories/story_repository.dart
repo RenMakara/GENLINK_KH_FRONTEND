@@ -23,10 +23,12 @@ abstract class StoryRepository {
   Future<StoryItemModel?> getStoryById(String storyId);
   Future<void> updateStory(String storyId, StoryItemModel updatedStory);
   Future<void> deleteStory(String storyId);
-  Future<void> toggleLikeStory(String storyId);
+  Future<void> likeStory(String storyId);
+  Future<void> unlikeStory(String storyId);
   Future<void> replyToStory(String storyId, String message);
   Future<void> markViewed(String storyId);
   Future<List<StoryViewerModel>> getStoryViewers(String storyId);
-  Future<List<StoryMentionUser>> searchMentionUsers({String query = ''}) async =>
-      const [];
+  Future<List<StoryMentionUser>> searchMentionUsers({
+    String query = '',
+  }) async => const [];
 }

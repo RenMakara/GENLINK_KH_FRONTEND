@@ -12,7 +12,10 @@ class MockCommunityRepository implements CommunityRepository {
   CommunityPostModel? createdPost;
 
   @override
-  Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) async => [];
+  Future<List<CommunityPostModel>> getPosts({
+    int page = 1,
+    int limit = 10,
+  }) async => [];
 
   @override
   Future<CommunityPostModel> createPost({
@@ -58,7 +61,9 @@ class MockCommunityRepository implements CommunityRepository {
       pollOptions: options
           .asMap()
           .entries
-          .map((e) => PollOptionModel(id: 'opt_${e.key}', text: e.value, votes: 0))
+          .map(
+            (e) => PollOptionModel(id: 'opt_${e.key}', text: e.value, votes: 0),
+          )
           .toList(),
       pollTotalVotes: 0,
       pollDuration: duration ?? '3 Days',
@@ -88,7 +93,10 @@ void main() {
     Get.reset();
   });
 
-  Widget createTestWidget({Brightness brightness = Brightness.light, Size size = const Size(400, 800)}) {
+  Widget createTestWidget({
+    Brightness brightness = Brightness.light,
+    Size size = const Size(400, 800),
+  }) {
     return MediaQuery(
       data: MediaQueryData(size: size),
       child: GetMaterialApp(
@@ -101,166 +109,206 @@ void main() {
   }
 
   group('Poll Creation UI & Post Composer Integration Tests', () {
-    testWidgets('1. Create Poll sheet uses neutral monochrome styling for Done and Add Option', (tester) async {
-      await tester.pumpWidget(createTestWidget(brightness: Brightness.light));
-      await tester.pumpAndSettle();
+    testWidgets(
+      '1. Create Poll sheet uses neutral monochrome styling for Done and Add Option',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(brightness: Brightness.light));
+        await tester.pumpAndSettle();
 
-      // Open Poll sheet via toolbar button
-      final pollButton = find.byTooltip('Poll');
-      expect(pollButton, findsOneWidget);
-      await tester.tap(pollButton);
-      await tester.pumpAndSettle();
+        // Open Poll sheet via toolbar button
+        final pollButton = find.byTooltip('Poll');
+        expect(pollButton, findsOneWidget);
+        await tester.tap(pollButton);
+        await tester.pumpAndSettle();
 
-      // Verify title & Done button
-      expect(find.text('Create Poll'), findsOneWidget);
-      final doneText = tester.widget<Text>(find.text('Done'));
-      expect(doneText.style?.color, isNot(AppColors.brandPrimary));
-      expect(doneText.style?.color, Colors.black87);
+        // Verify title & Done button
+        expect(find.text('Create Poll'), findsOneWidget);
+        final doneText = tester.widget<Text>(find.text('Done'));
+        expect(doneText.style?.color, isNot(AppColors.brandPrimary));
+        expect(doneText.style?.color, Colors.black87);
 
-      // Verify Add Option icon & text use neutral styling (not brandPrimary)
-      final addOptionText = tester.widget<Text>(find.text('Add Option'));
-      expect(addOptionText.style?.color, isNot(AppColors.brandPrimary));
-      expect(addOptionText.style?.color, Colors.black87);
+        // Verify Add Option icon & text use neutral styling (not brandPrimary)
+        final addOptionText = tester.widget<Text>(find.text('Add Option'));
+        expect(addOptionText.style?.color, isNot(AppColors.brandPrimary));
+        expect(addOptionText.style?.color, Colors.black87);
 
-      final addOptionIcon = tester.widget<Icon>(find.byIcon(Icons.add_circle_outline_rounded));
-      expect(addOptionIcon.color, isNot(AppColors.brandPrimary));
-      expect(addOptionIcon.color, Colors.black87);
+        final addOptionIcon = tester.widget<Icon>(
+          find.byIcon(Icons.add_circle_outline_rounded),
+        );
+        expect(addOptionIcon.color, isNot(AppColors.brandPrimary));
+        expect(addOptionIcon.color, Colors.black87);
 
-      // Verify Question & Option labels
-      expect(find.text('Question'), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomSheet), matching: find.byType(TextField)), findsNWidgets(3)); // 1 question + 2 default options
-    });
+        // Verify Question & Option labels
+        expect(find.text('Question'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.byType(TextField),
+          ),
+          findsNWidgets(3),
+        ); // 1 question + 2 default options
+      },
+    );
 
-    testWidgets('2. Poll creation sheet allows adding and removing options up to 6', (tester) async {
-      await tester.pumpWidget(createTestWidget(brightness: Brightness.dark));
-      await tester.pumpAndSettle();
+    testWidgets(
+      '2. Poll creation sheet allows adding and removing options up to 6',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(brightness: Brightness.dark));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Poll'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Poll'));
+        await tester.pumpAndSettle();
 
-      // Initially 2 option fields, no remove button
-      expect(find.byIcon(Icons.remove_circle_outline_rounded), findsNothing);
+        // Initially 2 option fields, no remove button
+        expect(find.byIcon(Icons.remove_circle_outline_rounded), findsNothing);
 
-      // Add 3rd option
-      await tester.tap(find.text('Add Option'));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.remove_circle_outline_rounded), findsNWidgets(3));
+        Future<void> addOption() async {
+          final addOptionButton = find.text('Add Option');
+          await tester.ensureVisible(addOptionButton);
+          await tester.pumpAndSettle();
+          await tester.tap(addOptionButton);
+          await tester.pumpAndSettle();
+        }
 
-      // Add up to 6 options
-      await tester.tap(find.text('Add Option'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add Option'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add Option'));
-      await tester.pumpAndSettle();
+        // Add 3rd option
+        await addOption();
+        expect(
+          find.byIcon(Icons.remove_circle_outline_rounded),
+          findsNWidgets(3),
+        );
 
-      // At 6 options, Add Option button hides
-      expect(find.text('Add Option'), findsNothing);
+        // Add up to 6 options
+        await addOption();
+        await addOption();
+        await addOption();
 
-      // Remove an option
-      await tester.tap(find.byIcon(Icons.remove_circle_outline_rounded).first);
-      await tester.pumpAndSettle();
-      expect(find.text('Add Option'), findsOneWidget);
-    });
+        // At 6 options, Add Option button hides
+        expect(find.text('Add Option'), findsNothing);
 
-    testWidgets('3. Saving poll renders compact Poll preview card directly under text field with neutral styling', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        // Remove an option
+        await tester.tap(
+          find.byIcon(Icons.remove_circle_outline_rounded).first,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Add Option'), findsOneWidget);
+      },
+    );
 
-      // Enter post text
-      final postField = find.byType(TextField).first;
-      await tester.enterText(postField, 'Weekly check-in:');
-      await tester.pumpAndSettle();
+    testWidgets(
+      '3. Saving poll renders compact Poll preview card directly under text field with neutral styling',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      // Open poll sheet and fill question and options
-      await tester.tap(find.byTooltip('Poll'));
-      await tester.pumpAndSettle();
+        // Enter post text
+        final postField = find.byType(TextField).first;
+        await tester.enterText(postField, 'Weekly check-in:');
+        await tester.pumpAndSettle();
 
-      final questionField = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Ask a question...',
-      );
-      await tester.enterText(questionField, 'What is your primary language?');
-      await tester.pumpAndSettle();
+        // Open poll sheet and fill question and options
+        await tester.tap(find.byTooltip('Poll'));
+        await tester.pumpAndSettle();
 
-      final option1 = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Option 1',
-      );
-      await tester.enterText(option1, 'Dart');
+        final questionField = find.byWidgetPredicate(
+          (w) =>
+              w is TextField && w.decoration?.hintText == 'Ask a question...',
+        );
+        await tester.enterText(questionField, 'What is your primary language?');
+        await tester.pumpAndSettle();
 
-      final option2 = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Option 2',
-      );
-      await tester.enterText(option2, 'TypeScript');
-      await tester.pumpAndSettle();
+        final option1 = find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Option 1',
+        );
+        await tester.enterText(option1, 'Dart');
 
-      // Save
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+        final option2 = find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Option 2',
+        );
+        await tester.enterText(option2, 'TypeScript');
+        await tester.pumpAndSettle();
 
-      // Poll preview card is displayed
-      expect(find.text('What is your primary language?'), findsOneWidget);
-      expect(find.text('2 options · 3 Days'), findsOneWidget);
+        // Save
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
 
-      // Verify Poll icon uses neutral styling (NOT AppColors.brandPrimary)
-      final pollIcons = find.byWidgetPredicate(
-        (w) => w is Icon && w.icon == Icons.poll_rounded && w.color != AppColors.brandPrimary,
-      );
-      expect(pollIcons, findsWidgets);
+        // Poll preview card is displayed
+        expect(find.text('What is your primary language?'), findsOneWidget);
+        expect(find.text('2 options · 3 Days'), findsOneWidget);
 
-      // Verify vertical positioning: Poll preview is near the top, directly beneath TextField
-      final postFieldBox = tester.getRect(postField);
-      final pollCardFinder = find.byWidgetPredicate(
-        (w) => w is Container && w.decoration is BoxDecoration && (w.decoration as BoxDecoration).borderRadius == BorderRadius.circular(14),
-      );
-      final pollCardBox = tester.getRect(pollCardFinder.first);
+        // Verify Poll icon uses neutral styling (NOT AppColors.brandPrimary)
+        final pollIcons = find.byWidgetPredicate(
+          (w) =>
+              w is Icon &&
+              w.icon == Icons.poll_rounded &&
+              w.color != AppColors.brandPrimary,
+        );
+        expect(pollIcons, findsWidgets);
 
-      // Poll card top is below post field
-      expect(pollCardBox.top, greaterThanOrEqualTo(postFieldBox.bottom));
-      // Poll card top is in upper portion of screen (natural top placement, NOT centered in middle at ~400px)
-      expect(pollCardBox.top, lessThan(350));
-    });
+        // Verify vertical positioning: Poll preview is near the top, directly beneath TextField
+        final postFieldBox = tester.getRect(postField);
+        final pollCardFinder = find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).borderRadius ==
+                  BorderRadius.circular(14),
+        );
+        final pollCardBox = tester.getRect(pollCardFinder.first);
 
-    testWidgets('4. Tapping remove button clears the Poll preview and leaves composer open', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        // Poll card top is below post field
+        expect(pollCardBox.top, greaterThanOrEqualTo(postFieldBox.bottom));
+        // Poll card top is in upper portion of screen (natural top placement, NOT centered in middle at ~400px)
+        expect(pollCardBox.top, lessThan(350));
+      },
+    );
 
-      // Open poll sheet and create poll
-      await tester.tap(find.byTooltip('Poll'));
-      await tester.pumpAndSettle();
+    testWidgets(
+      '4. Tapping remove button clears the Poll preview and leaves composer open',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      final questionField = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Ask a question...',
-      );
-      await tester.enterText(questionField, 'Quick poll?');
+        // Open poll sheet and create poll
+        await tester.tap(find.byTooltip('Poll'));
+        await tester.pumpAndSettle();
 
-      final option1 = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Option 1',
-      );
-      await tester.enterText(option1, 'Yes');
+        final questionField = find.byWidgetPredicate(
+          (w) =>
+              w is TextField && w.decoration?.hintText == 'Ask a question...',
+        );
+        await tester.enterText(questionField, 'Quick poll?');
 
-      final option2 = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Option 2',
-      );
-      await tester.enterText(option2, 'No');
+        final option1 = find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Option 1',
+        );
+        await tester.enterText(option1, 'Yes');
 
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+        final option2 = find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Option 2',
+        );
+        await tester.enterText(option2, 'No');
 
-      expect(find.text('Quick poll?'), findsOneWidget);
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
 
-      // Tap remove poll button
-      final removePollBtn = find.byTooltip('Remove Poll');
-      expect(removePollBtn, findsOneWidget);
-      await tester.tap(removePollBtn);
-      await tester.pumpAndSettle();
+        expect(find.text('Quick poll?'), findsOneWidget);
 
-      // Poll preview is cleared
-      expect(find.text('Quick poll?'), findsNothing);
-      // Composer remains open
-      expect(find.byType(CreatePostScreen), findsOneWidget);
-    });
+        // Tap remove poll button
+        final removePollBtn = find.byTooltip('Remove Poll');
+        expect(removePollBtn, findsOneWidget);
+        await tester.tap(removePollBtn);
+        await tester.pumpAndSettle();
 
-    testWidgets('5. Tapping Poll preview card reopens sheet for editing', (tester) async {
+        // Poll preview is cleared
+        expect(find.text('Quick poll?'), findsNothing);
+        // Composer remains open
+        expect(find.byType(CreatePostScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets('5. Tapping Poll preview card reopens sheet for editing', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -295,47 +343,54 @@ void main() {
       expect(find.text('Opt B'), findsOneWidget);
     });
 
-    testWidgets('6. Responsive test on small screen (320x568) without overflow', (tester) async {
-      await tester.pumpWidget(createTestWidget(size: const Size(320, 568)));
-      await tester.pumpAndSettle();
+    testWidgets(
+      '6. Responsive test on small screen (320x568) without overflow',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(size: const Size(320, 568)));
+        await tester.pumpAndSettle();
 
-      // Toolbar is visible and anchored
-      expect(find.byTooltip('Poll'), findsOneWidget);
+        // Toolbar is visible and anchored
+        expect(find.byTooltip('Poll'), findsOneWidget);
 
-      // Open Poll sheet
-      await tester.tap(find.byTooltip('Poll'));
-      await tester.pumpAndSettle();
+        // Open Poll sheet
+        await tester.tap(find.byTooltip('Poll'));
+        await tester.pumpAndSettle();
 
-      // Verify no overflow errors
-      expect(tester.takeException(), isNull);
-      expect(find.text('Create Poll'), findsOneWidget);
-    });
+        // Verify no overflow errors
+        expect(tester.takeException(), isNull);
+        expect(find.text('Create Poll'), findsOneWidget);
+      },
+    );
 
-    testWidgets('7. Dark Mode visual rendering uses dark neutral surfaces and subtle borders', (tester) async {
-      await tester.pumpWidget(createTestWidget(brightness: Brightness.dark));
-      await tester.pumpAndSettle();
+    testWidgets(
+      '7. Dark Mode visual rendering uses dark neutral surfaces and subtle borders',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(brightness: Brightness.dark));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Poll'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Poll'));
+        await tester.pumpAndSettle();
 
-      final questionField = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Ask a question...',
-      );
-      await tester.enterText(questionField, 'Dark mode question');
-      final option1 = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Option 1',
-      );
-      await tester.enterText(option1, 'Dark 1');
-      final option2 = find.byWidgetPredicate(
-        (w) => w is TextField && w.decoration?.hintText == 'Option 2',
-      );
-      await tester.enterText(option2, 'Dark 2');
+        final questionField = find.byWidgetPredicate(
+          (w) =>
+              w is TextField && w.decoration?.hintText == 'Ask a question...',
+        );
+        await tester.enterText(questionField, 'Dark mode question');
+        final option1 = find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Option 1',
+        );
+        await tester.enterText(option1, 'Dark 1');
+        final option2 = find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Option 2',
+        );
+        await tester.enterText(option2, 'Dark 2');
 
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Dark mode question'), findsOneWidget);
-    });
+        expect(tester.takeException(), isNull);
+        expect(find.text('Dark mode question'), findsOneWidget);
+      },
+    );
   });
 }

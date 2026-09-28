@@ -4,13 +4,12 @@ import 'package:genlink_frontend/core/utils/date_formatter.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
+import 'package:genlink_frontend/design_system/widgets/avatar/app_avatar.dart';
 import '../../widgets/community_design_tokens.dart';
 import '../../widgets/forum_liked_by_sheet.dart';
-import '../../widgets/forum_repost_dialog.dart';
 import '../../widgets/forum_share_to_chat_sheet.dart';
 import '../../../domain/models/community_models.dart';
 import '../../controllers/community_controller.dart';
-import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../community_search_screen.dart';
 
 class ForumCategoryCard extends StatelessWidget {
@@ -38,29 +37,31 @@ class ForumCategoryCard extends StatelessWidget {
 
     final cardBg = isSelected
         ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
-        : (isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary);
+        : (isDark
+              ? AppColors.darkSurfacePrimary
+              : AppColors.lightSurfacePrimary);
 
     final cardBorder = isSelected
         ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
         : (isDark
-            ? AppColors.darkBorderSubtle.withValues(alpha: 0.60)
-            : AppColors.lightBorderSubtle);
+              ? AppColors.darkBorderSubtle.withValues(alpha: 0.60)
+              : AppColors.lightBorderSubtle);
 
     final titleColor = isSelected
         ? (isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse)
         : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
     final countColor = isSelected
         ? (isDark
-            ? AppColors.darkTextInverse.withValues(alpha: 0.75)
-            : AppColors.lightTextInverse.withValues(alpha: 0.75))
+              ? AppColors.darkTextInverse.withValues(alpha: 0.75)
+              : AppColors.lightTextInverse.withValues(alpha: 0.75))
         : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary);
     final iconBoxBg = isSelected
         ? (isDark
-            ? AppColors.darkTextInverse.withValues(alpha: 0.12)
-            : AppColors.lightTextInverse.withValues(alpha: 0.10))
+              ? AppColors.darkTextInverse.withValues(alpha: 0.12)
+              : AppColors.lightTextInverse.withValues(alpha: 0.10))
         : (isDark
-            ? AppColors.darkSurfaceSecondary
-            : AppColors.lightBgSecondary);
+              ? AppColors.darkSurfaceSecondary
+              : AppColors.lightBgSecondary);
     final iconColor = isSelected
         ? (isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse)
         : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
@@ -144,15 +145,18 @@ class ForumLikedByPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isOwner || likesCount <= 0) return const SizedBox.shrink();
 
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
     final displayLikers = likers.take(3).toList();
 
     String likedByText = '';
-    final likedByLabel = 'community.likedBy'.tr.isNotEmpty &&
+    final likedByLabel =
+        'community.likedBy'.tr.isNotEmpty &&
             'community.likedBy'.tr != 'community.likedBy'
         ? 'community.likedBy'.tr
         : 'Liked by';
@@ -160,7 +164,8 @@ class ForumLikedByPreview extends StatelessWidget {
     if (displayLikers.isNotEmpty) {
       if (displayLikers.length == 1) {
         if (likesCount > 1) {
-          likedByText = '$likedByLabel ${displayLikers[0].fullName} +${likesCount - 1}';
+          likedByText =
+              '$likedByLabel ${displayLikers[0].fullName} +${likesCount - 1}';
         } else {
           likedByText = '$likedByLabel ${displayLikers[0].fullName}';
         }
@@ -182,7 +187,8 @@ class ForumLikedByPreview extends StatelessWidget {
         }
       }
     } else {
-      likedByText = '$likedByLabel $likesCount ${likesCount == 1 ? 'person' : 'people'}';
+      likedByText =
+          '$likedByLabel $likesCount ${likesCount == 1 ? 'person' : 'people'}';
     }
 
     return InkWell(
@@ -202,7 +208,6 @@ class ForumLikedByPreview extends StatelessWidget {
                 child: Stack(
                   children: List.generate(displayLikers.length, (i) {
                     final l = displayLikers[i];
-                    final hasAvatar = l.avatarUrl.isNotEmpty;
                     return Positioned(
                       left: i * 14.0,
                       child: Container(
@@ -210,27 +215,10 @@ class ForumLikedByPreview extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: surface, width: 1.5),
                         ),
-                        child: CircleAvatar(
-                          radius: 9,
-                          backgroundImage: hasAvatar
-                              ? (l.avatarUrl.startsWith('assets/')
-                                  ? AssetImage(l.avatarUrl) as ImageProvider
-                                  : NetworkImage(l.avatarUrl))
-                              : null,
-                          backgroundColor:
-                              AppColors.communityAccent.withValues(alpha: 0.2),
-                          child: !hasAvatar
-                              ? Text(
-                                  l.fullName.isNotEmpty
-                                      ? l.fullName.substring(0, 1).toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.communityAccent,
-                                  ),
-                                )
-                              : null,
+                        child: AppAvatar(
+                          imageUrl: l.avatarUrl,
+                          name: l.fullName,
+                          size: 18,
                         ),
                       ),
                     );
@@ -246,7 +234,9 @@ class ForumLikedByPreview extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 9,
-                  backgroundColor: AppColors.communityAccent.withValues(alpha: 0.2),
+                  backgroundColor: AppColors.communityAccent.withValues(
+                    alpha: 0.2,
+                  ),
                   child: const Icon(
                     Icons.person_rounded,
                     size: 11,
@@ -288,6 +278,8 @@ class ForumThreadCard extends StatefulWidget {
   final bool isPinned;
   final bool isLiked;
   final List<ForumLikerModel> likers;
+  final String? repostedBy;
+  final String? repostCaption;
   final String? discussionId;
   final bool isOwner;
   final bool isAnonymous;
@@ -296,7 +288,6 @@ class ForumThreadCard extends StatefulWidget {
   final VoidCallback? onLikeTap;
   final VoidCallback? onCommentTap;
   final VoidCallback? onLikedByTap;
-  final VoidCallback? onRepostTap;
   final VoidCallback? onSaveTap;
   final VoidCallback? onShareToChatTap;
   final VoidCallback? onCategoryTap;
@@ -319,13 +310,14 @@ class ForumThreadCard extends StatefulWidget {
     this.isAnonymous = false,
     this.isBookmarked = false,
     this.likers = const [],
+    this.repostedBy,
+    this.repostCaption,
     this.discussionId,
     this.isOwner = false,
     this.onTap,
     this.onLikeTap,
     this.onCommentTap,
     this.onLikedByTap,
-    this.onRepostTap,
     this.onSaveTap,
     this.onShareToChatTap,
     this.onCategoryTap,
@@ -355,13 +347,17 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     );
     _likeScaleAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.25,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInCubic)),
+        tween: Tween<double>(
+          begin: 1.25,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
         weight: 50,
       ),
     ]).animate(_likeAnimController);
@@ -372,13 +368,17 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     );
     _bookmarkScaleAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.25,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInCubic)),
+        tween: Tween<double>(
+          begin: 1.25,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
         weight: 50,
       ),
     ]).animate(_bookmarkAnimController);
@@ -410,8 +410,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
       widget.onSaveTap!();
     } else if (widget.discussionId != null && widget.discussionId!.isNotEmpty) {
       if (Get.isRegistered<CommunityController>()) {
-        Get.find<CommunityController>()
-            .toggleDiscussionBookmark(widget.discussionId!);
+        Get.find<CommunityController>().toggleDiscussionBookmark(
+          widget.discussionId!,
+        );
       }
     }
   }
@@ -420,7 +421,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     if (widget.onShareToChatTap != null) {
       widget.onShareToChatTap!();
     } else {
-      final bool isAnon = widget.isAnonymous ||
+      final bool isAnon =
+          widget.isAnonymous ||
           widget.author.trim().toLowerCase() == 'anonymous' ||
           ('community.anonymous'.tr.isNotEmpty &&
               widget.author.trim().toLowerCase() ==
@@ -459,25 +461,30 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
 
-    final formattedTime =
-        formatCommunityTimestamp(widget.createdAt ?? widget.timeAgo);
+    final formattedTime = formatCommunityTimestamp(
+      widget.createdAt ?? widget.timeAgo,
+    );
 
-    final bool effectiveAnonymous = widget.isAnonymous ||
+    final bool effectiveAnonymous =
+        widget.isAnonymous ||
         widget.author.trim().toLowerCase() == 'anonymous' ||
         ('community.anonymous'.tr.isNotEmpty &&
             widget.author.trim().toLowerCase() ==
                 'community.anonymous'.tr.toLowerCase());
     final String displayAuthor = effectiveAnonymous
         ? ('community.anonymous'.tr.isNotEmpty &&
-                'community.anonymous'.tr != 'community.anonymous'
-            ? 'community.anonymous'.tr
-            : 'Anonymous')
+                  'community.anonymous'.tr != 'community.anonymous'
+              ? 'community.anonymous'.tr
+              : 'Anonymous')
         : widget.author;
-    final VoidCallback? effectiveAuthorTap =
-        effectiveAnonymous ? null : widget.onAuthorTap;
+    final VoidCallback? effectiveAuthorTap = effectiveAnonymous
+        ? null
+        : widget.onAuthorTap;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: CommunityCardStyle.cardBottomMargin),
+      margin: const EdgeInsets.only(
+        bottom: CommunityCardStyle.cardBottomMargin,
+      ),
       decoration: CommunityCardStyle.cardDecoration(context),
       child: Material(
         color: Colors.transparent,
@@ -491,49 +498,75 @@ class _ForumThreadCardState extends State<ForumThreadCard>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (widget.repostedBy != null &&
+                    widget.repostedBy!.trim().isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.repeat_rounded,
+                        color: textSecondary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'community.userReposted'.trParams({
+                            'name': widget.repostedBy!.trim(),
+                          }),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              theme.textTheme.bodySmall?.copyWith(
+                                color: textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ) ??
+                              TextStyle(
+                                color: textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (widget.repostCaption != null &&
+                      widget.repostCaption!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        widget.repostCaption!.trim(),
+                        style:
+                            theme.textTheme.bodyMedium?.copyWith(
+                              color: textPrimary,
+                              height: 1.4,
+                            ) ??
+                            TextStyle(color: textPrimary, height: 1.4),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                ],
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
                       onTap: effectiveAuthorTap,
-                      child: CircleAvatar(
-                        radius: 19,
-                        backgroundColor: isDark
-                            ? AppColors.darkSurfaceSecondary
-                            : AppColors.lightBgSecondary,
-                        onBackgroundImageError: (!effectiveAnonymous &&
-                                widget.avatarUrl != null &&
-                                widget.avatarUrl!.isNotEmpty)
-                            ? (exception, stackTrace) {}
-                            : null,
-                        backgroundImage: (!effectiveAnonymous &&
-                                widget.avatarUrl != null &&
-                                widget.avatarUrl!.isNotEmpty)
-                            ? (widget.avatarUrl!.startsWith('assets/')
-                                ? AssetImage(widget.avatarUrl!) as ImageProvider
-                                : NetworkImage(widget.avatarUrl!))
-                            : null,
-                        child: effectiveAnonymous
-                            ? Icon(
+                      child: effectiveAnonymous
+                          ? CircleAvatar(
+                              radius: 19,
+                              backgroundColor: isDark
+                                  ? AppColors.darkSurfaceSecondary
+                                  : AppColors.lightBgSecondary,
+                              child: Icon(
                                 Icons.person_outline,
                                 size: 20,
                                 color: textMuted,
-                              )
-                            : ((widget.avatarUrl == null ||
-                                    widget.avatarUrl!.isEmpty)
-                                ? Text(
-                                    widget.author.isNotEmpty
-                                        ? widget.author.characters.first
-                                            .toUpperCase()
-                                        : 'U',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: textSecondary,
-                                    ),
-                                  )
-                                : null),
-                      ),
+                              ),
+                            )
+                          : AppAvatar(
+                              imageUrl: widget.avatarUrl,
+                              name: widget.author,
+                              size: 38,
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -548,7 +581,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 children: [
                                   TextSpan(
                                     text: displayAuthor,
-                                    style: theme.textTheme.titleSmall?.copyWith(
+                                    style:
+                                        theme.textTheme.titleSmall?.copyWith(
                                           color: textPrimary,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14.5,
@@ -565,7 +599,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                     TextSpan(
                                       text: " · ",
                                       style: TextStyle(
-                                        color: textMuted.withValues(alpha: 0.65),
+                                        color: textMuted.withValues(
+                                          alpha: 0.65,
+                                        ),
                                         fontSize: 12.0,
                                         fontWeight: FontWeight.w400,
                                       ),
@@ -621,7 +657,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   widget.title,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style:
+                      theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.w700,
                         height: 1.35,
@@ -644,7 +681,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     widget.content!.trim(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style:
+                        theme.textTheme.bodyMedium?.copyWith(
                           color: textSecondary,
                           fontSize: 14.0,
                           height: 1.45,
@@ -671,176 +709,207 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 320;
                     final hPad = isCompact ? 4.0 : 6.0;
-                    final gap = isCompact ? 8.0 : 16.0;
 
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // 1. Like (icon + real count)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            onTap: _handleLike,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 40),
+                          child: Material(
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
+                            child: InkWell(
+                              onTap: _handleLike,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  ScaleTransition(
-                                    scale: _likeScaleAnim,
-                                    child: Icon(
-                                      widget.isLiked
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: widget.isLiked
-                                          ? AppColors.likedAccent
-                                          : textSecondary,
-                                      size: 18,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    ScaleTransition(
+                                      scale: _likeScaleAnim,
+                                      child: Icon(
+                                        widget.isLiked
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: widget.isLiked
+                                            ? AppColors.likedAccent
+                                            : textSecondary,
+                                        size: 20,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${widget.likes}",
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                          color: widget.isLiked
-                                              ? AppColors.likedAccent
-                                              : textSecondary,
-                                          fontWeight: widget.isLiked
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                          fontSize: 12.5,
-                                        ) ??
-                                        TextStyle(
-                                          color: widget.isLiked
-                                              ? AppColors.likedAccent
-                                              : textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: widget.isLiked
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        // 2. Comment (icon + real count, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            onTap: widget.onCommentTap ?? widget.onTap,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline_rounded,
-                                    color: textSecondary,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${widget.replies}",
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                          color: textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w600,
-                                        ) ??
-                                        TextStyle(
-                                          color: textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        // 3. Repost (icon only, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            key: const Key('forum_card_repost_button'),
-                            onTap: widget.onRepostTap ?? () => _handleRepost(context),
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: Icon(
-                                Icons.repeat_rounded,
-                                color: textSecondary,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: gap),
-                        // 4. Save (icon only, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            key: const Key('forum_card_save_button'),
-                            onTap: _handleSave,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
-                              ),
-                              child: ScaleTransition(
-                                scale: _bookmarkScaleAnim,
-                                child: Icon(
-                                  widget.isBookmarked
-                                      ? Icons.bookmark_rounded
-                                      : Icons.bookmark_border_rounded,
-                                  color: widget.isBookmarked
-                                      ? AppColors.warning
-                                      : textSecondary,
-                                  size: 18,
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${widget.likes}",
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
+                                            color: widget.isLiked
+                                                ? AppColors.likedAccent
+                                                : textSecondary,
+                                            fontWeight: widget.isLiked
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                            fontSize: 12.5,
+                                          ) ??
+                                          TextStyle(
+                                            color: widget.isLiked
+                                                ? AppColors.likedAccent
+                                                : textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: widget.isLiked
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(width: gap),
-                        // 5. Share to Chat (icon only, no text)
-                        Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            key: const Key('forum_card_share_to_chat_button'),
-                            onTap: () => _handleShareToChat(context),
+                        const SizedBox(width: 4),
+                        // 2. Comment (icon + real count, no text)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 40),
+                          child: Material(
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: hPad,
-                                vertical: 4,
+                            child: InkWell(
+                              onTap: widget.onCommentTap ?? widget.onTap,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
                               ),
-                              child: Icon(
-                                Icons.ios_share_rounded,
-                                color: textSecondary,
-                                size: 18,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      color: textSecondary,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${widget.replies}",
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
+                                            color: textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                          ) ??
+                                          TextStyle(
+                                            color: textSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Alignment: Spacer pushes Save & Share to the far right, matching Feed
+                        const Spacer(),
+
+                        // 4. Save (icon only, right-aligned)
+                        Tooltip(
+                          message: widget.isBookmarked
+                              ? 'community.removeBookmark'.tr
+                              : 'community.saveBookmark'.tr,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
+                              child: InkWell(
+                                key: const Key('forum_card_save_button'),
+                                onTap: _handleSave,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: hPad,
+                                      vertical: 4,
+                                    ),
+                                    child: ScaleTransition(
+                                      scale: _bookmarkScaleAnim,
+                                      child: Icon(
+                                        widget.isBookmarked
+                                            ? Icons.bookmark_rounded
+                                            : Icons.bookmark_border_rounded,
+                                        color: widget.isBookmarked
+                                            ? AppColors.warning
+                                            : textSecondary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // 5. Share to Chat (icon only, right-aligned)
+                        Tooltip(
+                          message:
+                              'community.shareToChat'.tr.isNotEmpty &&
+                                  'community.shareToChat'.tr !=
+                                      'community.shareToChat'
+                              ? 'community.shareToChat'.tr
+                              : 'Share',
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
+                              child: InkWell(
+                                key: const Key(
+                                  'forum_card_share_to_chat_button',
+                                ),
+                                onTap: () => _handleShareToChat(context),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                                child: Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: hPad,
+                                      vertical: 4,
+                                    ),
+                                    child: Icon(
+                                      Icons.ios_share_rounded,
+                                      color: textSecondary,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -871,44 +940,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         isOwner: widget.isOwner,
       );
     }
-  }
-
-  void _handleRepost(BuildContext context) {
-    if (widget.isOwner) {
-      AppNotificationBanner.showWarning(
-        context: context,
-        title: 'Cannot Repost',
-        message: 'community.cannotRepostOwnPost'.tr.isNotEmpty &&
-                'community.cannotRepostOwnPost'.tr !=
-                    'community.cannotRepostOwnPost'
-            ? 'community.cannotRepostOwnPost'.tr
-            : 'You cannot repost your own discussion.',
-      );
-      return;
-    }
-    final bool isAnon = widget.isAnonymous ||
-        widget.author.trim().toLowerCase() == 'anonymous' ||
-        ('community.anonymous'.tr.isNotEmpty &&
-            widget.author.trim().toLowerCase() ==
-                'community.anonymous'.tr.toLowerCase());
-    final topic = ForumTopicModel(
-      id: widget.discussionId ?? '',
-      authorName: isAnon ? 'Anonymous' : widget.author,
-      authorAvatar: isAnon ? '' : (widget.avatarUrl ?? ''),
-      title: widget.title,
-      category: widget.category,
-      content: widget.content ?? '',
-      timeAgo: widget.timeAgo,
-      createdAt: widget.createdAt,
-      isLiked: widget.isLiked,
-      upvotes: widget.likes,
-      repliesCount: widget.replies,
-      isBookmarked: widget.isBookmarked,
-      isAnonymous: isAnon,
-      likers: widget.likers,
-      isOwner: widget.isOwner,
-    );
-    ForumRepostDialog.show(context, topic: topic);
   }
 }
 
@@ -1086,7 +1117,7 @@ class MentorCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            CircleAvatar(radius: 26, backgroundImage: NetworkImage(avatarUrl)),
+            AppAvatar(imageUrl: avatarUrl, name: name, size: 52),
             const SizedBox(height: AppSpacing.sm),
             Text(
               name,
@@ -1130,10 +1161,18 @@ class CareerTabView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return SingleChildScrollView(
       child: Padding(
@@ -1156,15 +1195,14 @@ class CareerTabView extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.work_outline,
-                      color: textMuted,
-                      size: 20,
-                    ),
+                    Icon(Icons.work_outline, color: textMuted, size: 20),
                     const SizedBox(width: 10),
                     Text(
                       'community.searchJobs'.tr,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
+                      style:
+                          theme.textTheme.bodyMedium?.copyWith(
+                            color: textMuted,
+                          ) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
                   ],
@@ -1176,7 +1214,8 @@ class CareerTabView extends StatelessWidget {
 
             Text(
               'community.recommendedOpportunities'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style:
+                  theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
                   ) ??
@@ -1189,7 +1228,7 @@ class CareerTabView extends StatelessWidget {
             const SizedBox(height: 12),
             const JobCard(
               title: "Junior Flutter Developer",
-              company: "ABA Bank • Phnom Penh",
+              company: "Community Finance Lab • Phnom Penh",
               type: "Full-Time",
               salary: "\$600 - \$900 / mo",
               logoColor: AppColors.brandPrimary,
@@ -1206,7 +1245,8 @@ class CareerTabView extends StatelessWidget {
 
             Text(
               'community.campusAlumniMentors'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style:
+                  theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
                   ) ??
@@ -1224,17 +1264,20 @@ class CareerTabView extends StatelessWidget {
                   MentorCard(
                     name: "Sokha Kim",
                     role: "Senior Tech Lead @ Wing",
-                    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                    avatarUrl:
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
                   ),
                   MentorCard(
                     name: "Bopha V.",
-                    role: "Lead UX Designer @ ABA",
-                    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                    role: "Lead UX Designer",
+                    avatarUrl:
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
                   ),
                   MentorCard(
                     name: "Dara N.",
                     role: "Mobile Architect @ Chip Mong",
-                    avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
+                    avatarUrl:
+                        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
                   ),
                 ],
               ),
@@ -1247,4 +1290,3 @@ class CareerTabView extends StatelessWidget {
     );
   }
 }
-

@@ -142,6 +142,29 @@ void main() {
         );
       },
     );
+
+    test(
+      'rejects a malformed successful page instead of treating it as empty',
+      () async {
+        final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+          ..httpClientAdapter = _MockAdapter(
+            statusCode: 200,
+            responseBody: {'success': true, 'data': <String, dynamic>{}},
+          );
+        final dataSource = CommunityRemoteDataSource(dio: dio);
+
+        await expectLater(
+          dataSource.fetchPosts(page: 1, limit: 10),
+          throwsA(
+            isA<AppError>().having(
+              (error) => error.errorCode,
+              'errorCode',
+              'FEED_RESPONSE_INVALID',
+            ),
+          ),
+        );
+      },
+    );
   });
 
   group('CommunityRemoteDataSource.createPost', () {
@@ -239,6 +262,42 @@ void main() {
       expect(post.authorAvatar, isEmpty);
     });
 
+    test('sends opaque media IDs for restricted post uploads', () async {
+      Map<String, dynamic>? capturedPayload;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _CapturingMockAdapter(
+          statusCode: 201,
+          responseBody: {
+            'success': true,
+            'data': {
+              'postId': 'private-post-789',
+              'contentText': 'Friends only',
+              'postType': 'VIDEO',
+              'visibility': 'FRIENDS',
+            },
+          },
+          onFetch: (options) {
+            if (options.data is Map<String, dynamic>) {
+              capturedPayload = options.data as Map<String, dynamic>;
+            }
+          },
+        );
+
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+      await dataSource.createPost(
+        content: 'Friends only',
+        imageUrls: const ['genlink-media://image-media-id'],
+        videoUrl: 'genlink-media://video-media-id',
+        visibility: 'FRIENDS',
+      );
+
+      expect(capturedPayload!['visibility'], 'FRIENDS');
+      expect(capturedPayload!['imageMediaIds'], ['image-media-id']);
+      expect(capturedPayload!['videoMediaId'], 'video-media-id');
+      expect(capturedPayload!['imageUrl'], isNull);
+      expect(capturedPayload!['videoUrl'], isNull);
+    });
+
     test(
       'throws AppError when backend returns 400 without falling back to mock post',
       () async {
@@ -258,6 +317,115 @@ void main() {
         );
       },
     );
+  });
+
+  group('CommunityRemoteDataSource post audience mapping', () {
+    test('ONLY_ME survives create, poll creation, and edit requests', () async {
+      final payloads = <Map<String, dynamic>>[];
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _CapturingMockAdapter(
+          statusCode: 200,
+          responseBody: {
+            'success': true,
+            'data': {'postId': 'post-1', 'visibility': 'ONLY_ME'},
+          },
+          onFetch: (options) {
+            if (options.data is Map<String, dynamic>) {
+              payloads.add(
+                Map<String, dynamic>.from(options.data as Map<String, dynamic>),
+              );
+            }
+          },
+        );
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+
+      await dataSource.createPost(content: 'Private', visibility: 'Only Me');
+      await dataSource.createPollPost(
+        question: 'Private poll?',
+        options: const ['A', 'B'],
+        visibility: 'ONLY_ME',
+      );
+      await dataSource.updatePost(
+        'post-1',
+        content: 'Still private',
+        visibility: 'Only Me',
+      );
+
+      expect(payloads, hasLength(3));
+      expect(
+        payloads.map((payload) => payload['visibility']),
+        everyElement('ONLY_ME'),
+      );
+    });
+
+    test(
+      'unknown audience fails closed instead of widening the post to PUBLIC',
+      () async {
+        var requestCount = 0;
+        final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+          ..httpClientAdapter = _CapturingMockAdapter(
+            statusCode: 200,
+            responseBody: {
+              'success': true,
+              'data': {'postId': 'post-1'},
+            },
+            onFetch: (_) => requestCount++,
+          );
+        final dataSource = CommunityRemoteDataSource(dio: dio);
+
+        await expectLater(
+          dataSource.createPost(content: 'Private', visibility: 'Only Friends'),
+          throwsA(
+            isA<AppError>().having(
+              (error) => error.errorCode,
+              'errorCode',
+              'INVALID_POST_VISIBILITY',
+            ),
+          ),
+        );
+        expect(requestCount, 0);
+      },
+    );
+  });
+
+  group('CommunityRemoteDataSource saved posts API', () {
+    test('save and unsave use only the Profile Saved endpoints', () async {
+      final paths = <String>[];
+      final payloads = <Map<String, dynamic>>[];
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _CapturingMockAdapter(
+          statusCode: 200,
+          responseBody: {
+            'success': true,
+            'data': {'saved': true},
+          },
+          onFetch: (options) {
+            paths.add(options.path);
+            if (options.data is Map<String, dynamic>) {
+              payloads.add(
+                Map<String, dynamic>.from(options.data as Map<String, dynamic>),
+              );
+            }
+          },
+        );
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+
+      await dataSource.toggleBookmark('post-save-contract');
+      await dataSource.toggleBookmark(
+        'post-save-contract',
+        isCurrentlyBookmarked: true,
+      );
+
+      expect(paths, [
+        '/api/v1/profile/saved',
+        '/api/v1/profile/saved/POST/post-save-contract',
+      ]);
+      expect(payloads.single, {
+        'itemType': 'POST',
+        'itemId': 'post-save-contract',
+      });
+      expect(paths.every((path) => !path.contains('/bookmark')), isTrue);
+    });
   });
 
   group('CommunityRemoteDataSource.repostPost and unrepostPost', () {
@@ -538,6 +706,84 @@ void main() {
         expect(
           () => dataSource.getEventAttendeesPage('event-1'),
           throwsA(isA<AppError>()),
+        );
+      },
+    );
+  });
+
+  group('Community empty and error responses', () {
+    test('a successful empty reply page stays an empty list', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _MockAdapter(
+          statusCode: 200,
+          responseBody: {
+            'success': true,
+            'data': {'content': <dynamic>[]},
+          },
+        );
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+
+      expect(await dataSource.fetchCommentReplies('comment-1'), isEmpty);
+    });
+
+    test(
+      'a failed reply request is not converted into an empty list',
+      () async {
+        final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+          ..httpClientAdapter = _MockAdapter(
+            statusCode: 503,
+            responseBody: {
+              'success': false,
+              'message': 'Unavailable',
+              'errorCode': 'SERVICE_UNAVAILABLE',
+            },
+          );
+        final dataSource = CommunityRemoteDataSource(dio: dio);
+
+        await expectLater(
+          dataSource.fetchCommentReplies('comment-1'),
+          throwsA(isA<AppError>()),
+        );
+      },
+    );
+
+    test('saved event lookup surfaces request failures', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _MockAdapter(
+          statusCode: 503,
+          responseBody: {
+            'success': false,
+            'message': 'Unavailable',
+            'errorCode': 'SERVICE_UNAVAILABLE',
+          },
+        );
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+
+      await expectLater(
+        dataSource.getSavedEventIds(),
+        throwsA(isA<AppError>()),
+      );
+    });
+
+    test(
+      'malformed discussion pages surface an error rather than an empty page',
+      () async {
+        final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+          ..httpClientAdapter = _MockAdapter(
+            statusCode: 200,
+            responseBody: {'success': true, 'data': <String, dynamic>{}},
+          );
+        final dataSource = CommunityRemoteDataSource(dio: dio);
+
+        await expectLater(
+          dataSource.fetchDiscussionsPage(),
+          throwsA(
+            isA<AppError>().having(
+              (error) => error.errorCode,
+              'errorCode',
+              'DISCUSSIONS_RESPONSE_INVALID',
+            ),
+          ),
         );
       },
     );

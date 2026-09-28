@@ -5,6 +5,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../domain/entities/profile_entity.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 /// Elevated hero card showing Level, Total XP, Badges, and dynamic XP progress.
 class AchievementSummaryHeroCard extends StatelessWidget {
@@ -489,10 +490,12 @@ class AchievementBadgeCard extends StatelessWidget {
     if (badge.iconUrl != null && badge.iconUrl!.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.all(10),
-        child: Image.network(
-          badge.iconUrl!,
+        child: AppCachedImage(
+          imageUrl: badge.iconUrl!,
           fit: BoxFit.contain,
-          errorBuilder: (_, _, _) => _fallbackIcon(earned, semantic),
+          memCacheWidth: 60,
+          memCacheHeight: 60,
+          errorWidget: _fallbackIcon(earned, semantic),
         ),
       );
     }

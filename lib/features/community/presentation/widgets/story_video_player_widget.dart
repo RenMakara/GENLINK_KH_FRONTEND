@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
+import '../../../../core/services/video_cache_service.dart';
+import 'safe_video_player.dart';
 
 /// A resilient fallback implementation of [VideoPlayerPlatform] that satisfies the
 /// platform interface contract on platforms/environments where native video_player
@@ -323,6 +325,14 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
       widget.onVideoEnd?.call();
     }
 
+    if (ctrl.value.isPlaying) {
+      VideoCacheService.instance.trackPlaybackProgress(
+        widget.videoUrl,
+        ctrl.value.position,
+        ctrl.value.duration,
+      );
+    }
+
     setState(() {});
   }
 
@@ -352,11 +362,20 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
 
       VideoPlayerController ctrl;
       if (url.startsWith('http://') || url.startsWith('https://')) {
-        final uri = Uri.tryParse(url) ?? Uri.parse(Uri.encodeFull(url));
-        ctrl = VideoPlayerController.networkUrl(
-          uri,
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-        );
+        final cached = await VideoCacheService.instance.getCachedFile(url);
+        if (!mounted) return;
+        if (cached != null) {
+          ctrl = VideoPlayerController.file(
+            cached,
+            videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+          );
+        } else {
+          final uri = Uri.tryParse(url) ?? Uri.parse(Uri.encodeFull(url));
+          ctrl = VideoPlayerController.networkUrl(
+            uri,
+            videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+          );
+        }
       } else if (url.startsWith('assets/')) {
         ctrl = VideoPlayerController.asset(
           url,
@@ -553,7 +572,10 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
                 child: SizedBox(
                   width: width,
                   height: height,
-                  child: VideoPlayer(ctrl),
+                  child: SafeVideoPlayer(
+                    key: ValueKey('safe_story_vp_${identityHashCode(ctrl)}_${widget.videoUrl}'),
+                    controller: ctrl,
+                  ),
                 ),
               ),
             ),

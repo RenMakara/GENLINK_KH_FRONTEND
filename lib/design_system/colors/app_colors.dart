@@ -58,6 +58,16 @@ abstract final class AppColors {
   static const info = Color(0xFFA0A0A0);
 
   static const brandPrimary = Color(0xFF1F6FEB);
+  static const brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF1F6FEB), // Brand Primary Blue
+      Color(0xFF0EA5E9), // Sky Blue
+      Color(0xFF06B6D4), // Cyan / Teal
+    ],
+    stops: [0.0, 0.55, 1.0],
+  );
   static const communityAccent = Color(0xFF5DADEC);
   static const productivityAccent = Color(0xFF8B7CF6);
   static const financeAccent = Color(0xFF4BAE73);

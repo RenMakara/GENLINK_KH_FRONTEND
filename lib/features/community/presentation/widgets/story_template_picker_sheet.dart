@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../domain/models/story_template_model.dart';
 
 File _resolveMediaFile(String rawPath) {
@@ -372,7 +373,7 @@ class _TemplateMiniaturePreview extends StatelessWidget {
       if (path.startsWith('assets/')) {
         img = Image.asset(path, fit: BoxFit.cover);
       } else if (path.startsWith('http://') || path.startsWith('https://')) {
-        img = Image.network(path, fit: BoxFit.cover);
+        img = AppCachedImage(imageUrl: path, fit: BoxFit.cover, memCacheWidth: 200);
       } else {
         img = Image.file(_resolveMediaFile(path), fit: BoxFit.cover);
       }

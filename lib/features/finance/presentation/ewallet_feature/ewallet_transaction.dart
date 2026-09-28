@@ -706,53 +706,59 @@ class _SearchAndFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Search Input Box
         Expanded(
-          child: Container(
-            height: 46,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 52,
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: border),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: searchQuery.isNotEmpty
+                    ? AppColors.financeAccent.withValues(alpha: 0.45)
+                    : border,
+                width: searchQuery.isNotEmpty ? 1.2 : 1,
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.search_rounded, color: textMuted, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    onChanged: onChanged,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'finance.transactions.searchPlaceholder'.tr,
-                      hintStyle: TextStyle(
-                        color: textMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
+            child: TextField(
+              controller: searchController,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              cursorColor: AppColors.financeAccent,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                hintText: 'finance.transactions.searchPlaceholder'.tr,
+                hintStyle: TextStyle(
+                  color: textMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
-                if (searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: onClear,
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: textMuted,
-                      size: 18,
-                    ),
-                  ),
-              ],
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: textMuted,
+                  size: 22,
+                ),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        onPressed: onClear,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: textMuted,
+                          size: 18,
+                        ),
+                      )
+                    : null,
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 15),
+              ),
             ),
           ),
         ),
@@ -760,20 +766,20 @@ class _SearchAndFilterBar extends StatelessWidget {
 
         // Filter Action Button
         InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           onTap: onFilterTap,
           child: Container(
-            width: 46,
-            height: 46,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: border),
             ),
             child: Icon(
               Icons.tune_rounded,
               color: textPrimary,
-              size: 20,
+              size: 22,
             ),
           ),
         ),
@@ -1212,28 +1218,35 @@ class _TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
 
-            // Formatted Amount with FittedBox
-            Flexible(
-              fit: FlexFit.loose,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+            // Keep every amount in the same right-aligned column.
+            SizedBox(
+              width: 88,
+              child: Align(
                 alignment: Alignment.centerRight,
-                child: Text(
-                  formattedAmount,
-                  style: TextStyle(
-                    color: amountColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    formattedAmount,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: amountColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 6),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: textMuted,
+            SizedBox(
+              width: 18,
+              child: Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: textMuted,
+              ),
             ),
           ],
         ),

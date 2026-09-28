@@ -61,147 +61,150 @@ void main() {
   });
 
   group('Story Ownership & Self-Like Prevention Tests', () {
-    testWidgets('Test 1: Viewing another user\'s story allows double-tap liking and shows bottom like button', (tester) async {
-      final otherUserStory = StoryItemModel(
-        id: 'story_other_1',
-        type: StoryType.text,
-        textContent: 'Other user text story',
-        timeAgo: '10m',
-        createdAt: DateTime.now(),
-        likesCount: 5,
-        isLiked: false,
-        allowReactions: true,
-      );
+    testWidgets(
+      'Test 1: Viewing another user\'s story allows double-tap liking and shows bottom like button',
+      (tester) async {
+        final otherUserStory = StoryItemModel(
+          id: 'story_other_1',
+          type: StoryType.text,
+          textContent: 'Other user text story',
+          timeAgo: '10m',
+          createdAt: DateTime.now(),
+          likesCount: 5,
+          isLiked: false,
+          allowReactions: true,
+        );
 
-      final groups = [
-        StoryGroupModel(
-          userId: 'other_user_456',
-          userName: 'Other User',
-          userAvatar: 'assets/images/user_profile.png',
-          isOwner: false,
-          stories: [otherUserStory],
-        ),
-      ];
-
-      await tester.pumpWidget(
-        GetMaterialApp(
-          home: StoryViewerScreen(
-            initialGroupIndex: 0,
-            groups: groups,
+        final groups = [
+          StoryGroupModel(
+            userId: 'other_user_456',
+            userName: 'Other User',
+            userAvatar: 'assets/images/user_profile.png',
+            isOwner: false,
+            stories: [otherUserStory],
           ),
-        ),
-      );
+        ];
 
-      await tester.pumpAndSettle();
-
-      expect(find.byType(StoryInteractiveLikeButton), findsOneWidget);
-      expect(otherUserStory.isLiked, false);
-      expect(otherUserStory.likesCount, 5);
-
-      await tester.tap(find.byType(GestureDetector).first);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.byType(GestureDetector).first);
-      await tester.pumpAndSettle();
-
-      expect(otherUserStory.isLiked, true);
-      expect(otherUserStory.likesCount, 6);
-    });
-
-    testWidgets('Test 2: Viewing MY OWN story PREVENTS double-tap liking and HIDES bottom like button', (tester) async {
-      final myStory = StoryItemModel(
-        id: 'story_mine_1',
-        type: StoryType.text,
-        textContent: 'My own text story',
-        timeAgo: '5m',
-        createdAt: DateTime.now(),
-        likesCount: 10,
-        isLiked: false,
-        allowReactions: true,
-      );
-
-      final groups = [
-        StoryGroupModel(
-          userId: 'current_user_123',
-          userName: 'Current User',
-          userAvatar: 'assets/images/user_profile.png',
-          isOwner: true,
-          stories: [myStory],
-        ),
-      ];
-
-      await tester.pumpWidget(
-        GetMaterialApp(
-          home: StoryViewerScreen(
-            initialGroupIndex: 0,
-            groups: groups,
+        await tester.pumpWidget(
+          GetMaterialApp(
+            home: StoryViewerScreen(initialGroupIndex: 0, groups: groups),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.byType(StoryInteractiveLikeButton), findsNothing);
-      expect(myStory.isLiked, false);
-      expect(myStory.likesCount, 10);
+        expect(find.byType(StoryInteractiveLikeButton), findsOneWidget);
+        expect(otherUserStory.isLiked, false);
+        expect(otherUserStory.likesCount, 5);
 
-      await tester.tap(find.byType(GestureDetector).first);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.byType(GestureDetector).first);
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(GestureDetector).first);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.byType(GestureDetector).first);
+        await tester.pumpAndSettle();
 
-      expect(myStory.isLiked, false);
-      expect(myStory.likesCount, 10);
-    });
+        expect(otherUserStory.isLiked, true);
+        expect(otherUserStory.likesCount, 6);
+      },
+    );
 
-    test('Test 3: StoryController prevents like API calls and state changes for own stories', () async {
-      final storyController = Get.put(StoryController());
+    testWidgets(
+      'Test 2: Viewing MY OWN story PREVENTS double-tap liking and HIDES bottom like button',
+      (tester) async {
+        final myStory = StoryItemModel(
+          id: 'story_mine_1',
+          type: StoryType.text,
+          textContent: 'My own text story',
+          timeAgo: '5m',
+          createdAt: DateTime.now(),
+          likesCount: 10,
+          isLiked: false,
+          allowReactions: true,
+        );
 
-      final ownStory = StoryItemModel(
-        id: 'own_story_99',
-        type: StoryType.text,
-        timeAgo: '1m',
-        createdAt: DateTime.now(),
-        likesCount: 3,
-        isLiked: false,
-      );
+        final groups = [
+          StoryGroupModel(
+            userId: 'current_user_123',
+            userName: 'Current User',
+            userAvatar: 'assets/images/user_profile.png',
+            isOwner: true,
+            stories: [myStory],
+          ),
+        ];
 
-      final otherStory = StoryItemModel(
-        id: 'other_story_88',
-        type: StoryType.text,
-        timeAgo: '1m',
-        createdAt: DateTime.now(),
-        likesCount: 7,
-        isLiked: false,
-      );
+        await tester.pumpWidget(
+          GetMaterialApp(
+            home: StoryViewerScreen(initialGroupIndex: 0, groups: groups),
+          ),
+        );
 
-      storyController.storyGroups.assignAll([
-        StoryGroupModel(
-          userId: 'current_user_123',
-          userName: 'Current User',
-          userAvatar: 'assets/images/user_profile.png',
-          isOwner: true,
-          stories: [ownStory],
-        ),
-        StoryGroupModel(
-          userId: 'other_user_777',
-          userName: 'Friend',
-          userAvatar: 'assets/images/user_profile.png',
-          isOwner: false,
-          stories: [otherStory],
-        ),
-      ]);
+        await tester.pumpAndSettle();
 
-      storyController.toggleLike('own_story_99');
-      expect(ownStory.isLiked, false);
-      expect(ownStory.likesCount, 3);
+        expect(find.byType(StoryInteractiveLikeButton), findsNothing);
+        expect(myStory.isLiked, false);
+        expect(myStory.likesCount, 10);
 
-      storyController.syncLikeToBackend('own_story_99');
-      expect(ownStory.isLiked, false);
-      expect(ownStory.likesCount, 3);
+        await tester.tap(find.byType(GestureDetector).first);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.byType(GestureDetector).first);
+        await tester.pumpAndSettle();
 
-      storyController.toggleLike('other_story_88');
-      expect(otherStory.isLiked, true);
-      expect(otherStory.likesCount, 8);
-    });
+        expect(myStory.isLiked, false);
+        expect(myStory.likesCount, 10);
+      },
+    );
+
+    test(
+      'Test 3: StoryController prevents like API calls and state changes for own stories',
+      () async {
+        final storyController = Get.put(StoryController());
+
+        final ownStory = StoryItemModel(
+          id: 'own_story_99',
+          type: StoryType.text,
+          timeAgo: '1m',
+          createdAt: DateTime.now(),
+          likesCount: 3,
+          isLiked: false,
+        );
+
+        final otherStory = StoryItemModel(
+          id: 'other_story_88',
+          type: StoryType.text,
+          timeAgo: '1m',
+          createdAt: DateTime.now(),
+          likesCount: 7,
+          isLiked: false,
+        );
+
+        storyController.storyGroups.assignAll([
+          StoryGroupModel(
+            userId: 'current_user_123',
+            userName: 'Current User',
+            userAvatar: 'assets/images/user_profile.png',
+            isOwner: true,
+            stories: [ownStory],
+          ),
+          StoryGroupModel(
+            userId: 'other_user_777',
+            userName: 'Friend',
+            userAvatar: 'assets/images/user_profile.png',
+            isOwner: false,
+            stories: [otherStory],
+          ),
+        ]);
+
+        storyController.toggleLike('own_story_99');
+        expect(ownStory.isLiked, false);
+        expect(ownStory.likesCount, 3);
+
+        storyController.syncLikeToBackend('own_story_99', isLiked: true);
+        expect(ownStory.isLiked, false);
+        expect(ownStory.likesCount, 3);
+
+        storyController.toggleLike('other_story_88');
+        expect(otherStory.isLiked, true);
+        expect(otherStory.likesCount, 8);
+      },
+    );
   });
 }

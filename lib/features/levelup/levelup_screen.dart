@@ -560,7 +560,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
-              child: ListView(
+              child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
@@ -570,7 +570,9 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                   AppSpacing.md,
                   120,
                 ),
-                children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   // HEADER
                   AppScreenHeader(
                     title: 'levelup.title'.tr,
@@ -742,6 +744,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                     ),
                   ],
                 ],
+              ),
               ),
             ),
           ),

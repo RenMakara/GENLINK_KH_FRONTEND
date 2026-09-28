@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../domain/models/story_model.dart';
 import 'story_template_canvas.dart';
 import 'story_video_player_widget.dart';
@@ -459,12 +460,12 @@ Widget buildStoryLayerContent({
       } else if (layer.text.startsWith('assets/')) {
         imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.contain);
       } else {
-        imgWidget = Image.network(
-          layer.text,
+        imgWidget = AppCachedImage(
+          imageUrl: layer.text,
           width: 180,
           fit: BoxFit.contain,
-          errorBuilder: (c, e, s) =>
-              imageErrorWidget ??
+          memCacheWidth: 360,
+          errorWidget: imageErrorWidget ??
               const Icon(Icons.broken_image, color: Colors.white54),
         );
       }
@@ -533,28 +534,24 @@ Widget buildStoryBackground({
       fit: BoxFit.contain,
     );
   } else if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
-    mediaWidget = Image.network(
-      mediaUrl,
+    mediaWidget = AppCachedImage(
+      imageUrl: mediaUrl,
       fit: BoxFit.contain,
       alignment: Alignment.center,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: Colors.black,
-          child: const Center(
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.5,
-              ),
+      placeholder: Container(
+        color: Colors.black,
+        child: const Center(
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2.5,
             ),
           ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) =>
-          placeholderWidget ?? const SizedBox.shrink(),
+        ),
+      ),
+      errorWidget: placeholderWidget ?? const SizedBox.shrink(),
     );
   } else {
     final localFile = _resolveStoryMediaFile(mediaUrl);
@@ -569,12 +566,11 @@ Widget buildStoryBackground({
             placeholderWidget ?? const SizedBox.shrink(),
       );
     } else {
-      mediaWidget = Image.network(
-        mediaUrl,
+      mediaWidget = AppCachedImage(
+        imageUrl: mediaUrl,
         fit: BoxFit.contain,
         alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) =>
-            placeholderWidget ?? const SizedBox.shrink(),
+        errorWidget: placeholderWidget ?? const SizedBox.shrink(),
       );
     }
   }

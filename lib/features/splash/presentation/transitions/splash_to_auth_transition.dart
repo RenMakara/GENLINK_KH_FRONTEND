@@ -4,15 +4,6 @@ import 'package:get/get.dart';
 import '../../../auth/presentation/transitions/genlink_auth_transition.dart';
 import '../widgets/splash_central_plate.dart';
 
-/// Custom transition providing a seamless visual bridge from SplashScreen to the First Auth Screen.
-///
-/// Features:
-/// - Phase 5 (Logo Zoom Bridge): Center GL logo scales from 1.04 to ~24.0, expanding
-///   toward and beyond the viewport, and dissolves smoothly as the camera moves through it.
-/// - Phase 6 (Auth Screen Reveal): The destination Auth Screen reveals with opacity 0 -> 1,
-///   scale 1.02 -> 1.0, and subtle 16px -> 0px slide-up using [Curves.easeOutCubic],
-///   overlapping before the logo completely dissolves.
-/// - Clean fallback to standard fade if reduced motion is enabled or not coming from splash.
 class SplashToAuthTransition extends CustomTransition {
   SplashToAuthTransition({this.centerPlateSize = 136.0});
 

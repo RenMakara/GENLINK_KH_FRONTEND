@@ -9,13 +9,16 @@ class StoryController extends GetxController {
   final StoryRepository _repository;
 
   StoryController({StoryRepository? repository})
-      : _repository = repository ??
-            (Get.isRegistered<StoryRepository>()
-                ? Get.find<StoryRepository>()
-                : StoryRepositoryImpl());
+    : _repository =
+          repository ??
+          (Get.isRegistered<StoryRepository>()
+              ? Get.find<StoryRepository>()
+              : StoryRepositoryImpl());
 
   final RxList<StoryGroupModel> storyGroups = <StoryGroupModel>[].obs;
   final RxBool isLoading = true.obs;
+  final RxBool hasStoriesError = false.obs;
+  final RxString storiesErrorMessage = ''.obs;
   final RxBool isUploading = false.obs;
 
   @override
@@ -29,12 +32,16 @@ class StoryController extends GetxController {
   }
 
   Future<void> fetchStories() async {
-    if (!isLoading.value) {
-      isLoading.value = true;
-    }
+    isLoading.value = true;
+    hasStoriesError.value = false;
+    storiesErrorMessage.value = '';
     try {
       final data = await _repository.getStories();
       storyGroups.assignAll(data);
+    } catch (e) {
+      hasStoriesError.value = true;
+      storiesErrorMessage.value = 'Couldn\'t load stories. Tap to retry.';
+      debugPrint('[StoryController] fetchStories error: $e');
     } finally {
       isLoading.value = false;
     }
@@ -88,8 +95,11 @@ class StoryController extends GetxController {
         templateSlots: templateSlots,
       );
 
-      final ownerGroupIdx = storyGroups.indexWhere((g) =>
-          g.isOwner || (CurrentUser.id.isNotEmpty && g.userId == CurrentUser.id));
+      final ownerGroupIdx = storyGroups.indexWhere(
+        (g) =>
+            g.isOwner ||
+            (CurrentUser.id.isNotEmpty && g.userId == CurrentUser.id),
+      );
       if (ownerGroupIdx != -1) {
         final group = storyGroups[ownerGroupIdx];
         if (!group.stories.any((s) => s.id == newStory.id)) {
@@ -110,7 +120,9 @@ class StoryController extends GetxController {
             userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user',
             userName: CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
                 ? CurrentUser.name
-                : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'You'),
+                : (CurrentUser.username.isNotEmpty
+                      ? CurrentUser.username
+                      : 'You'),
             userAvatar: CurrentUser.avatarUrl?.isNotEmpty == true
                 ? CurrentUser.avatarUrl!
                 : '',
@@ -144,7 +156,8 @@ class StoryController extends GetxController {
 
   Future<void> toggleLike(String storyId) async {
     for (final group in storyGroups) {
-      final isOwn = group.isOwner ||
+      final isOwn =
+          group.isOwner ||
           (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
       for (final story in group.stories) {
         if (story.id == storyId) {
@@ -155,7 +168,11 @@ class StoryController extends GetxController {
           story.likesCount += story.isLiked ? 1 : -1;
           storyGroups.refresh();
           try {
-            await _repository.toggleLikeStory(storyId);
+            if (story.isLiked) {
+              await _repository.likeStory(storyId);
+            } else {
+              await _repository.unlikeStory(storyId);
+            }
           } catch (e) {
             story.isLiked = previousLiked;
             story.likesCount = previousCount;
@@ -166,13 +183,17 @@ class StoryController extends GetxController {
         }
       }
     }
-    await _repository.toggleLikeStory(storyId);
+    await _repository.likeStory(storyId);
   }
 
-  Future<void> syncLikeToBackend(String storyId) async {
+  Future<void> syncLikeToBackend(
+    String storyId, {
+    required bool isLiked,
+  }) async {
     bool foundInGroups = false;
     for (final group in storyGroups) {
-      final isOwn = group.isOwner ||
+      final isOwn =
+          group.isOwner ||
           (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
       for (final story in group.stories) {
         if (story.id == storyId) {
@@ -182,7 +203,11 @@ class StoryController extends GetxController {
         }
       }
     }
-    await _repository.toggleLikeStory(storyId);
+    if (isLiked) {
+      await _repository.likeStory(storyId);
+    } else {
+      await _repository.unlikeStory(storyId);
+    }
     if (foundInGroups) {
       storyGroups.refresh();
     }
@@ -214,7 +239,11 @@ class StoryController extends GetxController {
     if (index != -1) {
       final oldStory = ownerGroup.stories[index];
       final newSettings = StorySettings(
-        visibility: newPrivacy == 'Public' ? StoryPrivacy.public : (newPrivacy == 'Only Me' ? StoryPrivacy.onlyMe : StoryPrivacy.friends),
+        visibility: newPrivacy == 'Public'
+            ? StoryPrivacy.public
+            : (newPrivacy == 'Only Me'
+                  ? StoryPrivacy.onlyMe
+                  : StoryPrivacy.friends),
         replyPermission: oldStory.settings.replyPermission,
         allowReactions: oldStory.settings.allowReactions,
       );
@@ -254,7 +283,9 @@ class StoryController extends GetxController {
       for (final group in storyGroups) {
         group.stories.removeWhere((s) => s.id == storyId);
       }
-      storyGroups.removeWhere((group) => group.stories.isEmpty && !group.isOwner);
+      storyGroups.removeWhere(
+        (group) => group.stories.isEmpty && !group.isOwner,
+      );
       storyGroups.refresh();
       return true;
     } catch (e) {

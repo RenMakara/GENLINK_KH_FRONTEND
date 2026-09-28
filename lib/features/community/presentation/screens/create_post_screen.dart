@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../../../shared/utils/current_user.dart';
@@ -49,10 +50,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   List<String> _attachedImages = [];
   List<String> _attachedMediaOrder = [];
   // ─── Step 3B-Frontend: Video state ────────────────────────────────────────
-  String? _attachedVideo;          // local file path of the selected video
+  String? _attachedVideo; // local file path of the selected video
   VideoPlayerController? _previewVideoController; // preview controller
-  bool _videoInitialized = false;  // controller ready to render
-  bool _videoInitError = false;    // init failed (bad codec, corrupt, etc.)
+  bool _videoInitialized = false; // controller ready to render
+  bool _videoInitError = false; // init failed (bad codec, corrupt, etc.)
   // ──────────────────────────────────────────────────────────────────────────
 
   String? _selectedLocation;
@@ -62,7 +63,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   String? _pollQuestion;
   List<String> _pollOptionsList = [];
-  final String _pollDuration = '3 Days';
+  String _pollDuration = '3 Days';
 
   String? _attachedLink;
   String? _linkTitle;
@@ -74,32 +75,55 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   bool get _isEditing => widget.initialPost != null;
 
+  String _composerAudience(String visibility) => switch (visibility
+      .trim()
+      .replaceAll(RegExp(r'[\\s-]+'), '_')
+      .toUpperCase()) {
+    'FRIENDS' => 'Friends',
+    'ONLY_ME' => 'Only Me',
+    'COMMUNITY' => 'Community',
+    _ => 'Public',
+  };
+
   @override
   void initState() {
     super.initState();
     if (_isEditing) {
       _textController.text = widget.initialPost!.content;
       _attachedImages = List.from(widget.initialPost!.imageUrls);
-      _selectedAudience = widget.initialPost!.visibility;
+      _selectedAudience = _composerAudience(widget.initialPost!.visibility);
       _selectedLocation = widget.initialPost!.location;
       _attachedLink = widget.initialPost!.linkUrl;
       _linkTitle = widget.initialPost!.linkPreviewTitle;
       _linkDomain = widget.initialPost!.linkPreviewDomain;
       _pollQuestion = widget.initialPost!.pollQuestion;
+      _pollDuration = widget.initialPost!.pollDuration ?? _pollDuration;
       if (widget.initialPost!.pollOptions != null) {
-        _pollOptionsList = widget.initialPost!.pollOptions!.map((o) => o.text).toList();
+        _pollOptionsList = widget.initialPost!.pollOptions!
+            .map((o) => o.text)
+            .toList();
       }
       if (widget.initialPost!.attachedEvent != null) {
         _attachedEvent = widget.initialPost!.attachedEvent;
+      } else if (widget.initialPost!.eventId != null) {
+        final eventId = widget.initialPost!.eventId!;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+          try {
+            final event = await Get.find<CommunityController>()
+                .fetchEventDetails(eventId);
+            if (mounted) setState(() => _attachedEvent = event);
+          } catch (_) {
+            // Event detail access is checked by the backend before attaching.
+          }
+        });
       }
-      if (widget.initialPost!.videoUrl != null && widget.initialPost!.videoUrl!.isNotEmpty) {
+      if (widget.initialPost!.videoUrl != null &&
+          widget.initialPost!.videoUrl!.isNotEmpty) {
         _attachedVideo = widget.initialPost!.videoUrl;
         _setVideoFile(widget.initialPost!.videoUrl!);
       }
-      _attachedMediaOrder = [
-        ..._attachedImages,
-        ?_attachedVideo,
-      ];
+      _attachedMediaOrder = [..._attachedImages, ?_attachedVideo];
     } else {
       if (widget.initialImages != null && widget.initialImages!.isNotEmpty) {
         _attachedImages = List.from(widget.initialImages!);
@@ -137,7 +161,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   final ImagePicker _picker = ImagePicker();
-  late final MediaPicker _mediaPicker = widget.mediaPicker ?? MediaPicker(picker: _picker);
+  late final MediaPicker _mediaPicker =
+      widget.mediaPicker ?? MediaPicker(picker: _picker);
 
   @visibleForTesting
   MediaPicker get mediaPicker => _mediaPicker;
@@ -221,7 +246,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           imageQuality: 85,
         );
       } catch (e) {
-        debugPrint('[CreatePostScreen] pickMultiImage fallback to pickImage: $e');
+        debugPrint(
+          '[CreatePostScreen] pickMultiImage fallback to pickImage: $e',
+        );
         final single = await _picker.pickImage(
           source: ImageSource.gallery,
           maxWidth: 1920,
@@ -234,7 +261,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         await _handleSelectedMediaPaths(selected.map((e) => e.path).toList());
       }
     } on PlatformException catch (e) {
-      debugPrint('[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}');
+      debugPrint(
+        '[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}',
+      );
       if (!mounted) return;
       final bool isPermissionError =
           e.code == 'photo_access_denied' ||
@@ -246,22 +275,26 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         context: context,
         title: isPermissionError
             ? ('community.photoPermissionDenied'.tr.isNotEmpty &&
-                'community.photoPermissionDenied'.tr != 'community.photoPermissionDenied'
-                    ? 'community.photoPermissionDenied'.tr
-                    : 'Photo Access Denied')
+                      'community.photoPermissionDenied'.tr !=
+                          'community.photoPermissionDenied'
+                  ? 'community.photoPermissionDenied'.tr
+                  : 'Photo Access Denied')
             : ('community.galleryUnavailable'.tr.isNotEmpty &&
-                'community.galleryUnavailable'.tr != 'community.galleryUnavailable'
-                    ? 'community.galleryUnavailable'.tr
-                    : 'Gallery Unavailable'),
+                      'community.galleryUnavailable'.tr !=
+                          'community.galleryUnavailable'
+                  ? 'community.galleryUnavailable'.tr
+                  : 'Gallery Unavailable'),
         message: isPermissionError
             ? ('community.photoPermissionDeniedMsg'.tr.isNotEmpty &&
-                'community.photoPermissionDeniedMsg'.tr != 'community.photoPermissionDeniedMsg'
-                    ? 'community.photoPermissionDeniedMsg'.tr
-                    : 'Please allow media access in your device settings.')
+                      'community.photoPermissionDeniedMsg'.tr !=
+                          'community.photoPermissionDeniedMsg'
+                  ? 'community.photoPermissionDeniedMsg'.tr
+                  : 'Please allow media access in your device settings.')
             : ('community.galleryUnavailableMsg'.tr.isNotEmpty &&
-                'community.galleryUnavailableMsg'.tr != 'community.galleryUnavailableMsg'
-                    ? 'community.galleryUnavailableMsg'.tr
-                    : 'Could not open media gallery. Please try again.'),
+                      'community.galleryUnavailableMsg'.tr !=
+                          'community.galleryUnavailableMsg'
+                  ? 'community.galleryUnavailableMsg'.tr
+                  : 'Could not open media gallery. Please try again.'),
       );
     } catch (e) {
       debugPrint('[CreatePostScreen] Gallery pick unexpected error: $e');
@@ -403,7 +436,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
-
   @visibleForTesting
   void setPollForTesting(String question, List<String> options) {
     setState(() {
@@ -455,9 +487,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   void _showAudiencePickerSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
+    final textSecondary = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF65676B);
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final borderColor = isDark
+        ? const Color(0xFF2B313A)
+        : const Color(0xFFE2E4E8);
 
     showModalBottomSheet(
       context: context,
@@ -487,16 +523,48 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 ),
               ),
               Text(
-                'community.whoCanSee'.tr.isNotEmpty && 'community.whoCanSee'.tr != 'community.whoCanSee'
+                'community.whoCanSee'.tr.isNotEmpty &&
+                        'community.whoCanSee'.tr != 'community.whoCanSee'
                     ? 'community.whoCanSee'.tr
                     : 'Who can see your post?',
-                style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ...[
-                {'key': 'Public', 'label': 'community.public'.tr.isNotEmpty && 'community.public'.tr != 'community.public' ? 'community.public'.tr : 'Public', 'desc': 'Visible to everyone on GenLink', 'icon': Icons.public},
-                {'key': 'Friends', 'label': 'community.friendsOnly'.tr.isNotEmpty && 'community.friendsOnly'.tr != 'community.friendsOnly' ? 'community.friendsOnly'.tr : 'Friends Only', 'desc': 'Only your connections can view', 'icon': Icons.group_outlined},
-                {'key': 'Only Me', 'label': 'community.onlyMe'.tr.isNotEmpty && 'community.onlyMe'.tr != 'community.onlyMe' ? 'community.onlyMe'.tr : 'Only Me', 'desc': 'Private to your account only', 'icon': Icons.lock_outline},
+                {
+                  'key': 'Public',
+                  'label':
+                      'community.public'.tr.isNotEmpty &&
+                          'community.public'.tr != 'community.public'
+                      ? 'community.public'.tr
+                      : 'Public',
+                  'desc': 'Visible to everyone on GenLink',
+                  'icon': Icons.public,
+                },
+                {
+                  'key': 'Friends',
+                  'label':
+                      'community.friendsOnly'.tr.isNotEmpty &&
+                          'community.friendsOnly'.tr != 'community.friendsOnly'
+                      ? 'community.friendsOnly'.tr
+                      : 'Friends Only',
+                  'desc': 'Only your connections can view',
+                  'icon': Icons.group_outlined,
+                },
+                {
+                  'key': 'Only Me',
+                  'label':
+                      'community.onlyMe'.tr.isNotEmpty &&
+                          'community.onlyMe'.tr != 'community.onlyMe'
+                      ? 'community.onlyMe'.tr
+                      : 'Only Me',
+                  'desc': 'Private to your account only',
+                  'icon': Icons.lock_outline,
+                },
               ].map((item) {
                 final key = item['key'] as String;
                 final label = item['label'] as String;
@@ -510,16 +578,24 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
+                      color: isDark
+                          ? const Color(0xFF22262E)
+                          : const Color(0xFFF0F2F5),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: isSelected ? textPrimary : textSecondary, size: 20),
+                    child: Icon(
+                      icon,
+                      color: isSelected ? textPrimary : textSecondary,
+                      size: 20,
+                    ),
                   ),
                   title: Text(
                     label,
                     style: TextStyle(
                       color: textPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                       fontSize: 14.5,
                     ),
                   ),
@@ -527,7 +603,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     desc,
                     style: TextStyle(color: textSecondary, fontSize: 12),
                   ),
-                  trailing: isSelected ? Icon(Icons.check_circle_rounded, color: textPrimary, size: 20) : null,
+                  trailing: isSelected
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          color: textPrimary,
+                          size: 20,
+                        )
+                      : null,
                   onTap: () {
                     setState(() {
                       _selectedAudience = key;
@@ -559,8 +641,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
-    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final textSecondary = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF65676B);
+    final borderColor = isDark
+        ? const Color(0xFF2B313A)
+        : const Color(0xFFE2E4E8);
     final inputBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
 
     final searchCtrl = TextEditingController();
@@ -572,20 +658,28 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
-          final filtered = locations.where((l) => l.toLowerCase().contains(query.toLowerCase())).toList();
+          final filtered = locations
+              .where((l) => l.toLowerCase().contains(query.toLowerCase()))
+              .toList();
 
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
             child: Material(
               color: surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(ctx).size.height * 0.65,
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   border: Border.all(color: borderColor, width: 0.8),
                 ),
                 child: Column(
@@ -604,10 +698,15 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       ),
                     ),
                     Text(
-                      'community.location'.tr.isNotEmpty && 'community.location'.tr != 'community.location'
+                      'community.location'.tr.isNotEmpty &&
+                              'community.location'.tr != 'community.location'
                           ? 'community.location'.tr
                           : 'Add Location',
-                      style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -616,18 +715,34 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       style: TextStyle(color: textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'Search location...',
-                        hintStyle: TextStyle(color: textSecondary, fontSize: 13),
-                        prefixIcon: Icon(Icons.search_rounded, color: textSecondary, size: 18),
+                        hintStyle: TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: textSecondary,
+                          size: 18,
+                        ),
                         filled: true,
                         fillColor: inputBg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: borderColor, width: 0.8),
+                          borderSide: BorderSide(
+                            color: borderColor,
+                            width: 0.8,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: borderColor, width: 0.8),
+                          borderSide: BorderSide(
+                            color: borderColor,
+                            width: 0.8,
+                          ),
                         ),
                       ),
                     ),
@@ -636,15 +751,24 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       child: ListView.builder(
                         shrinkWrap: true,
                         physics: const BouncingScrollPhysics(),
-                        itemCount: filtered.length + (query.trim().isNotEmpty ? 1 : 0),
+                        itemCount:
+                            filtered.length + (query.trim().isNotEmpty ? 1 : 0),
                         itemBuilder: (context, idx) {
-                          if (query.trim().isNotEmpty && idx == filtered.length) {
+                          if (query.trim().isNotEmpty &&
+                              idx == filtered.length) {
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
-                              leading: Icon(Icons.add_location_alt_outlined, color: textPrimary),
+                              leading: Icon(
+                                Icons.add_location_alt_outlined,
+                                color: textPrimary,
+                              ),
                               title: Text(
                                 'Use "$query"',
-                                style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               onTap: () {
                                 setState(() {
@@ -658,16 +782,27 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           final isSel = _selectedLocation == loc;
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: Icon(Icons.location_on_outlined, color: isSel ? textPrimary : textSecondary),
+                            leading: Icon(
+                              Icons.location_on_outlined,
+                              color: isSel ? textPrimary : textSecondary,
+                            ),
                             title: Text(
                               loc,
                               style: TextStyle(
                                 color: textPrimary,
                                 fontSize: 14,
-                                fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isSel
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
-                            trailing: isSel ? Icon(Icons.check, color: textPrimary, size: 18) : null,
+                            trailing: isSel
+                                ? Icon(
+                                    Icons.check,
+                                    color: textPrimary,
+                                    size: 18,
+                                  )
+                                : null,
                             onTap: () {
                               setState(() {
                                 _selectedLocation = isSel ? null : loc;
@@ -721,8 +856,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final cardBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
-    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final textSecondary = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF65676B);
+    final borderColor = isDark
+        ? const Color(0xFF2B313A)
+        : const Color(0xFFE2E4E8);
 
     showModalBottomSheet(
       context: context,
@@ -753,10 +892,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 ),
               ),
               Text(
-                'community.selectFeeling'.tr.isNotEmpty && 'community.selectFeeling'.tr != 'community.selectFeeling'
+                'community.selectFeeling'.tr.isNotEmpty &&
+                        'community.selectFeeling'.tr !=
+                            'community.selectFeeling'
                     ? 'community.selectFeeling'.tr
                     : 'How are you feeling?',
-                style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               TabBar(
@@ -766,12 +911,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 indicatorWeight: 2,
                 tabs: [
                   Tab(
-                    text: 'community.feelings'.tr.isNotEmpty && 'community.feelings'.tr != 'community.feelings'
+                    text:
+                        'community.feelings'.tr.isNotEmpty &&
+                            'community.feelings'.tr != 'community.feelings'
                         ? 'community.feelings'.tr
                         : 'Feelings',
                   ),
                   Tab(
-                    text: 'community.activities'.tr.isNotEmpty && 'community.activities'.tr != 'community.activities'
+                    text:
+                        'community.activities'.tr.isNotEmpty &&
+                            'community.activities'.tr != 'community.activities'
                         ? 'community.activities'.tr
                         : 'Activities',
                   ),
@@ -783,18 +932,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                   children: [
                     GridView.builder(
                       physics: const BouncingScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 3.2,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 3.2,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                          ),
                       itemCount: feelings.length,
                       itemBuilder: (context, idx) {
                         final item = feelings[idx];
                         final isSel = _selectedFeeling == item;
                         return Material(
-                          color: isSel ? (isDark ? Colors.white : Colors.black87) : cardBg,
+                          color: isSel
+                              ? (isDark ? Colors.white : Colors.black87)
+                              : cardBg,
                           borderRadius: BorderRadius.circular(12),
                           child: InkWell(
                             onTap: () {
@@ -805,12 +957,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               alignment: Alignment.centerLeft,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isSel ? Colors.transparent : borderColor,
+                                  color: isSel
+                                      ? Colors.transparent
+                                      : borderColor,
                                   width: 0.8,
                                 ),
                               ),
@@ -819,9 +975,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: isSel ? (isDark ? Colors.black : Colors.white) : textPrimary,
+                                  color: isSel
+                                      ? (isDark ? Colors.black : Colors.white)
+                                      : textPrimary,
                                   fontSize: 13,
-                                  fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isSel
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -831,18 +991,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     GridView.builder(
                       physics: const BouncingScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 3.2,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 3.2,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                          ),
                       itemCount: activities.length,
                       itemBuilder: (context, idx) {
                         final item = activities[idx];
                         final isSel = _selectedFeeling == item;
                         return Material(
-                          color: isSel ? (isDark ? Colors.white : Colors.black87) : cardBg,
+                          color: isSel
+                              ? (isDark ? Colors.white : Colors.black87)
+                              : cardBg,
                           borderRadius: BorderRadius.circular(12),
                           child: InkWell(
                             onTap: () {
@@ -853,12 +1016,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               alignment: Alignment.centerLeft,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isSel ? Colors.transparent : borderColor,
+                                  color: isSel
+                                      ? Colors.transparent
+                                      : borderColor,
                                   width: 0.8,
                                 ),
                               ),
@@ -867,9 +1034,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: isSel ? (isDark ? Colors.black : Colors.white) : textPrimary,
+                                  color: isSel
+                                      ? (isDark ? Colors.black : Colors.white)
+                                      : textPrimary,
                                   fontSize: 13,
-                                  fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isSel
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -892,19 +1063,47 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final cardBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
-    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final textSecondary = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF65676B);
+    final borderColor = isDark
+        ? const Color(0xFF2B313A)
+        : const Color(0xFFE2E4E8);
     final inputBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
 
     final gifs = [
-      {'title': 'Celebration 🎉', 'url': 'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif'},
-      {'title': 'Thumbs Up 👍', 'url': 'https://media.giphy.com/media/111ebonMs90YLu/giphy.gif'},
-      {'title': 'Excited 🤩', 'url': 'https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif'},
-      {'title': 'Coding 💻', 'url': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif'},
-      {'title': 'Mind Blown 🤯', 'url': 'https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif'},
-      {'title': 'Coffee Time ☕', 'url': 'https://media.giphy.com/media/oZEBLugoTNRxS/giphy.gif'},
-      {'title': 'High Five 🙌', 'url': 'https://media.giphy.com/media/3oEjHV0z8S7WM4MwnK/giphy.gif'},
-      {'title': 'Let\'s Go 🚀', 'url': 'https://media.giphy.com/media/7WvAUvZZTRpSuudobh/giphy.gif'},
+      {
+        'title': 'Celebration 🎉',
+        'url': 'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif',
+      },
+      {
+        'title': 'Thumbs Up 👍',
+        'url': 'https://media.giphy.com/media/111ebonMs90YLu/giphy.gif',
+      },
+      {
+        'title': 'Excited 🤩',
+        'url': 'https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif',
+      },
+      {
+        'title': 'Coding 💻',
+        'url': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
+      },
+      {
+        'title': 'Mind Blown 🤯',
+        'url': 'https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif',
+      },
+      {
+        'title': 'Coffee Time ☕',
+        'url': 'https://media.giphy.com/media/oZEBLugoTNRxS/giphy.gif',
+      },
+      {
+        'title': 'High Five 🙌',
+        'url': 'https://media.giphy.com/media/3oEjHV0z8S7WM4MwnK/giphy.gif',
+      },
+      {
+        'title': 'Let\'s Go 🚀',
+        'url': 'https://media.giphy.com/media/7WvAUvZZTRpSuudobh/giphy.gif',
+      },
     ];
 
     String gifQuery = '';
@@ -915,18 +1114,29 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
-          final filteredGifs = gifs.where((g) => g['title']!.toLowerCase().contains(gifQuery.toLowerCase())).toList();
+          final filteredGifs = gifs
+              .where(
+                (g) =>
+                    g['title']!.toLowerCase().contains(gifQuery.toLowerCase()),
+              )
+              .toList();
 
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
             child: Material(
               color: surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               child: Container(
                 height: MediaQuery.of(ctx).size.height * 0.60,
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   border: Border.all(color: borderColor, width: 0.8),
                 ),
                 child: Column(
@@ -948,10 +1158,18 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       children: [
                         Text(
                           'Select GIF',
-                          style: TextStyle(color: textPrimary, fontSize: 17, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close, color: textSecondary, size: 20),
+                          icon: Icon(
+                            Icons.close,
+                            color: textSecondary,
+                            size: 20,
+                          ),
                           onPressed: () => Navigator.pop(ctx),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -964,18 +1182,34 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       style: TextStyle(color: textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'Search GIFs...',
-                        hintStyle: TextStyle(color: textSecondary, fontSize: 13),
-                        prefixIcon: Icon(Icons.search_rounded, color: textSecondary, size: 18),
+                        hintStyle: TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: textSecondary,
+                          size: 18,
+                        ),
                         filled: true,
                         fillColor: inputBg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: borderColor, width: 0.8),
+                          borderSide: BorderSide(
+                            color: borderColor,
+                            width: 0.8,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: borderColor, width: 0.8),
+                          borderSide: BorderSide(
+                            color: borderColor,
+                            width: 0.8,
+                          ),
                         ),
                       ),
                     ),
@@ -983,12 +1217,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     Expanded(
                       child: GridView.builder(
                         physics: const BouncingScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.3,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 1.3,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                            ),
                         itemCount: filteredGifs.length,
                         itemBuilder: (context, idx) {
                           final item = filteredGifs[idx];
@@ -1010,14 +1245,19 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    Image.network(
-                                      url,
+                                    AppCachedImage(
+                                      imageUrl: url,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Center(
+                                      memCacheWidth: 300,
+                                      errorWidget: Center(
                                         child: Text(
                                           title,
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(color: textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
+                                          style: TextStyle(
+                                            color: textPrimary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1026,14 +1266,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                       left: 0,
                                       right: 0,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 4,
+                                        ),
                                         color: Colors.black54,
                                         child: Text(
                                           title,
                                           textAlign: TextAlign.center,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1073,8 +1320,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
-    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final textSecondary = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF65676B);
+    final borderColor = isDark
+        ? const Color(0xFF2B313A)
+        : const Color(0xFFE2E4E8);
     final inputBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
 
     final questionController = TextEditingController(text: _pollQuestion ?? '');
@@ -1089,6 +1340,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     }
 
     String? validationError;
+    String selectedDuration = _pollDuration;
 
     showModalBottomSheet(
       context: context,
@@ -1100,8 +1352,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
             final question = questionController.text.trim();
             if (question.isEmpty) {
               setSheetState(() {
-                validationError = 'community.pollEmptyQuestion'.tr.isNotEmpty &&
-                        'community.pollEmptyQuestion'.tr != 'community.pollEmptyQuestion'
+                validationError =
+                    'community.pollEmptyQuestion'.tr.isNotEmpty &&
+                        'community.pollEmptyQuestion'.tr !=
+                            'community.pollEmptyQuestion'
                     ? 'community.pollEmptyQuestion'.tr
                     : 'Please enter a poll question';
               });
@@ -1115,8 +1369,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
             if (cleanOptions.length < 2) {
               setSheetState(() {
-                validationError = 'community.pollMinOptions'.tr.isNotEmpty &&
-                        'community.pollMinOptions'.tr != 'community.pollMinOptions'
+                validationError =
+                    'community.pollMinOptions'.tr.isNotEmpty &&
+                        'community.pollMinOptions'.tr !=
+                            'community.pollMinOptions'
                     ? 'community.pollMinOptions'.tr
                     : 'Please provide at least 2 options';
               });
@@ -1127,8 +1383,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
             for (final opt in cleanOptions) {
               if (!uniqueOptions.add(opt.toLowerCase())) {
                 setSheetState(() {
-                  validationError = 'community.pollDuplicateOptions'.tr.isNotEmpty &&
-                          'community.pollDuplicateOptions'.tr != 'community.pollDuplicateOptions'
+                  validationError =
+                      'community.pollDuplicateOptions'.tr.isNotEmpty &&
+                          'community.pollDuplicateOptions'.tr !=
+                              'community.pollDuplicateOptions'
                       ? 'community.pollDuplicateOptions'.tr
                       : 'Poll options must be unique';
                 });
@@ -1139,22 +1397,29 @@ class CreatePostScreenState extends State<CreatePostScreen> {
             setState(() {
               _pollQuestion = question;
               _pollOptionsList = cleanOptions;
+              _pollDuration = selectedDuration;
             });
             Navigator.pop(ctx);
           }
 
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
             child: Material(
               color: surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(ctx).size.height * 0.85,
                 ),
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   border: Border.all(color: borderColor, width: 0.8),
                 ),
                 child: SingleChildScrollView(
@@ -1178,11 +1443,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.poll_rounded, color: textPrimary, size: 22),
+                              Icon(
+                                Icons.poll_rounded,
+                                color: textPrimary,
+                                size: 22,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'community.createPoll'.tr.isNotEmpty &&
-                                        'community.createPoll'.tr != 'community.createPoll'
+                                        'community.createPoll'.tr !=
+                                            'community.createPoll'
                                     ? 'community.createPoll'.tr
                                     : 'Create Poll',
                                 style: TextStyle(
@@ -1197,12 +1467,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             onPressed: validateAndSave,
                             style: TextButton.styleFrom(
                               foregroundColor: textPrimary,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
-                              'common.done'.tr.isNotEmpty && 'common.done'.tr != 'common.done'
+                              'common.done'.tr.isNotEmpty &&
+                                      'common.done'.tr != 'common.done'
                                   ? 'common.done'.tr
                                   : 'Done',
                               style: TextStyle(
@@ -1216,18 +1490,62 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       ),
                       const SizedBox(height: 14),
 
+                      Text(
+                        'Poll duration',
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedDuration,
+                        items: const ['1 Day', '3 Days', '7 Days', '14 Days']
+                            .map(
+                              (duration) => DropdownMenuItem<String>(
+                                value: duration,
+                                child: Text(duration),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setSheetState(() => selectedDuration = value);
+                          }
+                        },
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: inputBg,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
                       if (validationError != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.redAccent.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+                            border: Border.all(
+                              color: Colors.redAccent.withValues(alpha: 0.4),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 16),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: Colors.redAccent,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -1245,10 +1563,15 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
                       Text(
                         'community.pollQuestion'.tr.isNotEmpty &&
-                                'community.pollQuestion'.tr != 'community.pollQuestion'
+                                'community.pollQuestion'.tr !=
+                                    'community.pollQuestion'
                             ? 'community.pollQuestion'.tr
                             : 'Question',
-                        style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextField(
@@ -1261,21 +1584,35 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         },
                         style: TextStyle(color: textPrimary, fontSize: 14.5),
                         decoration: InputDecoration(
-                          hintText: 'community.pollQuestionHint'.tr.isNotEmpty &&
-                                  'community.pollQuestionHint'.tr != 'community.pollQuestionHint'
+                          hintText:
+                              'community.pollQuestionHint'.tr.isNotEmpty &&
+                                  'community.pollQuestionHint'.tr !=
+                                      'community.pollQuestionHint'
                               ? 'community.pollQuestionHint'.tr
                               : 'Ask a question...',
-                          hintStyle: TextStyle(color: textSecondary, fontSize: 13.5),
+                          hintStyle: TextStyle(
+                            color: textSecondary,
+                            fontSize: 13.5,
+                          ),
                           filled: true,
                           fillColor: inputBg,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor, width: 0.8),
+                            borderSide: BorderSide(
+                              color: borderColor,
+                              width: 0.8,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: borderColor, width: 0.8),
+                            borderSide: BorderSide(
+                              color: borderColor,
+                              width: 0.8,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1290,10 +1627,15 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
                       Text(
                         'community.pollOptions'.tr.isNotEmpty &&
-                                'community.pollOptions'.tr != 'community.pollOptions'
+                                'community.pollOptions'.tr !=
+                                    'community.pollOptions'
                             ? 'community.pollOptions'.tr
                             : 'Options',
-                        style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
 
@@ -1310,28 +1652,47 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                   cursorColor: textPrimary,
                                   onChanged: (_) {
                                     if (validationError != null) {
-                                      setSheetState(() => validationError = null);
+                                      setSheetState(
+                                        () => validationError = null,
+                                      );
                                     }
                                   },
-                                  style: TextStyle(color: textPrimary, fontSize: 14),
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 14,
+                                  ),
                                   decoration: InputDecoration(
                                     hintText: 'Option ${idx + 1}',
-                                    hintStyle: TextStyle(color: textSecondary, fontSize: 13),
+                                    hintStyle: TextStyle(
+                                      color: textSecondary,
+                                      fontSize: 13,
+                                    ),
                                     filled: true,
                                     fillColor: inputBg,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 10,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: borderColor, width: 0.8),
+                                      borderSide: BorderSide(
+                                        color: borderColor,
+                                        width: 0.8,
+                                      ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: borderColor, width: 0.8),
+                                      borderSide: BorderSide(
+                                        color: borderColor,
+                                        width: 0.8,
+                                      ),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: isDark ? Colors.white70 : Colors.black87,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black87,
                                         width: 1.0,
                                       ),
                                     ),
@@ -1340,12 +1701,18 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               ),
                               if (optionControllers.length > 2)
                                 IconButton(
-                                  icon: Icon(Icons.remove_circle_outline_rounded, color: textSecondary, size: 20),
+                                  icon: Icon(
+                                    Icons.remove_circle_outline_rounded,
+                                    color: textSecondary,
+                                    size: 20,
+                                  ),
                                   tooltip: 'Remove Option',
                                   onPressed: () {
                                     setSheetState(() {
                                       optionControllers.removeAt(idx);
-                                      if (validationError != null) validationError = null;
+                                      if (validationError != null) {
+                                        validationError = null;
+                                      }
                                     });
                                   },
                                 ),
@@ -1361,12 +1728,17 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             onTap: () {
                               setSheetState(() {
                                 optionControllers.add(TextEditingController());
-                                if (validationError != null) validationError = null;
+                                if (validationError != null) {
+                                  validationError = null;
+                                }
                               });
                             },
                             borderRadius: BorderRadius.circular(10),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 6,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -1378,7 +1750,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                     'community.pollAddOption'.tr.isNotEmpty &&
-                                            'community.pollAddOption'.tr != 'community.pollAddOption'
+                                            'community.pollAddOption'.tr !=
+                                                'community.pollAddOption'
                                         ? 'community.pollAddOption'.tr
                                         : 'Add Option',
                                     style: TextStyle(
@@ -1403,7 +1776,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-
   bool get _canPost {
     final text = _textController.text.trim();
     return text.isNotEmpty ||
@@ -1415,6 +1787,38 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         _selectedFeeling != null ||
         _taggedPeople.isNotEmpty ||
         _attachedLink != null;
+  }
+
+  List<String> _imageReferencesForSubmit() {
+    final initial = widget.initialPost;
+    if (initial == null || initial.imageMediaIds.isEmpty) {
+      return List<String>.from(_attachedImages);
+    }
+    final idByUrl = <String, String>{};
+    for (
+      var index = 0;
+      index < initial.imageUrls.length && index < initial.imageMediaIds.length;
+      index++
+    ) {
+      idByUrl[initial.imageUrls[index]] = initial.imageMediaIds[index];
+    }
+    return _attachedImages.map((url) {
+      if (url.startsWith('genlink-media://')) return url;
+      final mediaId = idByUrl[url];
+      return mediaId == null ? url : 'genlink-media://$mediaId';
+    }).toList();
+  }
+
+  String? _videoReferenceForSubmit() {
+    final video = _attachedVideo;
+    if (video == null || video.startsWith('genlink-media://')) return video;
+    final initial = widget.initialPost;
+    if (initial != null &&
+        initial.videoMediaId != null &&
+        video == initial.videoUrl) {
+      return 'genlink-media://${initial.videoMediaId}';
+    }
+    return video;
   }
 
   Future<void> _onBackPress() async {
@@ -1429,19 +1833,23 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     if (_canPost) {
       final confirmed = await GenLinkConfirmDialog.showDiscard(
         context: context,
-        title: 'community.discardDraft'.tr.isNotEmpty &&
+        title:
+            'community.discardDraft'.tr.isNotEmpty &&
                 'community.discardDraft'.tr != 'community.discardDraft'
             ? 'community.discardDraft'.tr
             : 'Discard Draft?',
-        message: 'community.discardMessage'.tr.isNotEmpty &&
+        message:
+            'community.discardMessage'.tr.isNotEmpty &&
                 'community.discardMessage'.tr != 'community.discardMessage'
             ? 'community.discardMessage'.tr
             : 'You have unsaved changes. Discard them?',
-        confirmLabel: 'community.discard'.tr.isNotEmpty &&
+        confirmLabel:
+            'community.discard'.tr.isNotEmpty &&
                 'community.discard'.tr != 'community.discard'
             ? 'community.discard'.tr
             : 'Discard',
-        cancelLabel: 'community.keepEditing'.tr.isNotEmpty &&
+        cancelLabel:
+            'community.keepEditing'.tr.isNotEmpty &&
                 'community.keepEditing'.tr != 'community.keepEditing'
             ? 'community.keepEditing'.tr
             : 'Keep Editing',
@@ -1476,48 +1884,33 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     List<PollOptionModel>? pollOpts;
     if (_pollQuestion != null && _pollOptionsList.isNotEmpty) {
       pollOpts = _pollOptionsList
-          .map((opt) => PollOptionModel(
-                text: opt,
-                votes: 0,
-                isVoted: false,
-              ))
+          .map((opt) => PollOptionModel(text: opt, votes: 0, isVoted: false))
           .toList();
     }
 
     final visibilityValue = _selectedAudience;
 
-    if (_isEditing) {
-      await controller.updatePost(
-        postId: widget.initialPost!.id,
-        content: _textController.text.trim(),
-        imageUrls: _attachedImages,
-        videoUrl: _attachedVideo,
-        visibility: visibilityValue,
-        location: _selectedLocation,
-        linkUrl: _attachedLink,
-        linkPreviewTitle: _linkTitle,
-        linkPreviewDomain: _linkDomain,
-        pollQuestion: _pollQuestion,
-        pollOptions: pollOpts,
-        pollDuration: _pollDuration,
-        attachedEvent: _attachedEvent,
-      );
-
-      if (mounted) {
-        AppNotificationBanner.showSuccess(
-          context: context,
-          title: 'community.postUpdated'.tr.isNotEmpty && 'community.postUpdated'.tr != 'community.postUpdated'
-              ? 'community.postUpdated'.tr
-              : 'Post updated',
-          message: 'community.postUpdatedMsg'.tr.isNotEmpty && 'community.postUpdatedMsg'.tr != 'community.postUpdatedMsg'
-              ? 'community.postUpdatedMsg'.tr
-              : 'Your post changes have been saved.',
+    try {
+      final imageReferences = _imageReferencesForSubmit();
+      final videoReference = _videoReferenceForSubmit();
+      bool success = true;
+      if (_isEditing) {
+        await controller.updatePost(
+          postId: widget.initialPost!.id,
+          content: _textController.text.trim(),
+          imageUrls: imageReferences,
+          videoUrl: videoReference,
+          visibility: visibilityValue,
+          location: _selectedLocation,
+          linkUrl: _attachedLink,
+          linkPreviewTitle: _linkTitle,
+          linkPreviewDomain: _linkDomain,
+          pollQuestion: _pollQuestion,
+          pollOptions: pollOpts,
+          pollDuration: _pollDuration,
+          attachedEvent: _attachedEvent,
         );
-        Navigator.pop(context);
-      }
-    } else {
-      bool success = false;
-      if (_pollQuestion != null && _pollOptionsList.length >= 2) {
+      } else if (_pollQuestion != null && _pollOptionsList.length >= 2) {
         success = await controller.createPollPost(
           question: _pollQuestion!,
           options: _pollOptionsList,
@@ -1525,12 +1918,20 @@ class CreatePostScreenState extends State<CreatePostScreen> {
               ? _textController.text.trim()
               : null,
           visibility: visibilityValue,
+          pollDuration: _pollDuration,
+          imageUrls: imageReferences,
+          videoUrl: videoReference,
+          location: _selectedLocation,
+          linkUrl: _attachedLink,
+          linkPreviewTitle: _linkTitle,
+          linkPreviewDomain: _linkDomain,
+          attachedEvent: _attachedEvent,
         );
       } else {
         success = await controller.createPost(
           content: _textController.text.trim(),
-          imageUrls: _attachedImages,
-          videoUrl: _attachedVideo,
+          imageUrls: imageReferences,
+          videoUrl: videoReference,
           visibility: visibilityValue,
           location: _selectedLocation,
           linkUrl: _attachedLink,
@@ -1543,31 +1944,33 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         );
       }
 
-      if (mounted) {
-        if (success) {
-          AppNotificationBanner.showSuccess(
-            context: context,
-            title: 'community.postCreated'.tr.isNotEmpty && 'community.postCreated'.tr != 'community.postCreated'
-                ? 'community.postCreated'.tr
-                : 'Post published',
-            message: 'community.postCreatedMsg'.tr.isNotEmpty && 'community.postCreatedMsg'.tr != 'community.postCreatedMsg'
-                ? 'community.postCreatedMsg'.tr
-                : 'Your post is now live on the community feed.',
-          );
-          Navigator.pop(context);
-        } else {
-          setState(() {
-            _isSubmitting = false;
-          });
-          AppNotificationBanner.showDanger(
-            context: context,
-            title: 'common.error'.tr.isNotEmpty && 'common.error'.tr != 'common.error'
-                ? 'common.error'.tr
-                : 'Failed',
-            message: 'Could not publish your post. Please try again.',
-          );
-        }
+      if (!mounted) return;
+      if (!success) {
+        setState(() => _isSubmitting = false);
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Failed',
+          message: 'Could not save your post. Please try again.',
+        );
+        return;
       }
+
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: _isEditing ? 'Post updated' : 'Post published',
+        message: _isEditing
+            ? 'Your post changes have been saved.'
+            : 'Your post is now live on the community feed.',
+      );
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Failed',
+        message: 'Could not save your post. Please try again.',
+      );
     }
   }
 
@@ -1575,15 +1978,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
+    final textSecondary = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF65676B);
     final cardBg = isDark ? const Color(0xFF16181C) : const Color(0xFFF2F4F7);
-    final cardBorder = isDark ? const Color(0xFF262B34) : const Color(0xFFE2E4E8);
+    final cardBorder = isDark
+        ? const Color(0xFF262B34)
+        : const Color(0xFFE2E4E8);
     final bottomBarBg = isDark ? const Color(0xFF0C0E12) : Colors.white;
 
     final charCount = _textController.text.length;
 
     return PopScope(
-      canPop: (!_canPost || _isSubmitting) && !GlobalCreateSheet.isComposerPopupOpen,
+      canPop:
+          (!_canPost || _isSubmitting) &&
+          !GlobalCreateSheet.isComposerPopupOpen,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           _onBackPress();
@@ -1615,9 +2024,14 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     onTap: _showAudiencePickerSheet,
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
+                        color: isDark
+                            ? const Color(0xFF1C2028)
+                            : const Color(0xFFF0F2F5),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: cardBorder, width: 0.8),
                       ),
@@ -1627,7 +2041,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           Icon(
                             _selectedAudience == 'Public'
                                 ? Icons.public
-                                : (_selectedAudience == 'Friends' ? Icons.group_outlined : Icons.lock_outline),
+                                : (_selectedAudience == 'Friends'
+                                      ? Icons.group_outlined
+                                      : Icons.lock_outline),
                             color: textSecondary,
                             size: 11,
                           ),
@@ -1635,16 +2051,24 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           Flexible(
                             child: Text(
                               _selectedAudience == 'Public'
-                                  ? ('community.public'.tr.isNotEmpty && 'community.public'.tr != 'community.public'
-                                      ? 'community.public'.tr
-                                      : 'Public')
+                                  ? ('community.public'.tr.isNotEmpty &&
+                                            'community.public'.tr !=
+                                                'community.public'
+                                        ? 'community.public'.tr
+                                        : 'Public')
                                   : (_selectedAudience == 'Friends'
-                                      ? ('community.friendsOnly'.tr.isNotEmpty && 'community.friendsOnly'.tr != 'community.friendsOnly'
-                                          ? 'community.friendsOnly'.tr
-                                          : 'Friends')
-                                      : ('community.onlyMe'.tr.isNotEmpty && 'community.onlyMe'.tr != 'community.onlyMe'
-                                          ? 'community.onlyMe'.tr
-                                          : 'Only Me')),
+                                        ? ('community.friendsOnly'
+                                                      .tr
+                                                      .isNotEmpty &&
+                                                  'community.friendsOnly'.tr !=
+                                                      'community.friendsOnly'
+                                              ? 'community.friendsOnly'.tr
+                                              : 'Friends')
+                                        : ('community.onlyMe'.tr.isNotEmpty &&
+                                                  'community.onlyMe'.tr !=
+                                                      'community.onlyMe'
+                                              ? 'community.onlyMe'.tr
+                                              : 'Only Me')),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -1655,7 +2079,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             ),
                           ),
                           const SizedBox(width: 2),
-                          Icon(Icons.expand_more_rounded, color: textSecondary, size: 13),
+                          Icon(
+                            Icons.expand_more_rounded,
+                            color: textSecondary,
+                            size: 13,
+                          ),
                         ],
                       ),
                     ),
@@ -1666,14 +2094,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 8, top: 10, bottom: 10, left: 2),
+              padding: const EdgeInsets.only(
+                right: 8,
+                top: 10,
+                bottom: 10,
+                left: 2,
+              ),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
                   color: _canPost && !_isSubmitting
                       ? (isDark ? Colors.white : Colors.black87)
-                      : (isDark ? const Color(0xFF22262E) : const Color(0xFFE4E7EC)),
+                      : (isDark
+                            ? const Color(0xFF22262E)
+                            : const Color(0xFFE4E7EC)),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Material(
@@ -1683,7 +2118,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     onTap: _canPost && !_isSubmitting ? _submitPost : null,
                     borderRadius: BorderRadius.circular(20),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
                       child: _isSubmitting
                           ? SizedBox(
                               width: 14,
@@ -1698,18 +2136,23 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               style: TextStyle(
                                 color: _canPost
                                     ? (isDark ? Colors.black : Colors.white)
-                                    : (isDark ? Colors.white30 : Colors.black38),
+                                    : (isDark
+                                          ? Colors.white30
+                                          : Colors.black38),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13.5,
                               ),
                               child: Text(
                                 _isEditing
-                                    ? ('common.save'.tr.isNotEmpty && 'common.save'.tr != 'common.save'
-                                        ? 'common.save'.tr
-                                        : 'Save')
-                                    : ('community.post'.tr.isNotEmpty && 'community.post'.tr != 'community.post'
-                                        ? 'community.post'.tr
-                                        : 'Post'),
+                                    ? ('common.save'.tr.isNotEmpty &&
+                                              'common.save'.tr != 'common.save'
+                                          ? 'common.save'.tr
+                                          : 'Save')
+                                    : ('community.post'.tr.isNotEmpty &&
+                                              'community.post'.tr !=
+                                                  'community.post'
+                                          ? 'community.post'.tr
+                                          : 'Post'),
                               ),
                             ),
                     ),
@@ -1733,9 +2176,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     }
                   },
                   child: SingleChildScrollView(
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1746,7 +2193,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           minLines: 1,
                           maxLines: null,
                           maxLength: _maxCharacters,
-                          buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                          buildCounter:
+                              (
+                                context, {
+                                required currentLength,
+                                required isFocused,
+                                maxLength,
+                              }) => null,
                           style: TextStyle(
                             color: textPrimary,
                             fontSize: 18,
@@ -1754,12 +2207,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             fontWeight: FontWeight.w400,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'community.whatsOnYourMind'.tr.isNotEmpty &&
-                                    'community.whatsOnYourMind'.tr != 'community.whatsOnYourMind'
+                            hintText:
+                                'community.whatsOnYourMind'.tr.isNotEmpty &&
+                                    'community.whatsOnYourMind'.tr !=
+                                        'community.whatsOnYourMind'
                                 ? 'community.whatsOnYourMind'.tr
                                 : "What's on your mind?",
                             hintStyle: TextStyle(
-                              color: isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                              color: isDark
+                                  ? const Color(0xFF6B7280)
+                                  : const Color(0xFF9CA3AF),
                               fontSize: 18,
                               height: 1.45,
                               fontWeight: FontWeight.w400,
@@ -1791,13 +2248,26 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         // ─── Poll Preview (Compact & naturally placed directly under text) ───
                         if (_pollQuestion != null) ...[
                           const SizedBox(height: 8),
-                          _buildPollPreviewCard(isDark, cardBg, cardBorder, textPrimary, textSecondary),
+                          _buildPollPreviewCard(
+                            isDark,
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textSecondary,
+                          ),
                         ],
 
                         // ─── Unified Compact Horizontal Media Carousel (Images & Video) ───
-                        if (_attachedImages.isNotEmpty || _attachedVideo != null) ...[
+                        if (_attachedImages.isNotEmpty ||
+                            _attachedVideo != null) ...[
                           const SizedBox(height: 10),
-                          _buildUnifiedMediaCarousel(isDark, cardBg, cardBorder, textPrimary, textSecondary),
+                          _buildUnifiedMediaCarousel(
+                            isDark,
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textSecondary,
+                          ),
                         ],
 
                         // ─── Other Attachment Chips ─────────────────────────────
@@ -1814,29 +2284,49 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               children: [
                                 if (_selectedLocation != null)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: cardBg,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: cardBorder, width: 0.8),
+                                      border: Border.all(
+                                        color: cardBorder,
+                                        width: 0.8,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.location_on_outlined, color: textPrimary, size: 16),
+                                        Icon(
+                                          Icons.location_on_outlined,
+                                          color: textPrimary,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             _selectedLocation!,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
+                                            style: TextStyle(
+                                              color: textPrimary,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         GestureDetector(
-                                          onTap: () => setState(() => _selectedLocation = null),
-                                          child: Icon(Icons.close, color: textSecondary, size: 15),
+                                          onTap: () => setState(
+                                            () => _selectedLocation = null,
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            color: textSecondary,
+                                            size: 15,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1844,56 +2334,95 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
                                 if (_selectedFeeling != null)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: cardBg,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: cardBorder, width: 0.8),
+                                      border: Border.all(
+                                        color: cardBorder,
+                                        width: 0.8,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.sentiment_satisfied_alt_outlined, color: textPrimary, size: 16),
+                                        Icon(
+                                          Icons
+                                              .sentiment_satisfied_alt_outlined,
+                                          color: textPrimary,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             _selectedFeeling!,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
+                                            style: TextStyle(
+                                              color: textPrimary,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         GestureDetector(
-                                          onTap: () => setState(() => _selectedFeeling = null),
-                                          child: Icon(Icons.close, color: textSecondary, size: 15),
+                                          onTap: () => setState(
+                                            () => _selectedFeeling = null,
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            color: textSecondary,
+                                            size: 15,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
 
                                 if (_attachedEvent != null)
-                                  _buildAttachedEventCard(isDark, cardBg, cardBorder),
+                                  _buildAttachedEventCard(
+                                    isDark,
+                                    cardBg,
+                                    cardBorder,
+                                  ),
 
                                 if (_attachedLink != null)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: cardBg,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: cardBorder, width: 0.8),
+                                      border: Border.all(
+                                        color: cardBorder,
+                                        width: 0.8,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.link_rounded, color: textPrimary, size: 16),
+                                        Icon(
+                                          Icons.link_rounded,
+                                          color: textPrimary,
+                                          size: 16,
+                                        ),
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             _linkDomain ?? _attachedLink!,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
+                                            style: TextStyle(
+                                              color: textPrimary,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
@@ -1903,7 +2432,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                             _linkTitle = null;
                                             _linkDomain = null;
                                           }),
-                                          child: Icon(Icons.close, color: textSecondary, size: 15),
+                                          child: Icon(
+                                            Icons.close,
+                                            color: textSecondary,
+                                            size: 15,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1932,14 +2465,19 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // 1. Camera
                       _ToolbarBtn(
                         icon: Icons.camera_alt_outlined,
-                        tooltip: 'community.camera'.tr.isNotEmpty && 'community.camera'.tr != 'community.camera'
+                        tooltip:
+                            'community.camera'.tr.isNotEmpty &&
+                                'community.camera'.tr != 'community.camera'
                             ? 'community.camera'.tr
                             : 'Camera',
                         color: textPrimary.withValues(alpha: 0.85),
@@ -1948,7 +2486,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       // 2. Gallery (Images or Video)
                       _ToolbarBtn(
                         icon: Icons.photo_library_outlined,
-                        tooltip: 'community.gallery'.tr.isNotEmpty && 'community.gallery'.tr != 'community.gallery'
+                        tooltip:
+                            'community.gallery'.tr.isNotEmpty &&
+                                'community.gallery'.tr != 'community.gallery'
                             ? 'community.gallery'.tr
                             : 'Gallery',
                         color: textPrimary.withValues(alpha: 0.85),
@@ -1964,7 +2504,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       // 4. Poll
                       _ToolbarBtn(
                         icon: Icons.poll_outlined,
-                        tooltip: 'community.poll'.tr.isNotEmpty && 'community.poll'.tr != 'community.poll'
+                        tooltip:
+                            'community.poll'.tr.isNotEmpty &&
+                                'community.poll'.tr != 'community.poll'
                             ? 'community.poll'.tr
                             : 'Poll',
                         color: textPrimary.withValues(alpha: 0.85),
@@ -1984,11 +2526,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         color: textPrimary.withValues(alpha: 0.85),
                         onPressed: () async {
                           final event = await Get.to<EventModel>(
-                            () => const CreateEventScreen(returnCreatedEvent: true),
+                            () => const CreateEventScreen(
+                              returnCreatedEvent: true,
+                            ),
                           );
                           if (event != null && mounted) {
-                            Get.back();
-                            Get.to(() => EventDetailsScreen(event: event));
+                            setState(() => _attachedEvent = event);
                           }
                         },
                       ),
@@ -2004,14 +2547,20 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
                       // 8. Inner "+" Button
                       Tooltip(
-                        message: 'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
+                        message:
+                            'create.title'.tr.isNotEmpty &&
+                                'create.title'.tr != 'create.title'
                             ? 'create.title'.tr
                             : 'Create',
                         child: Builder(
                           builder: (btnContext) => Material(
                             color: _isInnerPopupOpen
-                                ? (isDark ? const Color(0xFF282D37) : const Color(0xFFE2E6EE))
-                                : (isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5)),
+                                ? (isDark
+                                      ? const Color(0xFF282D37)
+                                      : const Color(0xFFE2E6EE))
+                                : (isDark
+                                      ? const Color(0xFF1C2028)
+                                      : const Color(0xFFF0F2F5)),
                             borderRadius: BorderRadius.circular(10),
                             child: InkWell(
                               canRequestFocus: false,
@@ -2026,9 +2575,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                   }
                                   return;
                                 }
-                                final renderBox = btnContext.findRenderObject() as RenderBox?;
+                                final renderBox =
+                                    btnContext.findRenderObject() as RenderBox?;
                                 final anchorRect = renderBox != null
-                                    ? (renderBox.localToGlobal(Offset.zero) & renderBox.size)
+                                    ? (renderBox.localToGlobal(Offset.zero) &
+                                          renderBox.size)
                                     : null;
                                 setState(() {
                                   _isInnerPopupOpen = true;
@@ -2046,14 +2597,17 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                         _selectedFeeling = '🥳 Celebrating';
                                       });
                                     },
-                                    onSelectDocument: _showDocumentAttachmentNotice,
+                                    onSelectDocument:
+                                        _showDocumentAttachmentNotice,
                                     onSelectEvent: () async {
                                       final event = await Get.to<EventModel>(
-                                        () => const CreateEventScreen(returnCreatedEvent: true),
+                                        () => const CreateEventScreen(
+                                          returnCreatedEvent: true,
+                                        ),
                                       );
                                       if (event != null && mounted) {
-                                        Get.back();
-                                        Get.to(() => EventDetailsScreen(event: event));
+                                        setState(() => _attachedEvent = event);
+                                        GlobalCreateSheet.closeComposerPopup();
                                       }
                                     },
                                     onSelectDiscussion: () async {
@@ -2084,12 +2638,20 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: _isInnerPopupOpen
-                                        ? (isDark ? const Color(0xFF485160) : const Color(0xFFB8C0CC))
-                                        : (isDark ? const Color(0xFF2E3440) : const Color(0xFFD6DAE2)),
+                                        ? (isDark
+                                              ? const Color(0xFF485160)
+                                              : const Color(0xFFB8C0CC))
+                                        : (isDark
+                                              ? const Color(0xFF2E3440)
+                                              : const Color(0xFFD6DAE2)),
                                     width: 0.8,
                                   ),
                                 ),
-                                child: Icon(Icons.add_rounded, color: textPrimary, size: 21),
+                                child: Icon(
+                                  Icons.add_rounded,
+                                  color: textPrimary,
+                                  size: 21,
+                                ),
                               ),
                             ),
                           ),
@@ -2132,15 +2694,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
+                  color: isDark
+                      ? const Color(0xFF22262E)
+                      : const Color(0xFFF0F2F5),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
-                  child: Icon(
-                    Icons.poll_rounded,
-                    color: textPrimary,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.poll_rounded, color: textPrimary, size: 20),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2217,17 +2777,28 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     child: Container(
                       width: 56,
                       height: 56,
-                      color: isDark ? const Color(0xFF252525) : const Color(0xFFE8E8E8),
+                      color: isDark
+                          ? const Color(0xFF252525)
+                          : const Color(0xFFE8E8E8),
                       child: ev.coverImageFile != null
                           ? Image.file(ev.coverImageFile!, fit: BoxFit.cover)
                           : (ev.imageUrl.isNotEmpty
-                              ? Image.network(
-                                  ev.imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Icon(Icons.event, color: textSecondary, size: 24),
-                                )
-                              : Icon(Icons.event, color: textSecondary, size: 24)),
+                                ? AppCachedImage(
+                                    imageUrl: ev.imageUrl,
+                                    fit: BoxFit.cover,
+                                    memCacheWidth: 150,
+                                    memCacheHeight: 150,
+                                    errorWidget: Icon(
+                                      Icons.event,
+                                      color: textSecondary,
+                                      size: 24,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.event,
+                                    color: textSecondary,
+                                    size: 24,
+                                  )),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2237,15 +2808,24 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       children: [
                         if (ev.category.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             margin: const EdgeInsets.only(bottom: 3),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF2A2E36) : const Color(0xFFE0E0E0),
+                              color: isDark
+                                  ? const Color(0xFF2A2E36)
+                                  : const Color(0xFFE0E0E0),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               ev.category,
-                              style: TextStyle(color: textSecondary, fontSize: 10, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         Text(
@@ -2261,14 +2841,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         const SizedBox(height: 3),
                         Row(
                           children: [
-                            Icon(Icons.calendar_month_outlined, color: textSecondary, size: 12),
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              color: textSecondary,
+                              size: 12,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 ev.dateString,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: textSecondary, fontSize: 11.5),
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 11.5,
+                                ),
                               ),
                             ),
                           ],
@@ -2289,7 +2876,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A2E36) : const Color(0xFFDDDDDD),
+                  color: isDark
+                      ? const Color(0xFF2A2E36)
+                      : const Color(0xFFDDDDDD),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.close, color: textPrimary, size: 13),
@@ -2312,7 +2901,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     // Build consolidated media order list without duplicates
     final order = <String>[];
     for (final p in _attachedMediaOrder) {
-      if ((_attachedImages.contains(p) || _attachedVideo == p) && !order.contains(p)) {
+      if ((_attachedImages.contains(p) || _attachedVideo == p) &&
+          !order.contains(p)) {
         order.add(p);
       }
     }
@@ -2337,16 +2927,32 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           }
           final mediaPath = order[idx];
           if (_isVideoPath(mediaPath)) {
-            return _buildCarouselVideoTile(mediaPath, isDark, cardBg, cardBorder, textSecondary);
+            return _buildCarouselVideoTile(
+              mediaPath,
+              isDark,
+              cardBg,
+              cardBorder,
+              textSecondary,
+            );
           } else {
-            return _buildCarouselImageTile(mediaPath, isDark, cardBg, cardBorder, textSecondary);
+            return _buildCarouselImageTile(
+              mediaPath,
+              isDark,
+              cardBg,
+              cardBorder,
+              textSecondary,
+            );
           }
         },
       ),
     );
   }
 
-  Widget _buildCarouselAddMoreTile(Color cardBg, Color cardBorder, Color textSecondary) {
+  Widget _buildCarouselAddMoreTile(
+    Color cardBg,
+    Color cardBorder,
+    Color textSecondary,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Material(
@@ -2365,7 +2971,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_photo_alternate_outlined, color: textSecondary, size: 26),
+                Icon(
+                  Icons.add_photo_alternate_outlined,
+                  color: textSecondary,
+                  size: 26,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '+ Add',
@@ -2404,15 +3014,18 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           fit: StackFit.expand,
           children: [
             imgPath.startsWith('http')
-                ? Image.network(
-                    imgPath,
+                ? AppCachedImage(
+                    imageUrl: imgPath,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Icon(Icons.broken_image_outlined, color: textSecondary),
+                    memCacheWidth: 600,
+                    errorWidget: Icon(
+                      Icons.broken_image_outlined,
+                      color: textSecondary,
+                    ),
                   )
                 : imgPath.startsWith('assets/')
-                    ? Image.asset(imgPath, fit: BoxFit.cover)
-                    : Image.file(File(imgPath), fit: BoxFit.cover),
+                ? Image.asset(imgPath, fit: BoxFit.cover)
+                : Image.file(File(imgPath), fit: BoxFit.cover),
             Positioned(
               top: 5,
               right: 5,
@@ -2464,21 +3077,35 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 child: FittedBox(
                   fit: BoxFit.cover,
                   child: SizedBox(
-                    width: ctrl.value.size.width > 0 ? ctrl.value.size.width : 16,
-                    height: ctrl.value.size.height > 0 ? ctrl.value.size.height : 9,
+                    width: ctrl.value.size.width > 0
+                        ? ctrl.value.size.width
+                        : 16,
+                    height: ctrl.value.size.height > 0
+                        ? ctrl.value.size.height
+                        : 9,
                     child: VideoPlayer(ctrl),
                   ),
                 ),
               )
             else if (_videoInitError)
               Center(
-                child: Icon(Icons.videocam_off_outlined, color: textSecondary, size: 28),
+                child: Icon(
+                  Icons.videocam_off_outlined,
+                  color: textSecondary,
+                  size: 28,
+                ),
               )
             else
               Container(
-                color: isDark ? const Color(0xFF121418) : const Color(0xFFD8DCE0),
+                color: isDark
+                    ? const Color(0xFF121418)
+                    : const Color(0xFFD8DCE0),
                 child: const Center(
-                  child: Icon(Icons.videocam_rounded, color: Colors.white54, size: 30),
+                  child: Icon(
+                    Icons.videocam_rounded,
+                    color: Colors.white54,
+                    size: 30,
+                  ),
                 ),
               ),
 
@@ -2520,7 +3147,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     color: Color(0x99000000),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
               ),
 
@@ -2546,6 +3177,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       ),
     );
   }
+
   // ──────────────────────────────────────────────────────────────────────────
 }
 

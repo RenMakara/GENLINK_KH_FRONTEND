@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../core/config/app_config.dart';
+import '../../../../core/utils/media_url_resolver.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../community/domain/models/community_post_model.dart';
 import '../../../community/presentation/controllers/community_controller.dart';
@@ -220,19 +221,7 @@ class _ChatContentPickerSheetState extends State<ChatContentPickerSheet> {
     }
   }
 
-  static String _resolveUrl(String url) {
-    final trimmed = url.trim();
-    if (trimmed.isEmpty) return '';
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      if (trimmed.contains('.cdn.digitaloceanspaces.com')) {
-        return trimmed.replaceFirst('.cdn.digitaloceanspaces.com', '.digitaloceanspaces.com');
-      }
-      return trimmed;
-    }
-    if (trimmed.startsWith('assets/')) return trimmed;
-    final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
-    return '${AppConfig.apiBaseUrl}$clean';
-  }
+  static String _resolveUrl(String url) => MediaUrlResolver.resolve(url);
 
   static String? _resolvePostThumbnail(CommunityPostModel post) {
     if (post.imageUrls.isNotEmpty) {
@@ -280,23 +269,16 @@ class _ChatContentPickerSheetState extends State<ChatContentPickerSheet> {
         child: SizedBox(
           width: 48,
           height: 48,
-          child: resolved.startsWith('assets/')
-              ? Image.asset(
-                  resolved,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _buildFallbackTile(
-                    icon: isVideo ? Icons.videocam_rounded : Icons.article_rounded,
-                    isDark: isDark,
-                  ),
-                )
-              : Image.network(
-                  resolved,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _buildFallbackTile(
-                    icon: isVideo ? Icons.videocam_rounded : Icons.article_rounded,
-                    isDark: isDark,
-                  ),
-                ),
+          child: AppCachedImage(
+            imageUrl: resolved,
+            fit: BoxFit.cover,
+            memCacheWidth: 144,
+            memCacheHeight: 144,
+            errorWidget: _buildFallbackTile(
+              icon: isVideo ? Icons.videocam_rounded : Icons.article_rounded,
+              isDark: isDark,
+            ),
+          ),
         ),
       );
     }
@@ -490,23 +472,16 @@ class _ChatContentPickerSheetState extends State<ChatContentPickerSheet> {
                 child: SizedBox(
                   width: 48,
                   height: 48,
-                  child: resolved.startsWith('assets/')
-                      ? Image.asset(
-                          resolved,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildFallbackTile(
-                            icon: Icons.event_rounded,
-                            isDark: isDark,
-                          ),
-                        )
-                      : Image.network(
-                          resolved,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildFallbackTile(
-                            icon: Icons.event_rounded,
-                            isDark: isDark,
-                          ),
-                        ),
+                  child: AppCachedImage(
+                    imageUrl: resolved,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 144,
+                    memCacheHeight: 144,
+                    errorWidget: _buildFallbackTile(
+                      icon: Icons.event_rounded,
+                      isDark: isDark,
+                    ),
+                  ),
                 ),
               );
             }(),
@@ -595,17 +570,13 @@ class _ChatContentPickerSheetState extends State<ChatContentPickerSheet> {
                     child: SizedBox(
                       width: 48,
                       height: 48,
-                      child: resolvedAvatar.startsWith('assets/')
-                          ? Image.asset(
-                              resolvedAvatar,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => fallbackProfileAvatar(),
-                            )
-                          : Image.network(
-                              resolvedAvatar,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => fallbackProfileAvatar(),
-                            ),
+                      child: AppCachedImage(
+                        imageUrl: resolvedAvatar,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 144,
+                        memCacheHeight: 144,
+                        errorWidget: fallbackProfileAvatar(),
+                      ),
                     ),
                   )
                 : fallbackProfileAvatar(),

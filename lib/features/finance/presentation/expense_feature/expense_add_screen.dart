@@ -29,7 +29,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'HEALTH',
     'OTHER',
   ];
-  final _paymentValues = <String>['CASH', 'CARD', 'ABA'];
+  final _paymentValues = <String>['CASH', 'CARD'];
 
   late List<ExpenseCategoryItem> categories;
   late List<ExpensePaymentItem> payments;
@@ -67,15 +67,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               .clamp(0, _categoryValues.length - 1);
 
     final payment = expense?.paymentMethod?.trim().toUpperCase();
-    if (payment == null || payment.isEmpty) {
+    if (payment == null ||
+        payment.isEmpty ||
+        !_paymentValues.contains(payment)) {
       _paymentValues.insert(0, '');
     }
-    if (payment != null &&
+    final hasSupportedPayment =
+        payment != null &&
         payment.isNotEmpty &&
-        !_paymentValues.contains(payment)) {
-      _paymentValues.add(payment);
-    }
-    selectedPayment = payment == null || payment.isEmpty
+        _paymentValues.contains(payment);
+    selectedPayment = !hasSupportedPayment
         ? 0
         : _paymentValues.indexOf(payment).clamp(0, _paymentValues.length - 1);
 
@@ -426,7 +427,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     '' => 'finance.expense.optional'.tr,
     'CASH' => 'Cash',
     'CARD' => 'Card',
-    'ABA' => 'ABA',
     _ => value,
   };
 
@@ -453,7 +453,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   IconData? _paymentIcon(String value) => switch (value) {
     'CASH' => Icons.payments_outlined,
     'CARD' => Icons.credit_card_outlined,
-    'ABA' => Icons.account_balance_outlined,
     '' => null,
     _ => null,
   };

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -15,6 +14,8 @@ import '../controllers/community_controller.dart';
 import 'create_event_screen.dart';
 import 'event_register_screen.dart';
 import '../../../profile/presentation/utils/profile_navigation.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final EventModel event;
@@ -219,21 +220,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                 fit: BoxFit.cover,
                               )
                             : hasNetworkImage
-                            ? (event.imageUrl.startsWith('assets/')
-                                  ? Image.asset(
-                                      event.imageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              _placeholderCover(isDark),
-                                    )
-                                  : Image.network(
-                                      event.imageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              _placeholderCover(isDark),
-                                    ))
+                            ? AppCachedImage(
+                                imageUrl: event.imageUrl,
+                                fit: BoxFit.cover,
+                                memCacheWidth: 1080,
+                                placeholder: _placeholderCover(isDark),
+                                errorWidget: _placeholderCover(isDark),
+                              )
                             : _placeholderCover(isDark),
                       ),
                     ),
@@ -927,18 +920,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       }
     }
 
-    ImageProvider? avatarProvider;
-    if (effectiveAvatar != null && effectiveAvatar.isNotEmpty) {
-      if (effectiveAvatar.startsWith('assets/')) {
-        avatarProvider = AssetImage(effectiveAvatar);
-      } else {
-        final fullUrl = effectiveAvatar.startsWith('http')
-            ? effectiveAvatar
-            : '${AppConfig.apiBaseUrl}${effectiveAvatar.startsWith('/') ? '' : '/'}$effectiveAvatar';
-        avatarProvider = NetworkImage(fullUrl);
-      }
-    }
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -976,19 +957,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
-                foregroundImage: avatarProvider,
-                onForegroundImageError: avatarProvider != null ? (exception, stackTrace) {} : null,
-                child: Text(
-                  orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+              AppAvatar(
+                imageUrl: effectiveAvatar,
+                name: orgName,
+                size: 44,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1030,7 +1002,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               ),
             ],
           ),
-        )
+        ),
       ),
     );
   }
@@ -2320,9 +2292,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                         : (attendee.username.isNotEmpty
                                               ? attendee.username
                                               : 'GenLink User');
-                                    final initial = displayName.isNotEmpty
-                                        ? displayName[0].toUpperCase()
-                                        : 'U';
 
                                     String joinedSubtitle = '';
                                     if (attendee.username.isNotEmpty) {
@@ -2343,28 +2312,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                             horizontal: 4,
                                             vertical: 4,
                                           ),
-                                      leading: CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: isDark
-                                            ? const Color(0xFF2C2C2E)
-                                            : const Color(0xFFE5E5EA),
-                                        backgroundImage:
-                                            (attendee.avatarUrl != null &&
-                                                attendee.avatarUrl!.isNotEmpty)
-                                            ? NetworkImage(attendee.avatarUrl!)
-                                            : null,
-                                        child:
-                                            (attendee.avatarUrl == null ||
-                                                attendee.avatarUrl!.isEmpty)
-                                            ? Text(
-                                                initial,
-                                                style: TextStyle(
-                                                  color: textPrimary,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 15,
-                                                ),
-                                              )
-                                            : null,
+                                      leading: AppAvatar(
+                                        imageUrl: attendee.avatarUrl,
+                                        name: displayName,
+                                        size: 40,
                                       ),
                                       title: Text(
                                         displayName,

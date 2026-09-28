@@ -3,7 +3,8 @@ import '../../domain/models/community_post_model.dart';
 import '../../domain/repositories/community_repository.dart';
 import '../datasources/community_remote_datasource.dart';
 
-class CommunityRepositoryImpl implements CommunityRepository {
+class CommunityRepositoryImpl
+    implements CommunityRepository, RichCommunityRepository {
   final CommunityRemoteDataSource remoteDataSource;
 
   CommunityRepositoryImpl({required this.remoteDataSource});
@@ -11,6 +12,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) {
     return remoteDataSource.fetchPosts(page: page, limit: limit);
+  }
+
+  @override
+  Future<List<CommunityPostModel>> getRepostedPosts({
+    int page = 1,
+    int limit = 20,
+  }) {
+    return remoteDataSource.fetchRepostedPosts(page: page, limit: limit);
   }
 
   @override
@@ -46,6 +55,31 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<CommunityPostModel> createPostRich({
+    required String content,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String visibility = 'Public',
+    String community = 'All GenLink',
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    String? eventId,
+  }) => remoteDataSource.createPost(
+    content: content,
+    imageUrls: imageUrls,
+    videoUrl: videoUrl,
+    visibility: visibility,
+    community: community,
+    location: location,
+    linkUrl: linkUrl,
+    linkPreviewTitle: linkPreviewTitle,
+    linkPreviewDomain: linkPreviewDomain,
+    eventId: eventId,
+  );
+
+  @override
   Future<CommunityPostModel> createPollPost({
     required String question,
     required List<String> options,
@@ -61,6 +95,37 @@ class CommunityRepositoryImpl implements CommunityRepository {
       communityId: communityId,
     );
   }
+
+  @override
+  Future<CommunityPostModel> createPollPostRich({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+    int? durationDays,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    String? eventId,
+  }) => remoteDataSource.createPollPost(
+    question: question,
+    options: options,
+    caption: caption,
+    visibility: visibility,
+    communityId: communityId,
+    durationDays: durationDays,
+    imageUrls: imageUrls,
+    videoUrl: videoUrl,
+    location: location,
+    linkUrl: linkUrl,
+    linkPreviewTitle: linkPreviewTitle,
+    linkPreviewDomain: linkPreviewDomain,
+    eventId: eventId,
+  );
 
   @override
   Future<CommunityPostModel> votePoll({
@@ -79,11 +144,54 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<CommunityPostModel> updatePost(
     String postId, {
     required String content,
-  }) async {
-    final posts = await remoteDataSource.fetchPosts();
-    final post = posts.firstWhere((p) => p.id == postId);
-    return post.copyWith(content: content);
-  }
+  }) => updatePostFields(postId, content: content);
+
+  @override
+  Future<CommunityPostModel> updatePostFields(
+    String postId, {
+    required String content,
+    List<String>? imageUrls,
+    String? videoUrl,
+    String? visibility,
+  }) => remoteDataSource.updatePost(
+    postId,
+    content: content,
+    imageUrls: imageUrls,
+    videoUrl: videoUrl,
+    visibility: visibility,
+  );
+
+  @override
+  Future<CommunityPostModel> updatePostRich(
+    String postId, {
+    required String content,
+    required List<String> imageUrls,
+    String? videoUrl,
+    required String visibility,
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    String? pollQuestion,
+    List<String>? pollOptions,
+    int? pollDurationDays,
+    String? eventId,
+  }) => remoteDataSource.updatePost(
+    postId,
+    content: content,
+    imageUrls: imageUrls,
+    videoUrl: videoUrl ?? '',
+    visibility: visibility,
+    location: location,
+    linkUrl: linkUrl,
+    linkPreviewTitle: linkPreviewTitle,
+    linkPreviewDomain: linkPreviewDomain,
+    pollQuestion: pollQuestion,
+    pollOptions: pollOptions,
+    pollDurationDays: pollDurationDays,
+    eventId: eventId,
+    replaceRichFields: true,
+  );
 
   @override
   Future<bool> deletePost(String postId) {
@@ -198,6 +306,30 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<EventPageModel<ForumTopicModel>> getDiscussionsPage({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  }) => remoteDataSource.fetchDiscussionsPage(
+    category: category,
+    page: page,
+    limit: limit,
+  );
+
+  @override
+  Future<List<ForumTopicModel>> getDiscussionReposts({
+    String? userId,
+    int page = 1,
+    int limit = 20,
+  }) {
+    return remoteDataSource.fetchDiscussionReposts(
+      userId: userId,
+      page: page,
+      limit: limit,
+    );
+  }
+
+  @override
   Future<ForumTopicModel> createDiscussion({
     required String title,
     required String content,
@@ -264,6 +396,27 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<bool> isDiscussionBookmarked(String discussionId) {
     return remoteDataSource.isDiscussionBookmarked(discussionId);
+  }
+
+  @override
+  Future<bool> repostDiscussion(
+    String discussionId, {
+    String? caption,
+    String? reposterId,
+  }) {
+    return remoteDataSource.repostDiscussion(
+      discussionId,
+      caption: caption,
+      reposterId: reposterId,
+    );
+  }
+
+  @override
+  Future<bool> unrepostDiscussion(String discussionId, {String? reposterId}) {
+    return remoteDataSource.unrepostDiscussion(
+      discussionId,
+      reposterId: reposterId,
+    );
   }
 
   @override
@@ -355,17 +508,28 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<List<FollowUserModel>> getFollowers(String userId, {int page = 0, int size = 50}) {
+  Future<List<FollowUserModel>> getFollowers(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) {
     return remoteDataSource.getFollowers(userId, page: page, size: size);
   }
 
   @override
-  Future<List<FollowUserModel>> getFollowing(String userId, {int page = 0, int size = 50}) {
+  Future<List<FollowUserModel>> getFollowing(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) {
     return remoteDataSource.getFollowing(userId, page: page, size: size);
   }
 
   @override
-  Future<List<FollowUserModel>> getPendingFollowRequests({int page = 0, int size = 50}) {
+  Future<List<FollowUserModel>> getPendingFollowRequests({
+    int page = 0,
+    int size = 50,
+  }) {
     return remoteDataSource.getPendingFollowRequests(page: page, size: size);
   }
 
@@ -511,13 +675,32 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<EventPageModel<OpportunityModel>> getOpportunitiesPage({
+    String? type,
+    bool includeExpired = false,
+    int page = 1,
+    int limit = 20,
+  }) => remoteDataSource.getOpportunitiesPage(
+    type: type,
+    includeExpired: includeExpired,
+    page: page,
+    size: limit,
+  );
+
+  @override
   Future<OpportunityModel> getOpportunityDetails(String opportunityId) {
     return remoteDataSource.getOpportunityById(opportunityId);
   }
 
   @override
-  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) {
-    return remoteDataSource.toggleSaveOpportunity(opportunityId, currentlySaved);
+  Future<bool> toggleSaveOpportunity(
+    String opportunityId,
+    bool currentlySaved,
+  ) {
+    return remoteDataSource.toggleSaveOpportunity(
+      opportunityId,
+      currentlySaved,
+    );
   }
 
   @override

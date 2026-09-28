@@ -6,9 +6,12 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../community/domain/models/community_models.dart';
 import '../../../community/presentation/screens/event_details_screen.dart';
 import '../../domain/entities/profile_entity.dart';
+
+export 'private_profile_view.dart';
 
 class RingedAvatar extends StatelessWidget {
   const RingedAvatar({
@@ -262,11 +265,13 @@ class BadgeTile extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.all(11),
-      child: Image.network(
-        url,
+      child: AppCachedImage(
+        imageUrl: url,
         fit: BoxFit.contain,
         color: color,
-        errorBuilder: (_, _, _) =>
+        memCacheWidth: 60,
+        memCacheHeight: 60,
+        errorWidget:
             Icon(Icons.workspace_premium_outlined, size: 20, color: color),
       ),
     );
@@ -546,10 +551,11 @@ class SavedItemCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                  Image.network(
-                    item.imageUrl!,
+                  AppCachedImage(
+                    imageUrl: item.imageUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
+                    memCacheWidth: 450,
+                    errorWidget:
                         ColoredBox(color: scheme.surfaceContainerHighest),
                   )
                 else

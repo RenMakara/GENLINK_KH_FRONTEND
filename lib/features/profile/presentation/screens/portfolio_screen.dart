@@ -9,6 +9,7 @@ import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../domain/entities/profile_entity.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../controllers/profile_controller.dart';
 
 class PortfolioScreen extends GetView<ProfileController> {
@@ -323,10 +324,11 @@ class _PortfolioCard extends StatelessWidget {
           if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
             AspectRatio(
               aspectRatio: 2.2,
-              child: Image.network(
-                item.imageUrl!,
+              child: AppCachedImage(
+                imageUrl: item.imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => ColoredBox(
+                memCacheWidth: 720,
+                errorWidget: ColoredBox(
                   color: scheme.surfaceContainerHighest,
                   child: Icon(Icons.broken_image_outlined, color: muted),
                 ),

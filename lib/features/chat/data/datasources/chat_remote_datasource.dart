@@ -76,10 +76,7 @@ class ChatRemoteDataSource {
     if (avatarUrl != null) payload['avatarUrl'] = avatarUrl;
 
     final response = await guardDio(
-      () => dio.put<dynamic>(
-        '${ApiEndpoints.chats}/$roomId',
-        data: payload,
-      ),
+      () => dio.put<dynamic>('${ApiEndpoints.chats}/$roomId', data: payload),
     );
     final data = _dataOf(response.data);
     return ChatConversationModel.fromRoomResponse(data, roomId: roomId);
@@ -106,9 +103,28 @@ class ChatRemoteDataSource {
     return true;
   }
 
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
+  Future<List<ChatMessageModel>> fetchMessages(
+    String conversationId, {
+    int page = 0,
+    int size = 30,
+  }) async =>
+      (await fetchMessagesPage(conversationId, page: page, size: size)).content;
+
+  Future<ChatMessagePageModel> fetchMessagesPage(
+    String conversationId, {
+    int page = 0,
+    int size = 30,
+  }) async {
     final response = await guardDio(
-      () => dio.get<dynamic>('${ApiEndpoints.chats}/$conversationId/messages'),
+      () => page == 0 && size == 30
+          // Spring's ChatController already defaults to newest-first page 0,
+          // size 30. Preserve the original first-page request for existing
+          // clients while older-page requests send explicit pagination.
+          ? dio.get<dynamic>('${ApiEndpoints.chats}/$conversationId/messages')
+          : dio.get<dynamic>(
+              '${ApiEndpoints.chats}/$conversationId/messages',
+              queryParameters: {'page': page, 'size': size},
+            ),
     );
     final content = _contentOf(response.data);
     final messages = content
@@ -120,7 +136,12 @@ class ChatRemoteDataSource {
         )
         .toList();
     messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    return messages;
+    final data = _dataOf(response.data);
+    return ChatMessagePageModel(
+      content: messages,
+      page: (data['page'] as num?)?.toInt() ?? page,
+      hasNext: data['hasNext'] as bool? ?? messages.length >= size,
+    );
   }
 
   Future<ChatMessageModel> sendMessage(
@@ -130,15 +151,35 @@ class ChatRemoteDataSource {
     String? mediaUrl,
     ChatReplyReference? replyTo,
     SharedContentModel? sharedContent,
+    StoryReference? storyReference,
   }) async {
+    final effectiveStoryRef =
+        storyReference ??
+        (messageType == 'story_reply'
+            ? StoryReference(mediaUrl: mediaUrl)
+            : null);
+
+    final payloadSharedContent = sharedContent != null
+        ? jsonEncode(sharedContent.toJson())
+        : (effectiveStoryRef != null
+              ? jsonEncode({
+                  'type': 'STORY_REPLY',
+                  'storyId': effectiveStoryRef.storyId,
+                  'mediaUrl': effectiveStoryRef.mediaUrl ?? mediaUrl,
+                  'isExpired': effectiveStoryRef.isExpired,
+                })
+              : null);
+
+    final effectiveMediaUrl = mediaUrl ?? effectiveStoryRef?.mediaUrl;
+
     final response = await guardDio(
       () => dio.post<dynamic>(
         '${ApiEndpoints.chats}/$conversationId/messages',
         data: {
           'type': _toBackendType(messageType),
           'content': content,
-          'mediaUrl': mediaUrl,
-          if (sharedContent != null) 'sharedContent': jsonEncode(sharedContent.toJson()),
+          'mediaUrl': effectiveMediaUrl,
+          'sharedContent': ?payloadSharedContent,
           if (replyTo != null) ...{
             'replyToMessageId': replyTo.messageId,
             'replyTo': replyTo.toJson(),
@@ -154,11 +195,20 @@ class ChatRemoteDataSource {
     if (sharedContent != null && msg.sharedContent == null) {
       msg = msg.copyWith(sharedContent: sharedContent);
     }
-    if (messageType != 'text' && (msg.messageType == 'text' || msg.messageType.isEmpty)) {
+    if (effectiveStoryRef != null) {
+      msg = msg.copyWith(
+        messageType: 'story_reply',
+        storyReference: effectiveStoryRef,
+        mediaUrl: effectiveMediaUrl,
+      );
+    }
+    if (messageType != 'text' &&
+        (msg.messageType == 'text' || msg.messageType.isEmpty)) {
       msg = msg.copyWith(messageType: messageType);
     }
-    if (mediaUrl != null && (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)) {
-      msg = msg.copyWith(mediaUrl: mediaUrl);
+    if (effectiveMediaUrl != null &&
+        (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)) {
+      msg = msg.copyWith(mediaUrl: effectiveMediaUrl);
     }
     return msg;
   }
@@ -195,7 +245,8 @@ class ChatRemoteDataSource {
 
   Future<bool> unarchiveConversation(String conversationId) async {
     await guardDio(
-      () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/unarchive'),
+      () =>
+          dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/unarchive'),
     );
     return true;
   }
@@ -241,7 +292,9 @@ class ChatRemoteDataSource {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getEligibleUsers({String? currentUserId}) async {
+  Future<List<Map<String, dynamic>>> getEligibleUsers({
+    String? currentUserId,
+  }) async {
     try {
       if (currentUserId != null && currentUserId.isNotEmpty) {
         final response = await guardDio(
@@ -255,8 +308,13 @@ class ChatRemoteDataSource {
         final seenIds = <String>{};
         for (final item in content) {
           if (item is Map) {
-            final userMap = item['user'] is Map ? (item['user'] as Map).cast<String, dynamic>() : item.cast<String, dynamic>();
-            final uid = userMap['userId']?.toString() ?? userMap['id']?.toString() ?? '';
+            final userMap = item['user'] is Map
+                ? (item['user'] as Map).cast<String, dynamic>()
+                : item.cast<String, dynamic>();
+            final uid =
+                userMap['userId']?.toString() ??
+                userMap['id']?.toString() ??
+                '';
             if (uid.isNotEmpty && seenIds.add(uid)) {
               results.add({
                 'id': uid,
@@ -264,7 +322,8 @@ class ChatRemoteDataSource {
                     ? userMap['fullName']
                     : (userMap['username'] ?? 'User'),
                 'handle': '@${userMap['username'] ?? ''}',
-                'avatar': userMap['avatarUrl'] ?? 'assets/images/user_profile.png',
+                'avatar':
+                    userMap['avatarUrl'] ?? 'assets/images/user_profile.png',
                 'isOnline': false,
               });
             }

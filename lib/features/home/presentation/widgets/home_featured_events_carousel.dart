@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../community/domain/models/community_models.dart';
 import '../../../community/presentation/controllers/community_controller.dart';
 import '../../../community/presentation/screens/event_details_screen.dart';
@@ -602,28 +603,14 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
 
   Widget _buildCoverImage(String? imageUrl, bool isDark, Color textMuted) {
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
-      final trimmed = imageUrl.trim();
-      if (trimmed.startsWith('assets/')) {
-        return Image.asset(
-          trimmed,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: 110,
-          errorBuilder: (context, error, stackTrace) =>
-              _buildPlaceholder(isDark, textMuted),
-        );
-      }
-      return Image.network(
-        trimmed,
+      return AppCachedImage(
+        imageUrl: imageUrl,
         fit: BoxFit.cover,
         width: double.infinity,
         height: 110,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildPlaceholder(isDark, textMuted),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholder(isDark, textMuted);
-        },
+        memCacheWidth: 720,
+        placeholder: _buildPlaceholder(isDark, textMuted),
+        errorWidget: _buildPlaceholder(isDark, textMuted),
       );
     }
     return _buildPlaceholder(isDark, textMuted);

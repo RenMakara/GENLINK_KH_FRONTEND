@@ -38,7 +38,10 @@ class MockMediaRepo implements MediaRepository {
   }) async {
     uploadPurposes.add(purpose);
     if (shouldFail) {
-      throw const AppError(message: 'Presign failed', errorCode: 'PRESIGN_FAILED');
+      throw const AppError(
+        message: 'Presign failed',
+        errorCode: 'PRESIGN_FAILED',
+      );
     }
     return PresignedUpload(
       mediaId: 'id_${uploadCount + 1}',
@@ -57,7 +60,10 @@ class MockMediaRepo implements MediaRepository {
   }) async {
     uploadCount++;
     if (shouldFail) {
-      throw const AppError(message: 'Upload failed', errorCode: 'UPLOAD_FAILED');
+      throw const AppError(
+        message: 'Upload failed',
+        errorCode: 'UPLOAD_FAILED',
+      );
     }
     onProgress?.call(bytes.length, bytes.length);
   }
@@ -70,7 +76,10 @@ class MockMediaRepo implements MediaRepository {
     int? durationMs,
   }) async {
     if (shouldFail) {
-      throw const AppError(message: 'Confirm failed', errorCode: 'CONFIRM_FAILED');
+      throw const AppError(
+        message: 'Confirm failed',
+        errorCode: 'CONFIRM_FAILED',
+      );
     }
     return MediaEntity(
       mediaId: mediaId,
@@ -90,7 +99,10 @@ class MockCommunityRepo implements CommunityRepository {
   String? lastCreatedVideo;
 
   @override
-  Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) async => [];
+  Future<List<CommunityPostModel>> getPosts({
+    int page = 1,
+    int limit = 10,
+  }) async => [];
 
   @override
   Future<CommunityPostModel> createPost({
@@ -191,10 +203,14 @@ void main() {
     Get.put<AuthController>(authController);
 
     tempDir = Directory.systemTemp.createTempSync('composer_mixed_test_');
-    tempImage1 = File('${tempDir.path}/img1.jpg')..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
-    tempImage2 = File('${tempDir.path}/img2.jpg')..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
-    tempVideo = File('${tempDir.path}/vid.mp4')..writeAsBytesSync([0x00, 0x00, 0x00, 0x20]);
-    tempVideo2 = File('${tempDir.path}/vid2.mp4')..writeAsBytesSync([0x00, 0x00, 0x00, 0x20]);
+    tempImage1 = File('${tempDir.path}/img1.jpg')
+      ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+    tempImage2 = File('${tempDir.path}/img2.jpg')
+      ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+    tempVideo = File('${tempDir.path}/vid.mp4')
+      ..writeAsBytesSync([0x00, 0x00, 0x00, 0x20]);
+    tempVideo2 = File('${tempDir.path}/vid2.mp4')
+      ..writeAsBytesSync([0x00, 0x00, 0x00, 0x20]);
   });
 
   tearDown(() {
@@ -216,26 +232,35 @@ void main() {
 
   group('Post Composer Mixed Media Tests (11 Required Cases)', () {
     // 1. Image only
-    testWidgets('1. Image only attaches cleanly and renders in horizontal strip', (tester) async {
-      await tester.pumpWidget(buildComposerApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      '1. Image only attaches cleanly and renders in horizontal strip',
+      (tester) async {
+        await tester.pumpWidget(buildComposerApp());
+        await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
-      state.setAttachedImagesForTesting([tempImage1.path]);
-      await tester.pumpAndSettle();
+        final state = tester.state<CreatePostScreenState>(
+          find.byType(CreatePostScreen),
+        );
+        state.setAttachedImagesForTesting([tempImage1.path]);
+        await tester.pumpAndSettle();
 
-      expect(state.attachedImages.length, 1);
-      expect(state.attachedVideo, isNull);
-      // Verify "+ Add" button is visible
-      expect(find.text('+ Add'), findsOneWidget);
-    });
+        expect(state.attachedImages.length, 1);
+        expect(state.attachedVideo, isNull);
+        // Verify "+ Add" button is visible
+        expect(find.text('+ Add'), findsOneWidget);
+      },
+    );
 
     // 2. Video only
-    testWidgets('2. Video only attaches cleanly and displays VIDEO badge', (tester) async {
+    testWidgets('2. Video only attaches cleanly and displays VIDEO badge', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildComposerApp());
       await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
+      final state = tester.state<CreatePostScreenState>(
+        find.byType(CreatePostScreen),
+      );
       state.setAttachedVideoForTesting(tempVideo.path);
       state.setVideoInitializedForTesting(true);
       await tester.pump();
@@ -252,7 +277,9 @@ void main() {
       await tester.pumpWidget(buildComposerApp());
       await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
+      final state = tester.state<CreatePostScreenState>(
+        find.byType(CreatePostScreen),
+      );
       state.setAttachedImagesForTesting([tempImage1.path, tempImage2.path]);
       await tester.pump();
 
@@ -262,11 +289,15 @@ void main() {
     });
 
     // 4. Image + video
-    testWidgets('4. Single image + video both remain attached simultaneously', (tester) async {
+    testWidgets('4. Single image + video both remain attached simultaneously', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildComposerApp());
       await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
+      final state = tester.state<CreatePostScreenState>(
+        find.byType(CreatePostScreen),
+      );
       // First attach image
       state.setAttachedImagesForTesting([tempImage1.path]);
       await tester.pump();
@@ -283,29 +314,38 @@ void main() {
     });
 
     // 5. Multiple images + video
-    testWidgets('5. Multiple images + video all remain attached in [Img1][Img2][Vid][+Add] order', (tester) async {
-      await tester.pumpWidget(buildComposerApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      '5. Multiple images + video all remain attached in [Img1][Img2][Vid][+Add] order',
+      (tester) async {
+        await tester.pumpWidget(buildComposerApp());
+        await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
-      state.setAttachedImagesForTesting([tempImage1.path, tempImage2.path]);
-      state.setAttachedVideoForTesting(tempVideo.path);
-      state.setVideoInitializedForTesting(true);
-      await tester.pump();
+        final state = tester.state<CreatePostScreenState>(
+          find.byType(CreatePostScreen),
+        );
+        state.setAttachedImagesForTesting([tempImage1.path, tempImage2.path]);
+        state.setAttachedVideoForTesting(tempVideo.path);
+        state.setVideoInitializedForTesting(true);
+        await tester.pump();
 
-      expect(state.attachedImages.length, 2);
-      expect(state.attachedVideo, tempVideo.path);
-      expect(find.text('VIDEO'), findsOneWidget);
-      expect(find.byKey(const Key('remove_video_btn')), findsOneWidget);
-      expect(find.text('+ Add'), findsOneWidget);
-    });
+        expect(state.attachedImages.length, 2);
+        expect(state.attachedVideo, tempVideo.path);
+        expect(find.text('VIDEO'), findsOneWidget);
+        expect(find.byKey(const Key('remove_video_btn')), findsOneWidget);
+        expect(find.text('+ Add'), findsOneWidget);
+      },
+    );
 
     // 6. Removing one image
-    testWidgets('6. Removing one image leaves other image and video intact', (tester) async {
+    testWidgets('6. Removing one image leaves other image and video intact', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildComposerApp());
       await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
+      final state = tester.state<CreatePostScreenState>(
+        find.byType(CreatePostScreen),
+      );
       state.setAttachedImagesForTesting([tempImage1.path, tempImage2.path]);
       state.setAttachedVideoForTesting(tempVideo.path);
       state.setVideoInitializedForTesting(true);
@@ -331,7 +371,9 @@ void main() {
       await tester.pumpWidget(buildComposerApp());
       await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
+      final state = tester.state<CreatePostScreenState>(
+        find.byType(CreatePostScreen),
+      );
       state.setAttachedImagesForTesting([tempImage1.path, tempImage2.path]);
       state.setAttachedVideoForTesting(tempVideo.path);
       state.setVideoInitializedForTesting(true);
@@ -347,51 +389,67 @@ void main() {
     });
 
     // 8. Attempting to add second video shows compact validation message and keeps existing video
-    testWidgets('8. Attempting to add second video shows compact validation message and keeps existing video', (tester) async {
-      await tester.pumpWidget(buildComposerApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      '8. Attempting to add second video shows compact validation message and keeps existing video',
+      (tester) async {
+        await tester.pumpWidget(buildComposerApp());
+        await tester.pumpAndSettle();
 
-      final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
-      state.setAttachedImagesForTesting([tempImage1.path]);
-      state.setAttachedVideoForTesting(tempVideo.path);
-      state.setVideoInitializedForTesting(true);
-      await tester.pump();
+        final state = tester.state<CreatePostScreenState>(
+          find.byType(CreatePostScreen),
+        );
+        state.setAttachedImagesForTesting([tempImage1.path]);
+        state.setAttachedVideoForTesting(tempVideo.path);
+        state.setVideoInitializedForTesting(true);
+        await tester.pump();
 
-      // Attempt to attach second video via handler
-      await state.handleSelectedMediaPathsForTesting([tempVideo2.path]);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Attempt to attach second video via handler
+        await state.handleSelectedMediaPathsForTesting([tempVideo2.path]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // No confirmation dialog with Cancel/Replace buttons
-      expect(find.text('Replace existing video?'), findsNothing);
-      expect(find.byKey(const Key('dialog_cancel_btn')), findsNothing);
+        // No confirmation dialog with Cancel/Replace buttons
+        expect(find.text('Replace existing video?'), findsNothing);
+        expect(find.byKey(const Key('dialog_cancel_btn')), findsNothing);
 
-      // Compact validation message shown
-      expect(find.text('Only one video can be added to a post.'), findsOneWidget);
+        // Compact validation message shown
+        expect(
+          find.text('Only one video can be added to a post.'),
+          findsOneWidget,
+        );
 
-      // Existing video strictly kept
-      expect(state.attachedVideo, tempVideo.path);
-      expect(state.attachedImages.length, 1);
-    });
+        // Existing video strictly kept
+        expect(state.attachedVideo, tempVideo.path);
+        expect(state.attachedImages.length, 1);
+      },
+    );
 
     // 9. Successful mixed-media upload
-    test('9. Successful mixed-media upload via CommunityController uploads both images and video', () async {
-      final success = await communityController.addNewPost(
-        content: 'Check out our project demo',
-        imageUrls: [tempImage1.path, tempImage2.path],
-        videoUrl: tempVideo.path,
-      );
+    test(
+      '9. Successful mixed-media upload sends image and video references',
+      () async {
+        final success = await communityController.addNewPost(
+          content: 'Check out our project demo',
+          imageUrls: [tempImage1.path, tempImage2.path],
+          videoUrl: tempVideo.path,
+        );
 
-      expect(success, isTrue);
-      // 2 images + 1 video = 3 uploads
-      expect(mockMediaRepo.uploadCount, 3);
-      expect(mockMediaRepo.uploadPurposes.every((p) => p == MediaPurpose.post), isTrue);
+        expect(success, isTrue);
+        // 2 images + 1 video = 3 uploads
+        expect(mockMediaRepo.uploadCount, 3);
+        expect(
+          mockMediaRepo.uploadPurposes.every((p) => p == MediaPurpose.post),
+          isTrue,
+        );
 
-      expect(mockCommunityRepo.lastCreatedImages.length, 2);
-      expect(mockCommunityRepo.lastCreatedImages[0], startsWith('https://storage.genlink.kh/'));
-      expect(mockCommunityRepo.lastCreatedImages[1], startsWith('https://storage.genlink.kh/'));
-      expect(mockCommunityRepo.lastCreatedVideo, startsWith('https://storage.genlink.kh/'));
-    });
+        expect(mockCommunityRepo.lastCreatedImages.length, 2);
+        expect(mockCommunityRepo.lastCreatedImages, [
+          'genlink-media://id_1',
+          'genlink-media://id_2',
+        ]);
+        expect(mockCommunityRepo.lastCreatedVideo, 'genlink-media://id_3');
+      },
+    );
 
     // 9B. Failed upload preserves state and returns false
     test('9B. Failed upload does not create post and fails safely', () async {
@@ -408,110 +466,123 @@ void main() {
     });
 
     // 10. Mixed-media publish payload
-    test('10. Mixed-media publish payload contains both imageUrls and videoUrl together', () async {
-      await communityController.addNewPost(
-        content: 'Payload verification post',
-        imageUrls: [tempImage1.path, tempImage2.path],
-        videoUrl: tempVideo.path,
-      );
+    test(
+      '10. Mixed-media publish payload contains both imageUrls and videoUrl together',
+      () async {
+        await communityController.addNewPost(
+          content: 'Payload verification post',
+          imageUrls: [tempImage1.path, tempImage2.path],
+          videoUrl: tempVideo.path,
+        );
 
-      final created = mockCommunityRepo.lastCreatedPost;
-      expect(created, isNotNull);
-      expect(created!.content, 'Payload verification post');
-      expect(created.imageUrls.length, 2);
-      expect(created.videoUrl, isNotNull);
-      expect(created.postType, 'VIDEO');
+        final created = mockCommunityRepo.lastCreatedPost;
+        expect(created, isNotNull);
+        expect(created!.content, 'Payload verification post');
+        expect(created.imageUrls.length, 2);
+        expect(created.videoUrl, isNotNull);
+        expect(created.postType, 'VIDEO');
 
-      // Verify toJson payload format
-      final json = created.toJson();
-      expect(json['imageUrls'], isNotEmpty);
-      expect(json['imageUrl'], contains(','));
-      expect(json['videoUrl'], isNotNull);
-    });
+        // Verify toJson payload format
+        final json = created.toJson();
+        expect(json['imageUrls'], isNotEmpty);
+        expect(json['imageUrl'], contains(','));
+        expect(json['videoUrl'], isNotNull);
+      },
+    );
 
     // 11. Published post parsing and rendering
-    test('11A. CommunityPostModel parses both comma-separated imageUrl and videoUrl from backend JSON', () {
-      final rawBackendResponse = {
-        'postId': 'post_server_999',
-        'author': {
-          'userId': 'u1',
-          'fullName': 'Sokny Enat',
-          'username': 'enat',
-          'avatarUrl': 'https://example.com/avatar.jpg',
-        },
-        'contentText': 'Published post with both media types',
-        'imageUrl': 'https://cdn.example.com/img1.jpg,https://cdn.example.com/img2.jpg',
-        'videoUrl': 'https://cdn.example.com/video.mp4',
-        'postType': 'VIDEO',
-        'visibility': 'PUBLIC',
-        'likeCount': 5,
-        'commentCount': 2,
-        'createdAt': '2026-09-20T10:00:00Z',
-      };
+    test(
+      '11A. CommunityPostModel parses both comma-separated imageUrl and videoUrl from backend JSON',
+      () {
+        final rawBackendResponse = {
+          'postId': 'post_server_999',
+          'author': {
+            'userId': 'u1',
+            'fullName': 'Sokny Enat',
+            'username': 'enat',
+            'avatarUrl': 'https://example.com/avatar.jpg',
+          },
+          'contentText': 'Published post with both media types',
+          'imageUrl':
+              'https://cdn.example.com/img1.jpg,https://cdn.example.com/img2.jpg',
+          'videoUrl': 'https://cdn.example.com/video.mp4',
+          'postType': 'VIDEO',
+          'visibility': 'PUBLIC',
+          'likeCount': 5,
+          'commentCount': 2,
+          'createdAt': '2026-09-20T10:00:00Z',
+        };
 
-      final post = CommunityPostModel.fromJson(rawBackendResponse);
+        final post = CommunityPostModel.fromJson(rawBackendResponse);
 
-      expect(post.id, 'post_server_999');
-      expect(post.imageUrls.length, 2);
-      expect(post.imageUrls[0], 'https://cdn.example.com/img1.jpg');
-      expect(post.imageUrls[1], 'https://cdn.example.com/img2.jpg');
-      expect(post.videoUrl, 'https://cdn.example.com/video.mp4');
-      expect(post.isVideoPost, isTrue);
-    });
+        expect(post.id, 'post_server_999');
+        expect(post.imageUrls.length, 2);
+        expect(post.imageUrls[0], 'https://cdn.example.com/img1.jpg');
+        expect(post.imageUrls[1], 'https://cdn.example.com/img2.jpg');
+        expect(post.videoUrl, 'https://cdn.example.com/video.mp4');
+        expect(post.isVideoPost, isTrue);
+      },
+    );
 
-    testWidgets('11B. PostCardWidget renders unified carousel with Video and Images in ONE PageView (1/3)', (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+    testWidgets(
+      '11B. PostCardWidget renders unified carousel with Video and Images in ONE PageView (1/3)',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-      final mixedPost = CommunityPostModel(
-        id: 'post_render_test',
-        userId: 'u1',
-        authorName: 'Sokny Enat',
-        authorTag: '@enat',
-        authorAvatar: '',
-        timeAgo: '2m ago',
-        content: 'Post with both video and images',
-        imageUrls: const ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
-        videoUrl: 'https://example.com/clip.mp4',
-        visibility: 'Public',
-        isOwner: true,
-      );
+        final mixedPost = CommunityPostModel(
+          id: 'post_render_test',
+          userId: 'u1',
+          authorName: 'Sokny Enat',
+          authorTag: '@enat',
+          authorAvatar: '',
+          timeAgo: '2m ago',
+          content: 'Post with both video and images',
+          imageUrls: const [
+            'https://example.com/photo1.jpg',
+            'https://example.com/photo2.jpg',
+          ],
+          videoUrl: 'https://example.com/clip.mp4',
+          visibility: 'Public',
+          isOwner: true,
+        );
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: PostCardWidget(
-                post: mixedPost,
-                controller: communityController,
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: PostCardWidget(
+                  post: mixedPost,
+                  controller: communityController,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Verify VideoPostMedia is rendered within the carousel
-      expect(find.byType(VideoPostMedia), findsOneWidget);
-      // Verify exactly ONE PageView is rendered with unified count (1/3)
-      expect(find.byType(PageView), findsOneWidget);
-      expect(find.text('1/3'), findsOneWidget);
+        // Verify VideoPostMedia is rendered within the carousel
+        expect(find.byType(VideoPostMedia), findsOneWidget);
+        // Verify exactly ONE PageView is rendered with unified count (1/3)
+        expect(find.byType(PageView), findsOneWidget);
+        expect(find.text('1/3'), findsOneWidget);
 
-      // Swiping to page 2 updates counter to 2/3
-      await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
-      await tester.pumpAndSettle();
-      expect(find.text('2/3'), findsOneWidget);
+        // Swiping to page 2 updates counter to 2/3
+        await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
+        await tester.pumpAndSettle();
+        expect(find.text('2/3'), findsOneWidget);
 
-      // Swiping to page 3 updates counter to 3/3
-      await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
-      await tester.pumpAndSettle();
-      expect(find.text('3/3'), findsOneWidget);
-    });
+        // Swiping to page 3 updates counter to 3/3
+        await tester.fling(find.byType(PageView), const Offset(-500, 0), 1000);
+        await tester.pumpAndSettle();
+        expect(find.text('3/3'), findsOneWidget);
+      },
+    );
   });
 }

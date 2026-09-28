@@ -52,7 +52,7 @@ class ExpenseDetailScreen extends StatelessWidget {
       date: expense.expenseDate,
       time: _timeFromCreatedAt(expense.createdAt),
       category: expense.category ?? '—',
-      payment: expense.paymentMethod ?? '—',
+      payment: _paymentLabel(expense.paymentMethod),
       note: expense.description,
       currency: expense.currency,
       expenseId: expense.expenseId,
@@ -76,6 +76,13 @@ class ExpenseDetailScreen extends StatelessWidget {
   final String? expenseId;
   final VoidCallback? onEdit;
   final Future<bool> Function()? onDeleted;
+
+  static String _paymentLabel(String? value) =>
+      switch (value?.trim().toUpperCase()) {
+        'CASH' => 'finance.payment.cash'.tr,
+        'CARD' => 'finance.payment.card'.tr,
+        _ => '—',
+      };
 
   @override
   Widget build(BuildContext context) {

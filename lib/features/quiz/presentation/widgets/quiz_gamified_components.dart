@@ -892,71 +892,219 @@ class _LightbulbPainter extends CustomPainter {
 // G. Soft 3D Statistics Squircle Icons (Checkmark & Document)
 // ----------------------------------------------------------------------------
 class Soft3DStatsCheckIcon extends StatelessWidget {
-  const Soft3DStatsCheckIcon({super.key, this.size = 46});
+  const Soft3DStatsCheckIcon({super.key, this.size = 40});
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6EE7B7), Color(0xFF10B981), Color(0xFF059669)],
-        ),
-        borderRadius: BorderRadius.circular(size * 0.32),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: 0.28),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.check_rounded,
-        size: size * 0.58,
-        color: Colors.white,
+      child: CustomPaint(
+        painter: _StatsCheckPainter(),
       ),
     );
   }
 }
 
+class _StatsCheckPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Sparkle top-right
+    _drawSparkle(canvas, Offset(w * 0.88, h * 0.16), w * 0.08, Colors.white);
+
+    // Drop shadow
+    final badgeRect = Rect.fromCenter(
+      center: Offset(w * 0.48, h * 0.52),
+      width: w * 0.76,
+      height: h * 0.76,
+    );
+    final badgeRRect = RRect.fromRectAndRadius(badgeRect, Radius.circular(w * 0.24));
+    canvas.drawRRect(
+      badgeRRect.shift(const Offset(0, 3)),
+      Paint()
+        ..color = const Color(0xFF044E2E).withValues(alpha: 0.30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+
+    // Badge Base: Frosted White-to-Mint Pearlescent Gradient
+    final badgePaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white,
+          Color(0xFFE6FAF0),
+          Color(0xFFC7F3DE),
+        ],
+      ).createShader(badgeRect);
+    canvas.drawRRect(badgeRRect, badgePaint);
+
+    // Inner rim stroke
+    canvas.drawRRect(
+      badgeRRect,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.80)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    // 3D Dimensional Emerald Checkmark
+    final checkPath = Path()
+      ..moveTo(w * 0.30, h * 0.52)
+      ..lineTo(w * 0.44, h * 0.66)
+      ..lineTo(w * 0.68, h * 0.38);
+
+    // Checkmark drop shadow
+    canvas.drawPath(
+      checkPath.shift(const Offset(0.5, 1.5)),
+      Paint()
+        ..color = const Color(0xFF047857).withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.13
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Checkmark gradient fill
+    final checkPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF10B981),
+          Color(0xFF059669),
+          Color(0xFF047857),
+        ],
+      ).createShader(badgeRect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.13
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(checkPath, checkPaint);
+
+    // Highlight on top corner of checkmark
+    final highlightPath = Path()
+      ..moveTo(w * 0.30, h * 0.51)
+      ..lineTo(w * 0.44, h * 0.65)
+      ..lineTo(w * 0.68, h * 0.37);
+    canvas.drawPath(
+      highlightPath,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.50)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.04
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class Soft3DStatsDocIcon extends StatelessWidget {
-  const Soft3DStatsDocIcon({super.key, this.size = 46});
+  const Soft3DStatsDocIcon({super.key, this.size = 40});
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF93C5FD), Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-        ),
-        borderRadius: BorderRadius.circular(size * 0.32),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3B82F6).withValues(alpha: 0.28),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.feed_rounded,
-        size: size * 0.54,
-        color: Colors.white,
+      child: CustomPaint(
+        painter: _StatsDocPainter(),
       ),
     );
   }
+}
+
+class _StatsDocPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Sparkle top-right
+    _drawSparkle(canvas, Offset(w * 0.88, h * 0.16), w * 0.08, Colors.white);
+
+    // Document Paper Body
+    final docRect = Rect.fromCenter(
+      center: Offset(w * 0.48, h * 0.52),
+      width: w * 0.64,
+      height: h * 0.74,
+    );
+    final docRRect = RRect.fromRectAndRadius(docRect, Radius.circular(w * 0.12));
+
+    // Drop shadow under document
+    canvas.drawRRect(
+      docRRect.shift(const Offset(0, 3)),
+      Paint()
+        ..color = const Color(0xFF1E3A8A).withValues(alpha: 0.30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+
+    // Document fill: Crisp White-to-Cyan Pearlescent
+    final docPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white,
+          Color(0xFFF0F9FF),
+          Color(0xFFE0F2FE),
+        ],
+      ).createShader(docRect);
+    canvas.drawRRect(docRRect, docPaint);
+
+    // Document border
+    canvas.drawRRect(
+      docRRect,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.90)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0,
+    );
+
+    // 3 Content Lines on document (Blue tones)
+    final linePaint1 = Paint()
+      ..color = const Color(0xFF2563EB)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+
+    final linePaint2 = Paint()
+      ..color = const Color(0xFF60A5FA)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+    final linePaint3 = Paint()
+      ..color = const Color(0xFF93C5FD)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+    // Top primary header line
+    canvas.drawLine(Offset(w * 0.30, h * 0.35), Offset(w * 0.66, h * 0.35), linePaint1);
+    // Middle line
+    canvas.drawLine(Offset(w * 0.30, h * 0.48), Offset(w * 0.62, h * 0.48), linePaint2);
+    // Bottom line
+    canvas.drawLine(Offset(w * 0.30, h * 0.61), Offset(w * 0.50, h * 0.61), linePaint3);
+
+    // Small decorative blue tag at top-left
+    canvas.drawCircle(
+      Offset(w * 0.24, h * 0.22),
+      w * 0.05,
+      Paint()..color = const Color(0xFF38BDF8),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ============================================================================
@@ -1088,7 +1236,402 @@ class LearningProgressBgPainter extends CustomPainter {
 }
 
 // ============================================================================
-// 3. HEADER COMPONENT
+// 3. BACKGROUND WATERMARK PAINTERS
+// ============================================================================
+
+/// Faint upward bar chart watermark for the Completed Quizzes stat card.
+class StatsGreenBarWatermarkPainter extends CustomPainter {
+  const StatsGreenBarWatermarkPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = const Color(0xFF10B981).withValues(alpha: 0.16)
+      ..style = PaintingStyle.fill;
+
+    final barW = w * 0.07;
+    final r = Radius.circular(barW * 0.5);
+
+    // 4 vertical bar pills rising from right corner
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.62, h * 0.74, barW, h * 0.26),
+        r,
+      ),
+      paint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.72, h * 0.62, barW, h * 0.38),
+        r,
+      ),
+      paint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.82, h * 0.50, barW, h * 0.50),
+        r,
+      ),
+      paint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.92, h * 0.36, barW, h * 0.64),
+        r,
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Faint flowing curve / document wave watermark for the Available Quizzes stat card.
+class StatsBlueWaveWatermarkPainter extends CustomPainter {
+  const StatsBlueWaveWatermarkPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = const Color(0xFF3B82F6).withValues(alpha: 0.13)
+      ..style = PaintingStyle.fill;
+
+    // Soft concentric circular wave arcs in the bottom right corner
+    canvas.drawCircle(Offset(w * 0.98, h * 0.90), w * 0.30, paint);
+    canvas.drawCircle(Offset(w * 0.86, h * 0.98), w * 0.20, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Faint golden stars & sparkles floating in the hero card background.
+class HeroCardSparklesPainter extends CustomPainter {
+  const HeroCardSparklesPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Golden stars in background
+    _drawStar(canvas, Offset(w * 0.66, h * 0.16), 6.5, const Color(0xFFFBBF24).withValues(alpha: 0.65));
+    _drawStar(canvas, Offset(w * 0.94, h * 0.20), 5.5, const Color(0xFFF59E0B).withValues(alpha: 0.55));
+    _drawStar(canvas, Offset(w * 0.88, h * 0.38), 7.5, const Color(0xFFFBBF24).withValues(alpha: 0.60));
+    _drawStar(canvas, Offset(w * 0.62, h * 0.34), 5.0, const Color(0xFFFDE047).withValues(alpha: 0.70));
+    _drawSparkle(canvas, Offset(w * 0.74, h * 0.10), 4.5, const Color(0xFFF59E0B).withValues(alpha: 0.65));
+    _drawSparkle(canvas, Offset(w * 0.96, h * 0.56), 5.5, const Color(0xFFFBBF24).withValues(alpha: 0.55));
+
+    // Soft background glow circle behind trophy
+    canvas.drawCircle(
+      Offset(w * 0.82, h * 0.28),
+      w * 0.24,
+      Paint()
+        ..color = const Color(0xFFFDE047).withValues(alpha: 0.22)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Faint golden stars & sparkles floating in the motivation CTA card background.
+class MotivationCardSparklesPainter extends CustomPainter {
+  const MotivationCardSparklesPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    _drawStar(canvas, Offset(w * 0.60, h * 0.28), 6.0, const Color(0xFFFBBF24).withValues(alpha: 0.6));
+    _drawStar(canvas, Offset(w * 0.67, h * 0.74), 5.0, const Color(0xFFF59E0B).withValues(alpha: 0.55));
+    _drawSparkle(canvas, Offset(w * 0.64, h * 0.82), 4.5, const Color(0xFFFBBF24).withValues(alpha: 0.6));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ----------------------------------------------------------------------------
+// Grow-Consistent Watermarks (Wave, Leaf, Mountain, Rings, Star, BarChart)
+// ----------------------------------------------------------------------------
+
+/// Soft wave curve watermark (matches Grow Tasks)
+class QuizWaveWatermark extends StatelessWidget {
+  const QuizWaveWatermark({super.key, this.size = 54});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _QuizWaveWatermarkPainter(),
+      ),
+    );
+  }
+}
+
+class _QuizWaveWatermarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..strokeCap = StrokeCap.round;
+
+    final path1 = Path()
+      ..moveTo(0, size.height * 0.65)
+      ..cubicTo(size.width * 0.35, size.height * 0.45, size.width * 0.65,
+          size.height * 0.85, size.width, size.height * 0.65);
+    canvas.drawPath(path1, paint);
+
+    final path2 = Path()
+      ..moveTo(0, size.height * 0.95)
+      ..cubicTo(size.width * 0.35, size.height * 0.75, size.width * 0.65,
+          size.height * 1.15, size.width, size.height * 0.95);
+    canvas.drawPath(path2, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Soft curved leaf / botanical watermark (matches Grow Habits)
+class QuizLeafWatermark extends StatelessWidget {
+  const QuizLeafWatermark({super.key, this.size = 54});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _QuizLeafWatermarkPainter(),
+      ),
+    );
+  }
+}
+
+class _QuizLeafWatermarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width * 0.15, size.height * 0.85)
+      ..cubicTo(size.width * 0.15, size.height * 0.30, size.width * 0.50,
+          size.height * 0.15, size.width * 0.85, size.height * 0.15)
+      ..cubicTo(size.width * 0.85, size.height * 0.70, size.width * 0.50,
+          size.height * 0.85, size.width * 0.15, size.height * 0.85);
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Mountain terrain silhouette watermark (matches Grow Goals)
+class QuizMountainWatermark extends StatelessWidget {
+  const QuizMountainWatermark({super.key, this.size = 58});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size * 0.8,
+      child: CustomPaint(
+        painter: _QuizMountainWatermarkPainter(),
+      ),
+    );
+  }
+}
+
+class _QuizMountainWatermarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(size.width * 0.38, size.height * 0.22)
+      ..lineTo(size.width * 0.65, size.height * 0.58)
+      ..lineTo(size.width * 0.85, size.height * 0.34)
+      ..lineTo(size.width, size.height)
+      ..close();
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Concentric rings watermark (matches Grow Focus)
+class QuizRingsWatermark extends StatelessWidget {
+  const QuizRingsWatermark({super.key, this.size = 54});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _QuizRingsWatermarkPainter(),
+      ),
+    );
+  }
+}
+
+class _QuizRingsWatermarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width, size.height);
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0;
+
+    canvas.drawCircle(center, size.width * 0.40, paint);
+    canvas.drawCircle(center, size.width * 0.70, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Soft 5-point star watermark (matches Grow Quiz)
+class QuizStarWatermark extends StatelessWidget {
+  const QuizStarWatermark({super.key, this.size = 52});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _QuizStarWatermarkPainter(),
+      ),
+    );
+  }
+}
+
+class _QuizStarWatermarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width * 0.60, size.height * 0.60);
+    final outerR = size.width * 0.38;
+    final innerR = size.width * 0.18;
+
+    final path = Path();
+    for (int i = 0; i < 5; i++) {
+      final double outerAngle = -math.pi / 2 + (i * 2 * math.pi / 5);
+      final double innerAngle = outerAngle + (math.pi / 5);
+
+      final double ox = center.dx + outerR * math.cos(outerAngle);
+      final double oy = center.dy + outerR * math.sin(outerAngle);
+      if (i == 0) {
+        path.moveTo(ox, oy);
+      } else {
+        path.lineTo(ox, oy);
+      }
+
+      final double ix = center.dx + innerR * math.cos(innerAngle);
+      final double iy = center.dy + innerR * math.sin(innerAngle);
+      path.lineTo(ix, iy);
+    }
+    path.close();
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Soft rising bar chart watermark (matches Grow Leaderboard)
+class QuizBarChartWatermark extends StatelessWidget {
+  const QuizBarChartWatermark({super.key, this.size = 52});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size * 0.92,
+      child: CustomPaint(
+        painter: _QuizBarChartWatermarkPainter(),
+      ),
+    );
+  }
+}
+
+class _QuizBarChartWatermarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.18, size.height * 0.60, size.width * 0.20,
+            size.height * 0.40),
+        const Radius.circular(3),
+      ),
+      paint,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.44, size.height * 0.25, size.width * 0.20,
+            size.height * 0.75),
+        const Radius.circular(3),
+      ),
+      paint,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.70, size.height * 0.42, size.width * 0.20,
+            size.height * 0.58),
+        const Radius.circular(3),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ============================================================================
+// 4. HEADER COMPONENT
 // ============================================================================
 
 class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget {
@@ -1114,7 +1657,7 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
         ),
         child: Row(
           children: [
-            // Circular Back Button
+            // Circular iOS-style Back Button
             Material(
               color: Colors.transparent,
               child: InkWell(
@@ -1137,7 +1680,7 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
                     border: Border.all(
                       color: isDark
                           ? semantic.borderSubtle
-                          : semantic.borderSubtle.withValues(alpha: 0.8),
+                          : const Color(0xFFE2E8F0).withValues(alpha: 0.85),
                       width: 1.0,
                     ),
                     boxShadow: isDark
@@ -1206,7 +1749,7 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
             ),
             const SizedBox(width: 10),
 
-            // Circular Notification Button with red dot
+            // Circular Notification Button with red dot badge
             Material(
               color: Colors.transparent,
               child: InkWell(
@@ -1222,7 +1765,7 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
                     border: Border.all(
                       color: isDark
                           ? semantic.borderSubtle
-                          : semantic.borderSubtle.withValues(alpha: 0.8),
+                          : const Color(0xFFE2E8F0).withValues(alpha: 0.85),
                       width: 1.0,
                     ),
                     boxShadow: isDark
@@ -1301,7 +1844,7 @@ class QuizGamifiedHeader extends StatelessWidget implements PreferredSizeWidget 
 }
 
 // ============================================================================
-// 4. QUIZ XP HERO CARD
+// 5. QUIZ XP HERO CARD (With Inner XP Progress Container & Floating Sparkles)
 // ============================================================================
 
 class QuizXpHeroCard extends StatelessWidget {
@@ -1320,249 +1863,335 @@ class QuizXpHeroCard extends StatelessWidget {
 
     final xpRemaining =
         (stats.xpToNextLevel - stats.xp).clamp(0, stats.xpToNextLevel);
+    final percent = (stats.levelProgress.clamp(0.0, 1.0) * 100).toInt();
+    final displayName = stats.name.trim().isNotEmpty ? stats.name.trim() : 'Learner';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
               ? [
-                  const Color(0xFF2E2616),
-                  const Color(0xFF231C10),
+                  const Color(0xFF3B2E15),
+                  const Color(0xFF231A0B),
                 ]
               : [
-                  const Color(0xFFFFFBEB),
-                  const Color(0xFFFEF3C7),
+                  const Color(0xFFFED766),
+                  const Color(0xFFFBBF24),
+                  const Color(0xFFF59E0B),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF785918)
-              : const Color(0xFFFDE68A),
-          width: 1.2,
+          color: Colors.white.withValues(alpha: isDark ? 0.20 : 0.35),
+          width: 1.0,
         ),
-        boxShadow: isDark
-            ? const []
-            : [
-                BoxShadow(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar with Online Status Dot
-              Stack(
-                children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark
-                            ? const Color(0xFFCA8A04)
-                            : const Color(0xFFF59E0B),
-                        width: 1.8,
-                      ),
-                    ),
-                    child: ClipOval(
-                      child: AppAvatar(
-                        imageUrl: stats.avatarUrl,
-                        name: stats.name,
-                        size: 50,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 13,
-                      height: 13,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? const Color(0xFF231C10) : Colors.white,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-
-              // User Greeting & Level Badges
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'quiz.dashboardGreeting'.trParams({'name': stats.name}),
-                      style: textTheme.titleMedium?.copyWith(
-                        color: semantic.primaryText,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        // Level Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF1E293B)
-                                : const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            'quiz.level'.trParams({'level': '${stats.level}'}),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              height: 1.1,
-                            ),
-                          ),
-                        ),
-                        // Explorer Status Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 3.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF064E3B)
-                                : const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF059669)
-                                  : const Color(0xFF86EFAC),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('🌱 ', style: TextStyle(fontSize: 10)),
-                              Flexible(
-                                child: Text(
-                                  'quiz.explorer'.tr,
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? const Color(0xFF86EFAC)
-                                        : const Color(0xFF15803D),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.1,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Soft 3D Golden Trophy
-              const Soft3DTrophyWidget(size: 74),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.30 : 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          const SizedBox(height: 14),
-
-          // XP Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              height: 10,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF3B3322)
-                    : const Color(0xFFFDE68A).withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: stats.levelProgress.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
-                    ),
-                    borderRadius: BorderRadius.circular(6),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          children: [
+            // Top-left ambient radial highlight (Grow signature highlight)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(-0.8, -0.8),
+                    radius: 1.1,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.22),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
 
-          // XP Details Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${stats.xp} / ${stats.xpToNextLevel} XP',
-                style: textTheme.bodySmall?.copyWith(
-                  color: semantic.primaryText,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                ),
+            // Subtle corner star watermark
+            const Positioned(
+              right: -4,
+              bottom: -4,
+              child: Opacity(
+                opacity: 0.16,
+                child: QuizStarWatermark(size: 64),
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  'quiz.xpToNextLevel'.trParams({'xp': '$xpRemaining'}),
-                  textAlign: TextAlign.end,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: semantic.secondaryText,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 11.5,
+            ),
+
+            // Faint floating stars & background sparkles
+            const Positioned.fill(
+              child: CustomPaint(painter: HeroCardSparklesPainter()),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top section: Avatar, Greeting, Badges, 3D Trophy
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Avatar with Online Status Indicator Dot
+                      Stack(
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFFCA8A04)
+                                    : const Color(0xFFF59E0B),
+                                width: 1.8,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: AppAvatar(
+                                imageUrl: stats.avatarUrl,
+                                name: stats.name,
+                                size: 50,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              width: 13,
+                              height: 13,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF22C55E),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF231C10) : Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+
+                      // User Greeting & Level Badges
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'quiz.dashboardGreeting'.trParams({'name': displayName}),
+                              style: textTheme.titleMedium?.copyWith(
+                                color: semantic.primaryText,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 17.5,
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                // Level Pill: 👑 Level X
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 3.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF1E293B)
+                                        : const Color(0xFF0F172A),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('👑 ', style: TextStyle(fontSize: 10)),
+                                      Text(
+                                        'quiz.level'.trParams({'level': '${stats.level}'}),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Explorer Rank Pill: 🌱 Explorer
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 3.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xFF064E3B)
+                                        : const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? const Color(0xFF059669)
+                                          : const Color(0xFF86EFAC),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('🌱 ', style: TextStyle(fontSize: 10)),
+                                      Flexible(
+                                        child: Text(
+                                          'quiz.explorer'.tr,
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? const Color(0xFF86EFAC)
+                                                : const Color(0xFF15803D),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            height: 1.1,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Soft 3D Golden Trophy
+                      const Soft3DTrophyWidget(size: 82),
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  const SizedBox(height: 14),
+
+                  // Inner XP Progress Card Container
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? semantic.surface.withValues(alpha: 0.70)
+                          : Colors.white.withValues(alpha: 0.88),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isDark ? semantic.borderSubtle : Colors.white,
+                        width: 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFB45309).withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top row: XP fraction & Progress percent
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${stats.xp} / ${stats.xpToNextLevel} XP',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: semantic.primaryText,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            Text(
+                              '$percent%',
+                              style: const TextStyle(
+                                color: Color(0xFFF59E0B),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Rounded XP Progress Bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: stats.levelProgress.clamp(0.02, 1.0),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFBBF24),
+                                      Color(0xFFF59E0B),
+                                      Color(0xFFEA580C),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+
+                        // Subtitle: "Only 51 XP to Level 24"
+                        Text(
+                          'quiz.xpToNextLevel'.trParams({'xp': '$xpRemaining'}),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: semantic.secondaryText,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ============================================================================
-// 5. QUIZ STATISTICS SECTION (Completed Quizzes & Available Quizzes)
+// 6. QUIZ STATISTICS SECTION (Two Distinct Side-by-Side Gamified Mini Cards)
 // ============================================================================
 
 class QuizStatsCard extends StatelessWidget {
@@ -1570,177 +2199,69 @@ class QuizStatsCard extends StatelessWidget {
     super.key,
     required this.completedCount,
     required this.availableCount,
+    this.onCompletedTap,
+    this.onAvailableTap,
   });
 
   final int completedCount;
   final int availableCount;
+  final VoidCallback? onCompletedTap;
+  final VoidCallback? onAvailableTap;
 
   @override
   Widget build(BuildContext context) {
-    final semantic = context.semanticColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? semantic.surface : Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark
-              ? semantic.borderSubtle
-              : semantic.borderSubtle.withValues(alpha: 0.8),
-          width: 1.0,
-        ),
-        boxShadow: isDark
-            ? const []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Completed Section
+          // 1. Completed Quizzes Card (Goals Green)
           Expanded(
-            child: Row(
-              children: [
-                const Soft3DStatsCheckIcon(size: 42),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$completedCount',
-                        style: textTheme.titleLarge?.copyWith(
-                          color: semantic.primaryText,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 21,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        'quiz.completedQuizzes'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: semantic.secondaryText,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.trending_up_rounded,
-                            size: 11,
-                            color: Color(0xFF15803D),
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              'quiz.plusOneThisWeek'.tr,
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: isDark
-                                    ? const Color(0xFF86EFAC)
-                                    : const Color(0xFF15803D),
-                                height: 1.1,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+            child: QuizStatMiniCard(
+              icon: const Soft3DStatsCheckIcon(size: 38),
+              count: '$completedCount',
+              title: 'quiz.completedQuizzes'.tr,
+              supportingIcon: Icons.trending_up_rounded,
+              supportingText: 'quiz.plusOneThisWeek'.tr,
+              supportingColor: const Color(0xFF10B981),
+              darkSupportingColor: const Color(0xFF86EFAC),
+              gradient: const [
+                Color(0xFF55E59B),
+                Color(0xFF13AF6A),
               ],
+              darkGradient: const [
+                Color(0xFF107347),
+                Color(0xFF094C2E),
+              ],
+              shadowColor: const Color(0xFF13AF6A),
+              watermark: const QuizBarChartWatermark(),
+              bgWatermark: const StatsGreenBarWatermarkPainter(),
+              onTap: onCompletedTap,
             ),
           ),
-          // Vertical Divider
-          Container(
-            width: 1,
-            height: 44,
-            margin: const EdgeInsets.symmetric(horizontal: 10),
-            color: isDark
-                ? semantic.borderSubtle
-                : semantic.borderSubtle.withValues(alpha: 0.8),
-          ),
-          // 2. Available Section
+          const SizedBox(width: 12),
+
+          // 2. Available Quizzes Card (Tasks Blue)
           Expanded(
-            child: Row(
-              children: [
-                const Soft3DStatsDocIcon(size: 42),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$availableCount',
-                        style: textTheme.titleLarge?.copyWith(
-                          color: semantic.primaryText,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 21,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        'quiz.availableQuizzes'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: semantic.secondaryText,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.menu_book_rounded,
-                            size: 11,
-                            color: Color(0xFF1D4ED8),
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              'quiz.keepLearning'.tr,
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: isDark
-                                    ? const Color(0xFF93C5FD)
-                                    : const Color(0xFF1D4ED8),
-                                height: 1.1,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+            child: QuizStatMiniCard(
+              icon: const Soft3DStatsDocIcon(size: 38),
+              count: '$availableCount',
+              title: 'quiz.availableQuizzes'.tr,
+              supportingIcon: Icons.menu_book_rounded,
+              supportingText: 'quiz.keepLearning'.tr,
+              supportingColor: const Color(0xFF2563EB),
+              darkSupportingColor: const Color(0xFF93C5FD),
+              gradient: const [
+                Color(0xFF5292F7),
+                Color(0xFF2563EB),
               ],
+              darkGradient: const [
+                Color(0xFF1E40AF),
+                Color(0xFF172554),
+              ],
+              shadowColor: const Color(0xFF2563EB),
+              watermark: const QuizWaveWatermark(),
+              bgWatermark: const StatsBlueWaveWatermarkPainter(),
+              onTap: onAvailableTap,
             ),
           ),
         ],
@@ -1749,11 +2270,240 @@ class QuizStatsCard extends StatelessWidget {
   }
 }
 
+/// Single gamified mini statistics card with 3D icon, bold number, label,
+/// trend pill, ambient radial highlight, and decorative Grow watermark.
+class QuizStatMiniCard extends StatefulWidget {
+  const QuizStatMiniCard({
+    super.key,
+    required this.icon,
+    required this.count,
+    required this.title,
+    required this.supportingIcon,
+    required this.supportingText,
+    required this.supportingColor,
+    required this.darkSupportingColor,
+    this.bgWatermark,
+    this.gradient,
+    this.darkGradient,
+    this.shadowColor,
+    this.watermark,
+    this.onTap,
+  });
+
+  final Widget icon;
+  final String count;
+  final String title;
+  final IconData supportingIcon;
+  final String supportingText;
+  final Color supportingColor;
+  final Color darkSupportingColor;
+  final CustomPainter? bgWatermark;
+  final List<Color>? gradient;
+  final List<Color>? darkGradient;
+  final Color? shadowColor;
+  final Widget? watermark;
+  final VoidCallback? onTap;
+
+  @override
+  State<QuizStatMiniCard> createState() => _QuizStatMiniCardState();
+}
+
+class _QuizStatMiniCardState extends State<QuizStatMiniCard> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTheme = Theme.of(context).textTheme;
+
+    final gradientColors = widget.gradient ??
+        (isDark
+            ? const [Color(0xFF107347), Color(0xFF094C2E)]
+            : const [Color(0xFF55E59B), Color(0xFF13AF6A)]);
+    final darkGrad = widget.darkGradient ?? gradientColors;
+    final effectiveGradient = isDark ? darkGrad : gradientColors;
+    final effectiveShadow = widget.shadowColor ?? effectiveGradient.last;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: effectiveGradient,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.24),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: effectiveShadow.withValues(alpha: isDark ? 0.38 : 0.28),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                // Bottom-right watermark
+                if (widget.watermark != null)
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Opacity(
+                      opacity: 0.16,
+                      child: widget.watermark!,
+                    ),
+                  )
+                else if (widget.bgWatermark != null)
+                  Positioned.fill(
+                    child: CustomPaint(painter: widget.bgWatermark!),
+                  ),
+
+                // Top-left ambient radial highlight (Grow signature highlight)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.8, -0.8),
+                        radius: 1.1,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.20),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Top Row: 3D Squircle Icon & Translucent Circular Arrow Button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          widget.icon,
+                          Container(
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Large Number (White high contrast)
+                      Text(
+                        widget.count,
+                        style: textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 24,
+                          letterSpacing: -0.5,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+
+                      // Label (White 92% opacity)
+                      Text(
+                        widget.title,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Supporting trend / subtext capsule
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.supportingIcon,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                widget.supportingText,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  height: 1.1,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ============================================================================
-// 6. CHOOSE YOUR CHALLENGE CARD (2x2 Grid Item with Background Painter & Badge)
+// 7. CHOOSE YOUR CHALLENGE CARD (Vibrant 3D Gradient Card with White Pill)
 // ============================================================================
 
-class QuizChallengeCard extends StatelessWidget {
+class QuizChallengeCard extends StatefulWidget {
   const QuizChallengeCard({
     super.key,
     required this.title,
@@ -1764,8 +2514,11 @@ class QuizChallengeCard extends StatelessWidget {
     required this.borderColor,
     required this.darkBorderColor,
     required this.onTap,
+    this.glowColor,
     this.badgeText,
     this.badgeIcon,
+    this.badgeIconColor,
+    this.watermark,
     this.bgPainter,
   });
 
@@ -1774,93 +2527,132 @@ class QuizChallengeCard extends StatelessWidget {
   final Widget icon;
   final List<Color> gradientColors;
   final List<Color> darkGradientColors;
+  final Color? glowColor;
   final Color borderColor;
   final Color darkBorderColor;
   final VoidCallback onTap;
   final String? badgeText;
   final IconData? badgeIcon;
+  final Color? badgeIconColor;
+  final Widget? watermark;
   final CustomPainter? bgPainter;
 
   @override
-  Widget build(BuildContext context) {
-    final semantic = context.semanticColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textTheme = Theme.of(context).textTheme;
+  State<QuizChallengeCard> createState() => _QuizChallengeCardState();
+}
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+class _QuizChallengeCardState extends State<QuizChallengeCard> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveGlowColor = widget.glowColor ?? widget.gradientColors.first;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: isDark ? darkGradientColors : gradientColors,
+              colors: isDark ? widget.darkGradientColors : widget.gradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? darkBorderColor : borderColor,
+              color: isDark ? widget.darkBorderColor : widget.borderColor,
               width: 1.0,
             ),
-            boxShadow: isDark
-                ? const []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+            boxShadow: [
+              BoxShadow(
+                color: effectiveGlowColor.withValues(alpha: isDark ? 0.38 : 0.28),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             child: Stack(
               children: [
-                // Background artistic shapes if provided
-                if (bgPainter != null)
+                // Corner Watermark or background shape
+                if (widget.watermark != null)
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Opacity(
+                      opacity: 0.16,
+                      child: widget.watermark!,
+                    ),
+                  )
+                else if (widget.bgPainter != null)
                   Positioned.fill(
-                    child: CustomPaint(painter: bgPainter!),
+                    child: CustomPaint(painter: widget.bgPainter!),
                   ),
 
-                // Main card content
+                // Top-left ambient radial highlight (Grow signature highlight)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.8, -0.8),
+                        radius: 1.1,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.20),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Main Card Content
                 Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Top Row: 3D Icon & Circular Arrow Button
+                      // Top Row: 3D Illustration & Translucent White Circular Arrow Button
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          icon,
+                          widget.icon,
                           Container(
-                            width: 32,
-                            height: 32,
+                            width: 24,
+                            height: 24,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: isDark ? semantic.surfaceElevated : Colors.white,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                              color: Colors.white.withValues(alpha: 0.28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.chevron_right_rounded,
-                              size: 20,
-                              color: semantic.primaryText,
+                              size: 16,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
                       // Middle: Title & Description
                       Column(
@@ -1868,23 +2660,23 @@ class QuizChallengeCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            title,
-                            style: textTheme.titleSmall?.copyWith(
-                              color: semantic.primaryText,
+                            widget.title,
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontWeight: FontWeight.w800,
-                              fontSize: 16,
+                              fontSize: 15.5,
                               letterSpacing: -0.2,
                               height: 1.15,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
-                            description,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: semantic.secondaryText,
-                              fontSize: 11.5,
+                            widget.description,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.90),
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w500,
                               height: 1.25,
                             ),
@@ -1894,22 +2686,20 @@ class QuizChallengeCard extends StatelessWidget {
                         ],
                       ),
 
-                      // Bottom: CTA Pill Badge if provided
-                      if (badgeText != null) ...[
-                        const SizedBox(height: 10),
+                      // Bottom: Action Pill Badge
+                      if (widget.badgeText != null) ...[
+                        const SizedBox(height: 9),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 9,
                             vertical: 4.5,
                           ),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? semantic.surface.withValues(alpha: 0.8)
-                                : Colors.white.withValues(alpha: 0.92),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 4,
                                 offset: const Offset(0, 1.5),
                               ),
@@ -1918,25 +2708,21 @@ class QuizChallengeCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (badgeIcon != null) ...[
+                              if (widget.badgeIcon != null) ...[
                                 Icon(
-                                  badgeIcon,
-                                  size: 13,
-                                  color: isDark
-                                      ? semantic.primaryText
-                                      : const Color(0xFF1E293B),
+                                  widget.badgeIcon,
+                                  size: 12.5,
+                                  color: widget.badgeIconColor ?? const Color(0xFF0F172A),
                                 ),
                                 const SizedBox(width: 4),
                               ],
                               Flexible(
                                 child: Text(
-                                  badgeText!,
-                                  style: TextStyle(
+                                  widget.badgeText!,
+                                  style: const TextStyle(
                                     fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? semantic.primaryText
-                                        : const Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF0F172A),
                                     height: 1.1,
                                   ),
                                   maxLines: 1,
@@ -1960,7 +2746,7 @@ class QuizChallengeCard extends StatelessWidget {
 }
 
 // ============================================================================
-// 7. CATEGORY CARD (Horizontal Chips)
+// 8. CATEGORY CARD (Horizontal Chips with 3D Squircle Icons)
 // ============================================================================
 
 class QuizCategoryCard extends StatelessWidget {
@@ -1985,17 +2771,19 @@ class QuizCategoryCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
-      width: 90,
+      width: 78,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? accentColor.withValues(alpha: isDark ? 0.22 : 0.08)
+                  ? (isDark
+                      ? accentColor.withValues(alpha: 0.25)
+                      : accentColor.withValues(alpha: 0.10))
                   : (isDark ? semantic.surface : Colors.white),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
@@ -2003,14 +2791,22 @@ class QuizCategoryCard extends StatelessWidget {
                     ? accentColor
                     : (isDark
                         ? semantic.borderSubtle
-                        : semantic.borderSubtle.withValues(alpha: 0.7)),
+                        : const Color(0xFFE2E8F0).withValues(alpha: 0.8)),
                 width: isSelected ? 1.5 : 1.0,
               ),
               boxShadow: isDark || !isSelected
-                  ? const []
+                  ? (isDark
+                      ? const []
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ])
                   : [
                       BoxShadow(
-                        color: accentColor.withValues(alpha: 0.12),
+                        color: accentColor.withValues(alpha: 0.16),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -2021,28 +2817,28 @@ class QuizCategoryCard extends StatelessWidget {
               children: [
                 // Icon Squircle Container
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 42,
+                  height: 42,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? accentColor.withValues(alpha: isDark ? 0.35 : 0.14)
+                        ? (isDark ? accentColor.withValues(alpha: 0.35) : accentColor.withValues(alpha: 0.18))
                         : (isDark
-                            ? semantic.surfaceElevated
-                            : accentColor.withValues(alpha: 0.08)),
+                            ? accentColor.withValues(alpha: 0.18)
+                            : accentColor.withValues(alpha: 0.10)),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     icon,
                     size: 22,
-                    color: isSelected ? accentColor : accentColor.withValues(alpha: 0.85),
+                    color: accentColor,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 7),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     color: isSelected ? accentColor : semantic.primaryText,
                     height: 1.15,
@@ -2061,10 +2857,10 @@ class QuizCategoryCard extends StatelessWidget {
 }
 
 // ============================================================================
-// 8. MOTIVATIONAL QUIZ CTA CARD
+// 9. MOTIVATIONAL QUIZ CTA CARD (Warm Gold with 3D Lightbulb & Dark Pill Button)
 // ============================================================================
 
-class QuizMotivationCard extends StatelessWidget {
+class QuizMotivationCard extends StatefulWidget {
   const QuizMotivationCard({
     super.key,
     required this.onTap,
@@ -2073,16 +2869,28 @@ class QuizMotivationCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<QuizMotivationCard> createState() => _QuizMotivationCardState();
+}
+
+class _QuizMotivationCardState extends State<QuizMotivationCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final semantic = context.semanticColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -2095,6 +2903,7 @@ class QuizMotivationCard extends StatelessWidget {
                   : [
                       const Color(0xFFFFFBEB),
                       const Color(0xFFFEF3C7),
+                      const Color(0xFFFDE68A),
                     ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -2110,81 +2919,92 @@ class QuizMotivationCard extends StatelessWidget {
                 ? const []
                 : [
                     BoxShadow(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
-                      blurRadius: 12,
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
+                      blurRadius: 14,
                       offset: const Offset(0, 3),
                     ),
                   ],
           ),
-          child: Row(
-            children: [
-              // 3D Lightbulb
-              const Soft3DLightbulbWidget(size: 50),
-              const SizedBox(width: 10),
-
-              // Text Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              children: [
+                // Floating sparkles background
+                const Positioned.fill(
+                  child: CustomPaint(painter: MotivationCardSparklesPainter()),
+                ),
+                Row(
                   children: [
-                    Text(
-                      'quiz.motivationTitle'.tr,
-                      style: textTheme.titleSmall?.copyWith(
-                        color: semantic.primaryText,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13.5,
-                        height: 1.2,
+                    // 3D Lightbulb
+                    const Soft3DLightbulbWidget(size: 50),
+                    const SizedBox(width: 10),
+
+                    // Text Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'quiz.motivationTitle'.tr,
+                            style: textTheme.titleSmall?.copyWith(
+                              color: semantic.primaryText,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                              height: 1.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'quiz.motivationSubtitle'.tr,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: semantic.secondaryText,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              height: 1.15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'quiz.motivationSubtitle'.tr,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: semantic.secondaryText,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        height: 1.15,
+                    const SizedBox(width: 8),
+
+                    // Pill CTA Button (Dark pill matching reference image)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                      decoration: const ShapeDecoration(
+                        color: Color(0xFF18191B),
+                        shape: StadiumBorder(),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'quiz.takeAQuiz'.tr,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-
-              // Pill CTA Button (Dark pill matching reference image)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-                decoration: const ShapeDecoration(
-                  color: Color(0xFF18191B),
-                  shape: StadiumBorder(),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'quiz.takeAQuiz'.tr,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 15,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

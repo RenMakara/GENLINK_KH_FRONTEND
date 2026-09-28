@@ -9,6 +9,10 @@ class CompletionController extends GetxController {
   final LocalStorage _localStorage;
   final isSaving = false.obs;
 
+  Future<void> previous() async {
+    Get.offNamed<void>(AppRoutes.languageSelect);
+  }
+
   Future<void> goToGenLink() async {
     if (isSaving.value) return;
     isSaving.value = true;

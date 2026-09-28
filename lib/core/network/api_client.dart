@@ -66,9 +66,15 @@ class ApiClient {
     dynamic data,
     T Function(Map<String, dynamic>) item,
   ) {
-    final list = data as List? ?? const [];
+    final dynamic rawList = data is List
+        ? data
+        : (data is Map
+            ? (data['content'] ?? data['items'] ?? data['viewers'] ?? data['data'] ?? const [])
+            : const []);
+    final list = rawList is List ? rawList : const [];
     return list
-        .map((e) => item((e as Map).cast<String, dynamic>()))
+        .whereType<Map>()
+        .map((e) => item(e.cast<String, dynamic>()))
         .toList();
   }
 

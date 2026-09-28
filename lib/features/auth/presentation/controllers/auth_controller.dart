@@ -281,12 +281,25 @@ class AuthController extends GetxController {
   /// Google. The current Google session remains valid.
   Future<bool> setPassword({required String password}) {
     return _run(() async {
-      final hasPassword = await _authRepository.setPassword(password: password);
-      final user = currentUser.value;
-      if (user != null && hasPassword) {
-        currentUser.value = user.copyWith(hasPassword: true);
+      try {
+        final hasPassword = await _authRepository.setPassword(password: password);
+        final user = currentUser.value;
+        if (user != null && hasPassword) {
+          currentUser.value = user.copyWith(hasPassword: true);
+          await dismissGooglePasswordPrompt();
+        }
+        return hasPassword;
+      } on AppError catch (e) {
+        if (e.errorCode == 'AUTH_PASSWORD_ALREADY_SET' ||
+            e.message.toLowerCase().contains('already has a password')) {
+          final user = currentUser.value;
+          if (user != null) {
+            currentUser.value = user.copyWith(hasPassword: true);
+            await dismissGooglePasswordPrompt();
+          }
+        }
+        rethrow;
       }
-      return hasPassword;
     });
   }
 
@@ -338,6 +351,19 @@ class AuthController extends GetxController {
   /// Completes any Google entry point consistently across login, register, and
   /// the initial auth-choice screen.
   Future<void> continueAfterGoogleLogin() async {
+    final user = currentUser.value;
+    if (user != null && !user.hasPassword) {
+      try {
+        final freshUser = await _authRepository.getCurrentUser();
+        currentUser.value = freshUser;
+        if (freshUser.hasPassword) {
+          await dismissGooglePasswordPrompt();
+        }
+      } catch (_) {
+        // A network or storage failure must not block routing.
+      }
+    }
+
     if (await shouldPromptForGooglePasswordSetup()) {
       Get.offAllNamed<void>(
         AppRoutes.passwordSetup,

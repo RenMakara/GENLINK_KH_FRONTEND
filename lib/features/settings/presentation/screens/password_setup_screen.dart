@@ -34,6 +34,16 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
   AuthController get _auth => Get.find<AuthController>();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.optionalPrompt && _hasPassword) {
+        Get.offAllNamed<void>(AppRoutes.home);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _currentPassword.dispose();
     _password.dispose();
@@ -66,6 +76,34 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
         : await _auth.setPassword(password: _password.text);
 
     if (!success) {
+      final errorCode = _auth.lastErrorCode.value;
+      final errorMsg = _auth.errorMessage.value;
+      final isAlreadySet = errorCode == 'AUTH_PASSWORD_ALREADY_SET' ||
+          (errorMsg != null &&
+              errorMsg.toLowerCase().contains('already has a password'));
+
+      if (isAlreadySet) {
+        final user = _auth.currentUser.value;
+        if (user != null) {
+          _auth.currentUser.value = user.copyWith(hasPassword: true);
+        }
+        await _auth.dismissGooglePasswordPrompt();
+
+        if (!mounted) return;
+
+        if (widget.optionalPrompt) {
+          AppSnackbar.show('auth.passwordAlreadySet'.tr);
+          Get.offAllNamed<void>(AppRoutes.home);
+          return;
+        } else {
+          setState(() {
+            _errorMessage = null;
+          });
+          AppSnackbar.show('auth.passwordAlreadySet'.tr);
+          return;
+        }
+      }
+
       if (mounted && _auth.errorMessage.value != null) {
         setState(() {
           _errorMessage = _auth.errorMessage.value;

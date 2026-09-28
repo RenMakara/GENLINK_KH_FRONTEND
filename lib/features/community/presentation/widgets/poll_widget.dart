@@ -41,33 +41,42 @@ class _PollWidgetState extends State<PollWidget> {
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary = isDark ? Colors.white60 : Colors.black54;
 
-    final bool userHasVoted = (widget.hasVoted == true) ||
+    final bool userHasVoted =
+        (widget.hasVoted == true) ||
         widget.options.any((o) => o.isVoted) ||
         (widget.myOptionId != null && widget.myOptionId!.isNotEmpty);
 
     final bool showResults = !widget.hideResultsUntilVote || userHasVoted;
 
-    final int computedVotes = widget.options.fold(0, (sum, opt) => sum + opt.votes);
+    final int computedVotes = widget.options.fold(
+      0,
+      (sum, opt) => sum + opt.votes,
+    );
     final int totalVotes = (widget.totalVotes != null && widget.totalVotes! > 0)
         ? widget.totalVotes!
         : computedVotes;
 
     final String voteWord = totalVotes == 1
-        ? ('community.pollVote'.tr.isNotEmpty && 'community.pollVote'.tr != 'community.pollVote'
-            ? 'community.pollVote'.tr
-            : 'vote')
-        : ('community.pollVotes'.tr.isNotEmpty && 'community.pollVotes'.tr != 'community.pollVotes'
-            ? 'community.pollVotes'.tr
-            : 'votes');
+        ? ('community.pollVote'.tr.isNotEmpty &&
+                  'community.pollVote'.tr != 'community.pollVote'
+              ? 'community.pollVote'.tr
+              : 'vote')
+        : ('community.pollVotes'.tr.isNotEmpty &&
+                  'community.pollVotes'.tr != 'community.pollVotes'
+              ? 'community.pollVotes'.tr
+              : 'votes');
     final String voteText = '$totalVotes $voteWord';
 
-    final String durationText = widget.duration != null && widget.duration!.isNotEmpty
-        ? ('community.pollEndsIn'.tr.isNotEmpty && 'community.pollEndsIn'.tr != 'community.pollEndsIn'
-            ? '${'community.pollEndsIn'.tr} ${widget.duration}'
-            : 'Ends ${widget.duration}')
-        : ('community.pollEnded'.tr.isNotEmpty && 'community.pollEnded'.tr != 'community.pollEnded'
-            ? 'community.pollEnded'.tr
-            : 'Ended');
+    final String durationText =
+        widget.duration != null && widget.duration!.isNotEmpty
+        ? ('community.pollEndsIn'.tr.isNotEmpty &&
+                  'community.pollEndsIn'.tr != 'community.pollEndsIn'
+              ? '${'community.pollEndsIn'.tr} ${widget.duration}'
+              : 'Ends ${widget.duration}')
+        : ('community.pollEnded'.tr.isNotEmpty &&
+                  'community.pollEnded'.tr != 'community.pollEnded'
+              ? 'community.pollEnded'.tr
+              : 'Ended');
 
     final bool isEnded = widget.duration?.toLowerCase() == 'ended';
     final bool isBusy = _votingOptionId != null;
@@ -82,7 +91,8 @@ class _PollWidgetState extends State<PollWidget> {
         children: [
           Text(
             widget.question,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style:
+                theme.textTheme.titleMedium?.copyWith(
                   color: textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 17,
@@ -103,7 +113,8 @@ class _PollWidgetState extends State<PollWidget> {
                 : 0.0;
             final int pctValue = (pctRatio * 100).round();
 
-            final bool isThisOptionSelected = opt.isVoted ||
+            final bool isThisOptionSelected =
+                opt.isVoted ||
                 (widget.myOptionId != null &&
                     widget.myOptionId!.isNotEmpty &&
                     (opt.id == widget.myOptionId ||
@@ -111,11 +122,15 @@ class _PollWidgetState extends State<PollWidget> {
 
             final bool isThisOptionVoting = _votingOptionId == opt.id;
 
-            final bool canTapThisOption = !isEnded && !isBusy && !isThisOptionSelected;
+            final bool canTapThisOption =
+                !isEnded && !isBusy && !isThisOptionSelected;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: PollOptionWidget(
+                key: ValueKey<String>(
+                  'poll_option_${widget.postId ?? widget.question}_${opt.id.isNotEmpty ? opt.id : opt.text}',
+                ),
                 option: opt,
                 pctRatio: pctRatio,
                 pctValue: pctValue,
@@ -123,9 +138,7 @@ class _PollWidgetState extends State<PollWidget> {
                 isVoted: isThisOptionSelected,
                 isLoading: isThisOptionVoting,
                 isDark: isDark,
-                onTap: canTapThisOption
-                    ? () => _handleVote(opt)
-                    : null,
+                onTap: canTapThisOption ? () => _handleVote(opt) : null,
               ),
             );
           }),
@@ -134,7 +147,8 @@ class _PollWidgetState extends State<PollWidget> {
 
           Text(
             "$voteText • $durationText",
-            style: theme.textTheme.bodySmall?.copyWith(
+            style:
+                theme.textTheme.bodySmall?.copyWith(
                   color: textSecondary,
                   fontWeight: FontWeight.w500,
                 ) ??
@@ -176,7 +190,8 @@ class _PollWidgetState extends State<PollWidget> {
       await widget.onVote!(targetId);
     } catch (e) {
       if (mounted) {
-        final errorMsg = 'community.pollVoteFailed'.tr.isNotEmpty &&
+        final errorMsg =
+            'community.pollVoteFailed'.tr.isNotEmpty &&
                 'community.pollVoteFailed'.tr != 'community.pollVoteFailed'
             ? 'community.pollVoteFailed'.tr
             : 'Could not submit vote. Please try again.';
@@ -373,7 +388,9 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
                             ] else if (isVoted) ...[
                               Icon(
                                 Icons.check_circle_rounded,
-                                color: widget.isDark ? const Color(0xFF64B5F6) : accentBlue,
+                                color: widget.isDark
+                                    ? const Color(0xFF64B5F6)
+                                    : accentBlue,
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
@@ -383,7 +400,8 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
                                 widget.option.text,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium?.copyWith(
+                                style:
+                                    theme.textTheme.bodyMedium?.copyWith(
                                       color: textColor,
                                       fontWeight: isVoted
                                           ? FontWeight.w700
@@ -406,7 +424,8 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
                           padding: const EdgeInsets.only(left: 8),
                           child: Text(
                             "${widget.pctValue}%",
-                            style: theme.textTheme.labelMedium?.copyWith(
+                            style:
+                                theme.textTheme.labelMedium?.copyWith(
                                   color: textColor,
                                   fontWeight: FontWeight.w700,
                                 ) ??

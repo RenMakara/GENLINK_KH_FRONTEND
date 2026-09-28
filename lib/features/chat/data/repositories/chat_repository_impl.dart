@@ -97,12 +97,41 @@ class ChatRepositoryImpl {
 
   Future<List<ChatMessageModel>> getMessages(String conversationId) async {
     try {
-      final messages = await remoteDataSource.fetchMessages(conversationId);
-      await localDataSource?.saveMessages(conversationId, messages);
-      return messages;
+      final page = await getMessagesPage(conversationId, page: 0, size: 30);
+      return page.content;
     } catch (_) {
       final cached = await localDataSource?.getMessages(conversationId);
       return cached ?? [];
+    }
+  }
+
+  Future<ChatMessagePageModel> getMessagesPage(
+    String conversationId, {
+    int page = 0,
+    int size = 30,
+  }) async {
+    try {
+      final result = await remoteDataSource.fetchMessagesPage(
+        conversationId,
+        page: page,
+        size: size,
+      );
+      if (page == 0) {
+        await localDataSource?.saveMessages(conversationId, result.content);
+      }
+      return result;
+    } catch (_) {
+      if (page != 0) rethrow;
+      final cached = await localDataSource?.getMessages(conversationId);
+      if (cached != null) {
+        return ChatMessagePageModel(
+          content: List<ChatMessageModel>.from(cached)
+            ..sort((a, b) => a.timestamp.compareTo(b.timestamp)),
+          page: 0,
+          hasNext: false,
+        );
+      }
+      rethrow;
     }
   }
 
@@ -113,6 +142,7 @@ class ChatRepositoryImpl {
     String? mediaUrl,
     ChatReplyReference? replyTo,
     SharedContentModel? sharedContent,
+    StoryReference? storyReference,
   }) async {
     final msg = await remoteDataSource.sendMessage(
       conversationId,
@@ -121,6 +151,7 @@ class ChatRepositoryImpl {
       mediaUrl: mediaUrl,
       replyTo: replyTo,
       sharedContent: sharedContent,
+      storyReference: storyReference,
     );
     await localDataSource?.saveMessage(conversationId, msg);
     return msg;

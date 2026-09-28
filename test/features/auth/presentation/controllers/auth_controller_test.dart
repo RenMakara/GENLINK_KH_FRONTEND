@@ -269,6 +269,42 @@ void main() {
     },
   );
 
+  test(
+    'setPassword marks hasPassword true and dismisses prompt when already set on backend',
+    () async {
+      final promptStorage = _PromptLocalStorage();
+      final promptController = AuthController(
+        authRepository: repository,
+        secureStorage: storage,
+        localization: LocalizationService(localStorage: promptStorage),
+        localStorage: promptStorage,
+        googleAuthService: google,
+        onSessionCleared: mainController.reset,
+      )..currentUser.value = _user; // hasPassword == false initially
+
+      when(
+        () => repository.setPassword(password: any(named: 'password')),
+      ).thenThrow(
+        const AppError(
+          message: 'This account already has a password set',
+          errorCode: 'AUTH_PASSWORD_ALREADY_SET',
+        ),
+      );
+
+      final result = await promptController.setPassword(
+        password: 'Password123',
+      );
+
+      expect(result, isFalse);
+      expect(promptController.currentUser.value?.hasPassword, isTrue);
+      expect(promptStorage.dismissed, isTrue);
+      expect(
+        await promptController.shouldPromptForGooglePasswordSetup(),
+        isFalse,
+      );
+    },
+  );
+
   test('remembers Maybe Later for the current account', () async {
     final promptStorage = _PromptLocalStorage();
     final promptController = AuthController(
@@ -289,6 +325,34 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'continueAfterGoogleLogin refreshes user and skips prompt if server says hasPassword is true',
+    () async {
+      final promptStorage = _PromptLocalStorage();
+      final promptController = AuthController(
+        authRepository: repository,
+        secureStorage: storage,
+        localization: LocalizationService(localStorage: promptStorage),
+        localStorage: promptStorage,
+        googleAuthService: google,
+        onSessionCleared: mainController.reset,
+      )..currentUser.value = _user; // hasPassword == false
+
+      when(
+        () => repository.getCurrentUser(),
+      ).thenAnswer((_) async => _user.copyWith(hasPassword: true));
+
+      await promptController.continueAfterGoogleLogin();
+
+      expect(promptController.currentUser.value?.hasPassword, isTrue);
+      expect(promptStorage.dismissed, isTrue);
+      expect(
+        await promptController.shouldPromptForGooglePasswordSetup(),
+        isFalse,
+      );
+    },
+  );
 
   test('logout resets the main navigation tab to Community', () async {
     mainController.changeIndex(3);

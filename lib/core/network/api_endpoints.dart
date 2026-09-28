@@ -183,6 +183,7 @@ abstract final class ApiEndpoints {
   // ── Community ─────────────────────────────────────────────────────────
   static const communityFeed = '$_base/community/posts/feed';
   static const communityPosts = '$_base/community/posts';
+  static const communityReposts = '$_base/community/posts/reposts';
   static const communityPoll = '$_base/community/posts/poll';
 
   static String communityPollVote(String postId) =>
@@ -196,9 +197,6 @@ abstract final class ApiEndpoints {
 
   static String communityPostLikes(String postId) =>
       '$_base/community/posts/$postId/likes';
-
-  static String communityPostBookmark(String postId) =>
-      '$_base/community/posts/$postId/bookmark';
 
   static String communityPostRepost(String postId) =>
       '$_base/community/posts/$postId/repost';
@@ -237,6 +235,8 @@ abstract final class ApiEndpoints {
 
   // ── Discussions ───────────────────────────────────────────────────────
   static const communityDiscussions = '$_base/community/discussions';
+  static const communityDiscussionReposts =
+      '$_base/community/discussions/reposts';
   static String communityDiscussionDetail(String discussionId) =>
       '$_base/community/discussions/$discussionId';
   static String communityDiscussionComments(String discussionId) =>
@@ -245,6 +245,8 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/comments/$commentId/replies';
   static String communityDiscussionReact(String discussionId) =>
       '$_base/community/discussions/$discussionId/react';
+  static String communityDiscussionRepost(String discussionId) =>
+      '$_base/community/discussions/$discussionId/repost';
   static String communityDiscussionReactions(String discussionId) =>
       '$_base/community/discussions/$discussionId/reactions';
   static String communityDiscussionReport(String discussionId) =>

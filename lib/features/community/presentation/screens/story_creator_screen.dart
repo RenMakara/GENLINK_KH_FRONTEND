@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/images/app_cached_image.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
@@ -2118,36 +2120,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         ),
                         itemBuilder: (c, idx) {
                           final user = filteredUsers[idx];
-                          final hasAvatar = user.avatarUrl.isNotEmpty;
-                          ImageProvider? imgProvider;
-                          if (hasAvatar) {
-                            if (user.avatarUrl.startsWith('assets/')) {
-                              imgProvider = AssetImage(user.avatarUrl);
-                            } else {
-                              imgProvider = NetworkImage(user.avatarUrl);
-                            }
-                          }
 
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 2,
                             ),
-                            leading: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: AppColors.darkSurfaceSecondary,
-                              backgroundImage: imgProvider,
-                              child: !hasAvatar
-                                  ? Text(
-                                      user.displayName.isNotEmpty
-                                          ? user.displayName[0].toUpperCase()
-                                          : '@',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                  : null,
+                            leading: AppAvatar(
+                              imageUrl: user.avatarUrl,
+                              name: user.displayName,
+                              size: 36,
                             ),
                             title: Text(
                               user.displayName,
@@ -2625,13 +2607,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     } else if (_activeMediaPath != null &&
         (_activeMediaPath!.startsWith('http://') ||
             _activeMediaPath!.startsWith('https://'))) {
-      imgWidget = Image.network(
-        _activeMediaPath!,
+      imgWidget = AppCachedImage(
+        imageUrl: _activeMediaPath!,
         fit: BoxFit.contain,
         alignment: Alignment.center,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (ctx, err, stack) =>
-            _buildErrorMediaPlaceholder(),
+        errorWidget: _buildErrorMediaPlaceholder(),
       );
     } else {
       imgWidget = Image.file(
@@ -3550,6 +3530,23 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   bool _isInteractingLayer = false;
   bool _isHoveringDeleteZone = false;
 
+  double _getDeleteZoneBottomOffset(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final extraContextHeight =
+        (_activeContextTool != ActiveContextTool.none) ? 58.0 : 0.0;
+    return bottomPadding + 220.0 + extraContextHeight;
+  }
+
+  bool _checkIsOverDeleteZone({
+    required double currentY,
+    required double screenHeight,
+    required BuildContext context,
+  }) {
+    final deleteZoneBottom = _getDeleteZoneBottomOffset(context);
+    final threshold = screenHeight - (deleteZoneBottom + 45.0);
+    return currentY > threshold;
+  }
+
   Widget _buildLayerImageErrorPlaceholder() {
     return Container(
       width: 180,
@@ -3600,12 +3597,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 _buildLayerImageErrorPlaceholder(),
           );
         } else {
-          imgWidget = Image.network(
-            layer.text,
+          imgWidget = AppCachedImage(
+            imageUrl: layer.text,
             width: 180,
             fit: BoxFit.contain,
-            errorBuilder: (ctx, err, stack) =>
-                _buildLayerImageErrorPlaceholder(),
+            memCacheWidth: 360,
+            errorWidget: _buildLayerImageErrorPlaceholder(),
           );
         }
 
@@ -4033,13 +4030,21 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 );
                 final currentY =
                     layer.getCanvasOffset(Size(screenWidth, screenHeight)).dy;
-                _isHoveringDeleteZone = currentY > (screenHeight - 160.0);
+                _isHoveringDeleteZone = _checkIsOverDeleteZone(
+                  currentY: currentY,
+                  screenHeight: screenHeight,
+                  context: context,
+                );
               });
             },
             onScaleEnd: (details) {
               final currentY =
                   layer.getCanvasOffset(Size(screenWidth, screenHeight)).dy;
-              final isOverDeleteArea = currentY > (screenHeight - 160.0);
+              final isOverDeleteArea = _checkIsOverDeleteZone(
+                currentY: currentY,
+                screenHeight: screenHeight,
+                context: context,
+              );
               if (isOverDeleteArea) {
                 _deleteLayerInstantly(layer);
               }
@@ -7902,68 +7907,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 ),
               ),
 
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOutCubic,
-              bottom: _isInteractingLayer ? 125 : -80,
-              left: 0,
-              right: 0,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _isInteractingLayer ? 1.0 : 0.0,
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _isHoveringDeleteZone
-                          ? AppColors.danger.withValues(alpha: 0.95)
-                          : Colors.black.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: _isHoveringDeleteZone
-                            ? Colors.white
-                            : Colors.white24,
-                        width: _isHoveringDeleteZone ? 2.0 : 1.0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _isHoveringDeleteZone
-                              ? AppColors.danger.withValues(alpha: 0.6)
-                              : Colors.black45,
-                          blurRadius: 16,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.delete_outline_rounded,
-                          color: Colors.white,
-                          size: _isHoveringDeleteZone ? 22 : 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _isHoveringDeleteZone
-                              ? "Release to Delete"
-                              : "Drag here to delete",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: _isHoveringDeleteZone ? 13.5 : 12.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
             if (!_isFullScreenTextEditing)
               Positioned(
                 bottom: 0,
@@ -8123,6 +8066,70 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                 ),
               ),
+
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              bottom: _isInteractingLayer
+                  ? _getDeleteZoneBottomOffset(context)
+                  : -80,
+              left: 0,
+              right: 0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isInteractingLayer ? 1.0 : 0.0,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isHoveringDeleteZone
+                          ? AppColors.danger.withValues(alpha: 0.95)
+                          : Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _isHoveringDeleteZone
+                            ? Colors.white
+                            : Colors.white24,
+                        width: _isHoveringDeleteZone ? 2.0 : 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isHoveringDeleteZone
+                              ? AppColors.danger.withValues(alpha: 0.6)
+                              : Colors.black45,
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.white,
+                          size: _isHoveringDeleteZone ? 22 : 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isHoveringDeleteZone
+                              ? "Release to Delete"
+                              : "Drag here to delete",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: _isHoveringDeleteZone ? 13.5 : 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

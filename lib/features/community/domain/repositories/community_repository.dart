@@ -4,6 +4,11 @@ import '../models/community_post_model.dart';
 abstract class CommunityRepository {
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10});
 
+  Future<List<CommunityPostModel>> getRepostedPosts({
+    int page = 1,
+    int limit = 20,
+  }) => Future.value(const <CommunityPostModel>[]);
+
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
@@ -46,6 +51,16 @@ abstract class CommunityRepository {
     required String content,
   });
 
+  /// Richer update contract. The default preserves compatibility with older
+  /// repository fakes while production repositories persist supported fields.
+  Future<CommunityPostModel> updatePostFields(
+    String postId, {
+    required String content,
+    List<String>? imageUrls,
+    String? videoUrl,
+    String? visibility,
+  }) => updatePost(postId, content: content);
+
   Future<bool> deletePost(String postId);
 
   Future<bool> toggleLike(String postId);
@@ -63,11 +78,9 @@ abstract class CommunityRepository {
   Future<bool> togglePostBookmark(
     String postId, {
     required bool isCurrentlyBookmarked,
-  }) =>
-      Future.value(!isCurrentlyBookmarked);
+  }) => Future.value(!isCurrentlyBookmarked);
 
-  Future<bool> isPostBookmarked(String postId) =>
-      Future.value(false);
+  Future<bool> isPostBookmarked(String postId) => Future.value(false);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});
   Future<bool> reportPost(
@@ -93,6 +106,32 @@ abstract class CommunityRepository {
     int page = 1,
     int limit = 20,
   });
+
+  Future<EventPageModel<ForumTopicModel>> getDiscussionsPage({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final content = await getDiscussions(
+      category: category,
+      page: page,
+      limit: limit,
+    );
+    return EventPageModel<ForumTopicModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+      hasNext: content.length >= limit,
+    );
+  }
+
+  /// Reposts are profile-only and must not be merged into the forum browse list.
+  /// The default keeps existing repository fakes source-compatible.
+  Future<List<ForumTopicModel>> getDiscussionReposts({
+    String? userId,
+    int page = 1,
+    int limit = 20,
+  }) => Future.value(const <ForumTopicModel>[]);
 
   Future<ForumTopicModel> createDiscussion({
     required String title,
@@ -125,6 +164,17 @@ abstract class CommunityRepository {
 
   Future<bool> isDiscussionBookmarked(String discussionId) =>
       Future.value(false);
+
+  /// Discussion-specific endpoint. The default keeps existing fakes/source-compatible
+  /// by delegating to the legacy post implementation until they opt in.
+  Future<bool> repostDiscussion(
+    String discussionId, {
+    String? caption,
+    String? reposterId,
+  }) => repostPost(discussionId, caption: caption, reposterId: reposterId);
+
+  Future<bool> unrepostDiscussion(String discussionId, {String? reposterId}) =>
+      unrepostPost(discussionId, reposterId: reposterId);
 
   Future<bool> reportDiscussion(
     String discussionId, {
@@ -164,12 +214,20 @@ abstract class CommunityRepository {
   Future<bool> followUser(String userId);
   Future<bool> unfollowUser(String userId);
   Future<bool> checkIsFollowing(String userId);
-  Future<List<FollowUserModel>> getFollowers(String userId, {int page = 0, int size = 50}) async =>
-      const [];
-  Future<List<FollowUserModel>> getFollowing(String userId, {int page = 0, int size = 50}) async =>
-      const [];
-  Future<List<FollowUserModel>> getPendingFollowRequests({int page = 0, int size = 50}) async =>
-      const [];
+  Future<List<FollowUserModel>> getFollowers(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) async => const [];
+  Future<List<FollowUserModel>> getFollowing(
+    String userId, {
+    int page = 0,
+    int size = 50,
+  }) async => const [];
+  Future<List<FollowUserModel>> getPendingFollowRequests({
+    int page = 0,
+    int size = 50,
+  }) async => const [];
   Future<bool> acceptFollowRequest(String followerUserId) async => true;
   Future<bool> rejectFollowRequest(String followerUserId) async => true;
 
@@ -263,11 +321,33 @@ abstract class CommunityRepository {
     int size = 20,
   }) async => const [];
 
+  Future<EventPageModel<OpportunityModel>> getOpportunitiesPage({
+    String? type,
+    bool includeExpired = false,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final content = await getOpportunities(
+      type: type,
+      includeExpired: includeExpired,
+      page: page - 1,
+      size: limit,
+    );
+    return EventPageModel<OpportunityModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+      hasNext: content.length >= limit,
+    );
+  }
+
   Future<OpportunityModel> getOpportunityDetails(String opportunityId) =>
       throw UnimplementedError();
 
-  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) async =>
-      !currentlySaved;
+  Future<bool> toggleSaveOpportunity(
+    String opportunityId,
+    bool currentlySaved,
+  ) async => !currentlySaved;
 
   Future<OpportunityModel> createOpportunity({
     required String title,
@@ -278,4 +358,54 @@ abstract class CommunityRepository {
     String? location,
     String? applyLink,
   }) => throw UnimplementedError();
+}
+
+/// Optional rich post operations supported by the production REST backend.
+/// Keeping these out of [CommunityRepository] preserves compatibility with
+/// lightweight test doubles and alternate implementations.
+abstract interface class RichCommunityRepository {
+  Future<CommunityPostModel> createPostRich({
+    required String content,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String visibility = 'Public',
+    String community = 'All GenLink',
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    String? eventId,
+  });
+
+  Future<CommunityPostModel> createPollPostRich({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+    int? durationDays,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    String? eventId,
+  });
+
+  Future<CommunityPostModel> updatePostRich(
+    String postId, {
+    required String content,
+    required List<String> imageUrls,
+    String? videoUrl,
+    required String visibility,
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    String? pollQuestion,
+    List<String>? pollOptions,
+    int? pollDurationDays,
+    String? eventId,
+  });
 }

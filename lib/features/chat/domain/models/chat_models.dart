@@ -221,6 +221,18 @@ class SharedContentModel {
       };
 }
 
+class ChatMessagePageModel {
+  final List<ChatMessageModel> content;
+  final int page;
+  final bool hasNext;
+
+  const ChatMessagePageModel({
+    this.content = const <ChatMessageModel>[],
+    this.page = 0,
+    this.hasNext = false,
+  });
+}
+
 class ChatMessageModel {
   final String id;
   final String conversationId;
@@ -284,6 +296,56 @@ class ChatMessageModel {
     final resolvedConversationId = conversationId.isNotEmpty
         ? conversationId
         : (json['roomId'] ?? json['conversationId'] ?? json['chatRoomId'] ?? '').toString();
+    final rawMediaUrl = json['mediaUrl'] as String?;
+
+    final rawShared = json['sharedContent'] ?? json['shared_content'];
+    Map<String, dynamic>? decodedShared;
+    if (rawShared is Map) {
+      decodedShared = rawShared.cast<String, dynamic>();
+    } else if (rawShared is String && rawShared.trim().isNotEmpty) {
+      try {
+        final d = jsonDecode(rawShared);
+        if (d is Map) decodedShared = d.cast<String, dynamic>();
+      } catch (_) {}
+    }
+
+    final isStoryReplyFromShared = decodedShared != null &&
+        (decodedShared['type']?.toString().toUpperCase() == 'STORY_REPLY' ||
+            decodedShared['storyReference'] != null ||
+            decodedShared['storyId'] != null);
+
+    final isStoryReplyFromMedia = backendType.toUpperCase() == 'TEXT' &&
+        rawMediaUrl != null &&
+        rawMediaUrl.isNotEmpty &&
+        (rawMediaUrl.contains('/stories/') || isStoryReplyFromShared);
+
+    final isStoryReply = backendType.toLowerCase() == 'story_reply' ||
+        isStoryReplyFromShared ||
+        isStoryReplyFromMedia;
+
+    final resolvedMessageType =
+        isStoryReply ? 'story_reply' : backendType.toLowerCase();
+
+    final StoryReference? resolvedStoryRef = json['storyReference']
+            is Map<String, dynamic>
+        ? StoryReference.fromJson(
+            json['storyReference'] as Map<String, dynamic>,
+          )
+        : (isStoryReply
+            ? StoryReference(
+                storyId: decodedShared?['storyId']?.toString() ??
+                    (decodedShared?['storyReference'] is Map
+                        ? decodedShared!['storyReference']['storyId']?.toString()
+                        : null),
+                mediaUrl: decodedShared?['mediaUrl']?.toString() ??
+                    (decodedShared?['storyReference'] is Map
+                        ? decodedShared!['storyReference']['mediaUrl']?.toString()
+                        : null) ??
+                    rawMediaUrl,
+                isExpired: decodedShared?['isExpired'] == true,
+              )
+            : null);
+
     return ChatMessageModel(
       id: json['messageId']?.toString() ?? json['id']?.toString() ?? '',
       conversationId: resolvedConversationId,
@@ -299,33 +361,18 @@ class ChatMessageModel {
       timeAgo: _timeAgo(createdAt),
       isMine: json['mine'] as bool? ?? json['isMine'] as bool? ?? false,
       isRead: json['isRead'] as bool? ?? true,
-      messageType: backendType.toLowerCase(),
-      mediaUrl: json['mediaUrl'] as String?,
-      storyReference: json['storyReference'] is Map<String, dynamic>
-          ? StoryReference.fromJson(
-              json['storyReference'] as Map<String, dynamic>,
-            )
-          : null,
+      messageType: resolvedMessageType,
+      mediaUrl: rawMediaUrl ?? resolvedStoryRef?.mediaUrl,
+      storyReference: resolvedStoryRef,
       financeTransaction: json['financeTransaction'] is Map<String, dynamic>
           ? ChatFinanceTransaction.fromJson(
               json['financeTransaction'] as Map<String, dynamic>,
             )
           : null,
       sharedContent: () {
-        final raw = json['sharedContent'] ?? json['shared_content'];
-        if (raw is Map<String, dynamic>) {
-          return SharedContentModel.fromJson(raw);
-        }
-        if (raw is Map) {
-          return SharedContentModel.fromJson(raw.cast<String, dynamic>());
-        }
-        if (raw is String && raw.trim().isNotEmpty) {
-          try {
-            final decoded = jsonDecode(raw);
-            if (decoded is Map) {
-              return SharedContentModel.fromJson(decoded.cast<String, dynamic>());
-            }
-          } catch (_) {}
+        if (isStoryReplyFromShared) return null;
+        if (decodedShared != null) {
+          return SharedContentModel.fromJson(decodedShared);
         }
         return null;
       }(),

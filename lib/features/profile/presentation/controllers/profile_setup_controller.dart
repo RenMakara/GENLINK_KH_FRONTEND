@@ -1,15 +1,39 @@
+import 'dart:typed_data';
+
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
+import '../../../media/domain/entities/media_entity.dart';
+import '../../../media/domain/media_upload_service.dart';
+import '../../../media/presentation/media_picker.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 
 class ProfileSetupController extends GetxController {
-  ProfileSetupController({required this._repository});
+  ProfileSetupController({
+    required this.repository,
+    this.mediaPicker,
+    this.mediaUploadService,
+  });
 
-  final ProfileRepository _repository;
+  final ProfileRepository repository;
+  final MediaPicker? mediaPicker;
+  final MediaUploadService? mediaUploadService;
+
+  MediaPicker get _picker =>
+      mediaPicker ??
+      (Get.isRegistered<MediaPicker>()
+          ? Get.find<MediaPicker>()
+          : MediaPicker());
+
+  MediaUploadService? get _uploadService =>
+      mediaUploadService ??
+      (Get.isRegistered<MediaUploadService>()
+          ? Get.find<MediaUploadService>()
+          : null);
 
   static const totalSteps = 3;
 
@@ -26,6 +50,10 @@ class ProfileSetupController extends GetxController {
   final currentStep = 1.obs;
 
   final avatarUrl = ''.obs;
+  final avatarBytes = Rxn<Uint8List>();
+  final isUploadingAvatar = false.obs;
+  final avatarUploadProgress = RxnDouble();
+
   final displayName = ''.obs;
   final role = RxnString();
   final universityName = ''.obs;
@@ -40,17 +68,71 @@ class ProfileSetupController extends GetxController {
 
   bool get hasEnoughInterests => selectedInterestIds.length >= minInterests;
 
+  Future<bool> pickAndUploadAvatar({
+    ImageSource source = ImageSource.gallery,
+  }) async {
+    try {
+      final picked = await _picker.pickImage(source: source);
+      if (picked == null) return false;
+
+      avatarBytes.value = picked.bytes;
+
+      final uploadService = _uploadService;
+      if (uploadService == null) {
+        avatarUrl.value = 'local_preview';
+        return true;
+      }
+
+      isUploadingAvatar.value = true;
+      avatarUploadProgress.value = 0.0;
+
+      final media = await uploadService.upload(
+        bytes: picked.bytes,
+        contentType: picked.contentType,
+        purpose: MediaPurpose.avatar,
+        width: picked.width,
+        height: picked.height,
+        onProgress: (fraction) => avatarUploadProgress.value = fraction,
+      );
+
+      avatarUrl.value = media.url;
+      try {
+        await repository.updateAvatarFromMedia(media.mediaId);
+      } catch (_) {
+        await repository.updateAvatar(media.url);
+      }
+      return true;
+    } on AppError catch (e) {
+      AppSnackbar.error(e.message);
+      return false;
+    } catch (_) {
+      AppSnackbar.error('common.error'.tr);
+      return false;
+    } finally {
+      isUploadingAvatar.value = false;
+      avatarUploadProgress.value = null;
+    }
+  }
+
+  void removeAvatar() {
+    avatarUrl.value = '';
+    avatarBytes.value = null;
+  }
 
   Future<void> submitStep1() async {
     final saved = await _save(() async {
-      await _repository.updateProfile(
+      await repository.updateProfile(
         fullName: _blankToNull(displayName.value),
         workStatus: role.value,
         universityName: _blankToNull(universityName.value),
         location: _blankToNull(location.value),
       );
       final avatar = avatarUrl.value.trim();
-      if (avatar.isNotEmpty) await _repository.updateAvatar(avatar);
+      if (avatar.isNotEmpty && avatar != 'local_preview') {
+        try {
+          await repository.updateAvatar(avatar);
+        } catch (_) {}
+      }
     });
     if (saved) goToStep(2);
   }
@@ -60,13 +142,13 @@ class ProfileSetupController extends GetxController {
     final saved = await _save(() async {
       final trimmedBio = _blankToNull(bio.value);
       if (trimmedBio != null) {
-        await _repository.updateProfile(bio: trimmedBio);
+        await repository.updateProfile(bio: trimmedBio);
       }
       const platforms = ['WEBSITE', 'OTHER'];
       for (var i = 0; i < links.length && i < platforms.length; i++) {
         final url = links[i].trim();
         if (url.isEmpty) continue;
-        await _repository.upsertSocialLink(platform: platforms[i], url: url);
+        await repository.upsertSocialLink(platform: platforms[i], url: url);
       }
     });
     if (saved) goToStep(3);
@@ -77,7 +159,7 @@ class ProfileSetupController extends GetxController {
     if (catalog.isNotEmpty) return;
     isLoadingCatalog.value = true;
     try {
-      catalog.value = await _repository.getInterestCatalog();
+      catalog.value = await repository.getInterestCatalog();
     } catch (_) {
     } finally {
       isLoadingCatalog.value = false;
@@ -94,7 +176,7 @@ class ProfileSetupController extends GetxController {
 
   Future<void> submitStep3() async {
     final saved = await _save(() async {
-      await _repository.replaceInterests(selectedInterestIds.toList());
+      await repository.replaceInterests(selectedInterestIds.toList());
     });
     if (saved) finish();
   }

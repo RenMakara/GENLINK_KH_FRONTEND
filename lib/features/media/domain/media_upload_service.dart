@@ -25,7 +25,11 @@ class MediaUploadService {
     int? durationMs,
     UploadProgress? onProgress,
   }) async {
-    _validate(bytes: bytes, contentType: contentType, purpose: purpose);
+    validateFile(
+      sizeBytes: bytes.length,
+      contentType: contentType,
+      purpose: purpose,
+    );
 
     final checksum = sha256.convert(bytes).toString();
 
@@ -57,13 +61,13 @@ class MediaUploadService {
 
   Future<void> delete(String mediaId) => _repository.delete(mediaId);
 
-
-  void _validate({
-    required Uint8List bytes,
+  /// Validates file metadata before callers load a large local file into memory.
+  void validateFile({
+    required int sizeBytes,
     required String contentType,
     required MediaPurpose purpose,
   }) {
-    if (bytes.isEmpty) {
+    if (sizeBytes <= 0) {
       throw const AppError(
         message: 'The selected file is empty',
         errorCode: 'MEDIA_EMPTY',
@@ -87,7 +91,7 @@ class MediaUploadService {
     }
 
     final cap = isVideo ? maxVideoBytes : maxImageBytes;
-    if (bytes.length > cap) {
+    if (sizeBytes > cap) {
       throw AppError(
         message: 'File is too large (max ${cap ~/ (1024 * 1024)} MB)',
         errorCode: 'MEDIA_TOO_LARGE',

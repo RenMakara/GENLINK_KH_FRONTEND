@@ -10,22 +10,6 @@ import '../widgets/splash_orbit_system.dart';
 import '../widgets/splash_tagline.dart';
 import '../widgets/splash_wordmark.dart';
 
-/// The redesigned GenLink Splash Screen.
-///
-/// Features:
-/// - iOS-inspired, modern GenZ aesthetics with calm ambient glows.
-/// - 3D orbital ecosystem with the 4 upright feature icons (Community, Growth, Learning, Opportunity).
-/// - Central GL logo with subtle breathing animation.
-/// - 5-phase smooth entrance animation.
-/// - Fluid exit animation sequence:
-///   - Phase 1: Normal orbit
-///   - Phase 2: Orbit acceleration
-///   - Phase 3: Physical tile fly-out with momentum and swell
-///   - Phase 4: Center logo reaction (subtle squeeze -> 1.04 pulse)
-///   - Phase 5: Smooth logo zoom bridge into First Auth Screen
-///   - Phase 6: First Auth Screen coordinated reveal
-/// - Responsive layout adapting smoothly to compact and large devices.
-/// - Dark Mode and Reduced Motion support.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 

@@ -15,7 +15,6 @@ import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_design_tokens.dart';
 import '../widgets/forum_liked_by_sheet.dart';
-import '../widgets/forum_repost_dialog.dart';
 import '../widgets/forum_share_to_chat_sheet.dart';
 import 'create_discussion_screen.dart';
 import 'widgets/community_widgets.dart';
@@ -44,7 +43,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   @override
   void initState() {
     super.initState();
-    final isAnon = widget.discussion.isAnonymous ||
+    final isAnon =
+        widget.discussion.isAnonymous ||
         widget.discussion.authorName.trim().toLowerCase() == 'anonymous' ||
         ('community.anonymous'.tr.isNotEmpty &&
             widget.discussion.authorName.trim().toLowerCase() ==
@@ -82,7 +82,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   Future<void> _loadDiscussionDetail() async {
     final detail = await _controller.fetchDiscussionDetails(_discussion.id);
     if (detail != null && mounted) {
-      final isAnon = _discussion.isAnonymous ||
+      final isAnon =
+          _discussion.isAnonymous ||
           detail.isAnonymous ||
           detail.authorName.trim().toLowerCase() == 'anonymous' ||
           ('community.anonymous'.tr.isNotEmpty &&
@@ -114,7 +115,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void didUpdateWidget(ForumDiscussionScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.discussion.id != widget.discussion.id) {
-      final isAnon = widget.discussion.isAnonymous ||
+      final isAnon =
+          widget.discussion.isAnonymous ||
           widget.discussion.authorName.trim().toLowerCase() == 'anonymous' ||
           ('community.anonymous'.tr.isNotEmpty &&
               widget.discussion.authorName.trim().toLowerCase() ==
@@ -175,13 +177,13 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     } else if (mounted) {
       final title = _isBookmarked
           ? ('community.saveBookmark'.tr.isNotEmpty &&
-                  'community.saveBookmark'.tr != 'community.saveBookmark'
-              ? 'community.saveBookmark'.tr
-              : 'Saved')
+                    'community.saveBookmark'.tr != 'community.saveBookmark'
+                ? 'community.saveBookmark'.tr
+                : 'Saved')
           : ('community.removeBookmark'.tr.isNotEmpty &&
-                  'community.removeBookmark'.tr != 'community.removeBookmark'
-              ? 'community.removeBookmark'.tr
-              : 'Bookmark Removed');
+                    'community.removeBookmark'.tr != 'community.removeBookmark'
+                ? 'community.removeBookmark'.tr
+                : 'Bookmark Removed');
       AppNotificationBanner.showSuccess(
         context: context,
         title: title,
@@ -253,13 +255,18 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showOptionsSheet() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final bg = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final isOwner = _discussion.checkIsOwner(_controller.currentUserId);
 
@@ -274,191 +281,212 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
             border: Border.all(color: borderSubtle, width: 1),
           ),
           child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
-                  borderRadius: BorderRadius.circular(2),
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkBorderSubtle
+                        : AppColors.lightBorderSubtle,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              if (isOwner) ...[
-                ListTile(
-                  leading:
-                      Icon(Icons.edit_outlined, color: textPrimary, size: 22),
-                  title: Text(
-                    'community.editDiscussion'.tr.isNotEmpty &&
-                            'community.editDiscussion'.tr !=
-                                'community.editDiscussion'
-                        ? 'community.editDiscussion'.tr
-                        : 'Edit Discussion',
-                    style: TextStyle(
+                if (isOwner) ...[
+                  ListTile(
+                    leading: Icon(
+                      Icons.edit_outlined,
                       color: textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      size: 22,
                     ),
-                  ),
-                  onTap: () async {
-                    Get.back();
-                    final updated = await Get.to(() => CreateDiscussionScreen(
+                    title: Text(
+                      'community.editDiscussion'.tr.isNotEmpty &&
+                              'community.editDiscussion'.tr !=
+                                  'community.editDiscussion'
+                          ? 'community.editDiscussion'.tr
+                          : 'Edit Discussion',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    onTap: () async {
+                      Get.back();
+                      final updated = await Get.to(
+                        () => CreateDiscussionScreen(
                           initialDiscussion: _discussion,
-                        ));
-                    if (updated == true && mounted) {
-                      final refreshed =
-                          _controller.getDiscussionById(_discussion.id);
-                      if (refreshed != null) {
-                        setState(() {
-                          _discussion = refreshed;
-                        });
-                      } else {
-                        await _loadDiscussionDetail();
+                        ),
+                      );
+                      if (updated == true && mounted) {
+                        final refreshed = _controller.getDiscussionById(
+                          _discussion.id,
+                        );
+                        if (refreshed != null) {
+                          setState(() {
+                            _discussion = refreshed;
+                          });
+                        } else {
+                          await _loadDiscussionDetail();
+                        }
                       }
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.danger,
-                    size: 22,
+                    },
                   ),
-                  title: Text(
-                    'community.deleteDiscussion'.tr.isNotEmpty &&
-                            'community.deleteDiscussion'.tr !=
-                                'community.deleteDiscussion'
-                        ? 'community.deleteDiscussion'.tr
-                        : 'Delete Discussion',
-                    style: const TextStyle(
+                  ListTile(
+                    leading: const Icon(
+                      Icons.delete_outline_rounded,
                       color: AppColors.danger,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      size: 22,
                     ),
+                    title: Text(
+                      'community.deleteDiscussion'.tr.isNotEmpty &&
+                              'community.deleteDiscussion'.tr !=
+                                  'community.deleteDiscussion'
+                          ? 'community.deleteDiscussion'.tr
+                          : 'Delete Discussion',
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    onTap: () {
+                      Get.back();
+                      _showDeleteDialog();
+                    },
                   ),
-                  onTap: () {
-                    Get.back();
-                    _showDeleteDialog();
-                  },
-                ),
-              ] else ...[
+                ] else ...[
+                  ListTile(
+                    leading: Icon(
+                      _isBookmarked
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color: _isBookmarked ? AppColors.warning : textPrimary,
+                      size: 22,
+                    ),
+                    title: Text(
+                      _isBookmarked
+                          ? ('community.removeBookmark'.tr.isNotEmpty &&
+                                    'community.removeBookmark'.tr !=
+                                        'community.removeBookmark'
+                                ? 'community.removeBookmark'.tr
+                                : 'Remove from Saved')
+                          : ('community.saveBookmark'.tr.isNotEmpty &&
+                                    'community.saveBookmark'.tr !=
+                                        'community.saveBookmark'
+                                ? 'community.saveBookmark'.tr
+                                : 'Save'),
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    onTap: () {
+                      Get.back();
+                      _handleSaveTap();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.report_outlined,
+                      color: AppColors.danger,
+                      size: 22,
+                    ),
+                    title: Text(
+                      'community.report'.tr.isNotEmpty &&
+                              'community.report'.tr != 'community.report'
+                          ? 'community.report'.tr
+                          : 'Report',
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    onTap: () async {
+                      Get.back();
+                      final ok = await _controller.reportDiscussion(
+                        _discussion.id,
+                      );
+                      if (mounted && context.mounted) {
+                        if (ok) {
+                          AppNotificationBanner.showSuccess(
+                            context: context,
+                            title:
+                                'community.reported'.tr.isNotEmpty &&
+                                    'community.reported'.tr !=
+                                        'community.reported'
+                                ? 'community.reported'.tr
+                                : 'Reported',
+                            message:
+                                'Thank you for reporting. Our team will review it.',
+                          );
+                        } else {
+                          AppNotificationBanner.showError(
+                            context: context,
+                            title: 'Error',
+                            message:
+                                'Failed to report discussion. Please try again.',
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: 8),
                 ListTile(
                   leading: Icon(
-                    _isBookmarked
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: _isBookmarked ? AppColors.warning : textPrimary,
+                    Icons.close_rounded,
+                    color: textSecondary,
                     size: 22,
                   ),
                   title: Text(
-                    _isBookmarked
-                        ? ('community.removeBookmark'.tr.isNotEmpty &&
-                                'community.removeBookmark'.tr !=
-                                    'community.removeBookmark'
-                            ? 'community.removeBookmark'.tr
-                            : 'Remove from Saved')
-                        : ('community.saveBookmark'.tr.isNotEmpty &&
-                                'community.saveBookmark'.tr !=
-                                    'community.saveBookmark'
-                            ? 'community.saveBookmark'.tr
-                            : 'Save'),
+                    'common.cancel'.tr.isNotEmpty &&
+                            'common.cancel'.tr != 'common.cancel'
+                        ? 'common.cancel'.tr
+                        : 'Cancel',
                     style: TextStyle(
-                      color: textPrimary,
-                      fontWeight: FontWeight.w600,
+                      color: textSecondary,
+                      fontWeight: FontWeight.w500,
                       fontSize: 15,
                     ),
                   ),
-                  onTap: () {
-                    Get.back();
-                    _handleSaveTap();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.report_outlined,
-                      color: AppColors.danger, size: 22),
-                  title: Text(
-                    'community.report'.tr.isNotEmpty &&
-                            'community.report'.tr != 'community.report'
-                        ? 'community.report'.tr
-                        : 'Report',
-                    style: const TextStyle(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                  onTap: () async {
-                    Get.back();
-                    final ok = await _controller.reportDiscussion(_discussion.id);
-                    if (mounted && context.mounted) {
-                      if (ok) {
-                        AppNotificationBanner.showSuccess(
-                          context: context,
-                          title: 'community.reported'.tr.isNotEmpty &&
-                                  'community.reported'.tr != 'community.reported'
-                              ? 'community.reported'.tr
-                              : 'Reported',
-                          message:
-                              'Thank you for reporting. Our team will review it.',
-                        );
-                      } else {
-                        AppNotificationBanner.showError(
-                          context: context,
-                          title: 'Error',
-                          message: 'Failed to report discussion. Please try again.',
-                        );
-                      }
-                    }
-                  },
+                  onTap: () => Get.back(),
                 ),
               ],
-              const SizedBox(height: 8),
-              ListTile(
-                leading:
-                    Icon(Icons.close_rounded, color: textSecondary, size: 22),
-                title: Text(
-                  'common.cancel'.tr.isNotEmpty &&
-                          'common.cancel'.tr != 'common.cancel'
-                      ? 'common.cancel'.tr
-                      : 'Cancel',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 15,
-                  ),
-                ),
-                onTap: () => Get.back(),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-    isScrollControlled: true,
-  );
+      isScrollControlled: true,
+    );
   }
 
   void _showDeleteDialog() async {
     final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      title: 'community.deleteDiscussion'.tr.isNotEmpty &&
+      title:
+          'community.deleteDiscussion'.tr.isNotEmpty &&
               'community.deleteDiscussion'.tr != 'community.deleteDiscussion'
           ? '${'community.deleteDiscussion'.tr}?'
           : 'Delete Discussion?',
-      message: 'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+      message:
+          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
               'community.deleteDiscussionConfirm'.tr !=
                   'community.deleteDiscussionConfirm'
           ? 'community.deleteDiscussionConfirm'.tr
           : 'Are you sure you want to delete this discussion? This action cannot be undone.',
-      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
-              'common.cancel'.tr != 'common.cancel'
+      cancelLabel:
+          'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
           ? 'common.cancel'.tr
           : 'Cancel',
-      confirmLabel: 'common.delete'.tr.isNotEmpty &&
-              'common.delete'.tr != 'common.delete'
+      confirmLabel:
+          'common.delete'.tr.isNotEmpty && 'common.delete'.tr != 'common.delete'
           ? 'common.delete'.tr
           : 'Delete',
       icon: Icons.delete_outline_rounded,
@@ -473,12 +501,14 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         if (Get.context != null) {
           AppNotificationBanner.showSuccess(
             context: Get.context!,
-            title: 'community.discussionDeleted'.tr.isNotEmpty &&
+            title:
+                'community.discussionDeleted'.tr.isNotEmpty &&
                     'community.discussionDeleted'.tr !=
                         'community.discussionDeleted'
                 ? 'community.discussionDeleted'.tr
                 : 'Discussion Deleted',
-            message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+            message:
+                'community.discussionDeletedMsg'.tr.isNotEmpty &&
                     'community.discussionDeletedMsg'.tr !=
                         'community.discussionDeletedMsg'
                 ? 'community.discussionDeletedMsg'.tr
@@ -511,24 +541,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         );
       }
     }
-  }
-
-  void _handleRepost() {
-    final currentUserId = _controller.currentUserId ??
-        (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
-    if (_discussion.checkIsOwner(currentUserId)) {
-      AppNotificationBanner.showWarning(
-        context: context,
-        title: 'Cannot Repost',
-        message: 'community.cannotRepostOwnPost'.tr.isNotEmpty &&
-                'community.cannotRepostOwnPost'.tr !=
-                    'community.cannotRepostOwnPost'
-            ? 'community.cannotRepostOwnPost'.tr
-            : 'You cannot repost your own discussion.',
-      );
-      return;
-    }
-    ForumRepostDialog.show(context, topic: _discussion);
   }
 
   @override
@@ -591,16 +603,19 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 children: [
                   Builder(
                     builder: (context) {
-                      final isAnonymous = _discussion.isAnonymous ||
-                          _discussion.authorName.trim().toLowerCase() == 'anonymous' ||
+                      final isAnonymous =
+                          _discussion.isAnonymous ||
+                          _discussion.authorName.trim().toLowerCase() ==
+                              'anonymous' ||
                           ('community.anonymous'.tr.isNotEmpty &&
                               _discussion.authorName.trim().toLowerCase() ==
                                   'community.anonymous'.tr.toLowerCase());
                       final displayAuthor = isAnonymous
                           ? ('community.anonymous'.tr.isNotEmpty &&
-                                  'community.anonymous'.tr != 'community.anonymous'
-                              ? 'community.anonymous'.tr
-                              : 'Anonymous')
+                                    'community.anonymous'.tr !=
+                                        'community.anonymous'
+                                ? 'community.anonymous'.tr
+                                : 'Anonymous')
                           : _discussion.authorName;
 
                       return Row(
@@ -631,7 +646,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               children: [
                                 Text(
                                   displayAuthor,
-                                  style: theme.textTheme.titleSmall?.copyWith(
+                                  style:
+                                      theme.textTheme.titleSmall?.copyWith(
                                         color: textPrimary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
@@ -644,64 +660,75 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                            const SizedBox(height: 1),
-                            Text(
-                              formatCommunityTimestamp(
-                                  _discussion.createdAt ?? _discussion.timeAgo),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                  ) ??
-                                  TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11.5,
+                                const SizedBox(height: 1),
+                                Text(
+                                  formatCommunityTimestamp(
+                                    _discussion.createdAt ??
+                                        _discussion.timeAgo,
                                   ),
+                                  style:
+                                      theme.textTheme.labelSmall?.copyWith(
+                                        color: textMuted,
+                                        fontSize: 11.5,
+                                      ) ??
+                                      TextStyle(
+                                        color: textMuted,
+                                        fontSize: 11.5,
+                                      ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      CommunityCategoryBadge(
-                        label: _discussion.category,
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.md + 2),
+                          ),
+                          CommunityCategoryBadge(label: _discussion.category),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md + 2),
 
                   Text(
                     _discussion.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.5,
-                      height: 1.35,
-                    ) ?? TextStyle(
-                      color: textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.5,
-                      height: 1.35,
-                    ),
+                    style:
+                        theme.textTheme.titleMedium?.copyWith(
+                          color: textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18.5,
+                          height: 1.35,
+                        ) ??
+                        TextStyle(
+                          color: textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18.5,
+                          height: 1.35,
+                        ),
                   ),
                   if (_discussion.content.trim().isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.sm + 2),
                     Text(
                       _discussion.content,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                        height: 1.55,
-                        fontSize: 14.5,
-                      ) ?? TextStyle(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                        height: 1.55,
-                        fontSize: 14.5,
-                      ),
+                      style:
+                          theme.textTheme.bodyMedium?.copyWith(
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
+                            height: 1.55,
+                            fontSize: 14.5,
+                          ) ??
+                          TextStyle(
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
+                            height: 1.55,
+                            fontSize: 14.5,
+                          ),
                     ),
                   ],
                   if (_discussion.isOwner && _upvotes > 0) ...[
                     const SizedBox(height: AppSpacing.sm + 2),
                     Obx(() {
-                      final likers = _controller.discussionLikers[_discussion.id] ?? _discussion.likers;
+                      final likers =
+                          _controller.discussionLikers[_discussion.id] ??
+                          _discussion.likers;
                       return ForumLikedByPreview(
                         likesCount: _upvotes,
                         likers: likers,
@@ -733,10 +760,14 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             constraints: const BoxConstraints(minHeight: 40),
                             child: Material(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: InkWell(
                                 onTap: _handleLikeTap,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: hPad,
@@ -744,7 +775,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Icon(
                                         _isLiked
@@ -761,8 +793,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                         style: TextStyle(
                                           color: _isLiked
                                               ? (isDark
-                                                  ? Colors.white
-                                                  : AppColors.lightTextPrimary)
+                                                    ? Colors.white
+                                                    : AppColors
+                                                          .lightTextPrimary)
                                               : textSecondary,
                                           fontWeight: _isLiked
                                               ? FontWeight.w700
@@ -808,46 +841,26 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          // 3. Repost (icon only, no text)
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                            child: Material(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              child: InkWell(
-                                key: const Key('forum_discussion_repost_button'),
-                                onTap: _handleRepost,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: hPad,
-                                    vertical: 6,
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.repeat_rounded,
-                                      color: textSecondary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
                           // Alignment: Spacer pushes Save & Share to the far right, matching Feed
                           const Spacer(),
 
                           // 4. Save (icon only, right-aligned)
                           ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
                             child: Material(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: InkWell(
                                 key: const Key('forum_discussion_save_button'),
                                 onTap: _handleSaveTap,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                                 child: Center(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
@@ -871,14 +884,23 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           const SizedBox(width: 4),
                           // 5. Share to Chat (icon only, right-aligned)
                           ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
                             child: Material(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: InkWell(
-                                key: const Key('forum_discussion_share_to_chat_button'),
+                                key: const Key(
+                                  'forum_discussion_share_to_chat_button',
+                                ),
                                 onTap: _handleShareToChatTap,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                                 child: Center(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
@@ -908,22 +930,28 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             'community.comments'.tr != 'community.comments'
                         ? 'community.comments'.tr
                         : 'Comments',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15.5,
-                    ) ?? TextStyle(
-                      color: textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15.5,
-                    ),
+                    style:
+                        theme.textTheme.titleMedium?.copyWith(
+                          color: textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.5,
+                        ) ??
+                        TextStyle(
+                          color: textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15.5,
+                        ),
                   ),
                   const SizedBox(height: AppSpacing.sm + 4),
                   Obx(() {
-                    final comments = _controller
-                        .getCommentsForDiscussion(_discussion.id);
+                    final comments = _controller.getCommentsForDiscussion(
+                      _discussion.id,
+                    );
                     final isLoading =
                         _controller.isLoadingDiscussionComments.value;
+                    final loadError =
+                        _controller.discussionCommentsErrors[_discussion.id] ??
+                        '';
 
                     if (isLoading && comments.isEmpty) {
                       return const Padding(
@@ -938,8 +966,46 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                     }
 
                     if (comments.isEmpty) {
+                      if (loadError.isNotEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 32,
+                            horizontal: 16,
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cloud_off_outlined,
+                                  color: textMuted.withValues(alpha: 0.6),
+                                  size: 36,
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  loadError,
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 12.5,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                TextButton.icon(
+                                  onPressed: () => _controller
+                                      .fetchDiscussionComments(_discussion.id),
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  label: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 32,
+                          horizontal: 16,
+                        ),
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -952,7 +1018,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               const SizedBox(height: 10),
                               Text(
                                 'community.noCommentsYet'.tr.isNotEmpty &&
-                                        'community.noCommentsYet'.tr != 'community.noCommentsYet'
+                                        'community.noCommentsYet'.tr !=
+                                            'community.noCommentsYet'
                                     ? 'community.noCommentsYet'.tr
                                     : 'No comments yet',
                                 style: TextStyle(
@@ -964,8 +1031,11 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'community.firstToStartDiscussion'.tr.isNotEmpty &&
-                                        'community.firstToStartDiscussion'.tr != 'community.firstToStartDiscussion'
+                                'community.firstToStartDiscussion'
+                                            .tr
+                                            .isNotEmpty &&
+                                        'community.firstToStartDiscussion'.tr !=
+                                            'community.firstToStartDiscussion'
                                     ? 'community.firstToStartDiscussion'.tr
                                     : 'Be the first to start the discussion!',
                                 style: TextStyle(
@@ -981,7 +1051,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                     }
 
                     return Column(
-                      children: comments.map((c) => _buildCommentItem(
+                      children: [
+                        ...comments.map(
+                          (c) => _buildCommentItem(
                             context,
                             c,
                             surfaceSecondary,
@@ -989,7 +1061,16 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             textPrimary,
                             textSecondary,
                             textMuted,
-                          )).toList(),
+                          ),
+                        ),
+                        if (loadError.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () => _controller
+                                .fetchDiscussionComments(_discussion.id),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(loadError),
+                          ),
+                      ],
                     );
                   }),
                 ],
@@ -1001,7 +1082,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: surfaceSecondary,
-                border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
+                border: Border(
+                  top: BorderSide(color: borderSubtle, width: 0.8),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1037,8 +1120,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: 'community.replyingTo'.tr.isNotEmpty &&
-                                            'community.replyingTo'.tr != 'community.replyingTo'
+                                    text:
+                                        'community.replyingTo'.tr.isNotEmpty &&
+                                            'community.replyingTo'.tr !=
+                                                'community.replyingTo'
                                         ? '${'community.replyingTo'.tr} '
                                         : 'Replying to ',
                                   ),
@@ -1105,13 +1190,15 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             decoration: InputDecoration(
                               hintText: _replyingToComment != null
                                   ? ('community.reply'.tr.isNotEmpty &&
-                                          'community.reply'.tr != 'community.reply'
-                                      ? '${'community.reply'.tr} ${_replyingToComment!.userName}...'
-                                      : 'Reply to ${_replyingToComment!.userName}...')
+                                            'community.reply'.tr !=
+                                                'community.reply'
+                                        ? '${'community.reply'.tr} ${_replyingToComment!.userName}...'
+                                        : 'Reply to ${_replyingToComment!.userName}...')
                                   : ('community.addReply'.tr.isNotEmpty &&
-                                          'community.addReply'.tr != 'community.addReply'
-                                      ? 'community.addReply'.tr
-                                      : 'Add a reply...'),
+                                            'community.addReply'.tr !=
+                                                'community.addReply'
+                                        ? 'community.addReply'.tr
+                                        : 'Add a reply...'),
                               hintStyle: TextStyle(
                                 color: textSecondary,
                                 fontSize: 14.5,
@@ -1126,15 +1213,27 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                 vertical: 11,
                               ),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                borderSide: BorderSide(color: borderSubtle, width: 0.8),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                                borderSide: BorderSide(
+                                  color: borderSubtle,
+                                  width: 0.8,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                borderSide: BorderSide(color: borderSubtle, width: 0.8),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                                borderSide: BorderSide(
+                                  color: borderSubtle,
+                                  width: 0.8,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                                 borderSide: BorderSide(
                                   color: isDark
                                       ? AppColors.darkBorderStrong
@@ -1157,8 +1256,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             decoration: BoxDecoration(
                               color: canSend
                                   ? (isDark
-                                      ? AppColors.darkPrimary
-                                      : AppColors.lightPrimary)
+                                        ? AppColors.darkPrimary
+                                        : AppColors.lightPrimary)
                                   : Colors.transparent,
                               shape: BoxShape.circle,
                             ),
@@ -1183,7 +1282,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                       size: 19,
                                     ),
                               onPressed: canSend ? _handleSendComment : null,
-                              tooltip: 'community.send'.tr.isNotEmpty &&
+                              tooltip:
+                                  'community.send'.tr.isNotEmpty &&
                                       'community.send'.tr != 'community.send'
                                   ? 'community.send'.tr
                                   : 'Send',
@@ -1205,21 +1305,23 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showDeleteCommentDialog(CommentModel comment) async {
     final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      title: 'community.deleteComment'.tr.isNotEmpty &&
+      title:
+          'community.deleteComment'.tr.isNotEmpty &&
               'community.deleteComment'.tr != 'community.deleteComment'
           ? '${'community.deleteComment'.tr}?'
           : 'Delete Comment?',
-      message: 'community.deleteCommentConfirm'.tr.isNotEmpty &&
+      message:
+          'community.deleteCommentConfirm'.tr.isNotEmpty &&
               'community.deleteCommentConfirm'.tr !=
                   'community.deleteCommentConfirm'
           ? 'community.deleteCommentConfirm'.tr
           : 'Are you sure you want to delete this comment? This action cannot be undone.',
-      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
-              'common.cancel'.tr != 'common.cancel'
+      cancelLabel:
+          'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
           ? 'common.cancel'.tr
           : 'Cancel',
-      confirmLabel: 'common.delete'.tr.isNotEmpty &&
-              'common.delete'.tr != 'common.delete'
+      confirmLabel:
+          'common.delete'.tr.isNotEmpty && 'common.delete'.tr != 'common.delete'
           ? 'common.delete'.tr
           : 'Delete',
       icon: Icons.delete_outline_rounded,
@@ -1238,9 +1340,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         });
         AppNotificationBanner.showSuccess(
           context: context,
-          title: 'community.commentDeleted'.tr.isNotEmpty &&
-                  'community.commentDeleted'.tr !=
-                      'community.commentDeleted'
+          title:
+              'community.commentDeleted'.tr.isNotEmpty &&
+                  'community.commentDeleted'.tr != 'community.commentDeleted'
               ? 'community.commentDeleted'.tr
               : 'Deleted',
           message: 'Comment deleted successfully.',
@@ -1256,7 +1358,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       if (mounted) {
         String errorMsg = 'Failed to delete comment. Please try again.';
         if (e is AppError && e.isForbidden) {
-          errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
+          errorMsg =
+              'community.commentPermissionError'.tr.isNotEmpty &&
                   'community.commentPermissionError'.tr !=
                       'community.commentPermissionError'
               ? 'community.commentPermissionError'.tr
@@ -1276,18 +1379,20 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showEditCommentDialog(CommentModel comment) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final dialogBg =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final primaryBtnBg =
-        isDark ? Colors.white : AppColors.lightTextPrimary;
-    final primaryBtnFg =
-        isDark ? Colors.black : Colors.white;
+    final dialogBg = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+    final primaryBtnBg = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final primaryBtnFg = isDark ? Colors.black : Colors.white;
 
     final textController = TextEditingController(text: comment.text);
     bool isSaving = false;
@@ -1325,13 +1430,15 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 enabled: !isSaving,
                 style: TextStyle(color: textPrimary, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'community.editCommentHint'.tr.isNotEmpty &&
+                  hintText:
+                      'community.editCommentHint'.tr.isNotEmpty &&
                           'community.editCommentHint'.tr !=
                               'community.editCommentHint'
                       ? 'community.editCommentHint'.tr
                       : 'Write a comment...',
                   hintStyle: TextStyle(
-                      color: textSecondary.withValues(alpha: 0.6)),
+                    color: textSecondary.withValues(alpha: 0.6),
+                  ),
                   filled: true,
                   fillColor: isDark
                       ? AppColors.darkSurfaceSecondary
@@ -1347,7 +1454,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
                     ),
                   ),
                   contentPadding: const EdgeInsets.all(12),
@@ -1399,7 +1508,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       final newText = textController.text.trim();
                       if (newText.isEmpty) {
                         setDialogState(() {
-                          validationError = 'common.required'.tr.isNotEmpty &&
+                          validationError =
+                              'common.required'.tr.isNotEmpty &&
                                   'common.required'.tr != 'common.required'
                               ? 'common.required'.tr
                               : 'This field is required';
@@ -1413,12 +1523,12 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       });
 
                       try {
-                        final updated =
-                            await _controller.updateDiscussionComment(
-                          _discussion.id,
-                          comment.id,
-                          newText,
-                        );
+                        final updated = await _controller
+                            .updateDiscussionComment(
+                              _discussion.id,
+                              comment.id,
+                              newText,
+                            );
 
                         if (ctx.mounted) {
                           Navigator.pop(ctx);
@@ -1428,7 +1538,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           setState(() {});
                           AppNotificationBanner.showSuccess(
                             context: context,
-                            title: 'community.commentEdited'.tr.isNotEmpty &&
+                            title:
+                                'community.commentEdited'.tr.isNotEmpty &&
                                     'community.commentEdited'.tr !=
                                         'community.commentEdited'
                                 ? 'community.commentEdited'.tr
@@ -1444,7 +1555,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           String errorMsg =
                               'Failed to update comment. Please try again.';
                           if (e is AppError && e.isForbidden) {
-                            errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
+                            errorMsg =
+                                'community.commentPermissionError'
+                                        .tr
+                                        .isNotEmpty &&
                                     'community.commentPermissionError'.tr !=
                                         'community.commentPermissionError'
                                 ? 'community.commentPermissionError'.tr
@@ -1486,21 +1600,26 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showCommentOptions(CommentModel comment, bool isCommentOwner) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final surface = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: surface,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
         ),
         child: SafeArea(
           child: Column(
@@ -1511,7 +1630,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(top: 8, bottom: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
+                  color: isDark
+                      ? AppColors.darkBorderSubtle
+                      : AppColors.lightBorderSubtle,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1527,7 +1648,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           ? 'common.edit'.tr
                           : 'Edit',
                       style: TextStyle(
-                          color: textPrimary, fontWeight: FontWeight.w500),
+                        color: textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     onTap: () {
                       Navigator.pop(ctx);
@@ -1539,15 +1662,19 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   color: Colors.transparent,
                   child: ListTile(
                     key: const Key('comment_option_delete'),
-                    leading: const Icon(Icons.delete_outline_rounded,
-                        color: AppColors.danger),
+                    leading: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.danger,
+                    ),
                     title: Text(
                       'common.delete'.tr.isNotEmpty &&
                               'common.delete'.tr != 'common.delete'
                           ? 'common.delete'.tr
                           : 'Delete',
                       style: const TextStyle(
-                          color: AppColors.danger, fontWeight: FontWeight.w500),
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     onTap: () {
                       Navigator.pop(ctx);
@@ -1568,13 +1695,16 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           ? 'community.reportComment'.tr
                           : 'Report',
                       style: TextStyle(
-                          color: textPrimary, fontWeight: FontWeight.w500),
+                        color: textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     onTap: () {
                       Navigator.pop(ctx);
                       AppNotificationBanner.showInfo(
                         context: context,
-                        title: 'community.reportCommentSuccess'.tr.isNotEmpty &&
+                        title:
+                            'community.reportCommentSuccess'.tr.isNotEmpty &&
                                 'community.reportCommentSuccess'.tr !=
                                     'community.reportCommentSuccess'
                             ? 'community.reportCommentSuccess'.tr
@@ -1602,7 +1732,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color textSecondary,
     Color textMuted,
   ) {
-    final currentUserId = _controller.currentUserId ??
+    final currentUserId =
+        _controller.currentUserId ??
         (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     final isCommentOwner = comment.checkIsOwner(currentUserId);
 
@@ -1622,7 +1753,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: surfaceSecondary,
                     borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1652,7 +1786,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             children: [
                               Text(
                                 formatCommunityTimestamp(
-                                    comment.createdAt ?? comment.timeAgo),
+                                  comment.createdAt ?? comment.timeAgo,
+                                ),
                                 style: TextStyle(
                                   color: textMuted,
                                   fontSize: 11,
@@ -1672,8 +1807,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               GestureDetector(
                                 key: Key('comment_more_${comment.id}'),
                                 behavior: HitTestBehavior.opaque,
-                                onTap: () =>
-                                    _showCommentOptions(comment, isCommentOwner),
+                                onTap: () => _showCommentOptions(
+                                  comment,
+                                  isCommentOwner,
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(2),
                                   child: Icon(
@@ -1701,10 +1838,11 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         children: [
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
-                            onTap: () => _controller.toggleDiscussionCommentLike(
-                              _discussion.id,
-                              comment.id,
-                            ),
+                            onTap: () =>
+                                _controller.toggleDiscussionCommentLike(
+                                  _discussion.id,
+                                  comment.id,
+                                ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1754,7 +1892,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                 const SizedBox(width: 4),
                                 Text(
                                   'community.reply'.tr.isNotEmpty &&
-                                          'community.reply'.tr != 'community.reply'
+                                          'community.reply'.tr !=
+                                              'community.reply'
                                       ? 'community.reply'.tr
                                       : 'Reply',
                                   style: TextStyle(
@@ -1779,16 +1918,18 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
               padding: const EdgeInsets.only(left: 36, top: 6),
               child: Column(
                 children: comment.replies
-                    .map((reply) => _buildReplyItem(
-                          context,
-                          reply,
-                          comment,
-                          surfaceSecondary,
-                          borderSubtle,
-                          textPrimary,
-                          textSecondary,
-                          textMuted,
-                        ))
+                    .map(
+                      (reply) => _buildReplyItem(
+                        context,
+                        reply,
+                        comment,
+                        surfaceSecondary,
+                        borderSubtle,
+                        textPrimary,
+                        textSecondary,
+                        textMuted,
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -1808,7 +1949,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color textSecondary,
     Color textMuted,
   ) {
-    final currentUserId = _controller.currentUserId ??
+    final currentUserId =
+        _controller.currentUserId ??
         (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
     final isReplyOwner = reply.checkIsOwner(currentUserId);
 
@@ -1817,11 +1959,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppAvatar(
-            imageUrl: reply.userAvatar,
-            name: reply.userName,
-            size: 24,
-          ),
+          AppAvatar(imageUrl: reply.userAvatar, name: reply.userName, size: 24),
           const SizedBox(width: AppSpacing.sm - 2),
           Expanded(
             child: Container(
@@ -1855,11 +1993,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         children: [
                           Text(
                             formatCommunityTimestamp(
-                                reply.createdAt ?? reply.timeAgo),
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 10.5,
+                              reply.createdAt ?? reply.timeAgo,
                             ),
+                            style: TextStyle(color: textMuted, fontSize: 10.5),
                           ),
                           if (reply.isEdited) ...[
                             Text(

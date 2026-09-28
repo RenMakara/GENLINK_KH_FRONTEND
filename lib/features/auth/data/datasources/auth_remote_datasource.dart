@@ -222,6 +222,15 @@ class AuthRemoteDatasource {
     }
 
     final data = api.data;
-    return data is Map && data['hasPassword'] == true;
+    if (data is Map) {
+      final val = data['hasPassword'] ?? data['has_password'] ?? data['isHasPassword'];
+      if (val is bool) return val;
+      if (val is num) return val != 0;
+      if (val is String) {
+        final lower = val.trim().toLowerCase();
+        return lower == 'true' || lower == '1';
+      }
+    }
+    return false;
   }
 }

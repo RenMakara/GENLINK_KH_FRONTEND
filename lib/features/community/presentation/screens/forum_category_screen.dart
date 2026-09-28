@@ -24,6 +24,12 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
   late final CommunityController _controller;
   List<ForumTopicModel> _discussions = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  bool _hasMoreError = false;
+  int _page = 1;
+  int _requestGeneration = 0;
+  final ScrollController _scrollController = ScrollController();
   String _errorMessage = '';
 
   @override
@@ -34,32 +40,50 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
     } else {
       _controller = Get.put(CommunityController());
     }
+    _scrollController.addListener(_onScroll);
     _loadDiscussions();
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients ||
+        _scrollController.position.extentAfter > 300) {
+      return;
+    }
+    _loadMoreDiscussions();
+  }
+
   Future<void> _loadDiscussions() async {
+    final generation = ++_requestGeneration;
     setState(() {
       _isLoading = true;
       _errorMessage = '';
+      _isLoadingMore = false;
     });
 
     try {
-      final fetched = await _controller.repository.getDiscussions(
+      final page = await _controller.repository.getDiscussionsPage(
         category: widget.categoryTitle,
         page: 1,
         limit: 20,
       );
+      if (generation != _requestGeneration) return;
       if (mounted) {
         setState(() {
-          _discussions = fetched;
+          _discussions = page.content;
+          _page = 1;
+          _hasMore = page.hasNext;
+          _hasMoreError = false;
           _isLoading = false;
         });
       }
     } catch (e) {
+      if (generation != _requestGeneration) return;
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e is AppError
+          _errorMessage = _discussions.isNotEmpty
+              ? ''
+              : e is AppError
               ? e.message
               : 'community.couldNotLoadDiscussions'.tr.isNotEmpty &&
                       'community.couldNotLoadDiscussions'.tr !=
@@ -69,6 +93,49 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loadMoreDiscussions() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    final generation = _requestGeneration;
+    final nextPage = _page + 1;
+    setState(() {
+      _isLoadingMore = true;
+      _hasMoreError = false;
+    });
+    try {
+      final page = await _controller.repository.getDiscussionsPage(
+        category: widget.categoryTitle,
+        page: nextPage,
+        limit: 20,
+      );
+      if (generation != _requestGeneration) return;
+      if (mounted) {
+        setState(() {
+          final knownIds = _discussions.map((item) => item.id).toSet();
+          _discussions.addAll(
+            page.content.where((item) => knownIds.add(item.id)),
+          );
+          _page = nextPage;
+          _hasMore = page.hasNext;
+        });
+      }
+    } catch (_) {
+      if (generation == _requestGeneration && mounted) {
+        setState(() => _hasMoreError = true);
+      }
+    } finally {
+      if (generation == _requestGeneration && mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _handleLikeTap(ForumTopicModel topic, int index) async {
@@ -258,6 +325,7 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
     final bottomPadding = AppSpacing.md + safeBottom;
 
     return ListView.builder(
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
@@ -267,8 +335,22 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
         AppSpacing.md,
         bottomPadding,
       ),
-      itemCount: _discussions.length,
+      itemCount: _discussions.length + (_hasMore || _isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index == _discussions.length) {
+          if (_isLoadingMore) {
+            return const Padding(
+              padding: EdgeInsets.all(18),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return Center(
+            child: TextButton(
+              onPressed: _loadMoreDiscussions,
+              child: Text(_hasMoreError ? 'Retry loading discussions' : 'Load more'),
+            ),
+          );
+        }
         final topic = _discussions[index];
         return ForumThreadCard(
           title: topic.title,

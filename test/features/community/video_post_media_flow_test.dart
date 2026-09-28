@@ -37,7 +37,10 @@ class TestMediaRepository implements MediaRepository {
   }) async {
     lastPurpose = purpose;
     if (shouldFail) {
-      throw const AppError(message: 'Storage connection timeout', errorCode: 'STORAGE_ERROR');
+      throw const AppError(
+        message: 'Storage connection timeout',
+        errorCode: 'STORAGE_ERROR',
+      );
     }
     return const PresignedUpload(
       mediaId: 'mock_vid_123',
@@ -56,7 +59,10 @@ class TestMediaRepository implements MediaRepository {
   }) async {
     uploadCallCount++;
     if (shouldFail) {
-      throw const AppError(message: 'Upload stream failed', errorCode: 'UPLOAD_FAILED');
+      throw const AppError(
+        message: 'Upload stream failed',
+        errorCode: 'UPLOAD_FAILED',
+      );
     }
     onProgress?.call(bytes.length, bytes.length);
   }
@@ -69,7 +75,10 @@ class TestMediaRepository implements MediaRepository {
     int? durationMs,
   }) async {
     if (shouldFail) {
-      throw const AppError(message: 'Confirmation failed', errorCode: 'CONFIRM_FAILED');
+      throw const AppError(
+        message: 'Confirmation failed',
+        errorCode: 'CONFIRM_FAILED',
+      );
     }
     return MediaEntity(
       mediaId: mediaId,
@@ -89,7 +98,10 @@ class TestCommunityRepository implements CommunityRepository {
   List<String> lastCreatedImageUrls = [];
 
   @override
-  Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) async => [];
+  Future<List<CommunityPostModel>> getPosts({
+    int page = 1,
+    int limit = 10,
+  }) async => [];
 
   @override
   Future<CommunityPostModel> createPost({
@@ -162,7 +174,9 @@ class TestCommunityRepository implements CommunityRepository {
       visibility: visibility,
       postType: 'POLL',
       pollQuestion: question,
-      pollOptions: options.map((opt) => PollOptionModel(id: opt, text: opt, votes: 0)).toList(),
+      pollOptions: options
+          .map((opt) => PollOptionModel(id: opt, text: opt, votes: 0))
+          .toList(),
       isOwner: true,
     );
     return lastCreatedPost!;
@@ -213,7 +227,16 @@ void main() {
 
     tempDir = Directory.systemTemp.createTempSync('video_flow_test_');
     tempVideoFile = File('${tempDir.path}/1000005369.mp4');
-    tempVideoFile.writeAsBytesSync([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70]);
+    tempVideoFile.writeAsBytesSync([
+      0x00,
+      0x00,
+      0x00,
+      0x20,
+      0x66,
+      0x74,
+      0x79,
+      0x70,
+    ]);
   });
 
   tearDown(() {
@@ -235,45 +258,59 @@ void main() {
   });
 
   group('Video Upload & URL Resolution in CommunityController', () {
-    test('addNewPost uploads local video file via MediaUploadService using MediaPurpose.post and sends remote URL', () async {
-      final success = await communityController.addNewPost(
-        content: 'Check out this video post',
-        videoUrl: tempVideoFile.path,
-      );
+    test(
+      'addNewPost uploads local video and sends its opaque media reference',
+      () async {
+        final success = await communityController.addNewPost(
+          content: 'Check out this video post',
+          videoUrl: tempVideoFile.path,
+        );
 
-      expect(success, isTrue);
-      expect(mockMediaRepo.uploadCallCount, 1);
-      expect(mockMediaRepo.lastPurpose, MediaPurpose.post);
-      expect(mockCommunityRepo.lastCreatedVideoUrl, mockMediaRepo.returnedUrl);
-      expect(mockCommunityRepo.lastCreatedVideoUrl, startsWith('https://'));
-      expect(mockCommunityRepo.lastCreatedVideoUrl, isNot(contains('/cache/')));
-      expect(mockCommunityRepo.lastCreatedVideoUrl, isNot(contains(tempDir.path)));
-    });
+        expect(success, isTrue);
+        expect(mockMediaRepo.uploadCallCount, 1);
+        expect(mockMediaRepo.lastPurpose, MediaPurpose.post);
+        expect(
+          mockCommunityRepo.lastCreatedVideoUrl,
+          'genlink-media://mock_vid_123',
+        );
+        expect(
+          mockCommunityRepo.lastCreatedVideoUrl,
+          isNot(contains(tempDir.path)),
+        );
+      },
+    );
 
-    test('addNewPost does not re-upload existing remote HTTPS video URLs', () async {
-      const remoteUrl = 'https://genlink-media.cdn.digitaloceanspaces.com/posts/2026/video.mp4';
-      final success = await communityController.addNewPost(
-        content: 'Video with remote link',
-        videoUrl: remoteUrl,
-      );
+    test(
+      'addNewPost does not re-upload existing remote HTTPS video URLs',
+      () async {
+        const remoteUrl =
+            'https://genlink-media.cdn.digitaloceanspaces.com/posts/2026/video.mp4';
+        final success = await communityController.addNewPost(
+          content: 'Video with remote link',
+          videoUrl: remoteUrl,
+        );
 
-      expect(success, isTrue);
-      expect(mockMediaRepo.uploadCallCount, 0);
-      expect(mockCommunityRepo.lastCreatedVideoUrl, remoteUrl);
-    });
+        expect(success, isTrue);
+        expect(mockMediaRepo.uploadCallCount, 0);
+        expect(mockCommunityRepo.lastCreatedVideoUrl, remoteUrl);
+      },
+    );
 
-    test('addNewPost fails cleanly and NEVER sends temporary local path if video upload fails', () async {
-      mockMediaRepo.shouldFail = true;
+    test(
+      'addNewPost fails cleanly and NEVER sends temporary local path if video upload fails',
+      () async {
+        mockMediaRepo.shouldFail = true;
 
-      final success = await communityController.addNewPost(
-        content: 'Post with failing video',
-        videoUrl: tempVideoFile.path,
-      );
+        final success = await communityController.addNewPost(
+          content: 'Post with failing video',
+          videoUrl: tempVideoFile.path,
+        );
 
-      expect(success, isFalse);
-      expect(mockCommunityRepo.lastCreatedVideoUrl, isNull);
-      expect(mockCommunityRepo.lastCreatedPost, isNull);
-    });
+        expect(success, isFalse);
+        expect(mockCommunityRepo.lastCreatedVideoUrl, isNull);
+        expect(mockCommunityRepo.lastCreatedPost, isNull);
+      },
+    );
   });
 
   group('Backward Compatibility for Non-Video Post Types', () {
@@ -295,7 +332,9 @@ void main() {
 
       expect(success, isTrue);
       expect(mockCommunityRepo.lastCreatedVideoUrl, isNull);
-      expect(mockCommunityRepo.lastCreatedImageUrls, ['https://example.com/photo.jpg']);
+      expect(mockCommunityRepo.lastCreatedImageUrls, [
+        'https://example.com/photo.jpg',
+      ]);
     });
 
     test('creates POLL post without affecting video flow', () async {
@@ -311,17 +350,16 @@ void main() {
   });
 
   group('VideoPostMedia Widget Architecture', () {
-    testWidgets('VideoPostMedia builds and exposes stable identity key', (tester) async {
+    testWidgets('VideoPostMedia builds and exposes stable identity key', (
+      tester,
+    ) async {
       const testUrl = 'https://example.com/sample.mp4';
       const key = ValueKey('video_test_123_$testUrl');
 
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: VideoPostMedia(
-              key: key,
-              videoUrl: testUrl,
-            ),
+            body: VideoPostMedia(key: key, videoUrl: testUrl),
           ),
         ),
       );
@@ -330,17 +368,16 @@ void main() {
       expect(find.byType(VideoPostMedia), findsOneWidget);
     });
 
-    testWidgets('VideoPostMedia handles local filesystem path safely', (tester) async {
+    testWidgets('VideoPostMedia handles local filesystem path safely', (
+      tester,
+    ) async {
       final localPath = tempVideoFile.path;
       final key = ValueKey('video_local_$localPath');
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: VideoPostMedia(
-              key: key,
-              videoUrl: localPath,
-            ),
+            body: VideoPostMedia(key: key, videoUrl: localPath),
           ),
         ),
       );
@@ -349,33 +386,28 @@ void main() {
       expect(find.byType(VideoPostMedia), findsOneWidget);
     });
 
-    testWidgets('VideoPostMedia handles URL update via didUpdateWidget safely', (tester) async {
-      const initialUrl = 'https://example.com/initial.mp4';
-      const updatedUrl = 'https://example.com/updated.mp4';
+    testWidgets(
+      'VideoPostMedia handles URL update via didUpdateWidget safely',
+      (tester) async {
+        const initialUrl = 'https://example.com/initial.mp4';
+        const updatedUrl = 'https://example.com/updated.mp4';
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: VideoPostMedia(
-              videoUrl: initialUrl,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: VideoPostMedia(videoUrl: initialUrl)),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(VideoPostMedia), findsOneWidget);
+        expect(find.byType(VideoPostMedia), findsOneWidget);
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: VideoPostMedia(
-              videoUrl: updatedUrl,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: VideoPostMedia(videoUrl: updatedUrl)),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(VideoPostMedia), findsOneWidget);
-    });
+        expect(find.byType(VideoPostMedia), findsOneWidget);
+      },
+    );
   });
 }

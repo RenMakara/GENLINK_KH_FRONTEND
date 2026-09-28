@@ -64,26 +64,46 @@ class UserResponseModel {
     );
   }
 
+  static bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final lower = value.trim().toLowerCase();
+      if (lower == 'true' || lower == '1') return true;
+      if (lower == 'false' || lower == '0') return false;
+    }
+    return defaultValue;
+  }
+
   factory UserResponseModel.fromJson(Map<String, dynamic> json) {
     return UserResponseModel(
-      userId: json['userId'] as String? ?? '',
-      fullName: json['fullName'] as String? ?? '',
+      userId: json['userId'] as String? ?? json['id'] as String? ?? '',
+      fullName: json['fullName'] as String? ?? json['full_name'] as String? ?? '',
       username: json['username'] as String? ?? '',
       email: json['email'] as String? ?? '',
-      phoneNumber: json['phoneNumber'] as String?,
-      avatarUrl: json['avatarUrl'] as String?,
+      phoneNumber: json['phoneNumber'] as String? ?? json['phone_number'] as String?,
+      avatarUrl: json['avatarUrl'] as String? ?? json['avatar_url'] as String?,
       bio: json['bio'] as String?,
-      universityName: json['universityName'] as String?,
-      workStatus: json['workStatus'] as String?,
+      universityName: json['universityName'] as String? ?? json['university_name'] as String?,
+      workStatus: json['workStatus'] as String? ?? json['work_status'] as String?,
       location: json['location'] as String?,
-      emailVerified: json['emailVerified'] as bool? ?? false,
-      accountStatus: json['accountStatus'] as String? ?? 'PENDING',
-      totalXp: json['totalXp'] as int? ?? 0,
+      emailVerified: _parseBool(
+        json['emailVerified'] ?? json['email_verified'],
+        defaultValue: false,
+      ),
+      accountStatus: json['accountStatus'] as String? ?? json['account_status'] as String? ?? 'PENDING',
+      totalXp: (json['totalXp'] ?? json['total_xp']) as int? ?? 0,
       level: json['level'] as int? ?? 1,
-      preferredLanguage: json['preferredLanguage'] as String? ?? 'ENGLISH',
+      preferredLanguage: json['preferredLanguage'] as String? ?? json['preferred_language'] as String? ?? 'ENGLISH',
       role: json['role'] as String? ?? 'USER',
-      active: json['active'] as bool? ?? false,
-      hasPassword: json['hasPassword'] as bool? ?? false,
+      active: _parseBool(
+        json['active'] ?? json['is_active'],
+        defaultValue: false,
+      ),
+      hasPassword: _parseBool(
+        json['hasPassword'] ?? json['has_password'] ?? json['isHasPassword'],
+        defaultValue: false,
+      ),
     );
   }
 }

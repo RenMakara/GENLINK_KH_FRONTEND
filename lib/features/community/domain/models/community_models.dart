@@ -406,24 +406,25 @@ class EventModel {
     final organizerObj = json['organizer'] is Map<String, dynamic>
         ? json['organizer'] as Map<String, dynamic>
         : (json['creator'] is Map<String, dynamic>
-            ? json['creator'] as Map<String, dynamic>
-            : (json['user'] is Map<String, dynamic>
-                ? json['user'] as Map<String, dynamic>
-                : (json['author'] is Map<String, dynamic>
-                    ? json['author'] as Map<String, dynamic>
-                    : (json['owner'] is Map<String, dynamic>
-                        ? json['owner'] as Map<String, dynamic>
-                        : (json['host'] is Map<String, dynamic>
-                            ? json['host'] as Map<String, dynamic>
-                            : null)))));
+              ? json['creator'] as Map<String, dynamic>
+              : (json['user'] is Map<String, dynamic>
+                    ? json['user'] as Map<String, dynamic>
+                    : (json['author'] is Map<String, dynamic>
+                          ? json['author'] as Map<String, dynamic>
+                          : (json['owner'] is Map<String, dynamic>
+                                ? json['owner'] as Map<String, dynamic>
+                                : (json['host'] is Map<String, dynamic>
+                                      ? json['host'] as Map<String, dynamic>
+                                      : null)))));
 
     final createdByObj = json['createdBy'] is Map<String, dynamic>
         ? json['createdBy'] as Map<String, dynamic>
         : (json['created_by'] is Map<String, dynamic>
-            ? json['created_by'] as Map<String, dynamic>
-            : null);
+              ? json['created_by'] as Map<String, dynamic>
+              : null);
 
-    final isBackendOwner = json['isOwner'] == true ||
+    final isBackendOwner =
+        json['isOwner'] == true ||
         json['is_owner'] == true ||
         json['isOrganizer'] == true ||
         json['is_organizer'] == true ||
@@ -467,7 +468,9 @@ class EventModel {
         createdByObj?['sub']?.toString();
 
     final currentUserId = CurrentUser.id.trim();
-    String? orgId = (rawOrgId != null && rawOrgId.trim().isNotEmpty) ? rawOrgId.trim() : null;
+    String? orgId = (rawOrgId != null && rawOrgId.trim().isNotEmpty)
+        ? rawOrgId.trim()
+        : null;
 
     if (orgId == null || orgId.isEmpty) {
       if (isBackendOwner && currentUserId.isNotEmpty) {
@@ -475,26 +478,35 @@ class EventModel {
       } else if (currentUserId.isNotEmpty) {
         final currentUsername = CurrentUser.username.trim();
         final currentEmail = CurrentUser.get()?.email.trim() ?? '';
-        final orgUsername = (organizerObj?['username'] ?? organizerObj?['userName'])?.toString().trim();
+        final orgUsername =
+            (organizerObj?['username'] ?? organizerObj?['userName'])
+                ?.toString()
+                .trim();
         final orgEmail = (organizerObj?['email'])?.toString().trim();
-        if ((orgUsername != null && orgUsername.isNotEmpty && orgUsername.toLowerCase() == currentUsername.toLowerCase()) ||
-            (orgEmail != null && orgEmail.isNotEmpty && orgEmail.toLowerCase() == currentEmail.toLowerCase())) {
+        if ((orgUsername != null &&
+                orgUsername.isNotEmpty &&
+                orgUsername.toLowerCase() == currentUsername.toLowerCase()) ||
+            (orgEmail != null &&
+                orgEmail.isNotEmpty &&
+                orgEmail.toLowerCase() == currentEmail.toLowerCase())) {
           orgId = currentUserId;
         }
       }
     }
 
-    final rawOrgUsername = (organizerObj?['username'] ??
-            organizerObj?['userName'] ??
-            createdByObj?['username'] ??
-            createdByObj?['userName'] ??
-            json['organizerUsername'] ??
-            json['organizer_username'] ??
-            json['creatorUsername'] ??
-            json['authorUsername'])
-        ?.toString()
-        .trim();
-    final cleanOrgUsername = (rawOrgUsername != null && rawOrgUsername.isNotEmpty)
+    final rawOrgUsername =
+        (organizerObj?['username'] ??
+                organizerObj?['userName'] ??
+                createdByObj?['username'] ??
+                createdByObj?['userName'] ??
+                json['organizerUsername'] ??
+                json['organizer_username'] ??
+                json['creatorUsername'] ??
+                json['authorUsername'])
+            ?.toString()
+            .trim();
+    final cleanOrgUsername =
+        (rawOrgUsername != null && rawOrgUsername.isNotEmpty)
         ? rawOrgUsername
         : null;
 
@@ -888,6 +900,10 @@ class ForumTopicModel {
   final bool isOwner;
   final bool isAnonymous;
   final List<ForumLikerModel> likers;
+  final bool isRepostedByMe;
+  final String? repostedBy;
+  final String? repostCaption;
+  final String? reposterId;
 
   ForumTopicModel({
     required this.id,
@@ -907,6 +923,10 @@ class ForumTopicModel {
     this.isAnonymous = false,
     this.isBookmarked = false,
     this.likers = const [],
+    this.isRepostedByMe = false,
+    this.repostedBy,
+    this.repostCaption,
+    this.reposterId,
   }) : authorId = isAnonymous ? null : authorId,
        authorName = isAnonymous ? 'Anonymous' : authorName,
        authorAvatar = isAnonymous ? '' : authorAvatar;
@@ -944,6 +964,10 @@ class ForumTopicModel {
     bool? isAnonymous,
     bool? isBookmarked,
     List<ForumLikerModel>? likers,
+    bool? isRepostedByMe,
+    String? repostedBy,
+    String? repostCaption,
+    String? reposterId,
   }) {
     final effectiveAnonymous = isAnonymous ?? this.isAnonymous;
     return ForumTopicModel(
@@ -968,6 +992,10 @@ class ForumTopicModel {
       isAnonymous: effectiveAnonymous,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       likers: likers ?? this.likers,
+      isRepostedByMe: isRepostedByMe ?? this.isRepostedByMe,
+      repostedBy: repostedBy ?? this.repostedBy,
+      repostCaption: repostCaption ?? this.repostCaption,
+      reposterId: reposterId ?? this.reposterId,
     );
   }
 
@@ -1044,6 +1072,13 @@ class ForumTopicModel {
       isBookmarked:
           json['isBookmarked'] as bool? ?? json['savedByMe'] as bool? ?? false,
       likers: parsedLikers,
+      isRepostedByMe:
+          json['repostedByMe'] as bool? ??
+          json['isRepostedByMe'] as bool? ??
+          false,
+      repostedBy: json['repostedBy'] as String?,
+      repostCaption: json['repostCaption'] as String?,
+      reposterId: json['reposterId'] as String?,
     );
   }
 
@@ -1068,6 +1103,10 @@ class ForumTopicModel {
       'anonymous': isAnonymous,
       'isBookmarked': isBookmarked,
       'likers': likers.map((l) => l.toJson()).toList(),
+      'repostedByMe': isRepostedByMe,
+      'repostedBy': repostedBy,
+      'repostCaption': repostCaption,
+      'reposterId': reposterId,
     };
   }
 }
@@ -1138,10 +1177,11 @@ class FollowUserModel {
     final userMap = json['user'] is Map<String, dynamic>
         ? json['user'] as Map<String, dynamic>
         : (json['author'] is Map<String, dynamic>
-            ? json['author'] as Map<String, dynamic>
-            : json);
+              ? json['author'] as Map<String, dynamic>
+              : json);
 
-    final uid = userMap['userId']?.toString() ??
+    final uid =
+        userMap['userId']?.toString() ??
         userMap['id']?.toString() ??
         userMap['followerId']?.toString() ??
         '';
@@ -1149,10 +1189,10 @@ class FollowUserModel {
     final name = (userMap['fullName'] as String?)?.isNotEmpty == true
         ? userMap['fullName'] as String
         : (userMap['name'] as String?)?.isNotEmpty == true
-            ? userMap['name'] as String
-            : (userMap['username'] as String?)?.isNotEmpty == true
-                ? userMap['username'] as String
-                : 'User';
+        ? userMap['name'] as String
+        : (userMap['username'] as String?)?.isNotEmpty == true
+        ? userMap['username'] as String
+        : 'User';
 
     final username = (userMap['username'] as String?)?.isNotEmpty == true
         ? userMap['username'] as String

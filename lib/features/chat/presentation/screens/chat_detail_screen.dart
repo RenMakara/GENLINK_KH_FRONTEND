@@ -641,9 +641,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     return ListView.builder(
                       controller: chatController.scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      itemCount: displayMsgs.length,
+                      itemCount: displayMsgs.length +
+                          (chatController.isLoadingOlderMessages.value ? 1 : 0),
                       itemBuilder: (context, index) {
-                        final msg = displayMsgs[index];
+                        if (chatController.isLoadingOlderMessages.value &&
+                            index == 0) {
+                          return const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        final messageIndex = index -
+                            (chatController.isLoadingOlderMessages.value ? 1 : 0);
+                        final msg = displayMsgs[messageIndex];
 
                         if (msg.isSystemMessage) {
                           return ChatSystemMessage(text: msg.content);
@@ -652,8 +662,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         bool showAvatar = true;
                         bool showSenderName = conv.isGroup;
 
-                        if (index > 0) {
-                          final prevMsg = displayMsgs[index - 1];
+                        if (messageIndex > 0) {
+                          final prevMsg = displayMsgs[messageIndex - 1];
                           if (!prevMsg.isSystemMessage &&
                               prevMsg.senderId == msg.senderId &&
                               msg.timestamp.difference(prevMsg.timestamp).inMinutes < 4) {
@@ -662,7 +672,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           }
                         }
 
-                        final showDateSeparator = index == 0 || !_isSameDay(displayMsgs[index - 1].timestamp, msg.timestamp);
+                        final showDateSeparator = messageIndex == 0 || !_isSameDay(displayMsgs[messageIndex - 1].timestamp, msg.timestamp);
 
                         final bubble = MessageBubble(
                           message: msg,

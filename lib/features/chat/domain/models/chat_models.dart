@@ -221,6 +221,18 @@ class SharedContentModel {
       };
 }
 
+class ChatMessagePageModel {
+  final List<ChatMessageModel> content;
+  final int page;
+  final bool hasNext;
+
+  const ChatMessagePageModel({
+    this.content = const <ChatMessageModel>[],
+    this.page = 0,
+    this.hasNext = false,
+  });
+}
+
 class ChatMessageModel {
   final String id;
   final String conversationId;

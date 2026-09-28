@@ -68,5 +68,9 @@ class MediaEntity {
   final int? durationMs;
   final DateTime? uploadedAt;
 
+  /// Opaque upload reference. Community post/story endpoints resolve it after
+  /// applying the owning content's audience policy.
+  String get reference => 'genlink-media://$mediaId';
+
   bool get isVideo => contentType.startsWith('video/');
 }

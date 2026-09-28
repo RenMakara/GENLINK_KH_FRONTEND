@@ -220,71 +220,45 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
 
     final isAnimating = _controller.isAnimating;
     final hasPreviousLayer = isAnimating && _previousIndex != _currentIndex;
-    final activeIndices = <int>{_currentIndex};
-    if (hasPreviousLayer) activeIndices.add(_previousIndex);
+    final visibleIndices = <int>{_currentIndex};
+    if (hasPreviousLayer) visibleIndices.add(_previousIndex);
 
-    final layers = <Widget>[];
-
-    // Inactive children stay mounted for state preservation, but do not tick
-    // animations or participate in hit testing.
-    for (var i = 0; i < widget.children.length; i++) {
-      if (activeIndices.contains(i)) continue;
-      layers.add(
-        KeyedSubtree(
-          key: ValueKey<String>('fade-indexed-stack-child-$i'),
-          child: Offstage(
-            offstage: true,
-            child: HeroMode(
-              enabled: false,
-              child: TickerMode(enabled: false, child: widget.children[i]),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Always paint the previous page first and the current page last. This is
-    // important when navigating to a lower tab index (LevelUp -> Home): the
-    // selected tab and visible page must not disagree during the fade.
-    if (hasPreviousLayer) {
-      layers.add(
-        KeyedSubtree(
-          key: ValueKey<String>('fade-indexed-stack-child-$_previousIndex'),
-          child: IgnorePointer(
-            ignoring: true,
-            child: FadeTransition(
-              opacity: _reverseFadeAnimation,
-              child: HeroMode(
-                enabled: false,
-                child: TickerMode(
-                  enabled: false,
-                  child: widget.children[_previousIndex],
+    // Keep the same wrapper types around each page for its entire lifetime.
+    // Previously the active/previous pages used IgnorePointer/FadeTransition
+    // while animating and Offstage after the fade; that changed the element
+    // tree and disposed stateful pages (including the Home feed scrollable).
+    // Keys preserve each page when its Stack position changes during a fade.
+    final displayOrder = <int>[
+      for (var i = 0; i < widget.children.length; i++)
+        if (!visibleIndices.contains(i)) i,
+      if (hasPreviousLayer) _previousIndex,
+      _currentIndex,
+    ];
+    final layers = displayOrder
+        .map((index) {
+          final isCurrent = index == _currentIndex;
+          final isPrevious = hasPreviousLayer && index == _previousIndex;
+          return KeyedSubtree(
+            key: ValueKey<String>('fade-indexed-stack-child-$index'),
+            child: Offstage(
+              offstage: !visibleIndices.contains(index),
+              child: IgnorePointer(
+                ignoring: !isCurrent || isAnimating,
+                child: FadeTransition(
+                  opacity: isPrevious ? _reverseFadeAnimation : _fadeAnimation,
+                  child: HeroMode(
+                    enabled: isCurrent,
+                    child: TickerMode(
+                      enabled: isCurrent,
+                      child: widget.children[index],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      );
-    }
-
-    layers.add(
-      KeyedSubtree(
-        key: ValueKey<String>('fade-indexed-stack-child-$_currentIndex'),
-        child: IgnorePointer(
-          ignoring: isAnimating,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: HeroMode(
-              enabled: true,
-              child: TickerMode(
-                enabled: true,
-                child: widget.children[_currentIndex],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+          );
+        })
+        .toList(growable: false);
 
     return Stack(fit: StackFit.expand, children: layers);
   }

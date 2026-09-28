@@ -66,10 +66,7 @@ class PostMediaItem {
   final String url;
   final PostMediaType type;
 
-  const PostMediaItem({
-    required this.url,
-    required this.type,
-  });
+  const PostMediaItem({required this.url, required this.type});
 
   bool get isVideo => type == PostMediaType.video;
   bool get isImage => type == PostMediaType.image;
@@ -135,6 +132,8 @@ class CommunityPostModel {
   final String? discussionTitle;
   final String? category;
   final String? videoUrl;
+  final String? videoMediaId;
+  final List<String> imageMediaIds;
   final List<String>? mediaUrls;
 
   static bool isVideoUrl(String url) {
@@ -150,7 +149,9 @@ class CommunityPostModel {
 
   bool isVideoItem(String url) {
     final trimmed = url.trim();
-    if (videoUrl != null && videoUrl!.trim().isNotEmpty && trimmed == videoUrl!.trim()) {
+    if (videoUrl != null &&
+        videoUrl!.trim().isNotEmpty &&
+        trimmed == videoUrl!.trim()) {
       return true;
     }
     return isVideoUrl(trimmed);
@@ -255,6 +256,8 @@ class CommunityPostModel {
     this.discussionTitle,
     this.category,
     this.videoUrl,
+    this.videoMediaId,
+    this.imageMediaIds = const [],
     this.mediaUrls,
   });
 
@@ -311,6 +314,8 @@ class CommunityPostModel {
     String? category,
     String? videoUrl,
     List<String>? mediaUrls,
+    String? videoMediaId,
+    List<String>? imageMediaIds,
   }) {
     return CommunityPostModel(
       id: id ?? this.id,
@@ -360,6 +365,8 @@ class CommunityPostModel {
       discussionTitle: discussionTitle ?? this.discussionTitle,
       category: category ?? this.category,
       videoUrl: videoUrl ?? this.videoUrl,
+      videoMediaId: videoMediaId ?? this.videoMediaId,
+      imageMediaIds: imageMediaIds ?? this.imageMediaIds,
       mediaUrls: mediaUrls ?? this.mediaUrls,
     );
   }
@@ -544,6 +551,7 @@ class CommunityPostModel {
     String? parsedPollQuestion;
     List<PollOptionModel>? parsedPollOptions;
     String? parsedPollId;
+    String? parsedPollDuration;
     int parsedTotalVotes = 0;
     bool parsedHasVoted = false;
     String? parsedMyOptionId;
@@ -552,6 +560,10 @@ class CommunityPostModel {
       final pollJson = json['poll'] as Map<String, dynamic>;
       parsedPollId =
           pollJson['pollId']?.toString() ?? pollJson['id']?.toString();
+      final durationDays = (pollJson['durationDays'] as num?)?.toInt();
+      parsedPollDuration = pollJson['durationDays'] == null
+          ? null
+          : '$durationDays ${durationDays == 1 ? 'Day' : 'Days'}';
       parsedPollQuestion = pollJson['question'] as String?;
       final rawTotalVotes = pollJson['totalVotes'];
       parsedTotalVotes = rawTotalVotes is num ? rawTotalVotes.toInt() : 0;
@@ -641,7 +653,9 @@ class CommunityPostModel {
           (json['shareCount'] as num?)?.toInt() ??
           (json['sharesCount'] as num?)?.toInt() ??
           (json['shares'] as num?)?.toInt() ??
-          ((json['repostedByMe'] == true || json['isRepostedByMe'] == true) ? 1 : 0),
+          ((json['repostedByMe'] == true || json['isRepostedByMe'] == true)
+              ? 1
+              : 0),
       isLiked:
           json['likedByMe'] as bool? ??
           json['isLiked'] as bool? ??
@@ -685,11 +699,20 @@ class CommunityPostModel {
       pollId: parsedPollId,
       pollQuestion: parsedPollQuestion,
       pollOptions: parsedPollOptions,
-      pollDuration: json['pollDuration'] as String?,
+      pollDuration: parsedPollDuration ?? json['pollDuration'] as String?,
       pollTotalVotes: parsedTotalVotes,
       hasVoted: parsedHasVoted,
       myOptionId: parsedMyOptionId,
       location: json['location'] as String? ?? json['locationName'] as String?,
+      linkUrl: json['linkUrl'] as String?,
+      linkPreviewTitle: json['linkPreviewTitle'] as String?,
+      linkPreviewDomain: json['linkPreviewDomain'] as String?,
+      videoMediaId: json['videoMediaId']?.toString(),
+      imageMediaIds:
+          (json['imageMediaIds'] as List<dynamic>?)
+              ?.map((id) => id.toString())
+              .toList() ??
+          const [],
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -740,6 +763,11 @@ class CommunityPostModel {
       'videoUrl': videoUrl,
       if (mediaUrls != null) 'mediaUrls': mediaUrls,
       'eventId': eventId,
+      if (linkUrl != null) 'linkUrl': linkUrl,
+      if (linkPreviewTitle != null) 'linkPreviewTitle': linkPreviewTitle,
+      if (linkPreviewDomain != null) 'linkPreviewDomain': linkPreviewDomain,
+      'imageMediaIds': imageMediaIds,
+      if (videoMediaId != null) 'videoMediaId': videoMediaId,
       if (location != null) 'location': location,
       if (attachedEvent != null) 'attachedEvent': attachedEvent!.toJson(),
       if (pollQuestion != null) ...{
@@ -852,7 +880,8 @@ class CommentModel {
       updatedAt: parsedUpdatedUtc?.toLocal(),
       likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
-      parentCommentId: json['parentCommentId']?.toString() ??
+      parentCommentId:
+          json['parentCommentId']?.toString() ??
           json['parent_comment_id']?.toString() ??
           json['parentId']?.toString(),
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,

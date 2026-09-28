@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -152,14 +153,21 @@ class _StepBody extends StatelessWidget {
               Obx(
                 () => AppButton(
                   label: continueLabel,
-                  loading: controller.isSaving.value,
-                  onPressed: onContinue,
+                  loading: controller.isSaving.value ||
+                      controller.isUploadingAvatar.value,
+                  onPressed: controller.isUploadingAvatar.value
+                      ? null
+                      : onContinue,
                 ),
               ),
-              AppButton.text(
-                label: 'onboarding.skipForNow'.tr,
-                muted: true,
-                onPressed: controller.finish,
+              Obx(
+                () => AppButton.text(
+                  label: 'onboarding.skipForNow'.tr,
+                  muted: true,
+                  onPressed: controller.isUploadingAvatar.value
+                      ? null
+                      : controller.finish,
+                ),
               ),
             ],
           ),
@@ -310,39 +318,101 @@ class _PhotoPicker extends StatelessWidget {
 
     return Obx(() {
       final url = controller.avatarUrl.value;
+      final bytes = controller.avatarBytes.value;
+      final uploading = controller.isUploadingAvatar.value;
+      final progress = controller.avatarUploadProgress.value;
+      final hasAvatar =
+          bytes != null || (url.isNotEmpty && url != 'local_preview');
+
+      Widget avatarChild;
+      if (uploading) {
+        avatarChild = Stack(
+          alignment: Alignment.center,
+          children: [
+            if (bytes != null)
+              Opacity(
+                opacity: 0.35,
+                child: ClipOval(
+                  child: Image.memory(
+                    bytes,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              )
+            else if (url.isNotEmpty && url != 'local_preview')
+              Opacity(
+                opacity: 0.35,
+                child: ClipOval(child: AppAvatar(imageUrl: url, size: 72)),
+              ),
+            SizedBox(
+              height: 28,
+              width: 28,
+              child: CircularProgressIndicator(
+                value: progress != null && progress > 0 ? progress : null,
+                strokeWidth: 2.5,
+                color: scheme.primary,
+              ),
+            ),
+          ],
+        );
+      } else if (bytes != null) {
+        avatarChild = ClipOval(
+          child: Image.memory(
+            bytes,
+            width: 72,
+            height: 72,
+            fit: BoxFit.cover,
+          ),
+        );
+      } else if (url.isNotEmpty && url != 'local_preview') {
+        avatarChild = ClipOval(child: AppAvatar(imageUrl: url, size: 72));
+      } else {
+        avatarChild = Icon(
+          Icons.photo_camera_outlined,
+          size: 22,
+          color: scheme.onSurface.withValues(alpha: 0.5),
+        );
+      }
+
       return Row(
         children: [
-          Stack(
-            children: [
-              DashedBorder(
-                radius: 36,
-                color: scheme.outline.withValues(alpha: 0.5),
-                child: SizedBox(
-                  height: 72,
-                  width: 72,
-                  child: url.isEmpty
-                      ? Icon(
-                          Icons.photo_camera_outlined,
-                          size: 22,
-                          color: scheme.onSurface.withValues(alpha: 0.5),
-                        )
-                      : ClipOval(child: AppAvatar(imageUrl: url, size: 72)),
-                ),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  height: 22,
-                  width: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: scheme.primary,
+          GestureDetector(
+            onTap: uploading
+                ? null
+                : () => _showPhotoOptions(context, controller),
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              children: [
+                DashedBorder(
+                  radius: 36,
+                  color: scheme.outline.withValues(alpha: 0.5),
+                  child: SizedBox(
+                    height: 72,
+                    width: 72,
+                    child: avatarChild,
                   ),
-                  child: Icon(Icons.add, size: 14, color: scheme.onPrimary),
                 ),
-              ),
-            ],
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 22,
+                    width: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: scheme.primary,
+                    ),
+                    child: Icon(
+                      hasAvatar ? Icons.edit : Icons.add,
+                      size: 14,
+                      color: scheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -350,8 +420,16 @@ class _PhotoPicker extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppButton.text(
-                  label: 'profileSetup.uploadPhoto'.tr,
-                  onPressed: () => _promptForUrl(context, controller),
+                  label: uploading
+                      ? (progress != null && progress > 0
+                          ? '${'profileSetup.uploadingPhoto'.tr} ${(progress * 100).round()}%'
+                          : 'profileSetup.uploadingPhoto'.tr)
+                      : (hasAvatar
+                          ? 'profileSetup.changePhoto'.tr
+                          : 'profileSetup.uploadPhoto'.tr),
+                  onPressed: uploading
+                      ? null
+                      : () => _showPhotoOptions(context, controller),
                 ),
                 Text(
                   'profileSetup.photoHint'.tr,
@@ -367,35 +445,143 @@ class _PhotoPicker extends StatelessWidget {
     });
   }
 
-  Future<void> _promptForUrl(
+  Future<void> _showPhotoOptions(
     BuildContext context,
     ProfileSetupController controller,
   ) async {
-    final draft = TextEditingController(text: controller.avatarUrl.value);
-    final result = await showDialog<String>(
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final hasAvatar = controller.avatarBytes.value != null ||
+        (controller.avatarUrl.value.isNotEmpty &&
+            controller.avatarUrl.value != 'local_preview');
+
+    final source = await showModalBottomSheet<ImageSource?>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('profile.avatarUrl'.tr),
-        content: TextField(
-          controller: draft,
-          autofocus: true,
-          keyboardType: TextInputType.url,
-          decoration: const InputDecoration(hintText: 'https://…'),
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  hasAvatar
+                      ? 'profileSetup.changePhoto'.tr
+                      : 'profileSetup.uploadPhoto'.tr,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ListTile(
+                  leading: Container(
+                    height: 38,
+                    width: 38,
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(
+                      Icons.photo_library_outlined,
+                      color: scheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    'profile.chooseFromGallery'.tr,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.gallery),
+                ),
+                ListTile(
+                  leading: Container(
+                    height: 38,
+                    width: 38,
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(
+                      Icons.photo_camera_outlined,
+                      color: scheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    'profile.takePhoto'.tr,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.camera),
+                ),
+                if (hasAvatar)
+                  ListTile(
+                    leading: Container(
+                      height: 38,
+                      width: 38,
+                      decoration: BoxDecoration(
+                        color: scheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: scheme.error,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      'profileSetup.removePhoto'.tr,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.error,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop(null);
+                      controller.removeAvatar();
+                    },
+                  ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text('common.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(draft.text.trim()),
-            child: Text('common.done'.tr),
-          ),
-        ],
       ),
     );
-    draft.dispose();
-    if (result != null) controller.avatarUrl.value = result;
+
+    if (source != null) {
+      await controller.pickAndUploadAvatar(source: source);
+    }
   }
 }
 

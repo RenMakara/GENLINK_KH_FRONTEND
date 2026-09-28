@@ -13,6 +13,7 @@ import '../../../firebase_options.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../community/presentation/screens/events_screen.dart';
 import '../../community/presentation/screens/friend_requests_screen.dart';
+import '../../community/presentation/navigation/community_reference_router.dart';
 import '../../finance/finance_screen.dart';
 import '../../finance/presentation/budget_feature/budget_screen.dart';
 import '../../finance/presentation/saving_goal_feature/saving_goals_screen.dart';
@@ -184,6 +185,12 @@ enum MobilePushNotificationDestination {
   quiz,
   achievements,
   chat,
+  postDetail,
+  storyDetail,
+  eventDetail,
+  discussionDetail,
+  communityReference,
+  userReference,
 }
 
 /// Maps backend reference metadata to screens that already exist in Flutter.
@@ -197,8 +204,24 @@ class MobilePushNotificationRouter {
     final type = _normalize(payload.type);
 
     switch (reference) {
+      case 'POST':
+      case 'COMMENT':
+        return MobilePushNotificationDestination.postDetail;
+      case 'STORY':
+        return MobilePushNotificationDestination.storyDetail;
+      case 'DISCUSSION':
+        return MobilePushNotificationDestination.discussionDetail;
+      case 'COMMUNITY':
+        return MobilePushNotificationDestination.communityReference;
+      case 'USER':
+        if (type.contains('FOLLOW')) {
+          return MobilePushNotificationDestination.friendRequests;
+        }
+        return MobilePushNotificationDestination.userReference;
       case 'EVENT':
-        return MobilePushNotificationDestination.events;
+        return payload.referenceId == null || payload.referenceId!.isEmpty
+            ? MobilePushNotificationDestination.events
+            : MobilePushNotificationDestination.eventDetail;
       case 'FRIENDREQUEST':
         return MobilePushNotificationDestination.friendRequests;
       case 'CHAT':
@@ -227,11 +250,25 @@ class MobilePushNotificationRouter {
     if (type.contains('CHAT')) {
       return MobilePushNotificationDestination.chat;
     }
+    if (type.contains('COMMENT') || type.contains('POST')) {
+      return MobilePushNotificationDestination.postDetail;
+    }
+    if (type.contains('STORY')) {
+      return MobilePushNotificationDestination.storyDetail;
+    }
+    if (type.contains('DISCUSSION')) {
+      return MobilePushNotificationDestination.discussionDetail;
+    }
+    if (type.contains('COMMUNITY')) {
+      return MobilePushNotificationDestination.communityReference;
+    }
     if (type.contains('CHALLENGE')) {
       return MobilePushNotificationDestination.challenges;
     }
     if (type.contains('EVENT')) {
-      return MobilePushNotificationDestination.events;
+      return payload.referenceId == null || payload.referenceId!.isEmpty
+          ? MobilePushNotificationDestination.events
+          : MobilePushNotificationDestination.eventDetail;
     }
     if (type.contains('FRIENDREQUEST') || type.contains('FOLLOW')) {
       return MobilePushNotificationDestination.friendRequests;
@@ -287,11 +324,44 @@ class MobilePushNotificationRouter {
         } else {
           Get.toNamed<void>(AppRoutes.chat);
         }
+      case MobilePushNotificationDestination.postDetail:
+        await CommunityReferenceRouter.open(
+          referenceType: payload.referenceType ?? 'POST',
+          referenceId: payload.referenceId,
+          openComments: _normalize(payload.type).contains('COMMENT'),
+        );
+      case MobilePushNotificationDestination.storyDetail:
+        await CommunityReferenceRouter.open(
+          referenceType: payload.referenceType ?? 'STORY',
+          referenceId: payload.referenceId,
+        );
+      case MobilePushNotificationDestination.eventDetail:
+        await CommunityReferenceRouter.open(
+          referenceType: payload.referenceType ?? 'EVENT',
+          referenceId: payload.referenceId,
+        );
+      case MobilePushNotificationDestination.discussionDetail:
+        await CommunityReferenceRouter.open(
+          referenceType: payload.referenceType ?? 'DISCUSSION',
+          referenceId: payload.referenceId,
+        );
+      case MobilePushNotificationDestination.communityReference:
+        await CommunityReferenceRouter.open(
+          referenceType: payload.referenceType ?? 'COMMUNITY',
+          referenceId: payload.referenceId,
+        );
+      case MobilePushNotificationDestination.userReference:
+        await CommunityReferenceRouter.open(
+          referenceType: payload.referenceType ?? 'USER',
+          referenceId: payload.referenceId,
+        );
 
       case MobilePushNotificationDestination.events:
         Get.to<void>(() => const EventsScreen());
-            case MobilePushNotificationDestination.friendRequests:
-        Get.to<void>(() => FriendRequestsScreen(highlightUserId: payload.referenceId));
+      case MobilePushNotificationDestination.friendRequests:
+        Get.to<void>(
+          () => FriendRequestsScreen(highlightUserId: payload.referenceId),
+        );
       case MobilePushNotificationDestination.finance:
         Get.to<void>(() => const FinanceScreen());
       case MobilePushNotificationDestination.budget:

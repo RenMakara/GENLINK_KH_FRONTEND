@@ -23,12 +23,10 @@ void main() {
       expect(MediaUrlResolver.resolve(httpUrl), equals(httpUrl));
     });
 
-    test('normalizes legacy DigitalOcean CDN URL to direct spaces endpoint', () {
+    test('preserves configured DigitalOcean CDN URLs for cached delivery', () {
       const legacyUrl =
           'https://genlink-space.sgp1.cdn.digitaloceanspaces.com/posts/img.jpg';
-      const expectedUrl =
-          'https://genlink-space.sgp1.digitaloceanspaces.com/posts/img.jpg';
-      expect(MediaUrlResolver.resolve(legacyUrl), equals(expectedUrl));
+      expect(MediaUrlResolver.resolve(legacyUrl), equals(legacyUrl));
     });
 
     test('prefixes relative paths with AppConfig.apiBaseUrl', () {
@@ -65,18 +63,33 @@ void main() {
 
     test('correctly identifies local files with isLocalFile', () {
       expect(MediaUrlResolver.isLocalFile('file:///tmp/pic.jpg'), isTrue);
-      expect(MediaUrlResolver.isLocalFile('/storage/emulated/0/DCIM/pic.jpg'), isTrue);
+      expect(
+        MediaUrlResolver.isLocalFile('/storage/emulated/0/DCIM/pic.jpg'),
+        isTrue,
+      );
       expect(MediaUrlResolver.isLocalFile(r'C:\Users\pic.jpg'), isTrue);
-      expect(MediaUrlResolver.isLocalFile('https://example.com/pic.jpg'), isFalse);
+      expect(
+        MediaUrlResolver.isLocalFile('https://example.com/pic.jpg'),
+        isFalse,
+      );
       expect(MediaUrlResolver.isLocalFile(null), isFalse);
     });
 
-    test('correctly identifies network URLs with isNetworkUrl and isRemoteUrl', () {
-      expect(MediaUrlResolver.isNetworkUrl('https://example.com/img.jpg'), isTrue);
-      expect(MediaUrlResolver.isRemoteUrl('http://example.com/img.jpg'), isTrue);
-      expect(MediaUrlResolver.isRemoteUrl('/uploads/img.jpg'), isTrue);
-      expect(MediaUrlResolver.isRemoteUrl('assets/img.jpg'), isFalse);
-      expect(MediaUrlResolver.isRemoteUrl(null), isFalse);
-    });
+    test(
+      'correctly identifies network URLs with isNetworkUrl and isRemoteUrl',
+      () {
+        expect(
+          MediaUrlResolver.isNetworkUrl('https://example.com/img.jpg'),
+          isTrue,
+        );
+        expect(
+          MediaUrlResolver.isRemoteUrl('http://example.com/img.jpg'),
+          isTrue,
+        );
+        expect(MediaUrlResolver.isRemoteUrl('/uploads/img.jpg'), isTrue);
+        expect(MediaUrlResolver.isRemoteUrl('assets/img.jpg'), isFalse);
+        expect(MediaUrlResolver.isRemoteUrl(null), isFalse);
+      },
+    );
   });
 }

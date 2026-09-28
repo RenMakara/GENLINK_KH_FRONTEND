@@ -30,6 +30,8 @@ class ProfileController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final isPrivate = false.obs;
+  final isFriendsOnly = false.obs;
 
   final profile = Rxn<ProfileEntity>();
   final publicProfile = Rxn<PublicProfileEntity>();
@@ -54,6 +56,8 @@ class ProfileController extends GetxController {
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
+    isPrivate.value = false;
+    isFriendsOnly.value = false;
     followStats.value = null;
 
     if (isOwner) {
@@ -84,6 +88,10 @@ class ProfileController extends GetxController {
           ),
         );
       } on AppError catch (e) {
+        if (e.isProfilePrivate || e.isProfileFriendsOnly) {
+          isPrivate.value = true;
+          isFriendsOnly.value = e.isProfileFriendsOnly;
+        }
         errorMessage.value = e.message;
       } catch (_) {
         errorMessage.value = 'common.error'.tr;

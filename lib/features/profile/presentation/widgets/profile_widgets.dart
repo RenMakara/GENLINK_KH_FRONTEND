@@ -11,6 +11,8 @@ import '../../../community/domain/models/community_models.dart';
 import '../../../community/presentation/screens/event_details_screen.dart';
 import '../../domain/entities/profile_entity.dart';
 
+export 'private_profile_view.dart';
+
 class RingedAvatar extends StatelessWidget {
   const RingedAvatar({
     super.key,

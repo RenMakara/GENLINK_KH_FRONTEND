@@ -21,12 +21,14 @@ class StoryRepositoryImpl implements StoryRepository {
   StoryRepositoryImpl({
     ApiClient? apiClient,
     MediaUploadService? mediaUploadService,
-  })  : _apiClient = apiClient ??
-            (Get.isRegistered<ApiClient>() ? Get.find<ApiClient>() : null),
-        _mediaUploadService = mediaUploadService ??
-            (Get.isRegistered<MediaUploadService>()
-                ? Get.find<MediaUploadService>()
-                : null);
+  }) : _apiClient =
+           apiClient ??
+           (Get.isRegistered<ApiClient>() ? Get.find<ApiClient>() : null),
+       _mediaUploadService =
+           mediaUploadService ??
+           (Get.isRegistered<MediaUploadService>()
+               ? Get.find<MediaUploadService>()
+               : null);
 
   ApiClient? get _client =>
       _apiClient ??
@@ -83,8 +85,8 @@ class StoryRepositoryImpl implements StoryRepository {
             userName: (authorFullName != null && authorFullName.isNotEmpty)
                 ? authorFullName
                 : (authorUsername != null && authorUsername.isNotEmpty
-                    ? authorUsername
-                    : 'User'),
+                      ? authorUsername
+                      : 'User'),
             userHandle: authorUsername,
             userAvatar: (author['avatarUrl'] as String?) ?? '',
             isOwner: isOwner,
@@ -99,17 +101,23 @@ class StoryRepositoryImpl implements StoryRepository {
         return !id.startsWith('demo_') && !id.startsWith('mock_');
       }).toList();
 
-      final ownerGroupIdx = cleanRemoteGroups.indexWhere((g) =>
-          g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
+      final ownerGroupIdx = cleanRemoteGroups.indexWhere(
+        (g) =>
+            g.isOwner ||
+            (currentUserId.isNotEmpty && g.userId == currentUserId),
+      );
 
       if (ownerGroupIdx == -1) {
         final ownerGroup = StoryGroupModel(
           userId: currentUserId.isNotEmpty ? currentUserId : '',
           userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
               ? currentUserName
-              : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User'),
-          userHandle:
-              CurrentUser.username.isNotEmpty ? CurrentUser.username : null,
+              : (CurrentUser.username.isNotEmpty
+                    ? CurrentUser.username
+                    : 'User'),
+          userHandle: CurrentUser.username.isNotEmpty
+              ? CurrentUser.username
+              : null,
           userAvatar: currentUserAvatar ?? '',
           isOwner: true,
           hasUnseen: false,
@@ -121,7 +129,8 @@ class StoryRepositoryImpl implements StoryRepository {
         final updatedOwnerGroup = StoryGroupModel(
           userId: ownerGroup.userId,
           userName: ownerGroup.userName,
-          userHandle: ownerGroup.userHandle ??
+          userHandle:
+              ownerGroup.userHandle ??
               (CurrentUser.username.isNotEmpty ? CurrentUser.username : null),
           userAvatar: currentUserAvatar?.isNotEmpty == true
               ? currentUserAvatar!
@@ -138,7 +147,7 @@ class StoryRepositoryImpl implements StoryRepository {
       }
     } catch (e) {
       debugPrint('[StoryRepository] getStories error: $e');
-      return _buildFallbackOwnerOnlyList();
+      rethrow;
     }
   }
 
@@ -152,8 +161,9 @@ class StoryRepositoryImpl implements StoryRepository {
         userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
             ? currentUserName
             : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User'),
-        userHandle:
-            CurrentUser.username.isNotEmpty ? CurrentUser.username : null,
+        userHandle: CurrentUser.username.isNotEmpty
+            ? CurrentUser.username
+            : null,
         userAvatar: currentUserAvatar ?? '',
         isOwner: true,
         hasUnseen: false,
@@ -191,7 +201,8 @@ class StoryRepositoryImpl implements StoryRepository {
 
     final uploadService = _uploadService;
 
-    final resolvedSettings = settings ??
+    final resolvedSettings =
+        settings ??
         StorySettings(
           visibility: StoryPrivacy.fromString(visibility),
           replyPermission: StoryReplyPermission.fromString(replyPrivacy),
@@ -208,8 +219,12 @@ class StoryRepositoryImpl implements StoryRepository {
       }
     }
 
-    bool isVideo = type == StoryType.video || (finalMediaUrl.isNotEmpty && _isVideoPath(finalMediaUrl));
-    debugPrint('[StoryUpload] Starting Story creation (type: $type, initial mediaUrl: $finalMediaUrl, isVideo: $isVideo)');
+    bool isVideo =
+        type == StoryType.video ||
+        (finalMediaUrl.isNotEmpty && _isVideoPath(finalMediaUrl));
+    debugPrint(
+      '[StoryUpload] Starting Story creation (type: $type, initial mediaUrl: $finalMediaUrl, isVideo: $isVideo)',
+    );
 
     if (finalMediaUrl.isNotEmpty &&
         !finalMediaUrl.startsWith('http://') &&
@@ -217,7 +232,7 @@ class StoryRepositoryImpl implements StoryRepository {
       final cleanPath = finalMediaUrl.replaceAll(RegExp(r'^file://'), '');
       final file = File(cleanPath);
 
-      if (!file.existsSync()) {
+      if (!await file.exists()) {
         throw AppError(
           message: 'Media file not found: $cleanPath',
           errorCode: 'MEDIA_NOT_FOUND',
@@ -232,17 +247,25 @@ class StoryRepositoryImpl implements StoryRepository {
       }
 
       debugPrint('[StoryUpload] Uploading local media file: $cleanPath');
-      final bytes = file.readAsBytesSync();
       final contentType = _detectContentType(cleanPath, isVideo);
+      uploadService.validateFile(
+        sizeBytes: await file.length(),
+        contentType: contentType,
+        purpose: MediaPurpose.story,
+      );
+      final bytes = await file.readAsBytes();
 
       final mediaEntity = await uploadService.upload(
         bytes: bytes,
         contentType: contentType,
         purpose: MediaPurpose.story,
       );
-      finalMediaUrl = mediaEntity.url;
-      debugPrint('[StoryUpload] Upload completed. CDN media URL: $finalMediaUrl');
-    } else if (finalMediaUrl.isEmpty && (type == StoryType.text || layers?.isNotEmpty == true)) {
+      finalMediaUrl = mediaEntity.reference;
+      debugPrint(
+        '[StoryUpload] Upload completed. Private media reference ready.',
+      );
+    } else if (finalMediaUrl.isEmpty &&
+        (type == StoryType.text || layers?.isNotEmpty == true)) {
       if (uploadService == null) {
         throw const AppError(
           message: 'Media upload service is unavailable for story canvas',
@@ -250,7 +273,9 @@ class StoryRepositoryImpl implements StoryRepository {
         );
       }
 
-      debugPrint('[StoryUpload] Rendering text story canvas to PNG and uploading...');
+      debugPrint(
+        '[StoryUpload] Rendering text story canvas to PNG and uploading...',
+      );
       final startColor = _parseColor(bgGradientStart, const Color(0xFF0F172A));
       final endColor = _parseColor(bgGradientEnd, const Color(0xFF1E293B));
       final pngBytes = await _renderCanvasToPng(
@@ -265,9 +290,9 @@ class StoryRepositoryImpl implements StoryRepository {
         contentType: 'image/png',
         purpose: MediaPurpose.story,
       );
-      finalMediaUrl = mediaEntity.url;
+      finalMediaUrl = mediaEntity.reference;
       isVideo = false;
-      debugPrint('[StoryUpload] Text story canvas uploaded. CDN media URL: $finalMediaUrl');
+      debugPrint('[StoryUpload] Text story canvas uploaded.');
     }
 
     if (finalMediaUrl.trim().isEmpty) {
@@ -277,34 +302,52 @@ class StoryRepositoryImpl implements StoryRepository {
       );
     }
 
-    debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories} with mediaUrl: $finalMediaUrl');
+    const privateMediaPrefix = 'genlink-media://';
+    final mediaId = finalMediaUrl.startsWith(privateMediaPrefix)
+        ? finalMediaUrl.substring(privateMediaPrefix.length).trim()
+        : null;
+    debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories}.');
     final StoryItemModel serverStory;
     try {
+      final requestBody = <String, Object?>{
+        'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
+        'caption': textContent,
+        'visibility': _toBackendVisibility(resolvedSettings.visibility),
+        'replyPermission': _toBackendReplyPermission(
+          resolvedSettings.replyPermission,
+        ),
+        'allowReactions': resolvedSettings.allowReactions,
+      };
+      if (mediaId == null) {
+        requestBody['mediaUrl'] = finalMediaUrl;
+      } else {
+        requestBody['mediaId'] = mediaId;
+      }
       serverStory = await client.post(
         ApiEndpoints.stories,
-        body: {
-          'mediaUrl': finalMediaUrl,
-          'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
-          'caption': textContent,
-          'visibility': _toBackendVisibility(resolvedSettings.visibility),
-          'replyPermission': _toBackendReplyPermission(resolvedSettings.replyPermission),
-          'allowReactions': resolvedSettings.allowReactions,
-        },
+        body: requestBody,
         parse: (data) => _storyFromJson(ApiClient.asMap(data)),
       );
     } on AppError catch (e) {
       if (resolvedSettings.visibility == StoryPrivacy.onlyMe &&
-          (e.statusCode == 400 || e.message.contains('400') || e.errorCode.contains('400'))) {
-        debugPrint('[StoryUpload] Live server rejected ONLY_ME (requires backend redeployment): $e');
+          (e.statusCode == 400 ||
+              e.message.contains('400') ||
+              e.errorCode.contains('400'))) {
+        debugPrint(
+          '[StoryUpload] Live server rejected ONLY_ME (requires backend redeployment): $e',
+        );
         throw const AppError(
-          message: 'The live server does not support "Only Me" stories yet. Please select "Friends" or "Public", or redeploy the backend.',
+          message:
+              'The live server does not support "Only Me" stories yet. Please select "Friends" or "Public", or redeploy the backend.',
           errorCode: 'UNSUPPORTED_STORY_VISIBILITY',
           statusCode: 400,
         );
       }
       rethrow;
     }
-    debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
+    debugPrint(
+      '[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}',
+    );
 
     if (serverStory.id.trim().isEmpty) {
       throw const AppError(
@@ -313,9 +356,13 @@ class StoryRepositoryImpl implements StoryRepository {
       );
     }
 
-    final finalSettings = (serverStory.settings.visibility != StoryPrivacy.public || resolvedSettings.visibility == StoryPrivacy.public)
+    final finalSettings =
+        (serverStory.settings.visibility != StoryPrivacy.public ||
+            resolvedSettings.visibility == StoryPrivacy.public)
         ? serverStory.settings
-        : serverStory.settings.copyWith(visibility: resolvedSettings.visibility);
+        : serverStory.settings.copyWith(
+            visibility: resolvedSettings.visibility,
+          );
 
     return StoryItemModel(
       id: serverStory.id,
@@ -351,13 +398,12 @@ class StoryRepositoryImpl implements StoryRepository {
       );
     } catch (e) {
       debugPrint('[StoryRepository] getStoryById error: $e');
-      return null;
+      rethrow;
     }
   }
 
   @override
-  Future<void> updateStory(String storyId, StoryItemModel updatedStory) async {
-  }
+  Future<void> updateStory(String storyId, StoryItemModel updatedStory) async {}
 
   @override
   Future<void> deleteStory(String storyId) async {
@@ -393,10 +439,13 @@ class StoryRepositoryImpl implements StoryRepository {
           ApiEndpoints.storyViewers(storyId),
           parse: (data) => ApiClient.asList(data, (json) {
             final viewedAtStr = json['viewedAt']?.toString();
-            final viewedAt = viewedAtStr != null ? DateTime.tryParse(viewedAtStr) : null;
+            final viewedAt = viewedAtStr != null
+                ? DateTime.tryParse(viewedAtStr)
+                : null;
             return StoryViewerModel(
               id: json['userId']?.toString() ?? '',
-              userName: (json['fullName'] as String?) ??
+              userName:
+                  (json['fullName'] as String?) ??
                   (json['username'] as String?) ??
                   'User',
               userAvatar: json['avatarUrl'] as String? ?? '',
@@ -406,41 +455,57 @@ class StoryRepositoryImpl implements StoryRepository {
         );
       } catch (e) {
         debugPrint('[StoryRepository] getStoryViewers error: $e');
-        return [];
+        rethrow;
       }
     }
     return [];
   }
 
   @override
-  Future<void> toggleLikeStory(String storyId) async {
+  Future<void> likeStory(String storyId) async {
     final client = _client;
     if (client != null) {
       try {
         await client.post(ApiEndpoints.storyLike(storyId), parse: (_) {});
       } catch (e) {
-        debugPrint('[StoryRepository] toggleLikeStory error: $e');
+        debugPrint('[StoryRepository] likeStory error: $e');
         rethrow;
       }
     }
   }
 
   @override
-  Future<void> replyToStory(String storyId, String message) async {
+  Future<void> unlikeStory(String storyId) async {
+    final client = _client;
+    if (client != null) {
+      try {
+        await client.delete(ApiEndpoints.storyLike(storyId));
+      } catch (e) {
+        debugPrint('[StoryRepository] unlikeStory error: $e');
+        rethrow;
+      }
+    }
   }
+
+  @override
+  Future<void> replyToStory(String storyId, String message) async {}
 
   StoryItemModel _storyFromJson(Map<String, dynamic> json) {
     final createdAt =
         DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-            DateTime.now();
+        DateTime.now();
     final mediaType = (json['mediaType'] as String?)?.toUpperCase() ?? 'IMAGE';
     final storyId = json['storyId']?.toString() ?? json['id']?.toString() ?? '';
     final mediaUrl = json['mediaUrl'] as String?;
-    final caption = json['caption'] as String? ?? json['textContent'] as String?;
+    final caption =
+        json['caption'] as String? ?? json['textContent'] as String?;
     final seen = json['seen'] as bool? ?? false;
 
-    final rawVisibility = (json['visibility'] ?? json['storyPrivacy'] ?? json['privacy']) as String?;
-    final rawReply = (json['replyPermission'] ?? json['replyPrivacy']) as String?;
+    final rawVisibility =
+        (json['visibility'] ?? json['storyPrivacy'] ?? json['privacy'])
+            as String?;
+    final rawReply =
+        (json['replyPermission'] ?? json['replyPrivacy']) as String?;
     final rawAllowReactions = json['allowReactions'] as bool? ?? true;
 
     final settings = StorySettings(
@@ -451,8 +516,17 @@ class StoryRepositoryImpl implements StoryRepository {
       allowReactions: rawAllowReactions,
     );
 
-    final rawViewersCount = (json['viewersCount'] ?? json['viewsCount'] ?? json['viewCount'] as num?)?.toInt() ?? 0;
-    final rawLikesCount = (json['likesCount'] ?? json['likeCount'] as num?)?.toInt() ?? 0;
+    final rawViewersCount =
+        (json['viewersCount'] ?? json['viewsCount'] ?? json['viewCount'])
+            as num?;
+    final rawLikesCount =
+        (json['reactionCount'] ?? json['likesCount'] ?? json['likeCount'])
+            as num?;
+    final reactedByMe =
+        json['reactedByMe'] as bool? ??
+        json['isLiked'] as bool? ??
+        json['likedByMe'] as bool? ??
+        false;
 
     return StoryItemModel(
       id: storyId,
@@ -462,8 +536,9 @@ class StoryRepositoryImpl implements StoryRepository {
       timeAgo: _timeAgo(createdAt),
       createdAt: createdAt,
       isViewed: seen,
-      viewersCount: rawViewersCount,
-      likesCount: rawLikesCount,
+      viewersCount: rawViewersCount?.toInt() ?? 0,
+      likesCount: rawLikesCount?.toInt() ?? 0,
+      isLiked: reactedByMe,
       settings: settings,
       visibility: settings.visibilityLabel,
       replyPrivacy: settings.replyPermissionLabel,
@@ -570,27 +645,28 @@ class StoryRepositoryImpl implements StoryRepository {
 
     final textToDraw = textContent.trim().isNotEmpty
         ? textContent.trim()
-        : layers.where((l) => l.type == LayerType.text).map((l) => l.text).join('\n');
+        : layers
+              .where((l) => l.type == LayerType.text)
+              .map((l) => l.text)
+              .join('\n');
 
     if (textToDraw.trim().isNotEmpty) {
-      final pb = ui.ParagraphBuilder(
-        ui.ParagraphStyle(
-          textAlign: TextAlign.center,
-          fontSize: 34,
-          fontWeight: FontWeight.bold,
-          maxLines: 12,
-        ),
-      )
-        ..pushStyle(ui.TextStyle(color: Colors.white))
-        ..addText(textToDraw.trim());
+      final pb =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(
+                textAlign: TextAlign.center,
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                maxLines: 12,
+              ),
+            )
+            ..pushStyle(ui.TextStyle(color: Colors.white))
+            ..addText(textToDraw.trim());
 
       final paragraph = pb.build()
         ..layout(ui.ParagraphConstraints(width: width.toDouble() - 80));
 
-      final textOffset = Offset(
-        40,
-        (height.toDouble() - paragraph.height) / 2,
-      );
+      final textOffset = Offset(40, (height.toDouble() - paragraph.height) / 2);
       canvas.drawParagraph(paragraph, textOffset);
     }
 
@@ -630,9 +706,11 @@ class StoryRepositoryImpl implements StoryRepository {
         for (final u in followings) {
           if (u.id.startsWith('demo_') || u.id.startsWith('mock_')) continue;
           if (u.cleanUsername.isNotEmpty &&
-              !results.any((r) =>
-                  r.cleanUsername.toLowerCase() ==
-                  u.cleanUsername.toLowerCase())) {
+              !results.any(
+                (r) =>
+                    r.cleanUsername.toLowerCase() ==
+                    u.cleanUsername.toLowerCase(),
+              )) {
             results.add(u);
           }
         }
@@ -658,9 +736,11 @@ class StoryRepositoryImpl implements StoryRepository {
         if (profile.id.startsWith('demo_') || profile.id.startsWith('mock_')) {
           // ignore mock profile
         } else if (profile.username.isNotEmpty &&
-            !results.any((r) =>
-                r.cleanUsername.toLowerCase() ==
-                profile.cleanUsername.toLowerCase())) {
+            !results.any(
+              (r) =>
+                  r.cleanUsername.toLowerCase() ==
+                  profile.cleanUsername.toLowerCase(),
+            )) {
           results.add(profile);
         }
       } catch (_) {}

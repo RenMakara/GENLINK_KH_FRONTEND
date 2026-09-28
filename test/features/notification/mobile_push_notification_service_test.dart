@@ -65,6 +65,49 @@ void main() {
         ),
         MobilePushNotificationDestination.events,
       );
+      expect(
+        MobilePushNotificationRouter.destinationFor(
+          MobilePushNotificationPayload.fromData(const {
+            'type': 'COMMUNITY_EVENT_REMINDER',
+            'referenceType': 'EVENT',
+            'referenceId': 'event-9',
+          }),
+        ),
+        MobilePushNotificationDestination.eventDetail,
+      );
+    });
+
+    test('routes community references to their referenced content types', () {
+      expect(
+        MobilePushNotificationRouter.destinationFor(
+          MobilePushNotificationPayload.fromData(const {
+            'type': 'COMMUNITY_POST_LIKE',
+            'referenceType': 'POST',
+            'referenceId': 'post-9',
+          }),
+        ),
+        MobilePushNotificationDestination.postDetail,
+      );
+      expect(
+        MobilePushNotificationRouter.destinationFor(
+          MobilePushNotificationPayload.fromData(const {
+            'type': 'COMMUNITY_STORY_REPLY',
+            'referenceType': 'STORY',
+            'referenceId': 'story-9',
+          }),
+        ),
+        MobilePushNotificationDestination.storyDetail,
+      );
+      expect(
+        MobilePushNotificationRouter.destinationFor(
+          MobilePushNotificationPayload.fromData(const {
+            'type': 'COMMUNITY_DISCUSSION_REPLY',
+            'referenceType': 'DISCUSSION',
+            'referenceId': 'discussion-9',
+          }),
+        ),
+        MobilePushNotificationDestination.discussionDetail,
+      );
     });
 
     test(

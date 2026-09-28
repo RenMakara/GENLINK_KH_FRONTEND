@@ -21,7 +21,10 @@ class FakeVideoCacheManager implements BaseCacheManager {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<FileInfo?> getFileFromCache(String key, {bool ignoreMemCache = false}) async {
+  Future<FileInfo?> getFileFromCache(
+    String key, {
+    bool ignoreMemCache = false,
+  }) async {
     return cache[key];
   }
 
@@ -44,7 +47,16 @@ class FakeVideoCacheManager implements BaseCacheManager {
     final filePath = '${tempDir.path}/video_${cacheKey.hashCode}.mp4';
     final file = _fs.file(filePath);
     if (!file.existsSync()) {
-      file.writeAsBytesSync([0, 0, 0, 32, 102, 116, 121, 112]); // Mock MP4 header
+      file.writeAsBytesSync([
+        0,
+        0,
+        0,
+        32,
+        102,
+        116,
+        121,
+        112,
+      ]); // Mock MP4 header
     }
 
     final fileInfo = FileInfo(
@@ -77,7 +89,9 @@ void main() {
   late VideoCacheService service;
 
   setUp(() {
-    tempDir = io.Directory.systemTemp.createTempSync('genlink_video_cache_test_');
+    tempDir = io.Directory.systemTemp.createTempSync(
+      'genlink_video_cache_test_',
+    );
     fakeCacheManager = FakeVideoCacheManager(tempDir: tempDir);
     service = VideoCacheService(
       cacheManager: fakeCacheManager,
@@ -120,26 +134,30 @@ void main() {
       expect(cachedFile!.path, file.path);
     });
 
-    test('deduplicates concurrent download requests for the same URL', () async {
-      fakeCacheManager.downloadDelayMs = 25;
-      const remoteUrl = 'https://d123456abcdef.cloudfront.net/posts/concurrent.mp4';
+    test(
+      'deduplicates concurrent download requests for the same URL',
+      () async {
+        fakeCacheManager.downloadDelayMs = 25;
+        const remoteUrl =
+            'https://d123456abcdef.cloudfront.net/posts/concurrent.mp4';
 
-      // Launch 3 simultaneous download requests
-      final future1 = service.cacheVideo(remoteUrl);
-      final future2 = service.cacheVideo(remoteUrl);
-      final future3 = service.cacheVideo(remoteUrl);
+        // Launch 3 simultaneous download requests
+        final future1 = service.cacheVideo(remoteUrl);
+        final future2 = service.cacheVideo(remoteUrl);
+        final future3 = service.cacheVideo(remoteUrl);
 
-      final results = await Future.wait([future1, future2, future3]);
+        final results = await Future.wait([future1, future2, future3]);
 
-      expect(results[0], isNotNull);
-      expect(results[1], isNotNull);
-      expect(results[2], isNotNull);
-      expect(results[0]!.path, results[1]!.path);
-      expect(results[1]!.path, results[2]!.path);
+        expect(results[0], isNotNull);
+        expect(results[1], isNotNull);
+        expect(results[2], isNotNull);
+        expect(results[0]!.path, results[1]!.path);
+        expect(results[1]!.path, results[2]!.path);
 
-      // Only ONE download should have been executed by the cache manager
-      expect(fakeCacheManager.downloadCalls.length, 1);
-    });
+        // Only ONE download should have been executed by the cache manager
+        expect(fakeCacheManager.downloadCalls.length, 1);
+      },
+    );
 
     test('handles download errors gracefully without throwing', () async {
       fakeCacheManager.shouldFailDownloads = true;
@@ -150,19 +168,17 @@ void main() {
       expect(await service.getCachedFile(remoteUrl), isNull);
     });
 
-    test('normalizes legacy digitaloceanspaces.com URLs before querying cache', () async {
-      const legacyUrl =
+    test('preserves configured DigitalOcean CDN URLs as cache keys', () async {
+      const cdnUrl =
           'https://genlink-media.sgp1.cdn.digitaloceanspaces.com/posts/video.mp4';
-      const expectedNormalized =
-          'https://genlink-media.sgp1.digitaloceanspaces.com/posts/video.mp4';
 
-      await service.cacheVideo(legacyUrl);
+      await service.cacheVideo(cdnUrl);
 
-      // Cache should store under normalized key
-      expect(fakeCacheManager.cache.containsKey(expectedNormalized), isTrue);
+      // Keep the configured CDN hostname so playback and caching use the CDN.
+      expect(fakeCacheManager.cache.containsKey(cdnUrl), isTrue);
 
-      // Querying with legacy URL should hit the normalized cache
-      final cached = await service.getCachedFile(legacyUrl);
+      // Querying with the same absolute CDN URL should hit the existing cache.
+      final cached = await service.getCachedFile(cdnUrl);
       expect(cached, isNotNull);
     });
 
@@ -180,15 +196,19 @@ void main() {
       expect(fakeCacheManager.cache, isEmpty);
     });
 
-    test('clearCache empties the cache manager and clears in-memory tracking', () async {
-      const remoteUrl = 'https://d123456abcdef.cloudfront.net/posts/to_clear.mp4';
-      await service.cacheVideo(remoteUrl);
-      expect(await service.getCachedFile(remoteUrl), isNotNull);
+    test(
+      'clearCache empties the cache manager and clears in-memory tracking',
+      () async {
+        const remoteUrl =
+            'https://d123456abcdef.cloudfront.net/posts/to_clear.mp4';
+        await service.cacheVideo(remoteUrl);
+        expect(await service.getCachedFile(remoteUrl), isNotNull);
 
-      await service.clearCache();
-      expect(await service.getCachedFile(remoteUrl), isNull);
-      expect(fakeCacheManager.cache, isEmpty);
-    });
+        await service.clearCache();
+        expect(await service.getCachedFile(remoteUrl), isNull);
+        expect(fakeCacheManager.cache, isEmpty);
+      },
+    );
 
     test('removeFile removes only the targeted video from cache', () async {
       const url1 = 'https://d123456abcdef.cloudfront.net/posts/v1.mp4';
@@ -205,57 +225,69 @@ void main() {
   });
 
   group('VideoCacheService Lazy Caching Policy Tests', () {
-    test('does NOT trigger caching if playback duration is under 2 seconds', () async {
-      const remoteUrl = 'https://d123456abcdef.cloudfront.net/posts/short_watch.mp4';
+    test(
+      'does NOT trigger caching if playback duration is under 2 seconds',
+      () async {
+        const remoteUrl =
+            'https://d123456abcdef.cloudfront.net/posts/short_watch.mp4';
 
-      // Watch for 1.2 seconds of a 15 second video
-      service.trackPlaybackProgress(
-        remoteUrl,
-        const Duration(milliseconds: 1200),
-        const Duration(seconds: 15),
-      );
+        // Watch for 1.2 seconds of a 15 second video
+        service.trackPlaybackProgress(
+          remoteUrl,
+          const Duration(milliseconds: 1200),
+          const Duration(seconds: 15),
+        );
 
-      // Give microtasks a moment to run
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+        // Give microtasks a moment to run
+        await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(service.isTracked(remoteUrl), isFalse);
-      expect(fakeCacheManager.downloadCalls, isEmpty);
-    });
+        expect(service.isTracked(remoteUrl), isFalse);
+        expect(fakeCacheManager.downloadCalls, isEmpty);
+      },
+    );
 
-    test('triggers background caching when watch duration reaches 2 seconds', () async {
-      const remoteUrl = 'https://d123456abcdef.cloudfront.net/posts/watched_2s.mp4';
+    test(
+      'triggers background caching when watch duration reaches 2 seconds',
+      () async {
+        const remoteUrl =
+            'https://d123456abcdef.cloudfront.net/posts/watched_2s.mp4';
 
-      service.trackPlaybackProgress(
-        remoteUrl,
-        const Duration(seconds: 2),
-        const Duration(seconds: 20),
-      );
+        service.trackPlaybackProgress(
+          remoteUrl,
+          const Duration(seconds: 2),
+          const Duration(seconds: 20),
+        );
 
-      expect(service.isTracked(remoteUrl), isTrue);
+        expect(service.isTracked(remoteUrl), isTrue);
 
-      // Wait for background download to complete
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        // Wait for background download to complete
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(fakeCacheManager.downloadCalls.contains(remoteUrl), isTrue);
-      expect(await service.getCachedFile(remoteUrl), isNotNull);
-    });
+        expect(fakeCacheManager.downloadCalls.contains(remoteUrl), isTrue);
+        expect(await service.getCachedFile(remoteUrl), isNotNull);
+      },
+    );
 
-    test('triggers background caching when video reaches completion even if < 2s', () async {
-      const remoteUrl = 'https://d123456abcdef.cloudfront.net/posts/quick_clip.mp4';
+    test(
+      'triggers background caching when video reaches completion even if < 2s',
+      () async {
+        const remoteUrl =
+            'https://d123456abcdef.cloudfront.net/posts/quick_clip.mp4';
 
-      // 1.5 second clip watched to 1.4 seconds (within 300ms of end)
-      service.trackPlaybackProgress(
-        remoteUrl,
-        const Duration(milliseconds: 1400),
-        const Duration(milliseconds: 1500),
-      );
+        // 1.5 second clip watched to 1.4 seconds (within 300ms of end)
+        service.trackPlaybackProgress(
+          remoteUrl,
+          const Duration(milliseconds: 1400),
+          const Duration(milliseconds: 1500),
+        );
 
-      expect(service.isTracked(remoteUrl), isTrue);
+        expect(service.isTracked(remoteUrl), isTrue);
 
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(fakeCacheManager.downloadCalls.contains(remoteUrl), isTrue);
-    });
+        expect(fakeCacheManager.downloadCalls.contains(remoteUrl), isTrue);
+      },
+    );
   });
 
   group('VideoCacheService Controller Resolution Tests', () {

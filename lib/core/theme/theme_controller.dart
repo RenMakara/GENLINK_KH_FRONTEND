@@ -27,7 +27,9 @@ class ThemeController extends GetxController {
     try {
       final stored = await _storage.readThemeMode();
       if (stored != null) {
-        themeMode.value = _toThemeMode(stored);
+        final mode = _toThemeMode(stored);
+        themeMode.value = mode;
+        Get.changeThemeMode(mode);
       }
     } catch (_) {}
   }
@@ -38,6 +40,7 @@ class ThemeController extends GetxController {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     themeMode.value = mode;
+    Get.changeThemeMode(mode);
     await _storage.saveThemeMode(backendTheme);
   }
 

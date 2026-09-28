@@ -8,8 +8,7 @@ abstract final class MediaUrlResolver {
   /// - Returns `''` if [rawUrl] is null or blank.
   /// - Preserves asset paths (e.g., `assets/...`).
   /// - Preserves local filesystem paths.
-  /// - Replaces legacy `.cdn.digitaloceanspaces.com` domains with `.digitaloceanspaces.com`.
-  /// - Leaves valid absolute `http://` or `https://` URLs (including CloudFront CDN) untouched.
+  /// - Preserves absolute `http://` or `https://` URLs, including configured CDNs.
   /// - Resolves relative backend paths by prefixing [AppConfig.apiBaseUrl].
   static String resolve(String? rawUrl) {
     if (rawUrl == null) return '';
@@ -21,27 +20,18 @@ abstract final class MediaUrlResolver {
       return trimmed;
     }
 
-    // Legacy CDN domain correction
-    String resolved = trimmed;
-    if (resolved.contains('.cdn.digitaloceanspaces.com')) {
-      resolved = resolved.replaceFirst(
-        '.cdn.digitaloceanspaces.com',
-        '.digitaloceanspaces.com',
-      );
-    }
-
     // Absolute HTTP / HTTPS URLs (e.g. CloudFront, S3, external CDNs)
-    if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
-      return resolved;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
     }
 
     // Local filesystem path check (Unix absolute `/`, Windows drive `C:\`, or `file://`)
-    if (isLocalFile(resolved)) {
-      return resolved;
+    if (isLocalFile(trimmed)) {
+      return trimmed;
     }
 
     // Relative backend path fallback (e.g., `/uploads/abc.jpg` -> `https://api.../uploads/abc.jpg`)
-    final clean = resolved.startsWith('/') ? resolved : '/$resolved';
+    final clean = trimmed.startsWith('/') ? trimmed : '/$trimmed';
     return '${AppConfig.apiBaseUrl}$clean';
   }
 

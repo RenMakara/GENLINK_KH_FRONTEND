@@ -25,6 +25,13 @@ class AppError implements Exception {
   bool get isOtpInvalid => errorCode == 'OTP_INVALID';
   bool get isOtpExpired => errorCode == 'OTP_EXPIRED';
   bool get isValidation => errorCode == 'VALIDATION_ERROR';
+  bool get isProfilePrivate =>
+      errorCode == 'PROFILE_PRIVATE' ||
+      message.toLowerCase().contains('profile is private') ||
+      (errorCode == 'API_ERROR' && message.toLowerCase().contains('private'));
+  bool get isProfileFriendsOnly =>
+      errorCode == 'PROFILE_FRIENDS_ONLY' ||
+      message.toLowerCase().contains('friends only');
 
   bool get shouldLogout =>
       isTokenExpired ||

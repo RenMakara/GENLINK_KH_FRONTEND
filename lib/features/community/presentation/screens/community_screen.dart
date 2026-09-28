@@ -466,6 +466,7 @@ class _CommunityScreenState extends State<CommunityScreen>
       color: AppColors.communityAccent,
       backgroundColor: surfaceSecondary,
       child: SingleChildScrollView(
+        key: const PageStorageKey<String>('community_home_feed_scroll'),
         controller: controller.scrollController,
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
@@ -566,6 +567,41 @@ class _CommunityScreenState extends State<CommunityScreen>
     Color borderSubtle,
   ) {
     final posts = controller.posts;
+
+    if (posts.isEmpty && controller.hasError.value) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 48,
+          horizontal: AppSpacing.lg,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 48,
+                color: textMuted.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                controller.errorMessage.value.isNotEmpty
+                    ? controller.errorMessage.value
+                    : 'Couldn\'t load the community feed.',
+                style: TextStyle(color: textSecondary, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () => controller.fetchPosts(),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // ── Empty state ───────────────────────────────────────────────────────────
     // When the real backend returns 0 posts, show ONLY a friendly empty state.
@@ -672,6 +708,35 @@ class _CommunityScreenState extends State<CommunityScreen>
       );
     }
 
+    if (controller.hasMorePostsError.value) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          child: Center(
+            child: Column(
+              children: [
+                Text(
+                  controller.morePostsErrorMessage.value.isNotEmpty
+                      ? controller.morePostsErrorMessage.value
+                      : 'Couldn\'t load more posts.',
+                  style: TextStyle(color: textMuted, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                TextButton.icon(
+                  onPressed: controller.loadMorePosts,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: items,
@@ -713,221 +778,250 @@ class _CommunityScreenState extends State<CommunityScreen>
       },
       color: AppColors.communityAccent,
       backgroundColor: surfaceSecondary,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          0,
-          AppSpacing.md,
-          bottomPadding,
-        ),
-        child: Obx(() {
-          final latest = controller.forumLatestDiscussions;
-
-          if (controller.isLoadingForumDiscussions.value && latest.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 64),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.communityAccent,
-                  strokeWidth: 2.5,
-                ),
-              ),
-            );
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification.metrics.pixels >=
+              notification.metrics.maxScrollExtent - 240) {
+            controller.loadMoreDiscussions();
           }
+          return false;
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            0,
+            AppSpacing.md,
+            bottomPadding,
+          ),
+          child: Obx(() {
+            final latest = controller.forumLatestDiscussions;
 
-          if (controller.hasForumError.value && latest.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 48,
-                horizontal: AppSpacing.lg,
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 48,
-                      color: AppColors.danger,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'community.couldNotLoadDiscussions'.tr.isNotEmpty &&
-                              'community.couldNotLoadDiscussions'.tr !=
-                                  'community.couldNotLoadDiscussions'
-                          ? 'community.couldNotLoadDiscussions'.tr
-                          : 'Couldn\'t load discussions.',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () => controller.fetchDiscussions(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.communityAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                      ),
-                      child: Text(
-                        'common.retry'.tr.isNotEmpty &&
-                                'common.retry'.tr != 'common.retry'
-                            ? 'common.retry'.tr
-                            : 'Retry',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          if (latest.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 48,
-                horizontal: AppSpacing.lg,
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.forum_outlined, size: 48, color: textMuted),
-                    const SizedBox(height: 16),
-                    Text(
-                      'community.noDiscussionsYet'.tr.isNotEmpty &&
-                              'community.noDiscussionsYet'.tr !=
-                                  'community.noDiscussionsYet'
-                          ? 'community.noDiscussionsYet'.tr
-                          : 'No discussions yet',
-                      style:
-                          theme.textTheme.titleMedium?.copyWith(
-                            color: textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ) ??
-                          TextStyle(
-                            color: textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'community.startConversation'.tr.isNotEmpty &&
-                              'community.startConversation'.tr !=
-                                  'community.startConversation'
-                          ? 'community.startConversation'.tr
-                          : 'Start a conversation with the GenLink community.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: textSecondary, fontSize: 13.5),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () =>
-                          Get.to(() => const CreateDiscussionScreen()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.darkPrimary
-                            : AppColors.lightPrimary,
-                        foregroundColor: isDark
-                            ? AppColors.darkTextInverse
-                            : AppColors.lightTextInverse,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                      ),
-                      child: Text(
-                        'community.createDiscussion'.tr.isNotEmpty &&
-                                'community.createDiscussion'.tr !=
-                                    'community.createDiscussion'
-                            ? 'community.createDiscussion'.tr
-                            : 'Create Discussion',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'community.latestDiscussions'.tr.isNotEmpty &&
-                        'community.latestDiscussions'.tr !=
-                            'community.latestDiscussions'
-                    ? 'community.latestDiscussions'.tr
-                    : 'Latest Discussions',
-                style:
-                    theme.textTheme.titleMedium?.copyWith(
-                      color: textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                      letterSpacing: -0.2,
-                    ) ??
-                    TextStyle(
-                      color: textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              ...latest.map(
-                (topic) => ForumThreadCard(
-                  title: topic.title,
-                  author: topic.isAnonymous ? 'Anonymous' : topic.authorName,
-                  avatarUrl: topic.isAnonymous
-                      ? null
-                      : (topic.authorAvatar.isNotEmpty
-                            ? topic.authorAvatar
-                            : null),
-                  timeAgo: topic.timeAgo,
-                  createdAt: topic.createdAt,
-                  content: topic.content,
-                  category: topic.category,
-                  replies: topic.repliesCount,
-                  likes: topic.upvotes,
-                  isPinned: false,
-                  isLiked: topic.isLiked,
-                  isBookmarked: controller.isDiscussionBookmarked(topic.id),
-                  likers: topic.likers,
-                  discussionId: topic.id,
-                  isOwner: topic.checkIsOwner(controller.currentUserId),
-                  isAnonymous: topic.isAnonymous,
-                  onTap: () =>
-                      Get.to(() => ForumDiscussionScreen(discussion: topic)),
-                  onLikeTap: () => controller.toggleDiscussionLike(topic.id),
-                  onCommentTap: () =>
-                      Get.to(() => ForumDiscussionScreen(discussion: topic)),
-                  onSaveTap: () =>
-                      controller.toggleDiscussionBookmark(topic.id),
-                  onShareToChatTap: () =>
-                      ForumShareToChatSheet.show(context, topic: topic),
-                  onCategoryTap: () => Get.to(
-                    () => ForumCategoryScreen(categoryTitle: topic.category),
+            if (controller.isLoadingForumDiscussions.value && latest.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 64),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.communityAccent,
+                    strokeWidth: 2.5,
                   ),
-                  onMoreTap: () =>
-                      _showDiscussionMoreMenu(context, controller, topic),
                 ),
-              ),
-            ],
-          );
-        }),
+              );
+            }
+
+            if (controller.hasForumError.value && latest.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48,
+                  horizontal: AppSpacing.lg,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 48,
+                        color: AppColors.danger,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'community.couldNotLoadDiscussions'.tr.isNotEmpty &&
+                                'community.couldNotLoadDiscussions'.tr !=
+                                    'community.couldNotLoadDiscussions'
+                            ? 'community.couldNotLoadDiscussions'.tr
+                            : 'Couldn\'t load discussions.',
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () => controller.fetchDiscussions(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.communityAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
+                        child: Text(
+                          'common.retry'.tr.isNotEmpty &&
+                                  'common.retry'.tr != 'common.retry'
+                              ? 'common.retry'.tr
+                              : 'Retry',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            if (latest.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48,
+                  horizontal: AppSpacing.lg,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.forum_outlined, size: 48, color: textMuted),
+                      const SizedBox(height: 16),
+                      Text(
+                        'community.noDiscussionsYet'.tr.isNotEmpty &&
+                                'community.noDiscussionsYet'.tr !=
+                                    'community.noDiscussionsYet'
+                            ? 'community.noDiscussionsYet'.tr
+                            : 'No discussions yet',
+                        style:
+                            theme.textTheme.titleMedium?.copyWith(
+                              color: textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ) ??
+                            TextStyle(
+                              color: textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'community.startConversation'.tr.isNotEmpty &&
+                                'community.startConversation'.tr !=
+                                    'community.startConversation'
+                            ? 'community.startConversation'.tr
+                            : 'Start a conversation with the GenLink community.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: textSecondary, fontSize: 13.5),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () =>
+                            Get.to(() => const CreateDiscussionScreen()),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary,
+                          foregroundColor: isDark
+                              ? AppColors.darkTextInverse
+                              : AppColors.lightTextInverse,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
+                        child: Text(
+                          'community.createDiscussion'.tr.isNotEmpty &&
+                                  'community.createDiscussion'.tr !=
+                                      'community.createDiscussion'
+                              ? 'community.createDiscussion'.tr
+                              : 'Create Discussion',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'community.latestDiscussions'.tr.isNotEmpty &&
+                          'community.latestDiscussions'.tr !=
+                              'community.latestDiscussions'
+                      ? 'community.latestDiscussions'.tr
+                      : 'Latest Discussions',
+                  style:
+                      theme.textTheme.titleMedium?.copyWith(
+                        color: textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                        letterSpacing: -0.2,
+                      ) ??
+                      TextStyle(
+                        color: textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                ...latest.map(
+                  (topic) => ForumThreadCard(
+                    title: topic.title,
+                    author: topic.isAnonymous ? 'Anonymous' : topic.authorName,
+                    avatarUrl: topic.isAnonymous
+                        ? null
+                        : (topic.authorAvatar.isNotEmpty
+                              ? topic.authorAvatar
+                              : null),
+                    timeAgo: topic.timeAgo,
+                    createdAt: topic.createdAt,
+                    content: topic.content,
+                    category: topic.category,
+                    replies: topic.repliesCount,
+                    likes: topic.upvotes,
+                    isPinned: false,
+                    isLiked: topic.isLiked,
+                    isBookmarked: controller.isDiscussionBookmarked(topic.id),
+                    likers: topic.likers,
+                    discussionId: topic.id,
+                    isOwner: topic.checkIsOwner(controller.currentUserId),
+                    isAnonymous: topic.isAnonymous,
+                    onTap: () =>
+                        Get.to(() => ForumDiscussionScreen(discussion: topic)),
+                    onLikeTap: () => controller.toggleDiscussionLike(topic.id),
+                    onCommentTap: () =>
+                        Get.to(() => ForumDiscussionScreen(discussion: topic)),
+                    onSaveTap: () =>
+                        controller.toggleDiscussionBookmark(topic.id),
+                    onShareToChatTap: () =>
+                        ForumShareToChatSheet.show(context, topic: topic),
+                    onCategoryTap: () => Get.to(
+                      () => ForumCategoryScreen(categoryTitle: topic.category),
+                    ),
+                    onMoreTap: () =>
+                        _showDiscussionMoreMenu(context, controller, topic),
+                  ),
+                ),
+                if (controller.isLoadingMoreForumDiscussions.value)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.communityAccent,
+                      ),
+                    ),
+                  )
+                else if (controller.hasMoreForumDiscussionsError.value)
+                  Center(
+                    child: TextButton(
+                      onPressed: controller.loadMoreDiscussions,
+                      child: Text(
+                        controller.forumMoreErrorMessage.value.isNotEmpty
+                            ? controller.forumMoreErrorMessage.value
+                            : 'Retry loading discussions',
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }
@@ -1135,22 +1229,23 @@ class _CommunityScreenState extends State<CommunityScreen>
   ) async {
     final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
-      title: 'community.deleteDiscussion'.tr.isNotEmpty &&
-              'community.deleteDiscussion'.tr !=
-                  'community.deleteDiscussion'
+      title:
+          'community.deleteDiscussion'.tr.isNotEmpty &&
+              'community.deleteDiscussion'.tr != 'community.deleteDiscussion'
           ? '${'community.deleteDiscussion'.tr}?'
           : 'Delete Discussion?',
-      message: 'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+      message:
+          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
               'community.deleteDiscussionConfirm'.tr !=
                   'community.deleteDiscussionConfirm'
           ? 'community.deleteDiscussionConfirm'.tr
           : 'Are you sure you want to delete this discussion? This action cannot be undone.',
-      cancelLabel: 'common.cancel'.tr.isNotEmpty &&
-              'common.cancel'.tr != 'common.cancel'
+      cancelLabel:
+          'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
           ? 'common.cancel'.tr
           : 'Cancel',
-      confirmLabel: 'common.delete'.tr.isNotEmpty &&
-              'common.delete'.tr != 'common.delete'
+      confirmLabel:
+          'common.delete'.tr.isNotEmpty && 'common.delete'.tr != 'common.delete'
           ? 'common.delete'.tr
           : 'Delete',
       icon: Icons.delete_outline_rounded,
@@ -1163,12 +1258,14 @@ class _CommunityScreenState extends State<CommunityScreen>
       if (success && context.mounted) {
         AppNotificationBanner.showSuccess(
           context: context,
-          title: 'community.discussionDeleted'.tr.isNotEmpty &&
+          title:
+              'community.discussionDeleted'.tr.isNotEmpty &&
                   'community.discussionDeleted'.tr !=
                       'community.discussionDeleted'
               ? 'community.discussionDeleted'.tr
               : 'Discussion Deleted',
-          message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+          message:
+              'community.discussionDeletedMsg'.tr.isNotEmpty &&
                   'community.discussionDeletedMsg'.tr !=
                       'community.discussionDeletedMsg'
               ? 'community.discussionDeletedMsg'.tr
@@ -1183,12 +1280,10 @@ class _CommunityScreenState extends State<CommunityScreen>
       }
     } catch (e) {
       if (context.mounted) {
-        String errorMsg =
-            'Failed to delete discussion. Please try again.';
+        String errorMsg = 'Failed to delete discussion. Please try again.';
         if (e is AppError) {
           if (e.isForbidden) {
-            errorMsg =
-                'You do not have permission to delete this discussion.';
+            errorMsg = 'You do not have permission to delete this discussion.';
           } else if (e.isNotFound) {
             errorMsg = 'Discussion not found.';
           } else if (e.message.isNotEmpty) {
@@ -2144,14 +2239,18 @@ class _CommunityScreenState extends State<CommunityScreen>
   Widget _buildCareerTab(BuildContext context, CommunityController controller) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final mediaQuery = MediaQuery.of(context);
     final safeBottom = mediaQuery.padding.bottom;
@@ -2172,10 +2271,13 @@ class _CommunityScreenState extends State<CommunityScreen>
               itemCount: CommunityController.opportunityCategories.length,
               separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final category = CommunityController.opportunityCategories[index];
+                final category =
+                    CommunityController.opportunityCategories[index];
                 final isSelected = activeType == category;
 
-                final activeBg = isDark ? Colors.white : AppColors.lightTextPrimary;
+                final activeBg = isDark
+                    ? Colors.white
+                    : AppColors.lightTextPrimary;
                 final activeText = isDark ? Colors.black : Colors.white;
                 final inactiveBg = isDark
                     ? Colors.white.withValues(alpha: 0.06)
@@ -2188,14 +2290,19 @@ class _CommunityScreenState extends State<CommunityScreen>
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected ? activeBg : inactiveBg,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                         border: Border.all(
                           color: isSelected
                               ? Colors.transparent
-                              : borderSubtle.withValues(alpha: isDark ? 0.4 : 0.6),
+                              : borderSubtle.withValues(
+                                  alpha: isDark ? 0.4 : 0.6,
+                                ),
                           width: 0.8,
                         ),
                       ),
@@ -2205,7 +2312,9 @@ class _CommunityScreenState extends State<CommunityScreen>
                         style: TextStyle(
                           color: isSelected ? activeText : textSecondary,
                           fontSize: 12.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
                       ),
                     ),
@@ -2243,14 +2352,18 @@ class _CommunityScreenState extends State<CommunityScreen>
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
-                        onPressed: () => controller.fetchOpportunities(isRefresh: true),
+                        onPressed: () =>
+                            controller.fetchOpportunities(isRefresh: true),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brandPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
-                        child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                        child: const Text(
+                          'Retry',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),
@@ -2302,7 +2415,11 @@ class _CommunityScreenState extends State<CommunityScreen>
                               controller.selectedOpportunityType.value == 'All'
                                   ? 'New internships, scholarships, and jobs will appear here.'
                                   : 'No ${controller.selectedOpportunityType.value.toLowerCase()} opportunities available at this time.',
-                              style: TextStyle(color: textMuted, fontSize: 13.5, height: 1.45),
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 13.5,
+                                height: 1.45,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -2317,16 +2434,52 @@ class _CommunityScreenState extends State<CommunityScreen>
             return RefreshIndicator(
               onRefresh: controller.refreshOpportunities,
               color: AppColors.brandPrimary,
-              child: ListView.builder(
-                padding: EdgeInsets.only(
-                  top: 8,
-                  bottom: safeBottom + 88,
-                ),
-                itemCount: controller.opportunities.length,
-                itemBuilder: (context, index) {
-                  final opp = controller.opportunities[index];
-                  return OpportunityCardWidget(opportunity: opp);
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.pixels >=
+                      notification.metrics.maxScrollExtent - 240) {
+                    controller.loadMoreOpportunities();
+                  }
+                  return false;
                 },
+                child: ListView.builder(
+                  padding: EdgeInsets.only(top: 8, bottom: safeBottom + 88),
+                  itemCount:
+                      controller.opportunities.length +
+                      (controller.isLoadingMoreOpportunities.value ||
+                              controller.hasMoreOpportunitiesError.value
+                          ? 1
+                          : 0),
+                  itemBuilder: (context, index) {
+                    if (index == controller.opportunities.length) {
+                      if (controller.isLoadingMoreOpportunities.value) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.brandPrimary,
+                            ),
+                          ),
+                        );
+                      }
+                      return Center(
+                        child: TextButton(
+                          onPressed: controller.loadMoreOpportunities,
+                          child: Text(
+                            controller
+                                    .opportunitiesMoreErrorMessage
+                                    .value
+                                    .isNotEmpty
+                                ? controller.opportunitiesMoreErrorMessage.value
+                                : 'Retry loading opportunities',
+                          ),
+                        ),
+                      );
+                    }
+                    final opp = controller.opportunities[index];
+                    return OpportunityCardWidget(opportunity: opp);
+                  },
+                ),
               ),
             );
           }),

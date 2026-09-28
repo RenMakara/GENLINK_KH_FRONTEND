@@ -86,9 +86,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
-    await tester.pumpAndSettle();
-
     final darkThemeOption = find.text('Dark');
     await tester.ensureVisible(darkThemeOption);
     await tester.pumpAndSettle();

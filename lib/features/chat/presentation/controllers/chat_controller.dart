@@ -22,6 +22,12 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   final isLoadingConversations = false.obs;
   final isLoadingMessages = false.obs;
+  final isLoadingOlderMessages = false.obs;
+  final hasOlderMessages = false.obs;
+  final olderMessagesError = ''.obs;
+  static const int _messagesPageSize = 30;
+  int _olderMessagesPage = 0;
+  double _lastMessageScrollOffset = 0;
   final isSendingMessage = false.obs;
   final unreadCount = 0.obs;
 
@@ -38,6 +44,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     _isDisposed = false;
     debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onInit');
     WidgetsBinding.instance.addObserver(this);
+    scrollController.addListener(_onMessageScroll);
     fetchConversations();
     fetchUnreadCount();
   }
@@ -53,6 +60,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     _isDisposed = true;
     debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onClose');
     WidgetsBinding.instance.removeObserver(this);
+    scrollController.removeListener(_onMessageScroll);
     textController.dispose();
     scrollController.dispose();
     super.onClose();
@@ -67,12 +75,22 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       }
       final currentRoomId = activeRoomId.value;
       if (currentRoomId != null && currentRoomId.isNotEmpty) {
-        repository.getMessages(currentRoomId).then((msgs) {
+        final requestId = ++_messageLoadSequence;
+        repository.getMessagesPage(
+          currentRoomId,
+          page: 0,
+          size: _messagesPageSize,
+        ).then((page) {
           if (activeRoomId.value == currentRoomId) {
-            activeMessages.assignAll(msgs);
+            if (_messageLoadSequence != requestId) return;
+            activeMessages.assignAll(page.content);
+            _olderMessagesPage = 0;
+            hasOlderMessages.value = page.hasNext;
+            olderMessagesError.value = '';
           }
         }).catchError((_) {}).whenComplete(() {
-          if (activeRoomId.value == currentRoomId) {
+          if (activeRoomId.value == currentRoomId &&
+              _messageLoadSequence == requestId) {
             isLoadingMessages.value = false;
           }
         });
@@ -165,6 +183,11 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     activeConversation.value = null;
     activeMessages.clear();
     isLoadingMessages.value = false;
+    isLoadingOlderMessages.value = false;
+    hasOlderMessages.value = false;
+    olderMessagesError.value = '';
+    _olderMessagesPage = 0;
+    _lastMessageScrollOffset = 0;
     replyingToMessage.value = null;
     pinnedMessage.value = null;
     typingUserName.value = null;
@@ -250,12 +273,20 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     // 4. Fetch messages directly for this room with race protection
     debugPrint('[CHAT-API] GET messages roomId = $cleanRoomId, requestSequence = $requestId');
     try {
-      final msgs = await repository.getMessages(cleanRoomId);
+      final page = await repository.getMessagesPage(
+        cleanRoomId,
+        page: 0,
+        size: _messagesPageSize,
+      );
+      final msgs = page.content;
       debugPrint('[CHAT-API] response roomId = $cleanRoomId, messageCount = ${msgs.length}, requestSequence = $requestId, currentSequence = $_messageLoadSequence, activeRoomId = ${activeRoomId.value}');
       if (activeRoomId.value == cleanRoomId && _messageLoadSequence == requestId) {
         debugPrint('[CHAT-API] APPLIED roomId = $cleanRoomId, count = ${msgs.length}');
         debugPrint('[CHAT-STATE] activeMessages.assignAll() roomId = $cleanRoomId, count = ${msgs.length}');
         activeMessages.assignAll(msgs);
+        _olderMessagesPage = 0;
+        hasOlderMessages.value = page.hasNext;
+        olderMessagesError.value = '';
         final pinned = msgs.firstWhereOrNull((m) => m.isPinned);
         if (pinned != null) {
           pinnedMessage.value = pinned;
@@ -304,6 +335,72 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   Future<void> openConversation(ChatConversationModel conv) async {
     await ensureConversationLoaded(conv.id, conversation: conv);
+  }
+
+  void _onMessageScroll() {
+    if (!scrollController.hasClients) return;
+    final position = scrollController.position;
+    final movingTowardOlder = position.pixels < _lastMessageScrollOffset;
+    _lastMessageScrollOffset = position.pixels;
+    if (movingTowardOlder && position.pixels <= 90) {
+      loadOlderMessages();
+    }
+  }
+
+  Future<void> loadOlderMessages() async {
+    final roomId = activeRoomId.value;
+    if (roomId == null ||
+        roomId.isEmpty ||
+        !hasOlderMessages.value ||
+        isLoadingOlderMessages.value ||
+        isLoadingMessages.value) {
+      return;
+    }
+
+    final requestSequence = _messageLoadSequence;
+    final pageToLoad = _olderMessagesPage + 1;
+    final beforePixels = scrollController.hasClients
+        ? scrollController.position.pixels
+        : 0.0;
+    final beforeExtent = scrollController.hasClients
+        ? scrollController.position.maxScrollExtent
+        : 0.0;
+    isLoadingOlderMessages.value = true;
+    olderMessagesError.value = '';
+    try {
+      final page = await repository.getMessagesPage(
+        roomId,
+        page: pageToLoad,
+        size: _messagesPageSize,
+      );
+      if (activeRoomId.value != roomId ||
+          _messageLoadSequence != requestSequence) {
+        return;
+      }
+      final existingIds = activeMessages.map((message) => message.id).toSet();
+      final older = page.content
+          .where((message) => message.id.isNotEmpty && existingIds.add(message.id))
+          .toList();
+      final merged = <ChatMessageModel>[...older, ...activeMessages];
+      merged.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      activeMessages.assignAll(merged);
+      _olderMessagesPage = pageToLoad;
+      hasOlderMessages.value = page.hasNext;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!scrollController.hasClients || activeRoomId.value != roomId) return;
+        final addedExtent = scrollController.position.maxScrollExtent - beforeExtent;
+        if (addedExtent > 0) {
+          scrollController.jumpTo(beforePixels + addedExtent);
+        }
+      });
+    } catch (e) {
+      if (activeRoomId.value == roomId &&
+          _messageLoadSequence == requestSequence) {
+        olderMessagesError.value = e.toString();
+      }
+    } finally {
+      isLoadingOlderMessages.value = false;
+    }
   }
 
 

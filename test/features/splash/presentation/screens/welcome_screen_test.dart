@@ -39,6 +39,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(390, 844),
     bool disableAnimations = false,
+    Brightness brightness = Brightness.light,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -49,13 +50,16 @@ void main() {
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(
             disableAnimations: disableAnimations,
+            platformBrightness: brightness,
           ),
           child: child!,
         ),
         translations: AppTranslations(),
         locale: LocalizationService.englishLocale,
         fallbackLocale: LocalizationService.englishLocale,
-        theme: AppTheme.lightFor('en'),
+        theme: brightness == Brightness.dark
+            ? AppTheme.darkFor('en')
+            : AppTheme.lightFor('en'),
         getPages: [
           GetPage(name: AppRoutes.welcome, page: () => const WelcomeScreen()),
           GetPage(
@@ -81,23 +85,24 @@ void main() {
     await tester.pump();
     expect(find.byType(WelcomeScreen), findsOneWidget);
 
-    // Progress through entrance animation (800ms)
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump(const Duration(milliseconds: 500));
+    // Progress through entrance animation (900ms)
+    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pump(const Duration(milliseconds: 550));
 
     // Logo & branding
-    expect(find.text('Same opportunities.\nBrighter tomorrows.'), findsOneWidget);
-
-    // Illustration asset
+    expect(find.bySemanticsLabel('GenLink KH logo'), findsOneWidget);
+    expect(find.text('Welcome to'), findsOneWidget);
+    expect(find.text('GenLink'), findsOneWidget);
     expect(
-      find.bySemanticsLabel('GenLink students and Angkor Wat illustration'),
+      find.text(
+        'A community where opportunities,\nknowledge, and connections help you\nbuild a brighter future.',
+      ),
       findsOneWidget,
     );
 
-    // Buttons & indicators
+    // Buttons
     expect(find.text('Get started'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
-    expect(find.bySemanticsLabel('Step 1 of 4'), findsOneWidget);
 
     // Feature badges
     expect(find.text('Learn'), findsOneWidget);
@@ -105,17 +110,13 @@ void main() {
     expect(find.text('Grow'), findsOneWidget);
     expect(find.text('Together'), findsOneWidget);
 
-    // Decorative paper plane calligraphy
-    expect(find.text('Connect.\nLearn.\nGrow.\nTogether.'), findsOneWidget);
-
-    // Bottom card content
-    expect(find.text('A brighter future\nstarts with you'), findsOneWidget);
-    expect(
-      find.text(
-        'Join a community, explore opportunities,\nand build the best version of yourself.',
-      ),
-      findsOneWidget,
-    );
+    // Bottom benefits card
+    expect(find.text('Real'), findsOneWidget);
+    expect(find.text('Opportunities'), findsOneWidget);
+    expect(find.text('Practical'), findsOneWidget);
+    expect(find.text('Knowledge'), findsOneWidget);
+    expect(find.text('Meaningful'), findsOneWidget);
+    expect(find.text('Connections'), findsOneWidget);
 
     // Verify Get started button has NO arrow icon
     expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
@@ -199,7 +200,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
 
     // Khmer headline
-    expect(find.text('ឱកាសដូចគ្នា\nថ្ងៃស្អែកកាន់តែភ្លឺស្វាង'), findsOneWidget);
+    expect(find.text('ស្វាគមន៍មកកាន់'), findsOneWidget);
+    expect(find.text('GenLink'), findsOneWidget);
 
     // Khmer feature badges
     expect(find.text('រៀន'), findsOneWidget);
@@ -207,10 +209,58 @@ void main() {
     expect(find.text('រីកចម្រើន'), findsOneWidget);
     expect(find.text('រួមគ្នា'), findsOneWidget);
 
-    // Khmer bottom card
-    expect(find.text('អនាគតកាន់តែភ្លឺស្វាង\nចាប់ផ្តើមពីអ្នក'), findsOneWidget);
+    // Khmer benefits card
+    expect(find.text('ឱកាស'), findsOneWidget);
+    expect(find.text('ពិតប្រាកដ'), findsOneWidget);
+    expect(find.text('ចំណេះដឹង'), findsOneWidget);
+    expect(find.text('ជាក់ស្តែង'), findsOneWidget);
+    expect(find.text('ទំនាក់ទំនង'), findsOneWidget);
+    expect(find.text('មានន័យ'), findsOneWidget);
+
+    // Khmer buttons
     expect(find.text('ចាប់ផ្តើម'), findsOneWidget);
     expect(find.text('រំលងសិន'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('renders cleanly in dark mode without regressions or overflow', (
+    tester,
+  ) async {
+    await pumpScreen(tester, brightness: Brightness.dark);
+    await tester.pump(const Duration(milliseconds: 900));
+
+    // Logo & branding
+    expect(find.bySemanticsLabel('GenLink KH logo'), findsOneWidget);
+    expect(find.text('Welcome to'), findsOneWidget);
+    expect(find.text('GenLink'), findsOneWidget);
+
+    // Feature badges
+    expect(find.text('Learn'), findsOneWidget);
+    expect(find.text('Connect'), findsOneWidget);
+    expect(find.text('Grow'), findsOneWidget);
+    expect(find.text('Together'), findsOneWidget);
+
+    // Bottom benefits card
+    expect(find.text('Real'), findsOneWidget);
+    expect(find.text('Opportunities'), findsOneWidget);
+    expect(find.text('Practical'), findsOneWidget);
+    expect(find.text('Knowledge'), findsOneWidget);
+    expect(find.text('Meaningful'), findsOneWidget);
+    expect(find.text('Connections'), findsOneWidget);
+
+    // CTA Button
+    expect(find.text('Get started'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+
+    // Verify dark mode logo asset is used
+    final darkLogoFinder = find.byWidgetPredicate(
+      (w) =>
+          w is Image &&
+          w.image is AssetImage &&
+          (w.image as AssetImage).assetName == 'assets/splash/genlink-gl-dark.png',
+    );
+    expect(darkLogoFinder, findsOneWidget);
+
     expect(tester.takeException(), isNull);
   });
 
@@ -274,28 +324,29 @@ void main() {
       expect(learnSize, equals(togetherSize));
       expect(learnSize.width, inInclusiveRange(84.0, 96.0));
 
-      // Verify bottom card container has margins and is compact
-      final bottomCardFinder = find.ancestor(
-        of: find.text('Get started'),
+      // Verify benefits card container has margins
+      final benefitsCardFinder = find.ancestor(
+        of: find.text('Real'),
         matching: find.byWidgetPredicate(
           (w) =>
               w is DecoratedBox &&
               w.decoration is BoxDecoration &&
               (w.decoration as BoxDecoration).borderRadius ==
-                  BorderRadius.circular(28),
+                  BorderRadius.circular(24),
         ),
       );
-      expect(bottomCardFinder, findsOneWidget);
+      expect(benefitsCardFinder, findsOneWidget);
 
-      final cardRect = tester.getRect(bottomCardFinder);
-      expect(cardRect.left, equals(24.0));
-      expect(390.0 - cardRect.right, equals(24.0));
-      expect(cardRect.height, lessThan(320.0));
+      final cardRect = tester.getRect(benefitsCardFinder);
+      expect(cardRect.left, equals(20.0));
+      expect(390.0 - cardRect.right, equals(20.0));
 
-      // Verify button is inside bottom card
+      // Verify button has safe horizontal margins
       final buttonFinder = find.widgetWithText(FilledButton, 'Get started');
+      expect(buttonFinder, findsOneWidget);
       final buttonRect = tester.getRect(buttonFinder);
-      expect(cardRect.contains(buttonRect.center), isTrue);
+      expect(buttonRect.left, equals(20.0));
+      expect(390.0 - buttonRect.right, equals(20.0));
     },
   );
 

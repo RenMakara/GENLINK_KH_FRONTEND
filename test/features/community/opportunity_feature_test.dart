@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/features/community/domain/models/opportunity_model.dart';
+import 'package:genlink_frontend/features/community/domain/models/event_requests.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/opportunity_card_widget.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/opportunity_details_screen.dart';
 
-class MockCommunityRepositoryForOpportunity extends Fake implements CommunityRepository {
+class MockCommunityRepositoryForOpportunity extends Fake
+    implements CommunityRepository {
   List<OpportunityModel> mockOpportunities = [
     OpportunityModel(
       id: '1',
@@ -43,9 +45,32 @@ class MockCommunityRepositoryForOpportunity extends Fake implements CommunityRep
     int size = 20,
   }) async {
     if (type != null && type.isNotEmpty && type != 'All') {
-      return mockOpportunities.where((o) => o.type.toUpperCase() == type.toUpperCase()).toList();
+      return mockOpportunities
+          .where((o) => o.type.toUpperCase() == type.toUpperCase())
+          .toList();
     }
     return mockOpportunities;
+  }
+
+  @override
+  Future<EventPageModel<OpportunityModel>> getOpportunitiesPage({
+    String? type,
+    bool includeExpired = false,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final content = await getOpportunities(
+      type: type,
+      includeExpired: includeExpired,
+      page: page - 1,
+      size: limit,
+    );
+    return EventPageModel<OpportunityModel>.fromContent(
+      content,
+      page: page - 1,
+      size: limit,
+      hasNext: content.length >= limit,
+    );
   }
 
   @override
@@ -54,13 +79,14 @@ class MockCommunityRepositoryForOpportunity extends Fake implements CommunityRep
   }
 
   @override
-  Future<bool> toggleSaveOpportunity(String opportunityId, bool currentlySaved) async {
+  Future<bool> toggleSaveOpportunity(
+    String opportunityId,
+    bool currentlySaved,
+  ) async {
     final idx = mockOpportunities.indexWhere((o) => o.id == opportunityId);
     if (idx != -1) {
       final current = mockOpportunities[idx];
-      mockOpportunities[idx] = current.copyWith(
-        savedByMe: !currentlySaved,
-      );
+      mockOpportunities[idx] = current.copyWith(savedByMe: !currentlySaved);
       return !currentlySaved;
     }
     return false;
@@ -124,11 +150,56 @@ void main() {
     });
 
     test('displayType maps correctly for known types', () {
-      expect(const OpportunityModel(id: '1', title: '', organization: '', description: '', type: 'INTERNSHIP').displayType, 'Internship');
-      expect(const OpportunityModel(id: '2', title: '', organization: '', description: '', type: 'SCHOLARSHIP').displayType, 'Scholarship');
-      expect(const OpportunityModel(id: '3', title: '', organization: '', description: '', type: 'HACKATHON').displayType, 'Hackathon');
-      expect(const OpportunityModel(id: '4', title: '', organization: '', description: '', type: 'VOLUNTEER').displayType, 'Volunteer');
-      expect(const OpportunityModel(id: '5', title: '', organization: '', description: '', type: 'OTHER').displayType, 'Other');
+      expect(
+        const OpportunityModel(
+          id: '1',
+          title: '',
+          organization: '',
+          description: '',
+          type: 'INTERNSHIP',
+        ).displayType,
+        'Internship',
+      );
+      expect(
+        const OpportunityModel(
+          id: '2',
+          title: '',
+          organization: '',
+          description: '',
+          type: 'SCHOLARSHIP',
+        ).displayType,
+        'Scholarship',
+      );
+      expect(
+        const OpportunityModel(
+          id: '3',
+          title: '',
+          organization: '',
+          description: '',
+          type: 'HACKATHON',
+        ).displayType,
+        'Hackathon',
+      );
+      expect(
+        const OpportunityModel(
+          id: '4',
+          title: '',
+          organization: '',
+          description: '',
+          type: 'VOLUNTEER',
+        ).displayType,
+        'Volunteer',
+      );
+      expect(
+        const OpportunityModel(
+          id: '5',
+          title: '',
+          organization: '',
+          description: '',
+          type: 'OTHER',
+        ).displayType,
+        'Other',
+      );
     });
 
     test('daysLeft and isExpiringSoon calculations', () {
@@ -185,18 +256,21 @@ void main() {
       expect(controller.opportunities.length, 2);
     });
 
-    test('toggleOpportunityBookmark toggles saved status optimistically and resolves', () async {
-      await controller.fetchOpportunities();
-      expect(controller.opportunities[0].savedByMe, isFalse);
+    test(
+      'toggleOpportunityBookmark toggles saved status optimistically and resolves',
+      () async {
+        await controller.fetchOpportunities();
+        expect(controller.opportunities[0].savedByMe, isFalse);
 
-      final result1 = await controller.toggleOpportunityBookmark('1');
-      expect(result1, isTrue);
-      expect(controller.opportunities[0].savedByMe, isTrue);
+        final result1 = await controller.toggleOpportunityBookmark('1');
+        expect(result1, isTrue);
+        expect(controller.opportunities[0].savedByMe, isTrue);
 
-      final result2 = await controller.toggleOpportunityBookmark('1');
-      expect(result2, isFalse);
-      expect(controller.opportunities[0].savedByMe, isFalse);
-    });
+        final result2 = await controller.toggleOpportunityBookmark('1');
+        expect(result2, isFalse);
+        expect(controller.opportunities[0].savedByMe, isFalse);
+      },
+    );
   });
 
   group('Opportunity Widgets and Screens tests', () {
@@ -212,42 +286,48 @@ void main() {
       Get.reset();
     });
 
-    testWidgets('OpportunityCardWidget renders title, organization, and badges', (tester) async {
-      final opportunity = OpportunityModel(
-        id: '1',
-        title: 'Software Engineer Internship',
-        organization: 'ACLEDA Bank',
-        description: 'Exciting summer internship for tech students.',
-        type: 'INTERNSHIP',
-        location: 'Phnom Penh',
-        deadline: DateTime.now().add(const Duration(days: 10)),
-        savedByMe: false,
-      );
+    testWidgets(
+      'OpportunityCardWidget renders title, organization, and badges',
+      (tester) async {
+        final opportunity = OpportunityModel(
+          id: '1',
+          title: 'Software Engineer Internship',
+          organization: 'ACLEDA Bank',
+          description: 'Exciting summer internship for tech students.',
+          type: 'INTERNSHIP',
+          location: 'Phnom Penh',
+          deadline: DateTime.now().add(const Duration(days: 10)),
+          savedByMe: false,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: OpportunityCardWidget(
-              opportunity: opportunity,
-              onBookmarkToggle: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: OpportunityCardWidget(
+                opportunity: opportunity,
+                onBookmarkToggle: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Software Engineer Internship'), findsOneWidget);
-      expect(find.text('ACLEDA Bank'), findsOneWidget);
-      expect(find.text('Internship'), findsOneWidget);
-      expect(find.text('Phnom Penh'), findsOneWidget);
-      expect(find.byIcon(Icons.bookmark_outline_rounded), findsOneWidget);
-    });
+        expect(find.text('Software Engineer Internship'), findsOneWidget);
+        expect(find.text('ACLEDA Bank'), findsOneWidget);
+        expect(find.text('Internship'), findsOneWidget);
+        expect(find.text('Phnom Penh'), findsOneWidget);
+        expect(find.byIcon(Icons.bookmark_outline_rounded), findsOneWidget);
+      },
+    );
 
-    testWidgets('OpportunityDetailsScreen renders full view and details', (tester) async {
+    testWidgets('OpportunityDetailsScreen renders full view and details', (
+      tester,
+    ) async {
       final opportunity = OpportunityModel(
         id: '2',
         title: 'Full Tech Scholarship',
         organization: 'CADT Cambodia',
-        description: 'Comprehensive scholarship program for outstanding students.',
+        description:
+            'Comprehensive scholarship program for outstanding students.',
         type: 'SCHOLARSHIP',
         location: 'Phnom Penh, Cambodia',
         applyLink: 'https://cadt.edu.kh/apply',
@@ -256,11 +336,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: OpportunityDetailsScreen(
-            opportunity: opportunity,
-          ),
-        ),
+        MaterialApp(home: OpportunityDetailsScreen(opportunity: opportunity)),
       );
 
       expect(find.text('Full Tech Scholarship'), findsOneWidget);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -60,20 +61,33 @@ class CommunityController extends GetxController {
   final isRefreshingFeed = false.obs;
   final isLoadingMore = false.obs;
   final hasMorePosts = true.obs;
+  final hasMorePostsError = false.obs;
+  final morePostsErrorMessage = ''.obs;
   final currentPage = 1.obs;
   final hasError = false.obs;
   final errorMessage = ''.obs;
+  int _feedRequestGeneration = 0;
+  Future<void>? _feedLoadFuture;
 
   final isUploadingPost = false.obs;
   final uploadProgress = 0.0.obs;
 
   final posts = <CommunityPostModel>[].obs;
+
   /// Reposts are loaded separately so they never become part of the main feed.
   final repostedPosts = <CommunityPostModel>[].obs;
   final isLoadingRepostedPosts = false.obs;
   bool _hasLoadedRepostedPosts = false;
+
+  /// Discussion reposts are profile-only and never join the Forum list.
+  final discussionRepostsByUser = <String, List<ForumTopicModel>>{}.obs;
+  final isLoadingDiscussionReposts = <String, bool>{}.obs;
+  final Set<String> _loadedDiscussionRepostUsers = <String>{};
+  final Set<String> _inFlightDiscussionRepostUsers = <String>{};
   final activeComments = <CommentModel>[].obs;
   final isLoadingComments = false.obs;
+  final commentsErrorMessage = ''.obs;
+  String? _activeCommentsPostId;
   final followLoadingUserIds = <String>{}.obs;
 
   final stories = <StoryModel>[
@@ -145,6 +159,7 @@ class CommunityController extends GetxController {
   final currentMyEventsPage = 1.obs;
 
   final eventBookmarkLoadingIds = <String>{}.obs;
+  final Set<String> _eventHydrationRequests = <String>{};
 
   // ── Opportunities (Career) ──────────────────────────────────────────
   final opportunities = <OpportunityModel>[].obs;
@@ -152,6 +167,12 @@ class CommunityController extends GetxController {
   final isRefreshingOpportunities = false.obs;
   final hasOpportunitiesError = false.obs;
   final opportunitiesErrorMessage = ''.obs;
+  final isLoadingMoreOpportunities = false.obs;
+  final hasMoreOpportunities = true.obs;
+  final hasMoreOpportunitiesError = false.obs;
+  final opportunitiesMoreErrorMessage = ''.obs;
+  final currentOpportunitiesPage = 1.obs;
+  int _opportunitiesRequestGeneration = 0;
   final selectedOpportunityType = 'All'.obs;
   final opportunityBookmarkLoadingIds = <String>{}.obs;
   static const opportunityCategories = [
@@ -187,13 +208,18 @@ class CommunityController extends GetxController {
           (uploadedCoverUrl == null || uploadedCoverUrl.isEmpty) &&
           Get.isRegistered<MediaUploadService>()) {
         final uploadService = Get.find<MediaUploadService>();
-        final bytes = await coverImageFile.readAsBytes();
         final path = coverImageFile.path.toLowerCase();
         final contentType = path.endsWith('.png')
             ? 'image/png'
             : path.endsWith('.webp')
             ? 'image/webp'
             : 'image/jpeg';
+        uploadService.validateFile(
+          sizeBytes: await coverImageFile.length(),
+          contentType: contentType,
+          purpose: MediaPurpose.eventCover,
+        );
+        final bytes = await coverImageFile.readAsBytes();
         final media = await uploadService.upload(
           bytes: bytes,
           contentType: contentType,
@@ -227,20 +253,24 @@ class CommunityController extends GetxController {
       final currentUid = CurrentUser.id.isNotEmpty
           ? CurrentUser.id
           : (Get.isRegistered<AuthController>()
-              ? Get.find<AuthController>().currentUser.value?.id ?? ''
-              : '');
+                ? Get.find<AuthController>().currentUser.value?.id ?? ''
+                : '');
       final currentName = CurrentUser.name;
       final currentUsername = CurrentUser.username;
       final currentAvatar = CurrentUser.avatarUrl;
 
-      if (createdEvent.organizerId == null || createdEvent.organizerId!.isEmpty) {
+      if (createdEvent.organizerId == null ||
+          createdEvent.organizerId!.isEmpty) {
         if (currentUid.isNotEmpty) {
           createdEvent = createdEvent.copyWith(
             organizerId: currentUid,
             organizerName: createdEvent.organizerName.isNotEmpty
                 ? createdEvent.organizerName
-                : (currentName.isNotEmpty && currentName != 'Guest' ? currentName : ''),
-            organizerUsername: createdEvent.organizerUsername?.isNotEmpty == true
+                : (currentName.isNotEmpty && currentName != 'Guest'
+                      ? currentName
+                      : ''),
+            organizerUsername:
+                createdEvent.organizerUsername?.isNotEmpty == true
                 ? createdEvent.organizerUsername
                 : (currentUsername.isNotEmpty ? currentUsername : null),
             organizerAvatar: createdEvent.organizerAvatar ?? currentAvatar,
@@ -321,8 +351,8 @@ class CommunityController extends GetxController {
     final currentUid = CurrentUser.id.isNotEmpty
         ? CurrentUser.id
         : (Get.isRegistered<AuthController>()
-            ? Get.find<AuthController>().currentUser.value?.id ?? ''
-            : '');
+              ? Get.find<AuthController>().currentUser.value?.id ?? ''
+              : '');
     final currentName = CurrentUser.name;
     final currentUsername = CurrentUser.username;
     final currentAvatar = CurrentUser.avatarUrl;
@@ -334,7 +364,9 @@ class CommunityController extends GetxController {
           organizerId: currentUid,
           organizerName: eventToStore.organizerName.isNotEmpty
               ? eventToStore.organizerName
-              : (currentName.isNotEmpty && currentName != 'Guest' ? currentName : ''),
+              : (currentName.isNotEmpty && currentName != 'Guest'
+                    ? currentName
+                    : ''),
           organizerUsername: eventToStore.organizerUsername?.isNotEmpty == true
               ? eventToStore.organizerUsername
               : (currentUsername.isNotEmpty ? currentUsername : null),
@@ -649,12 +681,8 @@ class CommunityController extends GetxController {
 
   Future<EventModel> fetchEventDetails(String eventId) async {
     var event = await repository.getEventDetails(eventId);
-    try {
-      final savedIds = await repository.getSavedEventIds();
-      if (savedIds.contains(event.id)) {
-        event = event.copyWith(isBookmarked: true);
-      }
-    } catch (_) {}
+    final savedIds = await repository.getSavedEventIds();
+    event = event.copyWith(isBookmarked: savedIds.contains(event.id));
     if (event.isPublished) {
       _upsertEvent(events, event);
     } else {
@@ -678,16 +706,10 @@ class CommunityController extends GetxController {
     try {
       final fetchedPage = await _getEventsPage(page: 1, limit: 20);
       final fetched = fetchedPage.content;
-      try {
-        final savedIds = await repository.getSavedEventIds();
-        if (savedIds.isNotEmpty) {
-          for (final ev in fetched) {
-            if (savedIds.contains(ev.id)) {
-              ev.isBookmarked = true;
-            }
-          }
-        }
-      } catch (_) {}
+      final savedIds = await repository.getSavedEventIds();
+      for (final event in fetched) {
+        event.isBookmarked = savedIds.contains(event.id);
+      }
       events.assignAll(fetched);
       currentEventsPage.value = 1;
       hasMoreEvents.value = fetchedPage.hasNext;
@@ -863,7 +885,11 @@ class CommunityController extends GetxController {
   // ── Opportunities (Career) ──────────────────────────────────────────
 
   Future<void> fetchOpportunities({bool isRefresh = false}) async {
-    if (isLoadingOpportunities.value || isRefreshingOpportunities.value) return;
+    if (!isRefresh &&
+        (isLoadingOpportunities.value || isRefreshingOpportunities.value)) {
+      return;
+    }
+    final requestGeneration = ++_opportunitiesRequestGeneration;
     if (isRefresh) {
       isRefreshingOpportunities.value = true;
     } else {
@@ -876,25 +902,74 @@ class CommunityController extends GetxController {
       final type = selectedOpportunityType.value == 'All'
           ? null
           : selectedOpportunityType.value;
-      final results = await repository.getOpportunities(
+      final fetched = await repository.getOpportunitiesPage(
         type: type,
         includeExpired: false,
+        page: 1,
+        limit: 20,
       );
-      opportunities.assignAll(results);
+      if (requestGeneration != _opportunitiesRequestGeneration) return;
+      opportunities.assignAll(fetched.content);
+      currentOpportunitiesPage.value = 1;
+      hasMoreOpportunities.value = fetched.hasNext;
+      hasMoreOpportunitiesError.value = false;
+      opportunitiesMoreErrorMessage.value = '';
     } catch (e) {
+      if (requestGeneration != _opportunitiesRequestGeneration) return;
       if (e is! NoSuchMethodError) {
         debugPrint('[CommunityController] fetchOpportunities error: $e');
       }
       hasOpportunitiesError.value = true;
-      opportunitiesErrorMessage.value =
-          e is AppError ? e.message : 'Unable to load opportunities';
+      opportunitiesErrorMessage.value = e is AppError
+          ? e.message
+          : 'Unable to load opportunities';
     } finally {
-      if (isRefresh) {
-        isRefreshingOpportunities.value = false;
-      } else {
+      if (requestGeneration == _opportunitiesRequestGeneration) {
         isLoadingOpportunities.value = false;
+        isRefreshingOpportunities.value = false;
       }
       opportunities.refresh();
+    }
+  }
+
+  Future<void> loadMoreOpportunities() async {
+    if (isLoadingMoreOpportunities.value ||
+        isLoadingOpportunities.value ||
+        isRefreshingOpportunities.value ||
+        !hasMoreOpportunities.value) {
+      return;
+    }
+    isLoadingMoreOpportunities.value = true;
+    final generation = _opportunitiesRequestGeneration;
+    final nextPage = currentOpportunitiesPage.value + 1;
+    try {
+      final type = selectedOpportunityType.value == 'All'
+          ? null
+          : selectedOpportunityType.value;
+      final fetched = await repository.getOpportunitiesPage(
+        type: type,
+        includeExpired: false,
+        page: nextPage,
+        limit: 20,
+      );
+      if (generation != _opportunitiesRequestGeneration) return;
+      final seen = opportunities.map((item) => item.id).toSet();
+      for (final item in fetched.content) {
+        if (seen.add(item.id)) opportunities.add(item);
+      }
+      currentOpportunitiesPage.value = nextPage;
+      hasMoreOpportunities.value = fetched.hasNext;
+      hasMoreOpportunitiesError.value = false;
+      opportunitiesMoreErrorMessage.value = '';
+    } catch (e) {
+      if (generation == _opportunitiesRequestGeneration) {
+        hasMoreOpportunitiesError.value = true;
+        opportunitiesMoreErrorMessage.value = e is AppError
+            ? e.message
+            : 'Unable to load more opportunities';
+      }
+    } finally {
+      isLoadingMoreOpportunities.value = false;
     }
   }
 
@@ -905,7 +980,7 @@ class CommunityController extends GetxController {
   void filterOpportunitiesByType(String type) {
     if (selectedOpportunityType.value == type) return;
     selectedOpportunityType.value = type;
-    fetchOpportunities();
+    fetchOpportunities(isRefresh: true);
   }
 
   Future<bool> toggleOpportunityBookmark(String opportunityId) async {
@@ -948,6 +1023,7 @@ class CommunityController extends GetxController {
       selectedEventPrice.value != 'All';
 
   List<EventModel> get filteredEvents {
+    final now = DateTime.now();
     return events.where((e) {
       if (selectedEventCategories.isNotEmpty) {
         final catLower = e.category.toLowerCase();
@@ -980,15 +1056,45 @@ class CommunityController extends GetxController {
       }
       if (selectedEventDate.value != 'All' &&
           selectedEventDate.value.isNotEmpty) {
-        final dateLower = e.dateString.toLowerCase();
-        if (selectedEventDate.value == 'Today') {
-          if (!dateLower.contains('today')) {
-            return false;
-          }
+        if (!matchesEventDateFilter(
+          e.startDateTime,
+          selectedEventDate.value,
+          now: now,
+        )) {
+          return false;
         }
       }
       return true;
     }).toList();
+  }
+
+  @visibleForTesting
+  static bool matchesEventDateFilter(
+    DateTime? eventStart,
+    String filter, {
+    required DateTime now,
+  }) {
+    if (filter == 'All' || filter.isEmpty) return true;
+    if (eventStart == null) return false;
+
+    final localNow = now.toLocal();
+    final localStart = eventStart.toLocal();
+    final today = DateTime(localNow.year, localNow.month, localNow.day);
+    final nextDay = today.add(const Duration(days: 1));
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+    final nextWeek = weekStart.add(const Duration(days: 7));
+    final monthStart = DateTime(localNow.year, localNow.month);
+    final nextMonth = DateTime(localNow.year, localNow.month + 1);
+
+    return switch (filter) {
+      'Today' => !localStart.isBefore(today) && localStart.isBefore(nextDay),
+      'This Week' =>
+        !localStart.isBefore(weekStart) && localStart.isBefore(nextWeek),
+      'This Month' =>
+        !localStart.isBefore(monthStart) && localStart.isBefore(nextMonth),
+      'Upcoming' => localStart.isAfter(localNow),
+      _ => true,
+    };
   }
 
   void resetEventFilter() {
@@ -1022,6 +1128,12 @@ class CommunityController extends GetxController {
   final isRefreshingForumDiscussions = false.obs;
   final hasForumError = false.obs;
   final forumErrorMessage = ''.obs;
+  final isLoadingMoreForumDiscussions = false.obs;
+  final hasMoreForumDiscussions = true.obs;
+  final hasMoreForumDiscussionsError = false.obs;
+  final forumMoreErrorMessage = ''.obs;
+  final currentForumDiscussionsPage = 1.obs;
+  int _discussionRequestGeneration = 0;
   RxString get discussionsError => forumErrorMessage;
 
   final isPublishingDiscussion = false.obs;
@@ -1127,6 +1239,12 @@ class CommunityController extends GetxController {
   RxList<ForumTopicModel> get discussions => forumLatestDiscussions;
 
   Future<void> fetchDiscussions({bool isRefresh = false}) async {
+    if (!isRefresh &&
+        (isLoadingForumDiscussions.value ||
+            isRefreshingForumDiscussions.value)) {
+      return;
+    }
+    final requestGeneration = ++_discussionRequestGeneration;
     if (isRefresh) {
       isRefreshingForumDiscussions.value = true;
     } else {
@@ -1139,24 +1257,76 @@ class CommunityController extends GetxController {
       final category = selectedForumCategory.value == 'All'
           ? null
           : selectedForumCategory.value;
-      final fetched = await repository.getDiscussions(
+      final fetchedPage = await repository.getDiscussionsPage(
         category: category,
         page: 1,
         limit: 20,
       );
+      if (requestGeneration != _discussionRequestGeneration) return;
+      final fetched = fetchedPage.content;
       for (final d in fetched) {
         discussionBookmarks[d.id] = d.isBookmarked;
       }
       discussionBookmarks.refresh();
       forumLatestDiscussions.assignAll(fetched);
+      currentForumDiscussionsPage.value = 1;
+      hasMoreForumDiscussions.value = fetchedPage.hasNext;
+      hasMoreForumDiscussionsError.value = false;
+      forumMoreErrorMessage.value = '';
     } catch (e) {
+      if (requestGeneration != _discussionRequestGeneration) return;
       hasForumError.value = true;
       forumErrorMessage.value = e is AppError
           ? e.message
           : 'Couldn\'t load discussions. Try again.';
     } finally {
-      isLoadingForumDiscussions.value = false;
-      isRefreshingForumDiscussions.value = false;
+      if (requestGeneration == _discussionRequestGeneration) {
+        isLoadingForumDiscussions.value = false;
+        isRefreshingForumDiscussions.value = false;
+      }
+    }
+  }
+
+  Future<void> loadMoreDiscussions() async {
+    if (isLoadingMoreForumDiscussions.value ||
+        isLoadingForumDiscussions.value ||
+        isRefreshingForumDiscussions.value ||
+        !hasMoreForumDiscussions.value) {
+      return;
+    }
+    isLoadingMoreForumDiscussions.value = true;
+    final generation = _discussionRequestGeneration;
+    final nextPage = currentForumDiscussionsPage.value + 1;
+    try {
+      final category = selectedForumCategory.value == 'All'
+          ? null
+          : selectedForumCategory.value;
+      final fetched = await repository.getDiscussionsPage(
+        category: category,
+        page: nextPage,
+        limit: 20,
+      );
+      if (generation != _discussionRequestGeneration) return;
+      final seen = forumLatestDiscussions.map((item) => item.id).toSet();
+      for (final discussion in fetched.content) {
+        discussionBookmarks[discussion.id] = discussion.isBookmarked;
+        if (seen.add(discussion.id)) forumLatestDiscussions.add(discussion);
+      }
+      discussionBookmarks.refresh();
+      forumLatestDiscussions.refresh();
+      currentForumDiscussionsPage.value = nextPage;
+      hasMoreForumDiscussions.value = fetched.hasNext;
+      hasMoreForumDiscussionsError.value = false;
+      forumMoreErrorMessage.value = '';
+    } catch (e) {
+      if (generation == _discussionRequestGeneration) {
+        hasMoreForumDiscussionsError.value = true;
+        forumMoreErrorMessage.value = e is AppError
+            ? e.message
+            : 'Unable to load more discussions';
+      }
+    } finally {
+      isLoadingMoreForumDiscussions.value = false;
     }
   }
 
@@ -1262,22 +1432,16 @@ class CommunityController extends GetxController {
   }
 
   Future<bool> checkDiscussionBookmarkStatus(String discussionId) async {
-    try {
-      final saved = await repository.isDiscussionBookmarked(discussionId);
-      discussionBookmarks[discussionId] = saved;
-      final idx = forumLatestDiscussions.indexWhere(
-        (d) => d.id == discussionId,
+    final saved = await repository.isDiscussionBookmarked(discussionId);
+    discussionBookmarks[discussionId] = saved;
+    final idx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    if (idx != -1) {
+      forumLatestDiscussions[idx] = forumLatestDiscussions[idx].copyWith(
+        isBookmarked: saved,
       );
-      if (idx != -1) {
-        forumLatestDiscussions[idx] = forumLatestDiscussions[idx].copyWith(
-          isBookmarked: saved,
-        );
-        forumLatestDiscussions.refresh();
-      }
-      return saved;
-    } catch (_) {
-      return false;
+      forumLatestDiscussions.refresh();
     }
+    return saved;
   }
 
   void clearBookmarkCache() {
@@ -1351,12 +1515,35 @@ class CommunityController extends GetxController {
         (effectiveUserId != null && effectiveUserId.isNotEmpty)
         ? effectiveUserId
         : 'current_user';
+    final normalizedCaption = caption?.trim();
     try {
-      final success = await repository.repostDiscussion(
-        discussion.id,
-        caption: caption,
-        reposterId: effectiveReposterId,
-      );
+      final effectiveCaption =
+          normalizedCaption == null || normalizedCaption.isEmpty
+          ? null
+          : normalizedCaption;
+      bool success;
+      try {
+        success = await repository.repostDiscussion(
+          discussion.id,
+          caption: effectiveCaption,
+          reposterId: effectiveReposterId,
+        );
+      } on NoSuchMethodError {
+        // Keep older repository fakes/source-compatible while production uses
+        // the discussion-specific endpoint above.
+        success = await repository.repostPost(
+          discussion.id,
+          caption: effectiveCaption,
+          reposterId: effectiveReposterId,
+        );
+      }
+      if (success) {
+        _upsertDiscussionRepost(
+          effectiveReposterId,
+          discussion,
+          caption: effectiveCaption,
+        );
+      }
       return success;
     } catch (e) {
       return false;
@@ -1543,7 +1730,13 @@ class CommunityController extends GetxController {
     var changed = false;
     for (final post in feedPosts) {
       final attachedEvent = post.attachedEvent;
-      if (attachedEvent == null) continue;
+      if (attachedEvent == null) {
+        final eventId = post.eventId;
+        if (eventId != null && eventId.isNotEmpty) {
+          unawaited(_hydrateEventForPost(post.id, eventId));
+        }
+        continue;
+      }
 
       final existingIndex = events.indexWhere(
         (event) => event.id == attachedEvent.id,
@@ -1559,7 +1752,62 @@ class CommunityController extends GetxController {
     if (changed) events.refresh();
   }
 
-  Future<void> fetchPosts({bool isRefresh = false}) async {
+  Future<CommunityPostModel> _hydrateAttachedEvent(
+    CommunityPostModel post,
+  ) async {
+    final eventId = post.eventId;
+    if (eventId == null || eventId.isEmpty || post.attachedEvent != null) {
+      return post;
+    }
+    try {
+      final event = await repository.getEventDetails(eventId);
+      _upsertEvent(events, event);
+      return post.copyWith(attachedEvent: event);
+    } catch (_) {
+      // The detail endpoint is the visibility gate; keep the post's event ID,
+      // but do not synthesize event details if the server denies access.
+      return post;
+    }
+  }
+
+  Future<void> _hydrateEventForPost(String postId, String eventId) async {
+    final key = '$postId:$eventId';
+    if (!_eventHydrationRequests.add(key)) return;
+    try {
+      final event = await repository.getEventDetails(eventId);
+      _upsertEvent(events, event);
+      final index = posts.indexWhere(
+        (post) => post.id == postId && post.eventId == eventId,
+      );
+      if (index != -1) {
+        posts[index] = posts[index].copyWith(attachedEvent: event);
+      }
+    } catch (_) {
+      // The server decides whether this event is still visible.
+    } finally {
+      _eventHydrationRequests.remove(key);
+    }
+  }
+
+  int? _durationDays(String? duration) {
+    if (duration == null) return null;
+    return int.tryParse(RegExp(r'\d+').firstMatch(duration)?.group(0) ?? '');
+  }
+
+  Future<void> fetchPosts({bool isRefresh = false}) {
+    final inFlightLoad = _feedLoadFuture;
+    if (!isRefresh && inFlightLoad != null) return inFlightLoad;
+
+    final load = _fetchPosts(isRefresh: isRefresh);
+    _feedLoadFuture = load;
+    load.whenComplete(() {
+      if (identical(_feedLoadFuture, load)) _feedLoadFuture = null;
+    });
+    return load;
+  }
+
+  Future<void> _fetchPosts({required bool isRefresh}) async {
+    final requestGeneration = ++_feedRequestGeneration;
     if (isRefresh) {
       isRefreshingFeed.value = true;
     } else {
@@ -1567,16 +1815,22 @@ class CommunityController extends GetxController {
     }
     hasError.value = false;
     errorMessage.value = '';
+    hasMorePostsError.value = false;
+    morePostsErrorMessage.value = '';
 
     try {
-      currentPage.value = 1;
       final fetched = await repository.getPosts(page: 1, limit: 10);
+      if (requestGeneration != _feedRequestGeneration) return;
+      currentPage.value = 1;
       posts.assignAll(fetched);
       _syncPostBookmarks(fetched);
       _syncAttachedEventsFromPosts(fetched);
       hasMorePosts.value = fetched.length >= 10;
+      hasMorePostsError.value = false;
+      morePostsErrorMessage.value = '';
       _syncFollowStates(fetched);
     } catch (e) {
+      if (requestGeneration != _feedRequestGeneration) return;
       hasError.value = true;
       if (e is AppError) {
         errorMessage.value = e.message;
@@ -1584,14 +1838,15 @@ class CommunityController extends GetxController {
         errorMessage.value = 'Failed to load community feed.';
       }
     } finally {
-      isLoadingFeed.value = false;
-      isRefreshingFeed.value = false;
+      if (requestGeneration == _feedRequestGeneration) {
+        isLoadingFeed.value = false;
+        isRefreshingFeed.value = false;
+      }
     }
   }
 
   Future<void> fetchRepostedPosts({bool force = false}) async {
-    if (isLoadingRepostedPosts.value ||
-        (!force && _hasLoadedRepostedPosts)) {
+    if (isLoadingRepostedPosts.value || (!force && _hasLoadedRepostedPosts)) {
       return;
     }
 
@@ -1603,6 +1858,38 @@ class CommunityController extends GetxController {
       debugPrint('[CommunityController] fetchRepostedPosts error: $e');
     } finally {
       isLoadingRepostedPosts.value = false;
+    }
+  }
+
+  Future<void> fetchDiscussionReposts(
+    String userId, {
+    bool force = false,
+  }) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty ||
+        _inFlightDiscussionRepostUsers.contains(normalizedUserId) ||
+        (!force && _loadedDiscussionRepostUsers.contains(normalizedUserId))) {
+      return;
+    }
+
+    _inFlightDiscussionRepostUsers.add(normalizedUserId);
+    isLoadingDiscussionReposts[normalizedUserId] = true;
+    isLoadingDiscussionReposts.refresh();
+    try {
+      final fetched = await repository.getDiscussionReposts(
+        userId: normalizedUserId,
+        page: 1,
+        limit: 20,
+      );
+      discussionRepostsByUser[normalizedUserId] = fetched;
+      discussionRepostsByUser.refresh();
+      _loadedDiscussionRepostUsers.add(normalizedUserId);
+    } catch (e) {
+      debugPrint('[CommunityController] fetchDiscussionReposts error: $e');
+    } finally {
+      _inFlightDiscussionRepostUsers.remove(normalizedUserId);
+      isLoadingDiscussionReposts[normalizedUserId] = false;
+      isLoadingDiscussionReposts.refresh();
     }
   }
 
@@ -1621,12 +1908,21 @@ class CommunityController extends GetxController {
   }
 
   Future<void> loadMorePosts() async {
-    if (isLoadingMore.value || !hasMorePosts.value) return;
+    if (isLoadingMore.value ||
+        isLoadingFeed.value ||
+        isRefreshingFeed.value ||
+        !hasMorePosts.value) {
+      return;
+    }
 
     isLoadingMore.value = true;
+    final requestGeneration = _feedRequestGeneration;
+    hasMorePostsError.value = false;
+    morePostsErrorMessage.value = '';
     try {
       final nextPage = currentPage.value + 1;
       final fetched = await repository.getPosts(page: nextPage, limit: 10);
+      if (requestGeneration != _feedRequestGeneration) return;
       if (fetched.isNotEmpty) {
         for (final item in fetched) {
           final existingIdx = posts.indexWhere((p) => p.id == item.id);
@@ -1642,7 +1938,13 @@ class CommunityController extends GetxController {
       } else {
         hasMorePosts.value = false;
       }
-    } catch (_) {
+    } catch (e) {
+      if (requestGeneration == _feedRequestGeneration) {
+        hasMorePostsError.value = true;
+        morePostsErrorMessage.value = e is AppError
+            ? e.message
+            : 'Couldn\'t load more posts. Try again.';
+      }
     } finally {
       isLoadingMore.value = false;
     }
@@ -1672,7 +1974,6 @@ class CommunityController extends GetxController {
       } else {
         final file = File(img);
         if (await file.exists()) {
-          final bytes = await file.readAsBytes();
           final ext = img.split('.').last.toLowerCase();
           final contentType = (ext == 'png')
               ? 'image/png'
@@ -1682,6 +1983,12 @@ class CommunityController extends GetxController {
 
           if (Get.isRegistered<MediaUploadService>()) {
             final uploadService = Get.find<MediaUploadService>();
+            uploadService.validateFile(
+              sizeBytes: await file.length(),
+              contentType: contentType,
+              purpose: MediaPurpose.post,
+            );
+            final bytes = await file.readAsBytes();
             final media = await uploadService.upload(
               bytes: bytes,
               contentType: contentType,
@@ -1694,14 +2001,7 @@ class CommunityController extends GetxController {
                 }
               },
             );
-            String resolvedUrl = media.url;
-            if (resolvedUrl.contains('.cdn.digitaloceanspaces.com')) {
-              resolvedUrl = resolvedUrl.replaceFirst(
-                '.cdn.digitaloceanspaces.com',
-                '.digitaloceanspaces.com',
-              );
-            }
-            resolved.add(resolvedUrl);
+            resolved.add(media.reference);
           } else {
             resolved.add(img);
           }
@@ -1716,6 +2016,7 @@ class CommunityController extends GetxController {
 
   Future<String?> _resolveVideoUrl(String? rawUrl) async {
     if (rawUrl == null || rawUrl.isEmpty) return null;
+    if (rawUrl.startsWith('genlink-media://')) return rawUrl;
     if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
       return rawUrl;
     }
@@ -1735,7 +2036,6 @@ class CommunityController extends GetxController {
       debugPrint(
         '[CommunityController] Uploading video from local path: $rawUrl, purpose: ${MediaPurpose.post}',
       );
-      final bytes = await file.readAsBytes();
       final path = rawUrl.toLowerCase();
       final contentType = path.endsWith('.mov')
           ? 'video/quicktime'
@@ -1753,6 +2053,12 @@ class CommunityController extends GetxController {
       }
 
       final uploadService = Get.find<MediaUploadService>();
+      uploadService.validateFile(
+        sizeBytes: await file.length(),
+        contentType: contentType,
+        purpose: MediaPurpose.post,
+      );
+      final bytes = await file.readAsBytes();
       final media = await uploadService.upload(
         bytes: bytes,
         contentType: contentType,
@@ -1761,15 +2067,11 @@ class CommunityController extends GetxController {
           uploadProgress.value = 0.2 + fraction * 0.6;
         },
       );
-      String videoUrl = media.url;
-      if (videoUrl.contains('.cdn.digitaloceanspaces.com')) {
-        videoUrl = videoUrl.replaceFirst(
-          '.cdn.digitaloceanspaces.com',
-          '.digitaloceanspaces.com',
-        );
-      }
-      debugPrint('[CommunityController] Video upload succeeded: $videoUrl');
-      return videoUrl;
+      final mediaReference = media.reference;
+      debugPrint(
+        '[CommunityController] Video upload succeeded: $mediaReference',
+      );
+      return mediaReference;
     } catch (e) {
       debugPrint(
         '[CommunityController] Video upload failed for path: $rawUrl. Error: $e',
@@ -1802,43 +2104,35 @@ class CommunityController extends GetxController {
       final resolvedVideoUrl = await _resolveVideoUrl(videoUrl);
       uploadProgress.value = 0.8;
 
-      final createdPost = resolvedVideoUrl == null
-          ? await repository.createPost(
-              content: content,
-              imageUrls: resolvedImageUrls,
-              visibility: visibility,
-              community: community,
-            )
-          : await repository.createPostWithVideo(
+      final createdPost = repository is RichCommunityRepository
+          ? await (repository as RichCommunityRepository).createPostRich(
               content: content,
               imageUrls: resolvedImageUrls,
               videoUrl: resolvedVideoUrl,
               visibility: visibility,
               community: community,
-            );
+              location: location,
+              linkUrl: linkUrl,
+              linkPreviewTitle: linkPreviewTitle,
+              linkPreviewDomain: linkPreviewDomain,
+              eventId: attachedEvent?.id,
+            )
+          : (resolvedVideoUrl == null
+                ? await repository.createPost(
+                    content: content,
+                    imageUrls: resolvedImageUrls,
+                    visibility: visibility,
+                    community: community,
+                  )
+                : await repository.createPostWithVideo(
+                    content: content,
+                    imageUrls: resolvedImageUrls,
+                    videoUrl: resolvedVideoUrl,
+                    visibility: visibility,
+                    community: community,
+                  ));
 
-      final richPost = createdPost.copyWith(
-        imageUrls: resolvedImageUrls.isNotEmpty
-            ? resolvedImageUrls
-            : createdPost.imageUrls,
-        videoUrl: resolvedVideoUrl ?? createdPost.videoUrl,
-        location: location,
-        linkUrl: linkUrl,
-        linkPreviewTitle: linkPreviewTitle,
-        linkPreviewDomain: linkPreviewDomain,
-        pollQuestion: pollQuestion,
-        pollOptions: pollOptions,
-        pollDuration: pollDuration,
-        allowMultipleAnswers: allowMultipleAnswers,
-        attachedEvent: attachedEvent,
-        postType: attachedEvent != null
-            ? 'event'
-            : (resolvedVideoUrl != null && resolvedVideoUrl.isNotEmpty
-                  ? 'VIDEO'
-                  : (resolvedImageUrls.isNotEmpty
-                        ? 'IMAGE'
-                        : createdPost.postType)),
-      );
+      final richPost = await _hydrateAttachedEvent(createdPost);
 
       // A post can already be present when the create response races with a
       // feed refresh or another local update. Keep one list item per server ID
@@ -1877,17 +2171,44 @@ class CommunityController extends GetxController {
     String? caption,
     String visibility = 'Public',
     String? communityId,
+    String? pollDuration,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String? location,
+    String? linkUrl,
+    String? linkPreviewTitle,
+    String? linkPreviewDomain,
+    EventModel? attachedEvent,
   }) async {
     isCreatingPoll.value = true;
     try {
-      final createdPost = await repository.createPollPost(
-        question: question,
-        options: options,
-        caption: caption,
-        visibility: visibility,
-        communityId: communityId,
-      );
-      posts.insert(0, createdPost);
+      final resolvedImages = await _resolveImageUrls(imageUrls);
+      final resolvedVideo = await _resolveVideoUrl(videoUrl);
+      final createdPost = repository is RichCommunityRepository
+          ? await (repository as RichCommunityRepository).createPollPostRich(
+              question: question,
+              options: options,
+              caption: caption,
+              visibility: visibility,
+              communityId: communityId,
+              durationDays: _durationDays(pollDuration),
+              imageUrls: resolvedImages,
+              videoUrl: resolvedVideo,
+              location: location,
+              linkUrl: linkUrl,
+              linkPreviewTitle: linkPreviewTitle,
+              linkPreviewDomain: linkPreviewDomain,
+              eventId: attachedEvent?.id,
+            )
+          : await repository.createPollPost(
+              question: question,
+              options: options,
+              caption: caption,
+              visibility: visibility,
+              communityId: communityId,
+            );
+      final hydratedPost = await _hydrateAttachedEvent(createdPost);
+      posts.insert(0, hydratedPost);
       posts.refresh();
       return true;
     } catch (error) {
@@ -2021,6 +2342,7 @@ class CommunityController extends GetxController {
   }
 
   final RxMap<String, bool> postBookmarks = <String, bool>{}.obs;
+  final Set<String> _inFlightBookmarkUpdates = <String>{};
 
   bool isPostBookmarked(String postId) {
     if (postBookmarks.containsKey(postId)) {
@@ -2031,18 +2353,14 @@ class CommunityController extends GetxController {
   }
 
   Future<bool> checkPostBookmarkStatus(String postId) async {
-    try {
-      final saved = await repository.isPostBookmarked(postId);
-      postBookmarks[postId] = saved;
-      final idx = posts.indexWhere((p) => p.id == postId);
-      if (idx != -1) {
-        posts[idx] = posts[idx].copyWith(isBookmarked: saved);
-        posts.refresh();
-      }
-      return saved;
-    } catch (_) {
-      return false;
+    final saved = await repository.isPostBookmarked(postId);
+    postBookmarks[postId] = saved;
+    final idx = posts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      posts[idx] = posts[idx].copyWith(isBookmarked: saved);
+      posts.refresh();
     }
+    return saved;
   }
 
   void _syncPostBookmarks(List<CommunityPostModel> items) {
@@ -2053,6 +2371,7 @@ class CommunityController extends GetxController {
 
   Future<bool> toggleBookmark(String postId) async {
     if (postId.trim().isEmpty) return false;
+    if (!_inFlightBookmarkUpdates.add(postId)) return false;
 
     final prevBookmarked = isPostBookmarked(postId);
     final newStatus = !prevBookmarked;
@@ -2078,16 +2397,34 @@ class CommunityController extends GetxController {
         return false;
       }
       return true;
-    } catch (_) {
+    } catch (error) {
       _rollbackBookmark(postId, prevBookmarked, idx);
+      final message = error is AppError && error.message.isNotEmpty
+          ? error.message
+          : 'Could not update the saved post. Please try again.';
+      if (Get.context != null) {
+        Get.snackbar(
+          'Bookmark update failed',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.danger.withValues(alpha: 0.9),
+          colorText: Colors.white,
+        );
+      }
       return false;
+    } finally {
+      _inFlightBookmarkUpdates.remove(postId);
     }
   }
 
   void _rollbackBookmark(String postId, bool prevBookmarked, [int? idx]) {
     postBookmarks[postId] = prevBookmarked;
     postBookmarks.refresh();
-    final currentIdx = (idx != null && idx != -1 && idx < posts.length && posts[idx].id == postId)
+    final currentIdx =
+        (idx != null &&
+            idx != -1 &&
+            idx < posts.length &&
+            posts[idx].id == postId)
         ? idx
         : posts.indexWhere((item) => item.id == postId);
     if (currentIdx != -1) {
@@ -2098,43 +2435,38 @@ class CommunityController extends GetxController {
     }
   }
 
-  CommunityPostModel? _recentlyDeletedPost;
-  int _recentlyDeletedIndex = 0;
-
-  void deletePost(String postId) {
+  Future<bool> deletePost(String postId) async {
     final idx = posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _recentlyDeletedIndex = idx;
-      _recentlyDeletedPost = posts[idx];
-      posts.removeAt(idx);
-
-      repository.deletePost(postId).catchError((_) {
-        if (_recentlyDeletedPost != null) {
-          posts.insert(
-            _recentlyDeletedIndex.clamp(0, posts.length),
-            _recentlyDeletedPost!,
-          );
-          _recentlyDeletedPost = null;
-        }
-        return false;
-      });
-    }
-  }
-
-  void undoDeletePost() {
-    if (_recentlyDeletedPost != null) {
-      final insertIndex = _recentlyDeletedIndex.clamp(0, posts.length);
-      posts.insert(insertIndex, _recentlyDeletedPost!);
-      _recentlyDeletedPost = null;
+    final removed = idx == -1 ? null : posts.removeAt(idx);
+    try {
+      final succeeded = await repository.deletePost(postId);
+      if (!succeeded) {
+        throw const AppError(
+          message: 'The post could not be deleted. Please try again.',
+          errorCode: 'POST_DELETE_FAILED',
+        );
+      }
+      return true;
+    } catch (e) {
+      if (removed != null && !posts.any((post) => post.id == postId)) {
+        posts.insert(idx.clamp(0, posts.length), removed);
+      }
+      final message = e is AppError
+          ? e.message
+          : 'The post could not be deleted. Please try again.';
+      Get.snackbar(
+        'Post not deleted',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
     }
   }
 
   Future<void> editPost(String postId, String newContent) async {
+    final updated = await repository.updatePost(postId, content: newContent);
     final idx = posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      posts[idx] = posts[idx].copyWith(content: newContent);
-      await repository.updatePost(postId, content: newContent);
-    }
+    if (idx != -1) posts[idx] = updated;
   }
 
   Future<void> editPostFull({
@@ -2155,31 +2487,33 @@ class CommunityController extends GetxController {
   }) async {
     final resolvedImageUrls = await _resolveImageUrls(imageUrls);
     final resolvedVideoUrl = await _resolveVideoUrl(videoUrl);
+    final updated = repository is RichCommunityRepository
+        ? await (repository as RichCommunityRepository).updatePostRich(
+            postId,
+            content: content,
+            imageUrls: resolvedImageUrls,
+            videoUrl: resolvedVideoUrl ?? '',
+            visibility: visibility,
+            location: location,
+            linkUrl: linkUrl,
+            linkPreviewTitle: linkPreviewTitle,
+            linkPreviewDomain: linkPreviewDomain,
+            pollQuestion: pollQuestion,
+            pollOptions: pollOptions?.map((option) => option.text).toList(),
+            pollDurationDays: _durationDays(pollDuration),
+            eventId: attachedEvent?.id,
+          )
+        : await repository.updatePostFields(
+            postId,
+            content: content,
+            imageUrls: resolvedImageUrls,
+            videoUrl: resolvedVideoUrl ?? '',
+            visibility: visibility,
+          );
+    final hydrated = await _hydrateAttachedEvent(updated);
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
-      posts[idx] = posts[idx].copyWith(
-        content: content,
-        imageUrls: resolvedImageUrls,
-        videoUrl: resolvedVideoUrl ?? posts[idx].videoUrl,
-        visibility: visibility,
-        location: location,
-        linkUrl: linkUrl,
-        linkPreviewTitle: linkPreviewTitle,
-        linkPreviewDomain: linkPreviewDomain,
-        pollQuestion: pollQuestion,
-        pollOptions: pollOptions,
-        pollDuration: pollDuration,
-        allowMultipleAnswers: allowMultipleAnswers,
-        attachedEvent: attachedEvent,
-        postType: attachedEvent != null
-            ? 'event'
-            : (resolvedVideoUrl != null && resolvedVideoUrl.isNotEmpty
-                  ? 'VIDEO'
-                  : (resolvedImageUrls.isNotEmpty
-                        ? 'IMAGE'
-                        : posts[idx].postType)),
-      );
-      await repository.updatePost(postId, content: content);
+      posts[idx] = hydrated;
     }
   }
 
@@ -2357,12 +2691,15 @@ class CommunityController extends GetxController {
     String postId, {
     String reason = 'INAPPROPRIATE_CONTENT',
   }) async {
+    if (postId.trim().isEmpty || !_inFlightReports.add(postId)) return false;
     try {
       return await repository.reportPost(postId, reason: reason);
-    } catch (_) {
-      return false;
+    } finally {
+      _inFlightReports.remove(postId);
     }
   }
+
+  final Set<String> _inFlightReports = <String>{};
 
   List<CommunityPostModel> getUserPosts(String userId, {String? username}) {
     // Prefer the repost copy because the same original may also be present in
@@ -2391,6 +2728,37 @@ class CommunityController extends GetxController {
     }).toList();
   }
 
+  List<ForumTopicModel> getUserDiscussionReposts(String userId) {
+    return discussionRepostsByUser[userId.trim()] ?? const <ForumTopicModel>[];
+  }
+
+  void _upsertDiscussionRepost(
+    String userId,
+    ForumTopicModel discussion, {
+    String? caption,
+  }) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return;
+
+    final reposterName = currentUserName.trim().isNotEmpty
+        ? currentUserName.trim()
+        : 'You';
+    final repostedTopic = discussion.copyWith(
+      isRepostedByMe: true,
+      repostedBy: reposterName,
+      repostCaption: caption,
+      reposterId: normalizedUserId,
+    );
+    final current = List<ForumTopicModel>.from(
+      discussionRepostsByUser[normalizedUserId] ?? const <ForumTopicModel>[],
+    );
+    current.removeWhere((item) => item.id == discussion.id);
+    current.insert(0, repostedTopic);
+    discussionRepostsByUser[normalizedUserId] = current;
+    discussionRepostsByUser.refresh();
+    _loadedDiscussionRepostUsers.add(normalizedUserId);
+  }
+
   void _upsertRepostedPost(CommunityPostModel post) {
     final index = repostedPosts.indexWhere((item) => item.id == post.id);
     if (index == -1) {
@@ -2406,20 +2774,27 @@ class CommunityController extends GetxController {
   }
 
   Future<void> fetchComments(String postId) async {
-    activeComments.clear();
+    if (_activeCommentsPostId != postId) {
+      activeComments.clear();
+      _activeCommentsPostId = postId;
+    }
+    commentsErrorMessage.value = '';
     isLoadingComments.value = true;
     try {
       final comments = await repository.getComments(postId);
       activeComments.assignAll(comments);
     } catch (e) {
       debugPrint('[CommunityController] fetchComments error: $e');
-      activeComments.clear();
+      commentsErrorMessage.value = e is AppError
+          ? e.message
+          : 'Couldn\'t load comments. Try again.';
     } finally {
       isLoadingComments.value = false;
     }
   }
 
   final discussionComments = <String, List<CommentModel>>{}.obs;
+  final discussionCommentsErrors = <String, String>{}.obs;
   final isLoadingDiscussionComments = false.obs;
   final isSendingDiscussionComment = false.obs;
 
@@ -2429,11 +2804,16 @@ class CommunityController extends GetxController {
 
   Future<void> fetchDiscussionComments(String discussionId) async {
     isLoadingDiscussionComments.value = true;
+    discussionCommentsErrors.remove(discussionId);
     try {
       final comments = await repository.getDiscussionComments(discussionId);
       discussionComments[discussionId] = comments;
       discussionComments.refresh();
-    } catch (_) {
+    } catch (e) {
+      discussionCommentsErrors[discussionId] = e is AppError
+          ? e.message
+          : 'Couldn\'t load comments. Try again.';
+      discussionCommentsErrors.refresh();
     } finally {
       isLoadingDiscussionComments.value = false;
     }
@@ -2598,7 +2978,8 @@ class CommunityController extends GetxController {
       discussionComments.refresh();
       return updatedComment;
     } catch (_) {
-      return null;
+      // Keep the old comment untouched and let the editor show the server error.
+      rethrow;
     }
   }
 

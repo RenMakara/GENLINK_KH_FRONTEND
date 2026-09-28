@@ -89,8 +89,7 @@ void main() {
     service = MediaUploadService(repository);
   });
 
-  Uint8List bytes(int length) =>
-      Uint8List.fromList(List.filled(length, 7));
+  Uint8List bytes(int length) => Uint8List.fromList(List.filled(length, 7));
 
   group('upload', () {
     test('runs presign, upload and confirm in order', () async {
@@ -102,6 +101,7 @@ void main() {
 
       expect(repository.calls, ['presign', 'upload', 'confirm']);
       expect(media.url, 'https://cdn.example.com/avatars/abc.jpg');
+      expect(media.reference, 'genlink-media://media-1');
       expect(repository.confirmedMediaId, 'media-1');
     });
 
@@ -169,8 +169,13 @@ void main() {
           contentType: 'image/jpeg',
           purpose: MediaPurpose.avatar,
         ),
-        throwsA(isA<AppError>()
-            .having((e) => e.errorCode, 'errorCode', 'MEDIA_EMPTY')),
+        throwsA(
+          isA<AppError>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'MEDIA_EMPTY',
+          ),
+        ),
       );
       expect(repository.calls, isEmpty);
     });
@@ -182,8 +187,13 @@ void main() {
           contentType: 'application/pdf',
           purpose: MediaPurpose.post,
         ),
-        throwsA(isA<AppError>()
-            .having((e) => e.errorCode, 'errorCode', 'MEDIA_INVALID_TYPE')),
+        throwsA(
+          isA<AppError>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'MEDIA_INVALID_TYPE',
+          ),
+        ),
       );
       expect(repository.calls, isEmpty);
     });
@@ -195,8 +205,13 @@ void main() {
           contentType: 'video/mp4',
           purpose: MediaPurpose.avatar,
         ),
-        throwsA(isA<AppError>().having(
-            (e) => e.errorCode, 'errorCode', 'MEDIA_VIDEO_NOT_ALLOWED')),
+        throwsA(
+          isA<AppError>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'MEDIA_VIDEO_NOT_ALLOWED',
+          ),
+        ),
       );
       expect(repository.calls, isEmpty);
     });
@@ -217,11 +232,37 @@ void main() {
           contentType: 'image/jpeg',
           purpose: MediaPurpose.avatar,
         ),
-        throwsA(isA<AppError>()
-            .having((e) => e.errorCode, 'errorCode', 'MEDIA_TOO_LARGE')),
+        throwsA(
+          isA<AppError>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'MEDIA_TOO_LARGE',
+          ),
+        ),
       );
       expect(repository.calls, isEmpty);
     });
+
+    test(
+      'validates file metadata before allocating or uploading its bytes',
+      () {
+        expect(
+          () => service.validateFile(
+            sizeBytes: MediaUploadService.maxVideoBytes + 1,
+            contentType: 'video/mp4',
+            purpose: MediaPurpose.story,
+          ),
+          throwsA(
+            isA<AppError>().having(
+              (e) => e.errorCode,
+              'errorCode',
+              'MEDIA_TOO_LARGE',
+            ),
+          ),
+        );
+        expect(repository.calls, isEmpty);
+      },
+    );
 
     test('allows a video larger than the image cap', () async {
       await service.upload(

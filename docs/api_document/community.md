@@ -6,7 +6,7 @@
 
 | Screen | Endpoint(s) |
 |---|---|
-| Home feed | `GET /community/feed` |
+| Home feed | `GET /community/posts/feed` |
 | Create / edit post | `POST/PUT/DELETE /community/posts` |
 | Post detail | `GET /community/posts/{id}`, `GET/POST /posts/{id}/comments`, `POST/DELETE /posts/{id}/like`, `/save` |
 | Hashtag | `GET /community/hashtags/{tag}/posts` |
@@ -14,17 +14,19 @@
 | Create event | `POST /community/events` |
 | Events list / detail | `GET /community/events`, `/{id}`, `PUT/DELETE /{id}` |
 | Event registration | `POST/DELETE /community/events/{id}/rsvp`, `GET /community/events/{id}/attendees` |
-| Forum | `GET/POST /community/forum/discussions`, `POST /{id}/react`, `/report`, comments |
-| Opportunities | `GET /community/opportunities`, `/{id}`, `POST /{id}/save` |
-| Saved | saved posts + saved opportunities |
+| Forum | `GET/POST /community/discussions`, `POST/DELETE /{id}/react`, `/report`, comments |
+| Stories | `GET/POST /community/stories`, `POST/DELETE /{id}/like`, `/view`, `/viewers` |
+| Opportunities | `GET /community/opportunities`, `/{id}`; admin `POST/PUT/DELETE` |
+| Saved | `GET/POST /profile/saved`, `DELETE /profile/saved/{itemType}/{itemId}` |
 
 ---
 
 ## Feed & posts
 
-**Feed** `GET /community/feed?page=0&size=20` → `PageResponse<PostResponse>`
+**Feed** `GET /community/posts/feed?page=0&size=20` → `PageResponse<PostResponse>`
 **Create** `POST /community/posts` → `{ "contentText":"Hello #flutter","imageUrl":null,"postType":"TEXT","visibility":"PUBLIC" }`
-**Like/Save** `POST`/`DELETE /community/posts/{id}/like` · `/save` (idempotent, returns updated post)
+**Like** `POST /community/posts/{id}/like` adds the reaction; `DELETE` removes it. Both are idempotent and return `data: { "likeCount": 3 }`.
+**Save** `POST /profile/saved` with `{ "itemType":"POST","itemId":"<uuid>" }` returns a `SavedItemResponse`; `DELETE /profile/saved/POST/{id}` removes it. `GET /profile/saved/check?itemType=POST&itemId=<uuid>` returns `{ "saved":true }`.
 ```json
 { "postId":"…","author":{ "userId":"…","fullName":"Sok","username":"sok","avatarUrl":null },
   "contentText":"Hello #flutter","imageUrl":null,"postType":"TEXT","visibility":"PUBLIC","language":"ENGLISH",
@@ -49,9 +51,9 @@ class PostResponse {
     hashtags=(j['hashtags'] as List?)?.cast<String>() ?? const [], createdAt=j['createdAt'];
 }
 ```
-`postType`: TEXT/IMAGE/POLL/ANNOUNCEMENT. `visibility`: PUBLIC/FRIENDS/COMMUNITY. Toggle heart/bookmark from `likedByMe`/`savedByMe`.
+`postType`: TEXT/IMAGE/VIDEO/POLL/ANNOUNCEMENT. `visibility`: PUBLIC/FRIENDS/COMMUNITY/ONLY_ME. `ONLY_ME` is author-only; `FRIENDS` requires a mutual accepted follow; `COMMUNITY` requires active membership in the attached community. Toggle heart/bookmark from `likedByMe`/`savedByMe`.
 
-**Comments** `GET /community/posts/{id}/comments` → `PageResponse<CommentResponse>`; `POST` → `{ "content":"Nice!","parentCommentId":null }`. Fields: `commentId, author, content, parentCommentId, language, likeCount, mine, createdAt`.
+**Comments** `GET /community/posts/{id}/comments` → `PageResponse<CommentResponse>`; `POST` → `{ "content":"Nice!","parentCommentId":null }`. Fields: `commentId, author, content, parentCommentId, language, likeCount, mine, createdAt`. Comment reactions use `POST`/`DELETE /community/comments/{commentId}/like` and return `{ "likeCount": 1 }`.
 
 ---
 
@@ -134,7 +136,7 @@ Registration request fields are all required and `termsAccepted` must be true. D
 ## Forum
 
 **List/create** `GET/POST /community/forum/discussions` → `{ "title":"…","content":"…","category":"STUDY","anonymous":true }`
-**React / report** `POST /community/forum/discussions/{id}/react` · `/report`
+**React / report** `POST`/`DELETE /community/discussions/{id}/react` · `POST /community/discussions/{id}/report`. Reactions return `{ "reactionCount": 4 }`; repeated add/remove requests are idempotent.
 ```json
 { "discussionId":"…","author":{…}|null,"title":"…","content":"…","category":"STUDY","anonymous":true,
   "language":"ENGLISH","reactionCount":4,"commentCount":2,"reactedByMe":false,"mine":false,"createdAt":"…" }
@@ -150,13 +152,51 @@ class DiscussionResponse {
     commentCount=j['commentCount'] ?? 0, createdAt=j['createdAt'];
 }
 ```
-When `anonymous`, `author` is null — render "Anonymous". One reaction / one report per user (toggle from `reactedByMe`).
+When `anonymous`, `author` is null — render "Anonymous". Use POST to add a reaction and DELETE to remove it; both requests are idempotent. Reporting is also idempotent per user.
+
+---
+
+## Stories
+
+**Feed** `GET /community/stories` returns the current user's active stories and eligible followed users' stories, grouped by author. **Create** `POST /community/stories` accepts `mediaId` (preferred after upload/confirm) or a `mediaUrl`, plus `mediaType` (`IMAGE` or `VIDEO`), optional `caption`, `visibility`, `replyPermission`, and `allowReactions`.
+
+Example request and response data:
+```json
+{ "mediaId":"<uuid>", "mediaType":"IMAGE", "caption":"Campus day", "visibility":"FRIENDS",
+  "replyPermission":"EVERYONE", "allowReactions":true }
+```
+```json
+{ "storyId":"…", "mediaType":"IMAGE", "mediaUrl":"https://signed.example/…", "caption":"Campus day",
+  "seen":true, "createdAt":"…", "expiresAt":"…", "visibility":"FRIENDS",
+  "replyPermission":"EVERYONE", "allowReactions":true, "reactionCount":0, "reactedByMe":false }
+```
+Stories expire 24 hours after creation.
+
+**React** `POST /community/stories/{id}/like` adds the caller's reaction; `DELETE` removes it. Both are idempotent; the successful envelope omits `data` because it is null. **View** `POST /{id}/view` is idempotent. **Viewers** `GET /{id}/viewers` is owner-only; unauthorized story/viewer access is returned as not found.
+
+Stories currently accept `PUBLIC`, `FRIENDS`, and `ONLY_ME`; create requests with `COMMUNITY` fail with `INVALID_STORY_VISIBILITY`. Public stories can be viewed by any authenticated user; friends stories require a mutual accepted follow; Only Me stories are owner-only. Restricted story media is returned as a short-lived signed URL after story visibility is authorized.
+
+---
+
+## Authorization, pagination, errors, and media
+
+All `/api/v1/community/**` routes require an authenticated bearer token. A successful response is wrapped as `{ "success":true,"message":"…","data":…,"timestamp":"…" }`. A failure uses the HTTP status plus `{ "success":false,"message":"…","errorCode":"…","timestamp":"…" }`; `data` is omitted when null. Common statuses are 400 validation/domain errors, 401 unauthenticated, 403 forbidden, 404 missing or intentionally hidden content, and 429 rate-limited.
+
+Page endpoints accept zero-based `page` and `size` query parameters (default size is normally 20). The `data` value is `{ "content":[],"page":0,"size":20,"totalElements":0,"totalPages":0,"hasNext":false }`. A successful empty `content` is a real empty result. On request or response errors, retain any already displayed content and show an error/retry state.
+
+Post visibility is enforced on reads, comments, and reactions: `PUBLIC` is available to authenticated users; `FRIENDS` requires a mutual accepted follow; `COMMUNITY` requires active membership; authors can see their own posts. Inaccessible posts are hidden as not found. Community visibility with no `communityId` has no eligible non-owner viewers. Anonymous forum discussions omit the author from the public response.
+
+Upload media through the authenticated media flow: `POST /api/v1/media/presign` with `{ "contentType":"image/jpeg","sizeBytes":1234,"purpose":"POST","checksumSha256":"<64 lowercase hex chars>" }`, PUT the bytes directly to the returned `uploadUrl` with every `requiredHeaders` value, then `POST /api/v1/media/confirm` with the returned `mediaId`. Community requests should use confirmed `mediaId` values for post image/video fields (`imageMediaIds`, `videoMediaId`) and story `mediaId`; legacy public URLs remain supported where the request contract allows them.
+
+Public media URLs are returned using the configured storage CDN base when present, with the storage endpoint as the configuration fallback. Preserve absolute CDN URLs in clients. A content service first checks the viewer's right to view a restricted post or story, then includes a short-lived presigned media URL in that authorized response. The standalone `GET /api/v1/media/{id}/url` endpoint mints a URL for public media or a private media URL for its owner only. Public object URLs are directly accessible to anyone who has the URL; do not attach private content to public media.
+
+Community notifications use the `COMMUNITY` notification type. Their `referenceType` values identify the navigable resource: `POST` for post/comment activity, `STORY` for story reactions, `DISCUSSION` for forum moderation, and `EVENT` for event activity/reminders. `referenceId` is the corresponding resource UUID; consumers should route by the pair rather than parse notification text.
 
 ---
 
 ## Opportunities
 
-**List/detail** `GET /community/opportunities?type=JOB` · `/{id}` · **Save** `POST /community/opportunities/{id}/save`
+**List/detail** `GET /community/opportunities?type=JOB` · `/{id}`. **Save** with the shared `POST /profile/saved` contract using `itemType:"OPPORTUNITY"`; unsave at `DELETE /profile/saved/OPPORTUNITY/{id}`.
 ```json
 { "opportunityId":"…","title":"Intern","organization":"Acme","type":"INTERNSHIP","description":"…",
   "deadline":"2026-09-01","location":"Phnom Penh","applyLink":"https://…","savedByMe":false,"expired":false,"createdAt":"…" }

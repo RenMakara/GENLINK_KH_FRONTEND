@@ -11,6 +11,39 @@ import 'package:genlink_frontend/features/community/presentation/widgets/quick_c
 import 'package:genlink_frontend/main_controller.dart';
 import 'package:genlink_frontend/main_screen.dart';
 
+class _MountProbe extends StatefulWidget {
+  const _MountProbe({
+    required this.child,
+    required this.onMount,
+    required this.onDispose,
+    super.key,
+  });
+
+  final Widget child;
+  final VoidCallback onMount;
+  final VoidCallback onDispose;
+
+  @override
+  State<_MountProbe> createState() => _MountProbeState();
+}
+
+class _MountProbeState extends State<_MountProbe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onMount();
+  }
+
+  @override
+  void dispose() {
+    widget.onDispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 void main() {
   setUp(() {
     Get.reset();
@@ -88,6 +121,71 @@ void main() {
 
       expect(textController.text, 'Preserved form state');
       expect(find.byKey(const ValueKey('tab_0_field')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'FadeIndexedStack keeps the Home subtree mounted and restores its deep scroll offset',
+    (tester) async {
+      var activeIndex = 0;
+      var homeMounts = 0;
+      var homeDisposals = 0;
+      final homeScrollController = ScrollController();
+
+      await tester.pumpWidget(
+        createTestApp(
+          home: StatefulBuilder(
+            builder: (context, setState) => Scaffold(
+              body: FadeIndexedStack(
+                index: activeIndex,
+                children: [
+                  _MountProbe(
+                    key: const ValueKey('home_probe'),
+                    onMount: () => homeMounts++,
+                    onDispose: () => homeDisposals++,
+                    child: SingleChildScrollView(
+                      key: const PageStorageKey<String>('home_deep_scroll'),
+                      controller: homeScrollController,
+                      child: const SizedBox(height: 3600),
+                    ),
+                  ),
+                  const Text('Growth'),
+                  const Text('Finance'),
+                  const Text('Profile'),
+                ],
+              ),
+              bottomNavigationBar: Row(
+                children: [
+                  for (var index = 0; index < 4; index++)
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = index),
+                      child: Text('Tab $index'),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const PageStorageKey<String>('home_deep_scroll')),
+        const Offset(0, -1400),
+      );
+      await tester.pumpAndSettle();
+      final savedOffset = homeScrollController.offset;
+      expect(savedOffset, greaterThan(600));
+
+      for (final tab in [2, 3, 0]) {
+        await tester.tap(find.text('Tab $tab'));
+        await tester.pumpAndSettle();
+      }
+
+      expect(homeMounts, 1);
+      expect(homeDisposals, 0);
+      expect(homeScrollController.offset, savedOffset);
+      await tester.pumpWidget(const SizedBox.shrink());
+      homeScrollController.dispose();
     },
   );
 
@@ -172,7 +270,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      // PostCardWidget includes repeating visual feedback animations, so a
+      // fixed pump is enough to render the RSVP state without waiting for an
+      // animation tree that intentionally never settles.
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Joined ✓'), findsOneWidget);
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);

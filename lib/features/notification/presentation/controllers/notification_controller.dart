@@ -12,6 +12,7 @@ import '../../../community/presentation/screens/events_screen.dart';
 import '../../../community/presentation/screens/friend_requests_screen.dart';
 import '../../../community/presentation/screens/story_viewer_screen.dart';
 import '../../../community/presentation/screens/post_detail_screen.dart';
+import '../../../community/presentation/navigation/community_reference_router.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/finance_screen.dart';
@@ -430,6 +431,38 @@ class NotificationController extends GetxController
 
     if (!context.mounted) return;
 
+    var referenceType = notif.targetType ?? '';
+    if (referenceType.isEmpty) {
+      if (notif.type == NotificationType.chat) {
+        referenceType = 'CHAT_ROOM';
+      } else if (notif.type == NotificationType.event ||
+          notif.type == NotificationType.eventRsvp ||
+          notif.type == NotificationType.eventReminder ||
+          notif.type == NotificationType.eventUpdate) {
+        referenceType = 'EVENT';
+      } else if (notif.type == NotificationType.comment ||
+          notif.type == NotificationType.reply ||
+          notif.type == NotificationType.like) {
+        referenceType = 'POST';
+      } else if (notif.title.toLowerCase().contains('story') ||
+          notif.body.toLowerCase().contains('story')) {
+        referenceType = 'STORY';
+      }
+    }
+    final isCommentReference =
+        notif.type == NotificationType.comment ||
+        notif.type == NotificationType.reply ||
+        (notif.metadata?['dedupeKey']?.toString().contains('comment') ?? false);
+    if (await CommunityReferenceRouter.open(
+      referenceType: referenceType,
+      referenceId: notif.targetId,
+      commentId: notif.commentId,
+      openComments: isCommentReference,
+    )) {
+      return;
+    }
+    if (!context.mounted) return;
+
     final targetType = notif.targetType?.toUpperCase() ?? '';
     final targetId = notif.targetId;
 
@@ -453,7 +486,8 @@ class NotificationController extends GetxController
     }
 
     // ── Story Navigation ────────────────────────────────────────────────
-    final isStoryTarget = targetType == 'STORY' ||
+    final isStoryTarget =
+        targetType == 'STORY' ||
         targetType == 'STORY_LIKE' ||
         targetType == 'STORY_REACTION' ||
         targetType == 'STORY_REPLY' ||
@@ -474,8 +508,9 @@ class NotificationController extends GetxController
       int foundStoryIdx = -1;
 
       for (int g = 0; g < storyCtrl.storyGroups.length; g++) {
-        final sIdx = storyCtrl.storyGroups[g].stories
-            .indexWhere((s) => s.id == targetId);
+        final sIdx = storyCtrl.storyGroups[g].stories.indexWhere(
+          (s) => s.id == targetId,
+        );
         if (sIdx != -1) {
           foundGroupIdx = g;
           foundStoryIdx = sIdx;
@@ -487,8 +522,9 @@ class NotificationController extends GetxController
       if (foundGroupIdx == -1) {
         await storyCtrl.fetchStories();
         for (int g = 0; g < storyCtrl.storyGroups.length; g++) {
-          final sIdx = storyCtrl.storyGroups[g].stories
-              .indexWhere((s) => s.id == targetId);
+          final sIdx = storyCtrl.storyGroups[g].stories.indexWhere(
+            (s) => s.id == targetId,
+          );
           if (sIdx != -1) {
             foundGroupIdx = g;
             foundStoryIdx = sIdx;
@@ -530,10 +566,12 @@ class NotificationController extends GetxController
           if (!Get.isRegistered<CommunityController>()) {
             CommunityBinding().dependencies();
           }
-          final isCommentOrReply = notif.type == NotificationType.comment ||
+          final isCommentOrReply =
+              notif.type == NotificationType.comment ||
               notif.type == NotificationType.reply ||
               targetType == 'COMMENT' ||
-              (notif.metadata?['dedupeKey']?.toString().contains('comment') ?? false);
+              (notif.metadata?['dedupeKey']?.toString().contains('comment') ??
+                  false);
 
           Get.to<void>(
             () => PostDetailScreen(
@@ -548,11 +586,13 @@ class NotificationController extends GetxController
         if (context.mounted) {
           AppNotificationBanner.showInfo(
             context: context,
-            title: 'chat.contentUnavailable'.tr.isNotEmpty &&
+            title:
+                'chat.contentUnavailable'.tr.isNotEmpty &&
                     'chat.contentUnavailable'.tr != 'chat.contentUnavailable'
                 ? 'chat.contentUnavailable'.tr
                 : 'Content unavailable',
-            message: 'chat.contentNoLongerAvailable'.tr.isNotEmpty &&
+            message:
+                'chat.contentNoLongerAvailable'.tr.isNotEmpty &&
                     'chat.contentNoLongerAvailable'.tr !=
                         'chat.contentNoLongerAvailable'
                 ? 'chat.contentNoLongerAvailable'.tr
@@ -572,7 +612,8 @@ class NotificationController extends GetxController
         targetType == 'PROFILE') {
       Get.to<void>(
         () => FriendRequestsScreen(
-          highlightUserId: notif.metadata?['senderId']?.toString() ??
+          highlightUserId:
+              notif.metadata?['senderId']?.toString() ??
               notif.metadata?['followerId']?.toString() ??
               notif.metadata?['userId']?.toString() ??
               notif.targetId,

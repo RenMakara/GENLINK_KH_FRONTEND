@@ -19,6 +19,8 @@ import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../../chat/chat_navigation.dart';
 
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/forum_discussion_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/widgets/community_widgets.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/full_screen_image_viewer.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
 import '../bindings/profile_binding.dart';
@@ -31,6 +33,57 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, this.viewingUsername});
 
   final String? viewingUsername;
+
+  String? get _resolvedDisplayName {
+    final args = Get.arguments;
+    if (args is Map) {
+      final name = args['displayName'] ?? args['fullName'] ?? args['name'];
+      if (name is String && name.trim().isNotEmpty) {
+        return name.trim();
+      }
+    } else if (args is String && args.trim().isNotEmpty) {
+      return args.trim();
+    }
+    final paramName = Get.parameters['displayName'] ?? Get.parameters['name'];
+    if (paramName != null && paramName.trim().isNotEmpty) {
+      return paramName.trim();
+    }
+    return null;
+  }
+
+  String get _effectiveTargetName {
+    final pub = controller.publicProfile.value;
+    if (pub != null && pub.fullName.trim().isNotEmpty) {
+      return pub.fullName.trim();
+    }
+    final fromArgs = _resolvedDisplayName;
+    if (fromArgs != null && fromArgs.isNotEmpty) {
+      return fromArgs;
+    }
+    if (pub != null && pub.username.trim().isNotEmpty) {
+      return pub.username.trim().replaceAll('@', '');
+    }
+    final u = _resolvedUsername?.trim();
+    if (u != null && u.isNotEmpty) {
+      return u.replaceAll('@', '');
+    }
+    return 'profile.thisUser'.tr;
+  }
+
+  static bool _isPrivateError(String? msg) {
+    if (msg == null) return false;
+    final lower = msg.toLowerCase();
+    return lower.contains('private') ||
+        lower.contains('friends only') ||
+        lower.contains('profile_private');
+  }
+
+  static bool _isFriendsOnlyError(String? msg) {
+    if (msg == null) return false;
+    final lower = msg.toLowerCase();
+    return lower.contains('friends only') ||
+        lower.contains('profile_friends_only');
+  }
 
   String? get _resolvedUsername {
     if (viewingUsername != null && viewingUsername!.trim().isNotEmpty) {
@@ -84,6 +137,16 @@ class ProfileScreen extends StatelessWidget {
             return const AppLoader();
           }
           if (data == null) {
+            final isPrivate = controller.isPrivate.value ||
+                _isPrivateError(controller.errorMessage.value);
+            if (isPrivate && !controller.isOwner) {
+              return PrivateProfileView(
+                displayName: _effectiveTargetName,
+                isFriendsOnly: controller.isFriendsOnly.value ||
+                    _isFriendsOnlyError(controller.errorMessage.value),
+              );
+            }
+
             return AppEmptyState(
               message: controller.errorMessage.value ?? 'common.error'.tr,
               icon: Icons.cloud_off_outlined,
@@ -141,9 +204,9 @@ class ProfileScreen extends StatelessWidget {
               profile.fullName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -190,19 +253,28 @@ class ProfileScreen extends StatelessWidget {
       ),
       titleWidget: Obx(() {
         final profile = controller.publicProfile.value;
-        final displayName = profile != null && profile.fullName.trim().isNotEmpty
+        final nameFromArgs = _resolvedDisplayName;
+        final displayName =
+            profile != null && profile.fullName.trim().isNotEmpty
             ? profile.fullName.trim()
-            : (profile != null && profile.username.trim().isNotEmpty
-                ? '@${profile.username.trim()}'
-                : (_resolvedUsername != null && _resolvedUsername!.isNotEmpty
-                    ? '@$_resolvedUsername'
-                    : 'profile.publicProfile'.tr));
+            : (nameFromArgs != null && nameFromArgs.isNotEmpty
+                  ? nameFromArgs
+                  : (profile != null && profile.username.trim().isNotEmpty
+                        ? '@${profile.username.trim()}'
+                        : (_resolvedUsername != null && _resolvedUsername!.isNotEmpty
+                              ? (_resolvedUsername!.startsWith('@')
+                                    ? _resolvedUsername!
+                                    : (_resolvedUsername!.contains(' ')
+                                          ? _resolvedUsername!
+                                          : '@$_resolvedUsername'))
+                              : 'profile.publicProfile'.tr)));
 
         return Text(
           displayName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          style:
+              Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: semantic.primaryText,
                 fontSize: titleFontSize,
                 fontWeight: FontWeight.w800,
@@ -242,8 +314,10 @@ class ProfileScreen extends StatelessWidget {
 
   Future<void> _sharePublicProfile() async {
     final profile = controller.publicProfile.value;
-    if (profile == null) return;
-    await Clipboard.setData(ClipboardData(text: '@${profile.username}'));
+    final username = profile?.username ?? _resolvedUsername;
+    if (username == null || username.isEmpty) return;
+    final handle = username.startsWith('@') ? username : '@$username';
+    await Clipboard.setData(ClipboardData(text: handle));
     Get.showSnackbar(
       GetSnackBar(
         message: 'profile.shareCopied'.tr,
@@ -491,9 +565,8 @@ class _OwnerProfile extends StatelessWidget {
                           minWidth: 32,
                           minHeight: 32,
                         ),
-                        onPressed: () => Get.toNamed<void>(
-                          AppRoutes.profilePortfolioForm,
-                        ),
+                        onPressed: () =>
+                            Get.toNamed<void>(AppRoutes.profilePortfolioForm),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       TextButton(
@@ -522,8 +595,9 @@ class _OwnerProfile extends StatelessWidget {
                           .withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: theme.colorScheme.outlineVariant
-                            .withValues(alpha: 0.4),
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.4,
+                        ),
                         width: 0.8,
                       ),
                     ),
@@ -532,22 +606,23 @@ class _OwnerProfile extends StatelessWidget {
                         Icon(
                           Icons.work_outline_rounded,
                           size: 32,
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           'profile.emptyPortfolio'.tr,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         FilledButton.tonalIcon(
-                          onPressed: () => Get.toNamed<void>(
-                            AppRoutes.profilePortfolioForm,
-                          ),
+                          onPressed: () =>
+                              Get.toNamed<void>(AppRoutes.profilePortfolioForm),
                           icon: const Icon(Icons.add, size: 18),
                           label: Text('profile.addPortfolio'.tr),
                           style: FilledButton.styleFrom(
@@ -637,21 +712,26 @@ class _OwnerProfile extends StatelessWidget {
                   ),
           ),
         ),
-         Builder(
-           builder: (context) {
-             final commCtrl = Get.isRegistered<CommunityController>()
-                 ? Get.find<CommunityController>()
-                 : null;
-             if (commCtrl == null) return const SizedBox.shrink();
-             if (profile.userId == commCtrl.currentUserId) {
-               commCtrl.fetchRepostedPosts();
-             }
-             return Obx(() {
+        Builder(
+          builder: (context) {
+            final commCtrl = Get.isRegistered<CommunityController>()
+                ? Get.find<CommunityController>()
+                : Get.put(CommunityController());
+            if (profile.userId == commCtrl.currentUserId) {
+              commCtrl.fetchRepostedPosts();
+            }
+            commCtrl.fetchDiscussionReposts(profile.userId);
+            return Obx(() {
               final userPosts = commCtrl.getUserPosts(
                 profile.userId,
                 username: profile.fullName,
               );
-              if (userPosts.isEmpty) return const SizedBox.shrink();
+              final userDiscussionReposts = commCtrl.getUserDiscussionReposts(
+                profile.userId,
+              );
+              if (userPosts.isEmpty && userDiscussionReposts.isEmpty) {
+                return const SizedBox.shrink();
+              }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -662,6 +742,42 @@ class _OwnerProfile extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   ...userPosts.map(
                     (p) => PostCardWidget(post: p, controller: commCtrl),
+                  ),
+                  ...userDiscussionReposts.map(
+                    (topic) => ForumThreadCard(
+                      title: topic.title,
+                      author: topic.isAnonymous
+                          ? 'Anonymous'
+                          : topic.authorName,
+                      avatarUrl: topic.isAnonymous
+                          ? null
+                          : (topic.authorAvatar.isNotEmpty
+                                ? topic.authorAvatar
+                                : null),
+                      timeAgo: topic.timeAgo,
+                      createdAt: topic.createdAt,
+                      content: topic.content,
+                      category: topic.category,
+                      replies: topic.repliesCount,
+                      likes: topic.upvotes,
+                      isLiked: topic.isLiked,
+                      isBookmarked: commCtrl.isDiscussionBookmarked(topic.id),
+                      likers: topic.likers,
+                      discussionId: topic.id,
+                      isOwner: topic.checkIsOwner(commCtrl.currentUserId),
+                      isAnonymous: topic.isAnonymous,
+                      repostedBy: topic.repostedBy,
+                      repostCaption: topic.repostCaption,
+                      onTap: () => Get.to(
+                        () => ForumDiscussionScreen(discussion: topic),
+                      ),
+                      onLikeTap: () => commCtrl.toggleDiscussionLike(topic.id),
+                      onCommentTap: () => Get.to(
+                        () => ForumDiscussionScreen(discussion: topic),
+                      ),
+                      onSaveTap: () =>
+                          commCtrl.toggleDiscussionBookmark(topic.id),
+                    ),
                   ),
                 ],
               );
@@ -761,8 +877,6 @@ class _CompletionCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class _PublicProfile extends StatelessWidget {
   const _PublicProfile({
@@ -936,14 +1050,19 @@ class _PublicProfile extends StatelessWidget {
           builder: (context) {
             final commCtrl = Get.isRegistered<CommunityController>()
                 ? Get.find<CommunityController>()
-                : null;
-            if (commCtrl == null) return const SizedBox.shrink();
+                : Get.put(CommunityController());
+            commCtrl.fetchDiscussionReposts(profile.userId);
             return Obx(() {
               final userPosts = commCtrl.getUserPosts(
                 profile.userId,
                 username: profile.fullName,
               );
-              if (userPosts.isEmpty) return const SizedBox.shrink();
+              final userDiscussionReposts = commCtrl.getUserDiscussionReposts(
+                profile.userId,
+              );
+              if (userPosts.isEmpty && userDiscussionReposts.isEmpty) {
+                return const SizedBox.shrink();
+              }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -954,6 +1073,42 @@ class _PublicProfile extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
                   ...userPosts.map(
                     (p) => PostCardWidget(post: p, controller: commCtrl),
+                  ),
+                  ...userDiscussionReposts.map(
+                    (topic) => ForumThreadCard(
+                      title: topic.title,
+                      author: topic.isAnonymous
+                          ? 'Anonymous'
+                          : topic.authorName,
+                      avatarUrl: topic.isAnonymous
+                          ? null
+                          : (topic.authorAvatar.isNotEmpty
+                                ? topic.authorAvatar
+                                : null),
+                      timeAgo: topic.timeAgo,
+                      createdAt: topic.createdAt,
+                      content: topic.content,
+                      category: topic.category,
+                      replies: topic.repliesCount,
+                      likes: topic.upvotes,
+                      isLiked: topic.isLiked,
+                      isBookmarked: commCtrl.isDiscussionBookmarked(topic.id),
+                      likers: topic.likers,
+                      discussionId: topic.id,
+                      isOwner: topic.checkIsOwner(commCtrl.currentUserId),
+                      isAnonymous: topic.isAnonymous,
+                      repostedBy: topic.repostedBy,
+                      repostCaption: topic.repostCaption,
+                      onTap: () => Get.to(
+                        () => ForumDiscussionScreen(discussion: topic),
+                      ),
+                      onLikeTap: () => commCtrl.toggleDiscussionLike(topic.id),
+                      onCommentTap: () => Get.to(
+                        () => ForumDiscussionScreen(discussion: topic),
+                      ),
+                      onSaveTap: () =>
+                          commCtrl.toggleDiscussionBookmark(topic.id),
+                    ),
                   ),
                 ],
               );
@@ -986,17 +1141,20 @@ class _PublicActionRowState extends State<_PublicActionRow> {
         ChatBinding().dependencies();
       }
       final chatController = Get.find<ChatController>();
-      debugPrint('[CHAT-NAV] source = PublicProfile, userId = ${widget.profile.userId}, currentRoute = ${Get.currentRoute}, controller = ${identityHashCode(chatController)}');
+      debugPrint(
+        '[CHAT-NAV] source = PublicProfile, userId = ${widget.profile.userId}, currentRoute = ${Get.currentRoute}, controller = ${identityHashCode(chatController)}',
+      );
       final conv = await chatController.openPrivateChat(
         widget.profile.userId,
         name: widget.profile.fullName,
         avatar: widget.profile.avatarUrl,
       );
       if (conv != null && mounted) {
-        debugPrint('[CHAT-NAV] PublicProfile openPrivateChat returned conv.id = ${conv.id}, calling openChatDetail');
+        debugPrint(
+          '[CHAT-NAV] PublicProfile openPrivateChat returned conv.id = ${conv.id}, calling openChatDetail',
+        );
         ChatNavigation.openChatDetail(conv.id, conversation: conv);
       }
-
     } catch (e) {
       if (mounted) {
         Get.snackbar(
@@ -1029,19 +1187,21 @@ class _PublicActionRowState extends State<_PublicActionRow> {
         label = 'profile.requested'.tr;
         icon = Icons.hourglass_top_rounded;
       } else if (isFriend) {
-        label = 'friends.friend'.tr.isNotEmpty &&
+        label =
+            'friends.friend'.tr.isNotEmpty &&
                 'friends.friend'.tr != 'friends.friend'
             ? 'friends.friend'.tr
             : ('profile.friend'.tr.isNotEmpty &&
-                    'profile.friend'.tr != 'profile.friend'
-                ? 'profile.friend'.tr
-                : 'Friend');
+                      'profile.friend'.tr != 'profile.friend'
+                  ? 'profile.friend'.tr
+                  : 'Friend');
         icon = Icons.people_alt_rounded;
       } else if (isFollowing) {
         label = 'profile.following'.tr;
         icon = Icons.check_rounded;
       } else if (followsViewer) {
-        label = 'friends.followBack'.tr.isNotEmpty &&
+        label =
+            'friends.followBack'.tr.isNotEmpty &&
                 'friends.followBack'.tr != 'friends.followBack'
             ? 'friends.followBack'.tr
             : 'Follow Back';
@@ -1051,8 +1211,8 @@ class _PublicActionRowState extends State<_PublicActionRow> {
         icon = Icons.person_add_alt_1_outlined;
       }
 
-      final chatLabel = 'profile.chat'.tr.isNotEmpty &&
-              'profile.chat'.tr != 'profile.chat'
+      final chatLabel =
+          'profile.chat'.tr.isNotEmpty && 'profile.chat'.tr != 'profile.chat'
           ? 'profile.chat'.tr
           : 'Chat';
 
@@ -1098,9 +1258,9 @@ class _PublicActionRowState extends State<_PublicActionRow> {
                       ? 'friends.followsYou'.tr
                       : 'Follows you',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    color: Theme.of(context).colorScheme.outline,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -1610,8 +1770,9 @@ class _ProfileStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final divider =
-        Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.45);
+    final divider = Theme.of(
+      context,
+    ).colorScheme.outlineVariant.withValues(alpha: 0.45);
     return Row(
       children: [
         Expanded(
@@ -1831,8 +1992,7 @@ class _SurfaceCard extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) =>
-      AppSurface(radius: 12.0, child: child);
+  Widget build(BuildContext context) => AppSurface(radius: 12.0, child: child);
 }
 
 class _PortfolioPreview extends StatelessWidget {
@@ -1933,8 +2093,7 @@ class _AddPortfolioShelfCard extends StatelessWidget {
                   color: scheme.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child:
-                    Icon(Icons.add_rounded, size: 20, color: scheme.primary),
+                child: Icon(Icons.add_rounded, size: 20, color: scheme.primary),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(

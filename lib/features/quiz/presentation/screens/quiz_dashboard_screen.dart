@@ -39,6 +39,8 @@ class QuizDashboardScreen extends GetView<QuizController> {
               Obx(() => QuizStatsCard(
                     completedCount: controller.quizHistory.length,
                     availableCount: controller.quizzes.length,
+                    onCompletedTap: () => Get.toNamed(AppRoutes.leaderboard),
+                    onAvailableTap: () => Get.toNamed(AppRoutes.quizCategories),
                   )),
               const SizedBox(height: 20),
 
@@ -130,51 +132,53 @@ class QuizDashboardScreen extends GetView<QuizController> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Single Quiz
+              // 1. Single Quiz (Goals Green)
               Expanded(
                 child: QuizChallengeCard(
                   title: 'quiz.singleQuiz'.tr,
                   description: 'quiz.playAloneSubtitle'.tr,
-                  icon: const Soft3DSingleQuizIcon(size: 48),
+                  icon: const Soft3DSingleQuizIcon(size: 44),
                   badgeText: 'quiz.buildYourKnowledge'.tr,
                   badgeIcon: Icons.school_rounded,
-                  bgPainter: const SingleQuizBgPainter(),
+                  badgeIconColor: const Color(0xFF047857),
+                  watermark: const QuizLeafWatermark(),
                   gradientColors: const [
-                    Color(0xFFF0FDF4),
-                    Color(0xFFDCFCE7),
+                    Color(0xFF55E59B),
+                    Color(0xFF13AF6A),
                   ],
-                  darkGradientColors: [
-                    const Color(0xFF064E3B).withValues(alpha: 0.35),
-                    const Color(0xFF022C22).withValues(alpha: 0.35),
+                  darkGradientColors: const [
+                    Color(0xFF107347),
+                    Color(0xFF094C2E),
                   ],
-                  borderColor: const Color(0xFFA7F3D0),
-                  darkBorderColor:
-                      const Color(0xFF059669).withValues(alpha: 0.5),
+                  glowColor: const Color(0xFF13AF6A),
+                  borderColor: Colors.white.withValues(alpha: 0.24),
+                  darkBorderColor: Colors.white.withValues(alpha: 0.18),
                   onTap: () => Get.toNamed(AppRoutes.quizCategories),
                 ),
               ),
               const SizedBox(width: 12),
 
-              // 2. 1v1 Multiplayer Quiz
+              // 2. 1v1 Multiplayer Quiz (Habits Orange)
               Expanded(
                 child: QuizChallengeCard(
                   title: 'quiz.multiplayer1v1'.tr,
                   description: 'quiz.multiplayer1v1Subtitle'.tr,
-                  icon: const Soft3DMultiplayerIcon(size: 48),
+                  icon: const Soft3DMultiplayerIcon(size: 44),
                   badgeText: 'quiz.challengeFriendsTag'.tr,
                   badgeIcon: Icons.local_fire_department_rounded,
-                  bgPainter: const MultiplayerBgPainter(),
+                  badgeIconColor: const Color(0xFFEA580C),
+                  watermark: const QuizStarWatermark(),
                   gradientColors: const [
-                    Color(0xFFFFF7ED),
-                    Color(0xFFFFEDD5),
+                    Color(0xFFFFA26B),
+                    Color(0xFFF9683A),
                   ],
-                  darkGradientColors: [
-                    const Color(0xFF7C2D12).withValues(alpha: 0.35),
-                    const Color(0xFF431407).withValues(alpha: 0.35),
+                  darkGradientColors: const [
+                    Color(0xFFB44420),
+                    Color(0xFF7A270D),
                   ],
-                  borderColor: const Color(0xFFFED7AA),
-                  darkBorderColor:
-                      const Color(0xFFEA580C).withValues(alpha: 0.5),
+                  glowColor: const Color(0xFFF9683A),
+                  borderColor: Colors.white.withValues(alpha: 0.24),
+                  darkBorderColor: Colors.white.withValues(alpha: 0.18),
                   onTap: () => Get.toNamed(AppRoutes.quizMultiplayer),
                 ),
               ),
@@ -187,51 +191,53 @@ class QuizDashboardScreen extends GetView<QuizController> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 3. Short Content
+              // 3. Short Content (Tasks Blue)
               Expanded(
                 child: QuizChallengeCard(
                   title: 'quiz.shortContentTitle'.tr,
                   description: 'quiz.shortContentSubtitle'.tr,
-                  icon: const Soft3DShortContentIcon(size: 48),
+                  icon: const Soft3DShortContentIcon(size: 44),
                   badgeText: 'quiz.learnSomethingNew'.tr,
                   badgeIcon: Icons.lightbulb_rounded,
-                  bgPainter: const ShortContentBgPainter(),
+                  badgeIconColor: const Color(0xFFD97706),
+                  watermark: const QuizWaveWatermark(),
                   gradientColors: const [
-                    Color(0xFFEFF6FF),
-                    Color(0xFFDBEAFE),
+                    Color(0xFF5292F7),
+                    Color(0xFF2563EB),
                   ],
-                  darkGradientColors: [
-                    const Color(0xFF1E3A8A).withValues(alpha: 0.35),
-                    const Color(0xFF172554).withValues(alpha: 0.35),
+                  darkGradientColors: const [
+                    Color(0xFF1E40AF),
+                    Color(0xFF172554),
                   ],
-                  borderColor: const Color(0xFFBFDBFE),
-                  darkBorderColor:
-                      const Color(0xFF2563EB).withValues(alpha: 0.5),
+                  glowColor: const Color(0xFF2563EB),
+                  borderColor: Colors.white.withValues(alpha: 0.24),
+                  darkBorderColor: Colors.white.withValues(alpha: 0.18),
                   onTap: () => Get.toNamed(AppRoutes.shortContent),
                 ),
               ),
               const SizedBox(width: 12),
 
-              // 4. Learning Progress
+              // 4. Learning Progress (Focus Purple)
               Expanded(
                 child: QuizChallengeCard(
                   title: 'quiz.learningProgress'.tr,
                   description: 'quiz.learningProgressSubtitle'.tr,
-                  icon: const Soft3DLearningProgressIcon(size: 48),
+                  icon: const Soft3DLearningProgressIcon(size: 44),
                   badgeText: 'quiz.seeYourGrowth'.tr,
                   badgeIcon: Icons.insights_rounded,
-                  bgPainter: const LearningProgressBgPainter(),
+                  badgeIconColor: const Color(0xFF7C3AED),
+                  watermark: const QuizBarChartWatermark(),
                   gradientColors: const [
-                    Color(0xFFFAF5FF),
-                    Color(0xFFF3E8FF),
+                    Color(0xFFC084FC),
+                    Color(0xFF7E3FF2),
                   ],
-                  darkGradientColors: [
-                    const Color(0xFF581C87).withValues(alpha: 0.35),
-                    const Color(0xFF3B0764).withValues(alpha: 0.35),
+                  darkGradientColors: const [
+                    Color(0xFF6B21A8),
+                    Color(0xFF3B0764),
                   ],
-                  borderColor: const Color(0xFFDDD6FE),
-                  darkBorderColor:
-                      const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                  glowColor: const Color(0xFF7E3FF2),
+                  borderColor: Colors.white.withValues(alpha: 0.24),
+                  darkBorderColor: Colors.white.withValues(alpha: 0.18),
                   onTap: () => Get.toNamed(AppRoutes.leaderboard),
                 ),
               ),
@@ -398,15 +404,28 @@ class QuizDashboardScreen extends GetView<QuizController> {
         lowerName.contains('អាហារ')) {
       return Icons.restaurant_rounded;
     }
+    if (lowerId.contains('environment') ||
+        lowerName.contains('environment') ||
+        lowerName.contains('បរិស្ថាន') ||
+        lowerId.contains('nature') ||
+        lowerName.contains('ធម្មជាតិ')) {
+      return Icons.eco_rounded;
+    }
+    if (lowerId.contains('tech') ||
+        lowerName.contains('tech') ||
+        lowerName.contains('បច្ចេកវិទ្យា')) {
+      return Icons.code_rounded;
+    }
+    if (lowerId.contains('business') || lowerName.contains('អាជីវកម្ម')) {
+      return Icons.business_center_rounded;
+    }
     if (lowerId.contains('finance') ||
         lowerName.contains('finance') ||
         lowerName.contains('ហិរញ្ញ')) {
       return Icons.account_balance_wallet_rounded;
     }
-    if (lowerId.contains('tech') ||
-        lowerName.contains('tech') ||
-        lowerName.contains('បច្ចេកវិទ្យា')) {
-      return Icons.laptop_mac_rounded;
+    if (lowerId.contains('general') || lowerName.contains('ទូទៅ')) {
+      return Icons.school_rounded;
     }
     if (lowerId.contains('health') ||
         lowerName.contains('health') ||
@@ -419,14 +438,14 @@ class QuizDashboardScreen extends GetView<QuizController> {
     if (lowerId.contains('science') || lowerName.contains('វិទ្យាសាស្ត្រ')) {
       return Icons.science_rounded;
     }
-    if (lowerId.contains('business') || lowerName.contains('អាជីវកម្ម')) {
-      return Icons.business_center_rounded;
-    }
 
     return switch (cat.icon) {
       'restaurant' => Icons.restaurant_rounded,
       'account_balance_wallet' => Icons.account_balance_wallet_rounded,
       'devices' => Icons.laptop_mac_rounded,
+      'code' => Icons.code_rounded,
+      'eco' => Icons.eco_rounded,
+      'nature' => Icons.eco_rounded,
       'biotech' => Icons.science_rounded,
       'museum' => Icons.museum_rounded,
       'public' => Icons.public_rounded,
@@ -440,29 +459,41 @@ class QuizDashboardScreen extends GetView<QuizController> {
     final lowerId = cat.id.toLowerCase();
     final lowerName = cat.name.toLowerCase();
 
-    if (lowerId.contains('food') ||
-        lowerName.contains('food') ||
-        lowerName.contains('ម្ហូប')) {
-      return const Color(0xFFF43F5E); // Rose
+    if (lowerId.contains('general') || lowerName.contains('ទូទៅ')) {
+      return const Color(0xFF8B5CF6); // Purple
     }
     if (lowerId.contains('business') || lowerName.contains('អាជីវកម្ម')) {
       return const Color(0xFFF59E0B); // Amber
     }
-    if (lowerId.contains('science') || lowerName.contains('វិទ្យាសាស្ត្រ')) {
-      return const Color(0xFF06B6D4); // Cyan
+    if (lowerId.contains('food') ||
+        lowerName.contains('food') ||
+        lowerName.contains('ម្ហូប') ||
+        lowerName.contains('អាហារ')) {
+      return const Color(0xFFF43F5E); // Rose
+    }
+    if (lowerId.contains('environment') ||
+        lowerName.contains('environment') ||
+        lowerName.contains('បរិស្ថាន') ||
+        lowerId.contains('nature') ||
+        lowerName.contains('ធម្មជាតិ')) {
+      return const Color(0xFF10B981); // Emerald Green
     }
     if (lowerId.contains('tech') || lowerName.contains('បច្ចេកវិទ្យា')) {
-      return const Color(0xFF3B82F6); // Blue
+      return const Color(0xFF0284C7); // Sky Blue
     }
     if (lowerId.contains('finance') || lowerName.contains('ហិរញ្ញ')) {
       return const Color(0xFF10B981); // Emerald Green
     }
+    if (lowerId.contains('science') || lowerName.contains('វិទ្យាសាស្ត្រ')) {
+      return const Color(0xFF06B6D4); // Cyan
+    }
 
-    return switch (index % 4) {
+    return switch (index % 5) {
       0 => const Color(0xFF8B5CF6),
-      1 => const Color(0xFF3B82F6),
-      2 => const Color(0xFF10B981),
-      _ => const Color(0xFFF59E0B),
+      1 => const Color(0xFFF59E0B),
+      2 => const Color(0xFFF43F5E),
+      3 => const Color(0xFF10B981),
+      _ => const Color(0xFF0284C7),
     };
   }
 }

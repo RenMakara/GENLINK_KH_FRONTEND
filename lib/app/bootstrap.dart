@@ -11,12 +11,15 @@ import '../core/network/app_realtime_service.dart';
 import '../core/theme/theme_controller.dart';
 import '../firebase_options.dart';
 import '../features/notification/data/firebase_mobile_notification_service.dart';
+import '../features/community/presentation/navigation/community_reference_router.dart';
+import '../features/community/presentation/navigation/story_deep_link_handler.dart';
 import 'app.dart';
 import 'bindings/initial_binding.dart';
 import 'routes/app_routes.dart';
 import 'startup_route_resolver.dart';
 
 /// Bootstraps app-level setup before rendering GenLink KH.
+StoryDeepLinkHandler? _storyDeepLinkHandler;
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +78,10 @@ Future<void> bootstrap() async {
   }
 
   runApp(GenLinkKhApp(initialRoute: initialRoute));
+  _storyDeepLinkHandler ??= StoryDeepLinkHandler(
+    onOpenStory: CommunityReferenceRouter.openStory,
+  );
+  unawaited(_storyDeepLinkHandler!.initialize());
   if (Get.isRegistered<FirebaseMobileNotificationService>()) {
     unawaited(Get.find<FirebaseMobileNotificationService>().initialize());
   }

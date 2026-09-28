@@ -7,11 +7,9 @@ import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import 'package:genlink_frontend/design_system/widgets/avatar/app_avatar.dart';
 import '../../widgets/community_design_tokens.dart';
 import '../../widgets/forum_liked_by_sheet.dart';
-import '../../widgets/forum_repost_dialog.dart';
 import '../../widgets/forum_share_to_chat_sheet.dart';
 import '../../../domain/models/community_models.dart';
 import '../../controllers/community_controller.dart';
-import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../community_search_screen.dart';
 
 class ForumCategoryCard extends StatelessWidget {
@@ -39,29 +37,31 @@ class ForumCategoryCard extends StatelessWidget {
 
     final cardBg = isSelected
         ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
-        : (isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary);
+        : (isDark
+              ? AppColors.darkSurfacePrimary
+              : AppColors.lightSurfacePrimary);
 
     final cardBorder = isSelected
         ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
         : (isDark
-            ? AppColors.darkBorderSubtle.withValues(alpha: 0.60)
-            : AppColors.lightBorderSubtle);
+              ? AppColors.darkBorderSubtle.withValues(alpha: 0.60)
+              : AppColors.lightBorderSubtle);
 
     final titleColor = isSelected
         ? (isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse)
         : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
     final countColor = isSelected
         ? (isDark
-            ? AppColors.darkTextInverse.withValues(alpha: 0.75)
-            : AppColors.lightTextInverse.withValues(alpha: 0.75))
+              ? AppColors.darkTextInverse.withValues(alpha: 0.75)
+              : AppColors.lightTextInverse.withValues(alpha: 0.75))
         : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary);
     final iconBoxBg = isSelected
         ? (isDark
-            ? AppColors.darkTextInverse.withValues(alpha: 0.12)
-            : AppColors.lightTextInverse.withValues(alpha: 0.10))
+              ? AppColors.darkTextInverse.withValues(alpha: 0.12)
+              : AppColors.lightTextInverse.withValues(alpha: 0.10))
         : (isDark
-            ? AppColors.darkSurfaceSecondary
-            : AppColors.lightBgSecondary);
+              ? AppColors.darkSurfaceSecondary
+              : AppColors.lightBgSecondary);
     final iconColor = isSelected
         ? (isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse)
         : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
@@ -145,15 +145,18 @@ class ForumLikedByPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isOwner || likesCount <= 0) return const SizedBox.shrink();
 
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
     final displayLikers = likers.take(3).toList();
 
     String likedByText = '';
-    final likedByLabel = 'community.likedBy'.tr.isNotEmpty &&
+    final likedByLabel =
+        'community.likedBy'.tr.isNotEmpty &&
             'community.likedBy'.tr != 'community.likedBy'
         ? 'community.likedBy'.tr
         : 'Liked by';
@@ -161,7 +164,8 @@ class ForumLikedByPreview extends StatelessWidget {
     if (displayLikers.isNotEmpty) {
       if (displayLikers.length == 1) {
         if (likesCount > 1) {
-          likedByText = '$likedByLabel ${displayLikers[0].fullName} +${likesCount - 1}';
+          likedByText =
+              '$likedByLabel ${displayLikers[0].fullName} +${likesCount - 1}';
         } else {
           likedByText = '$likedByLabel ${displayLikers[0].fullName}';
         }
@@ -183,7 +187,8 @@ class ForumLikedByPreview extends StatelessWidget {
         }
       }
     } else {
-      likedByText = '$likedByLabel $likesCount ${likesCount == 1 ? 'person' : 'people'}';
+      likedByText =
+          '$likedByLabel $likesCount ${likesCount == 1 ? 'person' : 'people'}';
     }
 
     return InkWell(
@@ -229,7 +234,9 @@ class ForumLikedByPreview extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 9,
-                  backgroundColor: AppColors.communityAccent.withValues(alpha: 0.2),
+                  backgroundColor: AppColors.communityAccent.withValues(
+                    alpha: 0.2,
+                  ),
                   child: const Icon(
                     Icons.person_rounded,
                     size: 11,
@@ -271,6 +278,8 @@ class ForumThreadCard extends StatefulWidget {
   final bool isPinned;
   final bool isLiked;
   final List<ForumLikerModel> likers;
+  final String? repostedBy;
+  final String? repostCaption;
   final String? discussionId;
   final bool isOwner;
   final bool isAnonymous;
@@ -279,7 +288,6 @@ class ForumThreadCard extends StatefulWidget {
   final VoidCallback? onLikeTap;
   final VoidCallback? onCommentTap;
   final VoidCallback? onLikedByTap;
-  final VoidCallback? onRepostTap;
   final VoidCallback? onSaveTap;
   final VoidCallback? onShareToChatTap;
   final VoidCallback? onCategoryTap;
@@ -302,13 +310,14 @@ class ForumThreadCard extends StatefulWidget {
     this.isAnonymous = false,
     this.isBookmarked = false,
     this.likers = const [],
+    this.repostedBy,
+    this.repostCaption,
     this.discussionId,
     this.isOwner = false,
     this.onTap,
     this.onLikeTap,
     this.onCommentTap,
     this.onLikedByTap,
-    this.onRepostTap,
     this.onSaveTap,
     this.onShareToChatTap,
     this.onCategoryTap,
@@ -338,13 +347,17 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     );
     _likeScaleAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.25,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInCubic)),
+        tween: Tween<double>(
+          begin: 1.25,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
         weight: 50,
       ),
     ]).animate(_likeAnimController);
@@ -355,13 +368,17 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     );
     _bookmarkScaleAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.25)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.25,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.25, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInCubic)),
+        tween: Tween<double>(
+          begin: 1.25,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
         weight: 50,
       ),
     ]).animate(_bookmarkAnimController);
@@ -393,8 +410,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
       widget.onSaveTap!();
     } else if (widget.discussionId != null && widget.discussionId!.isNotEmpty) {
       if (Get.isRegistered<CommunityController>()) {
-        Get.find<CommunityController>()
-            .toggleDiscussionBookmark(widget.discussionId!);
+        Get.find<CommunityController>().toggleDiscussionBookmark(
+          widget.discussionId!,
+        );
       }
     }
   }
@@ -403,7 +421,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     if (widget.onShareToChatTap != null) {
       widget.onShareToChatTap!();
     } else {
-      final bool isAnon = widget.isAnonymous ||
+      final bool isAnon =
+          widget.isAnonymous ||
           widget.author.trim().toLowerCase() == 'anonymous' ||
           ('community.anonymous'.tr.isNotEmpty &&
               widget.author.trim().toLowerCase() ==
@@ -442,25 +461,30 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
 
-    final formattedTime =
-        formatCommunityTimestamp(widget.createdAt ?? widget.timeAgo);
+    final formattedTime = formatCommunityTimestamp(
+      widget.createdAt ?? widget.timeAgo,
+    );
 
-    final bool effectiveAnonymous = widget.isAnonymous ||
+    final bool effectiveAnonymous =
+        widget.isAnonymous ||
         widget.author.trim().toLowerCase() == 'anonymous' ||
         ('community.anonymous'.tr.isNotEmpty &&
             widget.author.trim().toLowerCase() ==
                 'community.anonymous'.tr.toLowerCase());
     final String displayAuthor = effectiveAnonymous
         ? ('community.anonymous'.tr.isNotEmpty &&
-                'community.anonymous'.tr != 'community.anonymous'
-            ? 'community.anonymous'.tr
-            : 'Anonymous')
+                  'community.anonymous'.tr != 'community.anonymous'
+              ? 'community.anonymous'.tr
+              : 'Anonymous')
         : widget.author;
-    final VoidCallback? effectiveAuthorTap =
-        effectiveAnonymous ? null : widget.onAuthorTap;
+    final VoidCallback? effectiveAuthorTap = effectiveAnonymous
+        ? null
+        : widget.onAuthorTap;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: CommunityCardStyle.cardBottomMargin),
+      margin: const EdgeInsets.only(
+        bottom: CommunityCardStyle.cardBottomMargin,
+      ),
       decoration: CommunityCardStyle.cardDecoration(context),
       child: Material(
         color: Colors.transparent,
@@ -474,6 +498,53 @@ class _ForumThreadCardState extends State<ForumThreadCard>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (widget.repostedBy != null &&
+                    widget.repostedBy!.trim().isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.repeat_rounded,
+                        color: textSecondary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'community.userReposted'.trParams({
+                            'name': widget.repostedBy!.trim(),
+                          }),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              theme.textTheme.bodySmall?.copyWith(
+                                color: textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ) ??
+                              TextStyle(
+                                color: textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (widget.repostCaption != null &&
+                      widget.repostCaption!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        widget.repostCaption!.trim(),
+                        style:
+                            theme.textTheme.bodyMedium?.copyWith(
+                              color: textPrimary,
+                              height: 1.4,
+                            ) ??
+                            TextStyle(color: textPrimary, height: 1.4),
+                      ),
+                    ),
+                  const SizedBox(height: 10),
+                ],
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -510,7 +581,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 children: [
                                   TextSpan(
                                     text: displayAuthor,
-                                    style: theme.textTheme.titleSmall?.copyWith(
+                                    style:
+                                        theme.textTheme.titleSmall?.copyWith(
                                           color: textPrimary,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14.5,
@@ -527,7 +599,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                     TextSpan(
                                       text: " · ",
                                       style: TextStyle(
-                                        color: textMuted.withValues(alpha: 0.65),
+                                        color: textMuted.withValues(
+                                          alpha: 0.65,
+                                        ),
                                         fontSize: 12.0,
                                         fontWeight: FontWeight.w400,
                                       ),
@@ -583,7 +657,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   widget.title,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style:
+                      theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.w700,
                         height: 1.35,
@@ -606,7 +681,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     widget.content!.trim(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style:
+                        theme.textTheme.bodyMedium?.copyWith(
                           color: textSecondary,
                           fontSize: 14.0,
                           height: 1.45,
@@ -645,7 +721,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                             child: InkWell(
                               onTap: _handleLike,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: hPad,
@@ -670,7 +748,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                     const SizedBox(width: 4),
                                     Text(
                                       "${widget.likes}",
-                                      style: theme.textTheme.labelMedium?.copyWith(
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
                                             color: widget.isLiked
                                                 ? AppColors.likedAccent
                                                 : textSecondary,
@@ -704,7 +783,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                             child: InkWell(
                               onTap: widget.onCommentTap ?? widget.onTap,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: Padding(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: hPad,
@@ -722,7 +803,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                     const SizedBox(width: 4),
                                     Text(
                                       "${widget.replies}",
-                                      style: theme.textTheme.labelMedium?.copyWith(
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
                                             color: textSecondary,
                                             fontSize: 12.5,
                                             fontWeight: FontWeight.w600,
@@ -740,33 +822,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                           ),
                         ),
                         const SizedBox(width: 4),
-                        // 3. Repost (icon only, matching Feed style)
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: InkWell(
-                              key: const Key('forum_card_repost_button'),
-                              onTap: widget.onRepostTap ?? () => _handleRepost(context),
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: hPad,
-                                  vertical: 4,
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.repeat_rounded,
-                                    color: textSecondary,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
                         // Alignment: Spacer pushes Save & Share to the far right, matching Feed
                         const Spacer(),
 
@@ -776,14 +831,21 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                               ? 'community.removeBookmark'.tr
                               : 'community.saveBookmark'.tr,
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
                             child: Material(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: InkWell(
                                 key: const Key('forum_card_save_button'),
                                 onTap: _handleSave,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                                 child: Center(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
@@ -811,19 +873,30 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         const SizedBox(width: 4),
                         // 5. Share to Chat (icon only, right-aligned)
                         Tooltip(
-                          message: 'community.shareToChat'.tr.isNotEmpty &&
-                                  'community.shareToChat'.tr != 'community.shareToChat'
+                          message:
+                              'community.shareToChat'.tr.isNotEmpty &&
+                                  'community.shareToChat'.tr !=
+                                      'community.shareToChat'
                               ? 'community.shareToChat'.tr
                               : 'Share',
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
                             child: Material(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               child: InkWell(
-                                key: const Key('forum_card_share_to_chat_button'),
+                                key: const Key(
+                                  'forum_card_share_to_chat_button',
+                                ),
                                 onTap: () => _handleShareToChat(context),
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                                 child: Center(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(
@@ -867,44 +940,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         isOwner: widget.isOwner,
       );
     }
-  }
-
-  void _handleRepost(BuildContext context) {
-    if (widget.isOwner) {
-      AppNotificationBanner.showWarning(
-        context: context,
-        title: 'Cannot Repost',
-        message: 'community.cannotRepostOwnPost'.tr.isNotEmpty &&
-                'community.cannotRepostOwnPost'.tr !=
-                    'community.cannotRepostOwnPost'
-            ? 'community.cannotRepostOwnPost'.tr
-            : 'You cannot repost your own discussion.',
-      );
-      return;
-    }
-    final bool isAnon = widget.isAnonymous ||
-        widget.author.trim().toLowerCase() == 'anonymous' ||
-        ('community.anonymous'.tr.isNotEmpty &&
-            widget.author.trim().toLowerCase() ==
-                'community.anonymous'.tr.toLowerCase());
-    final topic = ForumTopicModel(
-      id: widget.discussionId ?? '',
-      authorName: isAnon ? 'Anonymous' : widget.author,
-      authorAvatar: isAnon ? '' : (widget.avatarUrl ?? ''),
-      title: widget.title,
-      category: widget.category,
-      content: widget.content ?? '',
-      timeAgo: widget.timeAgo,
-      createdAt: widget.createdAt,
-      isLiked: widget.isLiked,
-      upvotes: widget.likes,
-      repliesCount: widget.replies,
-      isBookmarked: widget.isBookmarked,
-      isAnonymous: isAnon,
-      likers: widget.likers,
-      isOwner: widget.isOwner,
-    );
-    ForumRepostDialog.show(context, topic: topic);
   }
 }
 
@@ -1082,11 +1117,7 @@ class MentorCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            AppAvatar(
-              imageUrl: avatarUrl,
-              name: name,
-              size: 52,
-            ),
+            AppAvatar(imageUrl: avatarUrl, name: name, size: 52),
             const SizedBox(height: AppSpacing.sm),
             Text(
               name,
@@ -1130,10 +1161,18 @@ class CareerTabView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return SingleChildScrollView(
       child: Padding(
@@ -1156,15 +1195,14 @@ class CareerTabView extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.work_outline,
-                      color: textMuted,
-                      size: 20,
-                    ),
+                    Icon(Icons.work_outline, color: textMuted, size: 20),
                     const SizedBox(width: 10),
                     Text(
                       'community.searchJobs'.tr,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
+                      style:
+                          theme.textTheme.bodyMedium?.copyWith(
+                            color: textMuted,
+                          ) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
                   ],
@@ -1176,7 +1214,8 @@ class CareerTabView extends StatelessWidget {
 
             Text(
               'community.recommendedOpportunities'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style:
+                  theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
                   ) ??
@@ -1206,7 +1245,8 @@ class CareerTabView extends StatelessWidget {
 
             Text(
               'community.campusAlumniMentors'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style:
+                  theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
                   ) ??
@@ -1224,17 +1264,20 @@ class CareerTabView extends StatelessWidget {
                   MentorCard(
                     name: "Sokha Kim",
                     role: "Senior Tech Lead @ Wing",
-                    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                    avatarUrl:
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
                   ),
                   MentorCard(
                     name: "Bopha V.",
                     role: "Lead UX Designer",
-                    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                    avatarUrl:
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
                   ),
                   MentorCard(
                     name: "Dara N.",
                     role: "Mobile Architect @ Chip Mong",
-                    avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
+                    avatarUrl:
+                        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
                   ),
                 ],
               ),

@@ -10,6 +10,7 @@ environment:
   sdk: ^3.12.2
 
 dependencies:
+  app_links: ^7.2.1
   flutter:
     sdk: flutter
   mobile_scanner: ^7.0.1

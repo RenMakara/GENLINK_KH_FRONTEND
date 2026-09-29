@@ -238,12 +238,9 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   }
 
   Future<void> _showCompletion(ProductivityFocusSession session) async {
-    final minutes = session.durationMinutes > 0
-        ? session.durationMinutes
-        : (session.focusedSeconds ~/ 60);
     await FocusCompleteDialog.show(
       context,
-      focusedMinutes: minutes,
+      focusedSeconds: session.focusedSeconds,
       xpEarned: session.xpEarned,
     );
   }
@@ -298,23 +295,23 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                 onBack: () => unawaited(_handleBack()),
               )
             : (active.isPaused
-                ? FocusPausedView(
-                    session: active,
-                    remainingSeconds: _remainingSeconds(active),
-                    actionLoading: controller.isFocusActionLoading.value,
-                    onBack: _handleBack,
-                    onResume: _resumeSession,
-                    onLeave: _leaveSession,
-                  )
-                : FocusRunningView(
-                    session: active,
-                    remainingSeconds: _remainingSeconds(active),
-                    actionLoading: controller.isFocusActionLoading.value,
-                    onBack: _handleBack,
-                    onPause: _pauseSession,
-                    onLeave: _leaveSession,
-                    onComplete: _completeSession,
-                  )),
+                  ? FocusPausedView(
+                      session: active,
+                      remainingSeconds: _remainingSeconds(active),
+                      actionLoading: controller.isFocusActionLoading.value,
+                      onBack: _handleBack,
+                      onResume: _resumeSession,
+                      onLeave: _leaveSession,
+                    )
+                  : FocusRunningView(
+                      session: active,
+                      remainingSeconds: _remainingSeconds(active),
+                      actionLoading: controller.isFocusActionLoading.value,
+                      onBack: _handleBack,
+                      onPause: _pauseSession,
+                      onLeave: _leaveSession,
+                      onComplete: _completeSession,
+                    )),
       );
     });
   }

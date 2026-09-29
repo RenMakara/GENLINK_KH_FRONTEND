@@ -11,7 +11,9 @@ import '../widgets/productivity_illustrations.dart';
 import '../widgets/productivity_list_components.dart';
 
 class TasksPage extends StatefulWidget {
-  const TasksPage({super.key});
+  const TasksPage({super.key, this.targetTaskId});
+
+  final String? targetTaskId;
 
   @override
   State<TasksPage> createState() => _TasksPageState();
@@ -27,6 +29,65 @@ class _TasksPageState extends State<TasksPage> {
   void initState() {
     super.initState();
     _controller = ensureProductivityController();
+    final targetTaskId = widget.targetTaskId?.trim();
+    if (targetTaskId != null && targetTaskId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openTargetTask(targetTaskId);
+      });
+    }
+  }
+
+  Future<void> _openTargetTask(String taskId) async {
+    final controller = _controller;
+    if (controller == null || !mounted) return;
+    try {
+      final task = await controller.loadTaskById(taskId);
+      if (mounted) await _showTaskDetails(controller, task);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorText(error))));
+    }
+  }
+
+  Future<void> _showTaskDetails(
+    ProductivityController controller,
+    ProductivityTask task,
+  ) async {
+    final edit = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(task.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              task.completed
+                  ? 'task.detail.completed'.tr
+                  : 'task.detail.inProgress'.tr,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            if (task.description?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              Text(task.description!),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('task.detail.edit'.tr),
+          ),
+        ],
+      ),
+    );
+    if (edit == true && mounted) await _editTask(controller, task);
   }
 
   @override
@@ -71,6 +132,67 @@ class _TasksPageState extends State<TasksPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_errorText(error))));
+    }
+  }
+
+  Future<void> _editTask(
+    ProductivityController controller,
+    ProductivityTask task,
+  ) async {
+    final title = TextEditingController(text: task.title);
+    final description = TextEditingController(text: task.description ?? '');
+    try {
+      final shouldSave = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('tasks.editTitle'.tr),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: title,
+                autofocus: true,
+                decoration: InputDecoration(labelText: 'tasks.titleField'.tr),
+              ),
+              TextField(
+                controller: description,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'tasks.descriptionField'.tr,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text('common.save'.tr),
+            ),
+          ],
+        ),
+      );
+      if (shouldSave != true || title.text.trim().isEmpty) return;
+      await controller.updateTask(
+        taskId: task.taskId,
+        title: title.text.trim(),
+        description: description.text.trim(),
+        priority: task.priority,
+        category: task.category,
+        dueDate: task.dueDate,
+        reminderTime: task.reminderTime,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorText(error))));
+    } finally {
+      title.dispose();
+      description.dispose();
     }
   }
 
@@ -230,7 +352,8 @@ class _TasksPageState extends State<TasksPage> {
                               final nextIndex =
                                   (_filter.index + 1) %
                                   ProductivityTaskFilter.values.length;
-                              _filter = ProductivityTaskFilter.values[nextIndex];
+                              _filter =
+                                  ProductivityTaskFilter.values[nextIndex];
                             });
                           },
                           icon: Icon(
@@ -286,6 +409,7 @@ class _TasksPageState extends State<TasksPage> {
                         task: task,
                         busy: controller.isBusy(task.taskId),
                         onToggle: () => _toggle(controller, task),
+                        onEdit: () => _editTask(controller, task),
                         onDelete: () => _delete(controller, task.taskId),
                       ),
                     ),
@@ -316,12 +440,14 @@ class _TaskTile extends StatelessWidget {
     required this.task,
     required this.busy,
     required this.onToggle,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final ProductivityTask task;
   final bool busy;
   final VoidCallback onToggle;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -397,17 +523,17 @@ class _TaskTile extends StatelessWidget {
                       color: Colors.white,
                     )
                   : (busy
-                      ? SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colors.textMuted,
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colors.textMuted,
+                              ),
                             ),
-                          ),
-                        )
-                      : null),
+                          )
+                        : null),
             ),
           ),
           const SizedBox(width: 14),
@@ -428,8 +554,9 @@ class _TaskTile extends StatelessWidget {
                         : colors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    decoration:
-                        task.completed ? TextDecoration.lineThrough : null,
+                    decoration: task.completed
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -484,9 +611,20 @@ class _TaskTile extends StatelessWidget {
                   size: 20,
                 ),
                 onSelected: (value) {
+                  if (value == 'edit') onEdit();
                   if (value == 'delete') onDelete();
                 },
                 itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text('common.edit'.tr),
+                      ],
+                    ),
+                  ),
                   PopupMenuItem(
                     value: 'delete',
                     child: Row(
@@ -522,9 +660,7 @@ class _UnavailableTaskView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(child: Text('tasks.signInToManage'.tr)),
-    );
+    return Scaffold(body: Center(child: Text('tasks.signInToManage'.tr)));
   }
 }
 

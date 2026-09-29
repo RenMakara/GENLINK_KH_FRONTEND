@@ -65,6 +65,9 @@ class ProductivityRepositoryImpl implements ProductivityRepository {
   );
 
   @override
+  Future<ProductivityTask> getTask(String taskId) => _remote.getTask(taskId);
+
+  @override
   Future<ProductivityTask> createTask({
     required String title,
     String? description,

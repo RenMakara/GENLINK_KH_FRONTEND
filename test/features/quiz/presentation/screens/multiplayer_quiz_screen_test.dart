@@ -63,7 +63,7 @@ class _FakeQuizMatchRealtimeDataSource implements QuizMatchRealtimeDataSource {
   Future<void> submitAnswer({
     required String matchId,
     required String questionId,
-    required String optionId,
+    required String? optionId,
   }) async {}
 
   @override

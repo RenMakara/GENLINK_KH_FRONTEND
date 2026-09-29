@@ -165,6 +165,70 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }) => _remote.getCashFlow(currency: currency, month: month, year: year);
 
   @override
+  Future<FinanceInsightsEntity> getFinanceInsights({
+    required FinanceCurrency currency,
+    required int month,
+    required int year,
+  }) =>
+      _remote.getFinanceInsights(currency: currency, month: month, year: year);
+
+  @override
+  Future<List<FinanceRecurringTransactionEntity>> getRecurringTransactions() =>
+      _remote.getRecurringTransactions();
+
+  @override
+  Future<FinanceRecurringTransactionEntity> createRecurringTransaction({
+    required FinanceRecurringType type,
+    required String title,
+    required double amount,
+    required FinanceRecurringFrequency frequency,
+    required String startDate,
+    required FinanceCurrency currency,
+    String? category,
+    bool fromWallet = false,
+    String? endDate,
+  }) => _remote.createRecurringTransaction(
+    FinanceRecurringTransactionRequestModel(
+      type: type,
+      title: title,
+      amount: amount,
+      frequency: frequency,
+      startDate: startDate,
+      currency: currency,
+      category: category,
+      fromWallet: fromWallet,
+      endDate: endDate,
+    ),
+  );
+
+  @override
+  Future<void> deleteRecurringTransaction(String recurringId) =>
+      _remote.deleteRecurringTransaction(recurringId);
+
+  @override
+  Future<List<FinanceAutoSaveRuleEntity>> getAutoSaveRules() =>
+      _remote.getAutoSaveRules();
+
+  @override
+  Future<FinanceAutoSaveRuleEntity> createAutoSaveRule({
+    required String savingGoalId,
+    required FinanceAutoSaveType type,
+    required FinanceCurrency currency,
+    double? percent,
+  }) => _remote.createAutoSaveRule(
+    FinanceAutoSaveRuleRequestModel(
+      savingGoalId: savingGoalId,
+      type: type,
+      currency: currency,
+      percent: percent,
+    ),
+  );
+
+  @override
+  Future<void> deleteAutoSaveRule(String ruleId) =>
+      _remote.deleteAutoSaveRule(ruleId);
+
+  @override
   Future<FinanceWalletEntity> getWallet() => _remote.getWallet();
 
   @override

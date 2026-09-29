@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/errors/app_error.dart';
 import '../../domain/entities/finance_entities.dart';
+import '../../domain/entities/finance_money.dart';
 import '../../domain/repositories/finance_repository.dart';
 import '../formatters/finance_localization.dart';
 import 'finance_controller.dart';
@@ -19,7 +20,12 @@ class ExpenseController extends GetxController {
       _financeController.selectedCurrency;
 
   final selectedCategory = RxnString();
+  final selectedMonth = DateTime.now().month.obs;
+  final selectedYear = DateTime.now().year.obs;
+  final hasExplicitMonthFilter = false.obs;
+
   final expenses = <FinanceExpenseEntity>[].obs;
+  final budgetCategories = <String>[].obs;
 
   final isInitialLoading = false.obs;
   final isRefreshing = false.obs;
@@ -38,12 +44,28 @@ class ExpenseController extends GetxController {
 
   static const int pageSize = 20;
   int _requestSequence = 0;
+  int _budgetCategoryRequestSequence = 0;
   Worker? _currencyWorker;
+  Worker? _dashboardWorker;
   bool _suppressCurrencyWorker = false;
 
   @override
   void onInit() {
     super.onInit();
+    final dMonth = _financeController.dashboard.value?.month;
+    if (dMonth != null) {
+      selectedMonth.value = dMonth.month;
+      selectedYear.value = dMonth.year;
+    }
+    _dashboardWorker = ever<FinanceDashboardEntity?>(
+      _financeController.dashboard,
+      (d) {
+        if (!hasExplicitMonthFilter.value && d?.month != null) {
+          selectedMonth.value = d!.month.month;
+          selectedYear.value = d.month.year;
+        }
+      },
+    );
     _currencyWorker = ever<FinanceCurrency>(
       _financeController.selectedCurrency,
       (_) {
@@ -55,6 +77,7 @@ class ExpenseController extends GetxController {
 
   @override
   void onClose() {
+    _dashboardWorker?.dispose();
     _currencyWorker?.dispose();
     super.onClose();
   }
@@ -111,6 +134,66 @@ class ExpenseController extends GetxController {
     if (normalized == selectedCategory.value) return;
     selectedCategory.value = normalized;
     await loadInitial();
+  }
+
+  Future<void> selectPeriod({required int month, required int year}) async {
+    if (month < 1 || month > 12 || year < 1) return;
+    if (month == selectedMonth.value &&
+        year == selectedYear.value &&
+        hasExplicitMonthFilter.value) {
+      return;
+    }
+    hasExplicitMonthFilter.value = true;
+    selectedMonth.value = month;
+    selectedYear.value = year;
+    await Future.wait<void>([
+      loadInitial(),
+      loadBudgetCategories(
+        currency: selectedCurrency.value,
+        month: month,
+        year: year,
+      ),
+    ]);
+  }
+
+  Future<void> selectPreviousMonth() async {
+    final previous = DateTime(selectedYear.value, selectedMonth.value - 1, 1);
+    await selectPeriod(month: previous.month, year: previous.year);
+  }
+
+  Future<void> selectNextMonth() async {
+    final next = DateTime(selectedYear.value, selectedMonth.value + 1, 1);
+    await selectPeriod(month: next.month, year: next.year);
+  }
+
+  Future<void> loadBudgetCategories({
+    required FinanceCurrency currency,
+    required int month,
+    required int year,
+  }) async {
+    final request = ++_budgetCategoryRequestSequence;
+    budgetCategories.clear();
+    try {
+      final currentBudget = await _repository.getCurrentBudget(
+        currency: currency,
+        month: month,
+        year: year,
+      );
+      if (request != _budgetCategoryRequestSequence ||
+          currentBudget.currency != currency ||
+          currentBudget.month != month ||
+          currentBudget.year != year) {
+        return;
+      }
+      budgetCategories.assignAll(
+        currentBudget.categories
+            .map((allocation) => allocation.category.trim())
+            .where((category) => category.isNotEmpty),
+      );
+    } catch (_) {
+      // Standard expense categories remain available if no budget exists or the
+      // budget endpoint is temporarily unavailable.
+    }
   }
 
   Future<void> loadNextPage() async {
@@ -257,6 +340,8 @@ class ExpenseController extends GetxController {
       final result = await _repository.getExpenses(
         category: selectedCategory.value,
         currency: selectedCurrency.value,
+        month: hasExplicitMonthFilter.value ? selectedMonth.value : null,
+        year: hasExplicitMonthFilter.value ? selectedYear.value : null,
         page: page,
         size: pageSize,
       );
@@ -304,5 +389,6 @@ class ExpenseController extends GetxController {
     hasNextPage.value = false;
   }
 
-  bool _validAmount(double amount) => amount.isFinite && amount > 0;
+  bool _validAmount(double amount) =>
+      FinanceMoney.tryFromNumber(amount)?.sign == 1;
 }

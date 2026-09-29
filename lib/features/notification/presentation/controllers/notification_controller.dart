@@ -694,7 +694,7 @@ class NotificationController extends GetxController
         return;
       }
       if (notif.type == NotificationType.taskReminder || targetType == 'TASK') {
-        Get.to<void>(() => const TasksPage());
+        Get.to<void>(() => TasksPage(targetTaskId: targetId));
         return;
       }
       if (notif.type == NotificationType.goalReminder || targetType == 'GOAL') {

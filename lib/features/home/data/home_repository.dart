@@ -80,6 +80,7 @@ class HomeRepositoryImpl implements HomeRepository {
     habitsTotal: (json['habitsTotal'] as num?)?.toInt() ?? 0,
     tasksCompleted: (json['tasksCompleted'] as num?)?.toInt() ?? 0,
     tasksTotal: (json['tasksTotal'] as num?)?.toInt() ?? 0,
+    xpEarnedToday: (json['xpEarned'] as num?)?.toInt() ?? 0,
   );
 
   static HabitItemEntity _mapHabit(Map<String, dynamic> json) =>
@@ -123,7 +124,8 @@ class HomeRepositoryImpl implements HomeRepository {
     coverImageUrl: json['coverImageUrl'] as String?,
     description: json['description'] as String?,
     category: json['category'] as String?,
-    participantCount: (json['participantCount'] as num?)?.toInt() ??
+    participantCount:
+        (json['participantCount'] as num?)?.toInt() ??
         (json['attendeesCount'] as num?)?.toInt(),
   );
 
@@ -151,9 +153,11 @@ class HomeRepositoryImpl implements HomeRepository {
     contentText: json['contentText'] as String?,
     imageUrl: json['imageUrl'] as String?,
     likeCount: (json['likeCount'] as num?)?.toInt(),
-    commentCount: (json['commentCount'] as num?)?.toInt() ??
+    commentCount:
+        (json['commentCount'] as num?)?.toInt() ??
         (json['commentsCount'] as num?)?.toInt(),
-    communityName: json['communityName'] as String? ?? json['community'] as String?,
+    communityName:
+        json['communityName'] as String? ?? json['community'] as String?,
     createdAt: json['createdAt'] as String?,
   );
 

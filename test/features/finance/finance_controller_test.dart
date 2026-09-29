@@ -69,4 +69,47 @@ void main() {
     expect(controller.errorMessage.value, 'Not enough balance');
     expect(controller.isLoading.value, isFalse);
   });
+
+  test(
+    'keeps the last dashboard visible when a same-currency refresh fails',
+    () async {
+      const dashboard = FinanceDashboardEntity(
+        currency: FinanceCurrency.usd,
+        month: FinanceMonthOverview(
+          month: 8,
+          year: 2026,
+          currency: FinanceCurrency.usd,
+          spent: 25,
+        ),
+        topCategories: [],
+        saving: FinanceSavingProgress(
+          currency: FinanceCurrency.usd,
+          totalTarget: 0,
+          totalSaved: 0,
+          progressPercent: 0,
+          activeGoals: 0,
+        ),
+        recentExpenses: [],
+      );
+      var calls = 0;
+      when(
+        () => repository.getFinanceDashboard(currency: FinanceCurrency.usd),
+      ).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) return dashboard;
+        throw const AppError(
+          message: 'Dashboard unavailable',
+          errorCode: 'API_ERROR',
+          statusCode: 503,
+        );
+      });
+
+      await controller.loadDashboard();
+      await controller.reload();
+
+      expect(controller.dashboard.value, same(dashboard));
+      expect(controller.errorMessage.value, 'Dashboard unavailable');
+      expect(controller.isLoading.value, isFalse);
+    },
+  );
 }

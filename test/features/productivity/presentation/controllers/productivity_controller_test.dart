@@ -128,6 +128,92 @@ void main() {
   );
 
   test(
+    'loading a referenced task fetches and updates controller state',
+    () async {
+      final task = _task('task-from-reminder', title: 'Submit report');
+      when(
+        () => repository.getTask('task-from-reminder'),
+      ).thenAnswer((_) async => task);
+
+      final loaded = await controller.loadTaskById('task-from-reminder');
+
+      expect(loaded.title, 'Submit report');
+      expect(controller.tasks.single.taskId, 'task-from-reminder');
+    },
+  );
+
+  test('focus history loads more pages without duplicate sessions', () async {
+    final newest = ProductivityFocusSession(
+      sessionId: 'session-newest',
+      status: 'COMPLETED',
+      startedAt: DateTime(2026, 9, 20),
+    );
+    final older = ProductivityFocusSession(
+      sessionId: 'session-older',
+      status: 'COMPLETED',
+      startedAt: DateTime(2026, 9, 19),
+    );
+    when(() => repository.getFocusHistory(page: 0, size: 20)).thenAnswer(
+      (_) async => ProductivityPage(
+        content: [newest],
+        page: 0,
+        size: 20,
+        totalElements: 3,
+        totalPages: 2,
+        hasNext: true,
+      ),
+    );
+    when(() => repository.getFocusHistory(page: 1, size: 20)).thenAnswer(
+      (_) async => ProductivityPage(
+        content: [newest, older],
+        page: 1,
+        size: 20,
+        totalElements: 3,
+        totalPages: 2,
+        hasNext: false,
+      ),
+    );
+
+    await controller.loadFocusHistory();
+    await controller.loadNextFocusHistoryPage();
+
+    expect(controller.focusHistory.map((session) => session.sessionId), [
+      'session-newest',
+      'session-older',
+    ]);
+    expect(controller.focusHistoryHasMore.value, isFalse);
+    verify(() => repository.getFocusHistory(page: 0, size: 20)).called(1);
+    verify(() => repository.getFocusHistory(page: 1, size: 20)).called(1);
+  });
+
+  test('motivation save and unsave follow returned server state', () async {
+    const motivation = ProductivityMotivation(
+      motivationId: 'motivation-1',
+      title: 'Keep going',
+      content: 'One step at a time.',
+    );
+    const saved = ProductivityMotivation(
+      motivationId: 'motivation-1',
+      title: 'Keep going',
+      content: 'One step at a time.',
+      saved: true,
+    );
+    controller.motivations.add(motivation);
+    when(
+      () => repository.saveMotivation('motivation-1'),
+    ).thenAnswer((_) async => saved);
+    when(
+      () => repository.unsaveMotivation('motivation-1'),
+    ).thenAnswer((_) async => motivation);
+
+    await controller.saveMotivation('motivation-1');
+    expect(controller.savedMotivations.single.saved, isTrue);
+    await controller.unsaveMotivation('motivation-1');
+    expect(controller.savedMotivations, isEmpty);
+    expect(controller.motivations.single.saved, isFalse);
+  });
+
+  test(
     'duplicate task completion is ignored while the first request is pending',
     () async {
       controller.tasks.add(_task('task-1'));

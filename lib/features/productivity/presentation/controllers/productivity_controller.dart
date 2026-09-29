@@ -15,6 +15,8 @@ class ProductivityController extends GetxController {
   final goals = <ProductivityGoal>[].obs;
   final focusStats = Rxn<ProductivityFocusStats>();
   final focusHistory = <ProductivityFocusSession>[].obs;
+  final focusHistoryPage = (-1).obs;
+  final focusHistoryHasMore = false.obs;
   final activeFocusSession = Rxn<ProductivityFocusSession>();
   final isFocusActionLoading = false.obs;
   final motivations = <ProductivityMotivation>[].obs;
@@ -107,18 +109,40 @@ class ProductivityController extends GetxController {
     }
   }
 
-  Future<void> loadFocusHistory() async {
+  Future<void> loadFocusHistory({bool refresh = true}) async {
     if (isFocusHistoryLoading.value) return;
+    if (!refresh && !focusHistoryHasMore.value) return;
     isFocusHistoryLoading.value = true;
     try {
-      final page = await repository.getFocusHistory();
-      focusHistory.assignAll(
-        page.content.where((session) => session.isCompleted),
+      final nextPage = refresh ? 0 : focusHistoryPage.value + 1;
+      final page = await repository.getFocusHistory(page: nextPage, size: 20);
+      final completed = page.content.where((session) => session.isCompleted);
+      final sessions = refresh
+          ? <ProductivityFocusSession>[]
+          : [...focusHistory];
+      for (final session in completed) {
+        final existingIndex = sessions.indexWhere(
+          (item) => item.sessionId == session.sessionId,
+        );
+        if (existingIndex == -1) {
+          sessions.add(session);
+        } else {
+          sessions[existingIndex] = session;
+        }
+      }
+      sessions.sort(
+        (a, b) =>
+            (b.startedAt ?? DateTime(0)).compareTo(a.startedAt ?? DateTime(0)),
       );
+      focusHistory.assignAll(sessions);
+      focusHistoryPage.value = page.page;
+      focusHistoryHasMore.value = page.hasNext;
     } finally {
       isFocusHistoryLoading.value = false;
     }
   }
+
+  Future<void> loadNextFocusHistoryPage() => loadFocusHistory(refresh: false);
 
   Future<ProductivityFocusSession?> loadActiveFocusSession() async {
     final session = await repository.getActiveFocusSession();
@@ -173,6 +197,7 @@ class ProductivityController extends GetxController {
       reminderTime: reminderTime,
     );
     _replaceHabit(habit);
+    await _refreshDashboardSilently();
     return habit;
   }
 
@@ -252,6 +277,7 @@ class ProductivityController extends GetxController {
       reminderTime: reminderTime,
     );
     _replaceTask(task);
+    await _refreshDashboardSilently();
     return task;
   }
 
@@ -259,6 +285,17 @@ class ProductivityController extends GetxController {
     await repository.deleteTask(taskId);
     tasks.removeWhere((task) => task.taskId == taskId);
     await _refreshDashboardSilently();
+  }
+
+  Future<ProductivityTask> loadTaskById(String taskId) async {
+    final task = await repository.getTask(taskId);
+    final index = tasks.indexWhere((item) => item.taskId == task.taskId);
+    if (index == -1) {
+      tasks.insert(0, task);
+    } else {
+      tasks[index] = task;
+    }
+    return task;
   }
 
   Future<ProductivityTask> toggleTask(
@@ -326,6 +363,7 @@ class ProductivityController extends GetxController {
       deadline: deadline,
     );
     _replaceGoal(goal);
+    await _refreshDashboardSilently();
     return goal;
   }
 
@@ -341,6 +379,7 @@ class ProductivityController extends GetxController {
   }) async {
     final goal = await repository.addMilestone(goalId: goalId, title: title);
     _replaceGoal(goal);
+    await _refreshDashboardSilently();
     return goal;
   }
 
@@ -368,6 +407,7 @@ class ProductivityController extends GetxController {
       milestoneId: milestoneId,
     );
     _replaceGoal(goal);
+    await _refreshDashboardSilently();
     return goal;
   }
 
@@ -462,6 +502,8 @@ class ProductivityController extends GetxController {
     goals.clear();
     focusStats.value = null;
     focusHistory.clear();
+    focusHistoryPage.value = -1;
+    focusHistoryHasMore.value = false;
     activeFocusSession.value = null;
     isFocusActionLoading.value = false;
     motivations.clear();

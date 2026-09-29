@@ -13,7 +13,7 @@ abstract class QuizMatchRealtimeDataSource {
   Future<void> submitAnswer({
     required String matchId,
     required String questionId,
-    required String optionId,
+    required String? optionId,
   });
   Future<void> finishMatch(String matchId);
 }
@@ -58,7 +58,7 @@ class QuizMatchRealtimeDataSourceImpl implements QuizMatchRealtimeDataSource {
   Future<void> submitAnswer({
     required String matchId,
     required String questionId,
-    required String optionId,
+    required String? optionId,
   }) {
     return _realtimeService.sendStompMessage(
       '/app/quiz/match/$matchId/submit',

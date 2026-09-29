@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 
 import '../../app/routes/app_routes.dart';
 import '../../design_system/colors/app_colors.dart';
+import '../../design_system/widgets/buttons/app_back_button.dart';
 import 'domain/entities/productivity_entities.dart';
 import 'presentation/controllers/productivity_controller.dart';
 import 'presentation/goals_plan/goal_plan.dart';
+import 'presentation/motivation_feature/motivation_library_screen.dart';
 import 'presentation/productivity_scope.dart';
 import 'presentation/task_feature/task_home_screen.dart';
 import 'presentation/widgets/productivity_components.dart';
@@ -97,9 +99,7 @@ class _DashboardView extends StatelessWidget {
                 onSeeAll: () => Get.to(() => const TasksPage()),
               ),
               const SizedBox(height: 20),
-              ProductivityQuickActions(
-                controller: controller,
-              ),
+              ProductivityQuickActions(controller: controller),
               const SizedBox(height: 20),
               ProductivityGoalProgressSection(
                 goals: dashboard.goals,
@@ -109,6 +109,8 @@ class _DashboardView extends StatelessWidget {
                 const SizedBox(height: 20),
                 ProductivityMotivationSection(
                   motivation: dashboard.motivation!,
+                  onTap: () =>
+                      Get.to<void>(() => const MotivationLibraryScreen()),
                 ),
               ],
             ],
@@ -128,9 +130,7 @@ class _LoadingView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: BackButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        leading: const Center(child: AppBackButton()),
       ),
       body: const Center(child: CircularProgressIndicator()),
     );
@@ -149,9 +149,7 @@ class _ErrorView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: BackButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        leading: const Center(child: AppBackButton()),
       ),
       body: Center(
         child: Padding(
@@ -179,9 +177,7 @@ class _UnavailableView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: BackButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        leading: const Center(child: AppBackButton()),
       ),
       body: Center(child: Text('productivity.availableAfterSignIn'.tr)),
     );

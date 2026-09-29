@@ -40,7 +40,10 @@ class _MockProductivityController extends GetxController
   Future<void> reload() async {}
 
   @override
-  Future<ProductivityTask> toggleTask(String taskId, {required bool completed}) async {
+  Future<ProductivityTask> toggleTask(
+    String taskId, {
+    required bool completed,
+  }) async {
     toggledTaskId = taskId;
     toggledTaskCompleted = completed;
     final index = _tasks.indexWhere((t) => t.taskId == taskId);
@@ -51,7 +54,10 @@ class _MockProductivityController extends GetxController
   }
 
   @override
-  Future<ProductivityHabit> toggleHabit(String habitId, {required bool completed}) async {
+  Future<ProductivityHabit> toggleHabit(
+    String habitId, {
+    required bool completed,
+  }) async {
     toggledHabitId = habitId;
     toggledHabitCompleted = completed;
     final index = _habits.indexWhere((h) => h.habitId == habitId);
@@ -104,66 +110,70 @@ void main() {
   }
 
   group('TasksPage Redesign Tests (Mockup 1)', () {
-    testWidgets('renders Tasks hero, search, filter tabs, task cards, and all caught up card', (tester) async {
+    testWidgets(
+      'renders Tasks hero, search, filter tabs, task cards, and all caught up card',
+      (tester) async {
+        controller._tasks.assignAll([
+          ProductivityTask(
+            taskId: 'task-1',
+            title: 'test2',
+            category: 'STUDY',
+            priority: 'MEDIUM',
+            dueDate: DateTime.now().add(const Duration(hours: 4)),
+          ),
+          ProductivityTask(
+            taskId: 'task-2',
+            title: 'Test',
+            category: 'STUDY',
+            priority: 'MEDIUM',
+          ),
+        ]);
+
+        await tester.pumpWidget(buildTestWidget(const TasksPage()));
+        await tester.pumpAndSettle();
+
+        // Header
+        expect(find.text('Tasks'), findsOneWidget);
+        expect(
+          find.text('Get things done, one step at a time'),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.add_rounded), findsWidgets);
+
+        // Hero Banner
+        expect(find.text('Small tasks make big progress'), findsOneWidget);
+        expect(find.text('Stay consistent every day.'), findsOneWidget);
+
+        // Search & Filter
+        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+
+        // Filter Tabs
+        expect(find.text('All'), findsOneWidget);
+        expect(find.text('Today'), findsOneWidget);
+        expect(find.text('Upcoming'), findsOneWidget);
+        expect(find.text('Overdue'), findsOneWidget);
+
+        // Section
+        expect(find.text('My Tasks'), findsOneWidget);
+        expect(find.text('2'), findsOneWidget);
+
+        // Task Items
+        expect(find.text('test2'), findsOneWidget);
+        expect(find.text('Test'), findsOneWidget);
+        expect(find.text('MEDIUM'), findsNWidgets(2));
+
+        // All caught up / encouragement card at bottom
+        expect(find.text('All caught up! 🎉'), findsOneWidget);
+        expect(find.text('Add Task'), findsOneWidget);
+      },
+    );
+
+    testWidgets('toggles task completion when check icon is tapped', (
+      tester,
+    ) async {
       controller._tasks.assignAll([
-        ProductivityTask(
-          taskId: 'task-1',
-          title: 'test2',
-          category: 'STUDY',
-          priority: 'MEDIUM',
-          dueDate: DateTime.now().add(const Duration(hours: 4)),
-        ),
-        ProductivityTask(
-          taskId: 'task-2',
-          title: 'Test',
-          category: 'STUDY',
-          priority: 'MEDIUM',
-        ),
-      ]);
-
-      await tester.pumpWidget(buildTestWidget(const TasksPage()));
-      await tester.pumpAndSettle();
-
-      // Header
-      expect(find.text('Tasks'), findsOneWidget);
-      expect(find.text('Get things done, one step at a time'), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsWidgets);
-
-      // Hero Banner
-      expect(find.text('Small tasks make big progress'), findsOneWidget);
-      expect(find.text('Stay consistent every day.'), findsOneWidget);
-
-      // Search & Filter
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
-
-      // Filter Tabs
-      expect(find.text('All'), findsOneWidget);
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Upcoming'), findsOneWidget);
-      expect(find.text('Overdue'), findsOneWidget);
-
-      // Section
-      expect(find.text('My Tasks'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
-
-      // Task Items
-      expect(find.text('test2'), findsOneWidget);
-      expect(find.text('Test'), findsOneWidget);
-      expect(find.text('MEDIUM'), findsNWidgets(2));
-
-      // All caught up / encouragement card at bottom
-      expect(find.text('All caught up! 🎉'), findsOneWidget);
-      expect(find.text('Add Task'), findsOneWidget);
-    });
-
-    testWidgets('toggles task completion when check icon is tapped', (tester) async {
-      controller._tasks.assignAll([
-        ProductivityTask(
-          taskId: 'task-1',
-          title: 'test2',
-          completed: false,
-        ),
+        ProductivityTask(taskId: 'task-1', title: 'test2', completed: false),
       ]);
 
       await tester.pumpWidget(buildTestWidget(const TasksPage()));
@@ -181,44 +191,72 @@ void main() {
   });
 
   group('HabitHomeScreen Redesign Tests (Mockup 2)', () {
-    testWidgets('renders Habits hero, streak card, habits list, and encouragement card', (tester) async {
+    testWidgets(
+      'renders Habits hero, streak card, habits list, and encouragement card',
+      (tester) async {
+        controller._habits.assignAll([
+          ProductivityHabit(
+            habitId: 'habit-1',
+            title: 'test',
+            category: 'PERSONAL',
+            frequency: 'DAILY',
+            streakCount: 1,
+            checkedInToday: true,
+          ),
+        ]);
+
+        await tester.pumpWidget(buildTestWidget(const HabitHomeScreen()));
+        await tester.pumpAndSettle();
+
+        // Header
+        expect(find.text('Habits'), findsOneWidget);
+        expect(find.text('Small habits, big results'), findsOneWidget);
+
+        // Hero Banner with Flame
+        expect(
+          find.text('Build better you\none habit at a time.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Consistency today a brighter tomorrow.'),
+          findsOneWidget,
+        );
+
+        // Charcoal Streak Card
+        expect(find.text('1 day streak'), findsOneWidget);
+        expect(find.text('1 of 1 completed'), findsOneWidget);
+        expect(
+          find.byIcon(Icons.local_fire_department_rounded),
+          findsOneWidget,
+        );
+
+        // Section Header
+        expect(find.text("Today's habits"), findsOneWidget);
+        expect(find.text('1/1'), findsOneWidget);
+
+        // Habit Item
+        expect(find.text('test'), findsOneWidget);
+
+        // Encouragement Sprout Card
+        expect(find.text('Great start! 🌱'), findsOneWidget);
+        expect(find.text('Add Habit'), findsOneWidget);
+      },
+    );
+
+    testWidgets('labels a weekly streak in weeks', (tester) async {
       controller._habits.assignAll([
         ProductivityHabit(
-          habitId: 'habit-1',
-          title: 'test',
-          category: 'PERSONAL',
-          frequency: 'DAILY',
-          streakCount: 1,
-          checkedInToday: true,
+          habitId: 'weekly-habit',
+          title: 'Weekly planning',
+          frequency: 'WEEKLY',
+          streakCount: 2,
         ),
       ]);
 
       await tester.pumpWidget(buildTestWidget(const HabitHomeScreen()));
       await tester.pumpAndSettle();
 
-      // Header
-      expect(find.text('Habits'), findsOneWidget);
-      expect(find.text('Small habits, big results'), findsOneWidget);
-
-      // Hero Banner with Flame
-      expect(find.text('Build better you\none habit at a time.'), findsOneWidget);
-      expect(find.text('Consistency today a brighter tomorrow.'), findsOneWidget);
-
-      // Charcoal Streak Card
-      expect(find.text('1-day streak'), findsOneWidget);
-      expect(find.text('1 of 1 completed today'), findsOneWidget);
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
-
-      // Section Header
-      expect(find.text("Today's habits"), findsOneWidget);
-      expect(find.text('1/1'), findsOneWidget);
-
-      // Habit Item
-      expect(find.text('test'), findsOneWidget);
-
-      // Encouragement Sprout Card
-      expect(find.text('Great start! 🌱'), findsOneWidget);
-      expect(find.text('Add Habit'), findsOneWidget);
+      expect(find.text('2 week streak'), findsOneWidget);
     });
 
     testWidgets('toggles habit check-in when tapped', (tester) async {
@@ -244,39 +282,51 @@ void main() {
   });
 
   group('PlanGoalScreen Redesign Tests (Mockup 3)', () {
-    testWidgets('renders Goals Plan hero, category chips, empty state mound, and tip card', (tester) async {
-      await tester.pumpWidget(buildTestWidget(const PlanGoalScreen()));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders Goals Plan hero, category chips, empty state mound, and tip card',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(const PlanGoalScreen()));
+        await tester.pumpAndSettle();
 
-      // Header
-      expect(find.text('Goals Plan'), findsOneWidget);
-      expect(find.text('Turn your dreams into reality'), findsOneWidget);
+        // Header
+        expect(find.text('Goals Plan'), findsOneWidget);
+        expect(find.text('Turn your dreams into reality'), findsOneWidget);
 
-      // Hero Banner
-      expect(find.text('Set a goal today\na brighter tomorrow.'), findsOneWidget);
-      expect(find.text('Big dreams start with small steps.'), findsOneWidget);
+        // Hero Banner
+        expect(
+          find.text('Set a goal today\na brighter tomorrow.'),
+          findsOneWidget,
+        );
+        expect(find.text('Big dreams start with small steps.'), findsOneWidget);
 
-      // Category Chips
-      expect(find.text('All'), findsOneWidget);
-      expect(find.text('Personal'), findsOneWidget);
-      expect(find.text('Career'), findsOneWidget);
-      expect(find.text('Skill'), findsOneWidget);
-      expect(find.text('Finance'), findsOneWidget);
+        // Category Chips
+        expect(find.text('All'), findsOneWidget);
+        expect(find.text('Personal'), findsOneWidget);
+        expect(find.text('Career'), findsOneWidget);
+        expect(find.text('Skill'), findsOneWidget);
+        expect(find.text('Finance'), findsOneWidget);
 
-      // Section Header
-      expect(find.text('My goals'), findsOneWidget);
-      expect(find.text('0'), findsOneWidget);
+        // Section Header
+        expect(find.text('My goals'), findsOneWidget);
+        expect(find.text('0'), findsOneWidget);
 
-      // Empty State Card with Mound
-      expect(find.text('No goals yet'), findsOneWidget);
-      expect(find.text('Create a goal and break it into milestones.'), findsOneWidget);
-      expect(find.text('Create goal'), findsOneWidget);
+        // Empty State Card with Mound
+        expect(find.text('No goals yet'), findsOneWidget);
+        expect(
+          find.text('Create a goal and break it into milestones.'),
+          findsOneWidget,
+        );
+        expect(find.text('Create goal'), findsOneWidget);
 
-      // Bottom Motivation / Tip Card
-      expect(find.text('A better you is a goal away.'), findsOneWidget);
-      expect(find.text('Set a goal today and start building the future you want.'), findsOneWidget);
-      expect(find.byIcon(Icons.lightbulb_rounded), findsOneWidget);
-    });
+        // Bottom Motivation / Tip Card
+        expect(find.text('A better you is a goal away.'), findsOneWidget);
+        expect(
+          find.text('Set a goal today and start building the future you want.'),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.lightbulb_rounded), findsOneWidget);
+      },
+    );
 
     testWidgets('renders active goal items when goals exist', (tester) async {
       controller._goals.assignAll([
@@ -298,30 +348,33 @@ void main() {
   });
 
   group('Khmer Locale and Dark Mode Tests for all 3 screens', () {
-    testWidgets('renders all 3 listing screens in Khmer locale without overflow', (tester) async {
-      for (final screen in [
-        const TasksPage(),
-        const HabitHomeScreen(),
-        const PlanGoalScreen(),
-      ]) {
-        await tester.pumpWidget(
-          buildTestWidget(screen, locale: const Locale('km', 'KH')),
-        );
-        await tester.pumpAndSettle();
-        expect(find.byType(ListScreenHeader), findsOneWidget);
-        expect(find.byType(ListHeroBanner), findsOneWidget);
-      }
-    });
+    testWidgets(
+      'renders all 3 listing screens in Khmer locale without overflow',
+      (tester) async {
+        for (final screen in [
+          const TasksPage(),
+          const HabitHomeScreen(),
+          const PlanGoalScreen(),
+        ]) {
+          await tester.pumpWidget(
+            buildTestWidget(screen, locale: const Locale('km', 'KH')),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(ListScreenHeader), findsOneWidget);
+          expect(find.byType(ListHeroBanner), findsOneWidget);
+        }
+      },
+    );
 
-    testWidgets('renders all 3 listing screens in Dark Mode without issues', (tester) async {
+    testWidgets('renders all 3 listing screens in Dark Mode without issues', (
+      tester,
+    ) async {
       for (final screen in [
         const TasksPage(),
         const HabitHomeScreen(),
         const PlanGoalScreen(),
       ]) {
-        await tester.pumpWidget(
-          buildTestWidget(screen, mode: ThemeMode.dark),
-        );
+        await tester.pumpWidget(buildTestWidget(screen, mode: ThemeMode.dark));
         await tester.pumpAndSettle();
         expect(find.byType(ListScreenHeader), findsOneWidget);
         expect(find.byType(ListHeroBanner), findsOneWidget);

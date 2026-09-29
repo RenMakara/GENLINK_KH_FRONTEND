@@ -603,8 +603,8 @@ class ExpenseAddButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: Ink(
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: background,
             shape: BoxShape.circle,
@@ -643,7 +643,7 @@ class ExpensePeriodBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor),
       ),
       child: Row(

@@ -8,7 +8,6 @@ class FinanceRemoteDatasource {
 
   final ApiClient _client;
 
-
   Future<FinanceDashboardEntity> getFinanceDashboard(FinanceCurrency currency) {
     return _client.get(
       ApiEndpoints.mobileFinanceDashboard,
@@ -16,7 +15,6 @@ class FinanceRemoteDatasource {
       parse: (data) => FinanceMapper.dashboard(ApiClient.asMap(data)),
     );
   }
-
 
   Future<FinancePage<FinanceExpenseEntity>> getExpenses({
     String? category,
@@ -88,7 +86,6 @@ class FinanceRemoteDatasource {
     );
   }
 
-
   Future<FinancePage<FinanceIncomeEntity>> getIncomes({
     String? source,
     int? month,
@@ -157,6 +154,61 @@ class FinanceRemoteDatasource {
     );
   }
 
+  Future<FinanceInsightsEntity> getFinanceInsights({
+    required FinanceCurrency currency,
+    required int month,
+    required int year,
+  }) {
+    return _client.get(
+      ApiEndpoints.financeInsights,
+      query: {'currency': currency.apiValue, 'month': month, 'year': year},
+      parse: (data) => FinanceMapper.insights(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<List<FinanceRecurringTransactionEntity>> getRecurringTransactions() {
+    return _client.get(
+      ApiEndpoints.financeRecurring,
+      parse: (data) =>
+          ApiClient.asList(data, FinanceMapper.recurringTransaction),
+    );
+  }
+
+  Future<FinanceRecurringTransactionEntity> createRecurringTransaction(
+    FinanceRecurringTransactionRequestModel request,
+  ) {
+    return _client.post(
+      ApiEndpoints.financeRecurring,
+      body: request.toJson(),
+      parse: (data) =>
+          FinanceMapper.recurringTransaction(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<void> deleteRecurringTransaction(String recurringId) {
+    return _client.delete(ApiEndpoints.financeRecurringItem(recurringId));
+  }
+
+  Future<List<FinanceAutoSaveRuleEntity>> getAutoSaveRules() {
+    return _client.get(
+      ApiEndpoints.financeAutoSave,
+      parse: (data) => ApiClient.asList(data, FinanceMapper.autoSaveRule),
+    );
+  }
+
+  Future<FinanceAutoSaveRuleEntity> createAutoSaveRule(
+    FinanceAutoSaveRuleRequestModel request,
+  ) {
+    return _client.post(
+      ApiEndpoints.financeAutoSave,
+      body: request.toJson(),
+      parse: (data) => FinanceMapper.autoSaveRule(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<void> deleteAutoSaveRule(String ruleId) {
+    return _client.delete(ApiEndpoints.financeAutoSaveItem(ruleId));
+  }
 
   Future<FinanceWalletEntity> getWallet() {
     return _client.get(
@@ -198,7 +250,6 @@ class FinanceRemoteDatasource {
       ),
     );
   }
-
 
   Future<FinancePage<FinanceBudgetEntity>> getBudgets({int? page, int? size}) {
     return _client.get(
@@ -253,7 +304,6 @@ class FinanceRemoteDatasource {
   Future<void> deleteBudget(String budgetId) {
     return _client.delete(ApiEndpoints.financeBudget(budgetId));
   }
-
 
   Future<List<FinanceSavingGoalEntity>> getSavingGoals({
     String? status,
@@ -317,7 +367,6 @@ class FinanceRemoteDatasource {
       parse: (data) => ApiClient.asList(data, FinanceMapper.savingDeposit),
     );
   }
-
 
   Future<FinanceLearningDashboardEntity> getLearningDashboard() {
     return _client.get(

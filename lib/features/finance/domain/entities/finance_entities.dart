@@ -493,3 +493,157 @@ class FinanceCashFlowEntity {
   final double net;
   final double savingsRatePercent;
 }
+
+enum FinanceRecurringType { income, expense }
+
+extension FinanceRecurringTypeWire on FinanceRecurringType {
+  String get apiValue => switch (this) {
+    FinanceRecurringType.income => 'INCOME',
+    FinanceRecurringType.expense => 'EXPENSE',
+  };
+}
+
+FinanceRecurringType parseFinanceRecurringType(Object? raw) => switch (raw) {
+  'INCOME' => FinanceRecurringType.income,
+  'EXPENSE' => FinanceRecurringType.expense,
+  _ => throw FormatException('Unknown recurring transaction type: $raw'),
+};
+
+enum FinanceRecurringFrequency { daily, weekly, monthly }
+
+extension FinanceRecurringFrequencyWire on FinanceRecurringFrequency {
+  String get apiValue => switch (this) {
+    FinanceRecurringFrequency.daily => 'DAILY',
+    FinanceRecurringFrequency.weekly => 'WEEKLY',
+    FinanceRecurringFrequency.monthly => 'MONTHLY',
+  };
+}
+
+FinanceRecurringFrequency parseFinanceRecurringFrequency(Object? raw) =>
+    switch (raw) {
+      'DAILY' => FinanceRecurringFrequency.daily,
+      'WEEKLY' => FinanceRecurringFrequency.weekly,
+      'MONTHLY' => FinanceRecurringFrequency.monthly,
+      _ => throw FormatException('Unknown recurring frequency: $raw'),
+    };
+
+enum FinanceAutoSaveType { percentOfIncome, roundUp }
+
+extension FinanceAutoSaveTypeWire on FinanceAutoSaveType {
+  String get apiValue => switch (this) {
+    FinanceAutoSaveType.percentOfIncome => 'PERCENT_OF_INCOME',
+    FinanceAutoSaveType.roundUp => 'ROUND_UP',
+  };
+}
+
+FinanceAutoSaveType parseFinanceAutoSaveType(Object? raw) => switch (raw) {
+  'PERCENT_OF_INCOME' => FinanceAutoSaveType.percentOfIncome,
+  'ROUND_UP' => FinanceAutoSaveType.roundUp,
+  _ => throw FormatException('Unknown auto-save type: $raw'),
+};
+
+class FinanceRecurringTransactionEntity {
+  const FinanceRecurringTransactionEntity({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.amount,
+    required this.currency,
+    required this.frequency,
+    required this.fromWallet,
+    required this.nextRunDate,
+    required this.startDate,
+    required this.active,
+    this.category,
+    this.endDate,
+    this.lastRunDate,
+    this.createdAt,
+  });
+
+  final String id;
+  final FinanceRecurringType type;
+  final String title;
+  final double amount;
+  final FinanceCurrency currency;
+  final String? category;
+  final FinanceRecurringFrequency frequency;
+  final bool fromWallet;
+  final String nextRunDate;
+  final String startDate;
+  final String? endDate;
+  final String? lastRunDate;
+  final bool active;
+  final String? createdAt;
+}
+
+class FinanceAutoSaveRuleEntity {
+  const FinanceAutoSaveRuleEntity({
+    required this.id,
+    required this.savingGoalId,
+    required this.goalTitle,
+    required this.type,
+    required this.currency,
+    required this.nextRunDate,
+    required this.active,
+    this.percent,
+    this.lastRunDate,
+    this.createdAt,
+  });
+
+  final String id;
+  final String savingGoalId;
+  final String goalTitle;
+  final FinanceAutoSaveType type;
+  final double? percent;
+  final FinanceCurrency currency;
+  final String nextRunDate;
+  final String? lastRunDate;
+  final bool active;
+  final String? createdAt;
+}
+
+class FinanceInsightEntity {
+  const FinanceInsightEntity({
+    required this.type,
+    required this.severity,
+    required this.title,
+    required this.message,
+    this.category,
+    this.amount,
+    this.lessonId,
+    this.lessonTitle,
+    this.lessonTopic,
+  });
+
+  final String type;
+  final String severity;
+  final String title;
+  final String message;
+  final String? category;
+  final double? amount;
+  final String? lessonId;
+  final String? lessonTitle;
+  final String? lessonTopic;
+}
+
+class FinanceInsightsEntity {
+  const FinanceInsightsEntity({
+    required this.currency,
+    required this.month,
+    required this.year,
+    required this.income,
+    required this.expense,
+    required this.net,
+    required this.savingsRatePercent,
+    required this.insights,
+  });
+
+  final FinanceCurrency currency;
+  final int month;
+  final int year;
+  final double income;
+  final double expense;
+  final double net;
+  final double savingsRatePercent;
+  final List<FinanceInsightEntity> insights;
+}

@@ -61,14 +61,14 @@ class BudgetDetailScreen extends StatelessWidget {
 
                 InkWell(
                   onTap: () => _edit(context),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(38),
                   child: Container(
                     width: 38,
                     height: 38,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: surface,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(38),
                       border: Border.all(color: border),
                     ),
                     child: Icon(Icons.edit_outlined, size: 19, color: primary),
@@ -79,14 +79,14 @@ class BudgetDetailScreen extends StatelessWidget {
 
                 InkWell(
                   onTap: () => _delete(context),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(38),
                   child: Container(
                     width: 38,
                     height: 38,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: AppColors.danger.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(38),
                       border: Border.all(
                         color: AppColors.danger.withValues(alpha: 0.18),
                       ),

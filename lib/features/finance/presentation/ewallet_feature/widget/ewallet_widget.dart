@@ -413,13 +413,15 @@ class WalletTransaction extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Flexible(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
                     data.amount,
                     maxLines: 1,
+                    textAlign: TextAlign.right,
                     style: TextStyle(
                       color: data.amountColor,
                       fontSize: 14,
@@ -428,12 +430,6 @@ class WalletTransaction extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: textMuted.withValues(alpha: 0.7),
               ),
             ],
           ),

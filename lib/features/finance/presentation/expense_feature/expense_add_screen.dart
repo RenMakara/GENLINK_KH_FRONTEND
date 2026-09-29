@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
@@ -21,7 +23,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _noteController = TextEditingController();
   final _amountController = TextEditingController();
 
-  final _categoryValues = <String>[
+  static const _defaultCategoryValues = <String>[
     'FOOD',
     'TRANSPORT',
     'STUDY',
@@ -31,9 +33,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   ];
   final _paymentValues = <String>['CASH', 'CARD'];
 
-  late List<ExpenseCategoryItem> categories;
   late List<ExpensePaymentItem> payments;
-  late int selectedCategory;
+  late String selectedCategory;
   late int selectedPayment;
   late DateTime selectedDate;
   late bool _paidFromWallet;
@@ -51,20 +52,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     selectedDate = _parseDate(expense?.expenseDate) ?? DateTime.now();
     _paidFromWallet = expense?.paidFromWallet ?? false;
 
-    final category = expense?.category?.trim().toUpperCase();
-    if (category == null || category.isEmpty) {
-      _categoryValues.insert(0, '');
-    }
-    if (category != null &&
-        category.isNotEmpty &&
-        !_categoryValues.contains(category)) {
-      _categoryValues.add(category);
-    }
+    final category = expense?.category?.trim();
     selectedCategory = category == null || category.isEmpty
-        ? 0
-        : _categoryValues
-              .indexOf(category)
-              .clamp(0, _categoryValues.length - 1);
+        ? (expense == null ? 'FOOD' : '')
+        : category;
 
     final payment = expense?.paymentMethod?.trim().toUpperCase();
     if (payment == null ||
@@ -80,8 +71,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ? 0
         : _paymentValues.indexOf(payment).clamp(0, _paymentValues.length - 1);
 
-    categories = _categoryValues.map(_categoryItem).toList(growable: false);
     payments = _paymentValues.map(_paymentItem).toList(growable: false);
+    unawaited(
+      controller.loadBudgetCategories(
+        currency: expense?.currency ?? controller.selectedCurrency.value,
+        month: selectedDate.month,
+        year: selectedDate.year,
+      ),
+    );
   }
 
   @override
@@ -100,6 +97,28 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  List<String> get _availableCategoryValues {
+    final values = <String>[..._defaultCategoryValues];
+    for (final category in controller.budgetCategories) {
+      final normalized = category.trim();
+      if (normalized.isEmpty ||
+          values.any(
+            (value) => value.toUpperCase() == normalized.toUpperCase(),
+          )) {
+        continue;
+      }
+      values.add(normalized);
+    }
+    if (selectedCategory.isEmpty) {
+      values.insert(0, '');
+    } else if (!values.any(
+      (value) => value.toUpperCase() == selectedCategory.toUpperCase(),
+    )) {
+      values.add(selectedCategory);
+    }
+    return values;
+  }
+
   ExpensePaymentItem _paymentItem(String value) {
     return ExpensePaymentItem(
       name: _paymentLabel(value),
@@ -114,7 +133,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (picked != null && mounted) setState(() => selectedDate = picked);
+    if (picked != null && mounted) {
+      setState(() => selectedDate = picked);
+      unawaited(
+        controller.loadBudgetCategories(
+          currency:
+              widget.expense?.currency ?? controller.selectedCurrency.value,
+          month: picked.month,
+          year: picked.year,
+        ),
+      );
+    }
   }
 
   Future<void> _saveExpense() async {
@@ -131,7 +160,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     FocusScope.of(context).unfocus();
     controller.clearMutationError();
-    final category = _optional(_categoryValues[selectedCategory]);
+    final category = _optional(selectedCategory);
     final payment = _paymentValues[selectedPayment];
     final date = _apiDate(selectedDate);
     final success = isEditing
@@ -284,16 +313,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       textMuted: textMuted,
                     ),
                     const SizedBox(height: 9),
-                    ExpenseCategorySelector(
-                      categories: categories,
-                      selectedCategory: selectedCategory,
-                      surface: surface,
-                      border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      onChanged: (index) =>
-                          setState(() => selectedCategory = index),
-                    ),
+                    Obx(() {
+                      final values = _availableCategoryValues;
+                      final selectedIndex = values.indexWhere(
+                        (value) =>
+                            value.toUpperCase() ==
+                            selectedCategory.toUpperCase(),
+                      );
+                      return ExpenseCategorySelector(
+                        categories: values.map(_categoryItem).toList(),
+                        selectedCategory: selectedIndex < 0 ? 0 : selectedIndex,
+                        surface: surface,
+                        border: border,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                        onChanged: (index) =>
+                            setState(() => selectedCategory = values[index]),
+                      );
+                    }),
                     const SizedBox(height: 22),
                     ExpenseSectionLabel(
                       title: 'finance.expense.date'.tr,

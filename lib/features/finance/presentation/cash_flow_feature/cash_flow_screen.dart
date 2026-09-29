@@ -8,8 +8,10 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/cash_flow_controller.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/finance_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
+import 'package:genlink_frontend/features/finance/presentation/widgets/finance_insights_widgets.dart';
 import 'package:genlink_frontend/features/finance/presentation/income_feature/income_screen.dart';
 import 'package:get/get.dart';
 
@@ -25,7 +27,6 @@ class CashFlowScreen extends StatelessWidget {
 
     final bg = semantic.background;
     final surface = semantic.surface;
-    final surfaceElevated = semantic.surfaceElevated;
     final textPrimary = semantic.primaryText;
     final textSecondary = semantic.secondaryText;
     final textMuted = semantic.textMuted;
@@ -77,10 +78,7 @@ class CashFlowScreen extends StatelessWidget {
 
                 // ── 3. States or Content ──────────────────────────────────────
                 if (loading && value == null)
-                  const SizedBox(
-                    height: 360,
-                    child: AppLoader(),
-                  )
+                  const SizedBox(height: 360, child: AppLoader())
                 else if (error != null && value == null)
                   SizedBox(
                     height: 360,
@@ -140,18 +138,16 @@ class CashFlowScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(builder: (_) => const ExpenseScreen()),
                     ),
-                    onViewNetDetails: () => _showNetDetailsSheet(context, value),
+                    onViewNetDetails: () =>
+                        _showNetDetailsSheet(context, value),
                   ),
                   const SizedBox(height: 18),
 
                   // ── 7. Smart Insight Card ───────────────────────────────────
-                  _SmartInsightCard(
-                    value: value,
-                    surface: surfaceElevated,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    isDark: isDark,
+                  FinanceInsightsSummaryCard(
+                    currency: value.currency,
+                    month: value.month,
+                    year: value.year,
                   ),
                   const SizedBox(height: 20),
 
@@ -236,10 +232,7 @@ class CashFlowScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'finance.cashFlow.netFormula'.tr,
-                  style: TextStyle(
-                    color: semantic.textMuted,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: semantic.textMuted, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 _breakdownRow(
@@ -257,10 +250,8 @@ class CashFlowScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 _breakdownRow(
                   label: 'finance.cashFlow.totalExpense'.tr,
-                  amount: '-${FinanceMoneyFormatter.format(
-                    value.totalExpense,
-                    value.currency,
-                  )}',
+                  amount:
+                      '-${FinanceMoneyFormatter.format(value.totalExpense, value.currency)}',
                   color: AppColors.danger,
                   textStyle: TextStyle(
                     color: semantic.primaryText,
@@ -356,7 +347,7 @@ class _CashFlowHeader extends StatelessWidget {
                 'finance.cashFlow.title'.tr,
                 style: TextStyle(
                   color: textPrimary,
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
                 ),
@@ -380,10 +371,10 @@ class _CashFlowHeader extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: onPickMonth,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(15),
               border: Border.all(color: border),
             ),
             child: Row(
@@ -463,7 +454,7 @@ class _CurrencyBar extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
       ),
       child: Stack(
@@ -478,7 +469,7 @@ class _CurrencyBar extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: primary,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
@@ -532,14 +523,6 @@ class _SummaryMetricsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final prevMonthName = _monthShortName(
-      value.month == 1 ? 12 : value.month - 1,
-    );
-    final prevYear = value.month == 1 ? value.year - 1 : value.year;
-    final vsLabel = 'finance.cashFlow.vsMonth'.trParams({
-      'month': '$prevMonthName $prevYear',
-    });
-
     final incomeFormatted = FinanceMoneyFormatter.format(
       value.totalIncome,
       value.currency,
@@ -565,8 +548,12 @@ class _SummaryMetricsGrid extends StatelessWidget {
                 iconColor: AppColors.financeAccent,
                 label: 'finance.cashFlow.totalIncome'.tr,
                 amount: incomeFormatted,
-                comparison: '↑ +16% $vsLabel',
-                comparisonColor: AppColors.financeAccent,
+                comparison: FinanceTrendBadge(
+                  metric: FinanceTrendMetric.income,
+                  currency: value.currency,
+                  month: value.month,
+                  year: value.year,
+                ),
                 surface: surface,
                 border: border,
                 textPrimary: textPrimary,
@@ -580,8 +567,12 @@ class _SummaryMetricsGrid extends StatelessWidget {
                 iconColor: AppColors.danger,
                 label: 'finance.cashFlow.totalExpense'.tr,
                 amount: expenseFormatted,
-                comparison: '↓ -8% $vsLabel',
-                comparisonColor: AppColors.danger,
+                comparison: FinanceTrendBadge(
+                  metric: FinanceTrendMetric.expense,
+                  currency: value.currency,
+                  month: value.month,
+                  year: value.year,
+                ),
                 surface: surface,
                 border: border,
                 textPrimary: textPrimary,
@@ -601,12 +592,12 @@ class _SummaryMetricsGrid extends StatelessWidget {
                 iconColor: AppColors.brandPrimary,
                 label: 'finance.cashFlow.net'.tr,
                 amount: netFormatted,
-                comparison: value.net >= 0
-                    ? '↑ +20% $vsLabel'
-                    : '↓ -15% $vsLabel',
-                comparisonColor: value.net >= 0
-                    ? AppColors.financeAccent
-                    : AppColors.danger,
+                comparison: FinanceTrendBadge(
+                  metric: FinanceTrendMetric.net,
+                  currency: value.currency,
+                  month: value.month,
+                  year: value.year,
+                ),
                 surface: surface,
                 border: border,
                 textPrimary: textPrimary,
@@ -620,12 +611,12 @@ class _SummaryMetricsGrid extends StatelessWidget {
                 iconColor: AppColors.warning,
                 label: 'finance.cashFlow.savingsRate'.tr,
                 amount: savingsFormatted,
-                comparison: value.savingsRatePercent >= 0
-                    ? '↑ +12% $vsLabel'
-                    : '↓ -5% $vsLabel',
-                comparisonColor: value.savingsRatePercent >= 0
-                    ? AppColors.financeAccent
-                    : AppColors.danger,
+                comparison: FinanceTrendBadge(
+                  metric: FinanceTrendMetric.savingsRate,
+                  currency: value.currency,
+                  month: value.month,
+                  year: value.year,
+                ),
                 surface: surface,
                 border: border,
                 textPrimary: textPrimary,
@@ -637,24 +628,6 @@ class _SummaryMetricsGrid extends StatelessWidget {
       ],
     );
   }
-
-  String _monthShortName(int value) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return value >= 1 && value <= 12 ? months[value - 1] : '—';
-  }
 }
 
 class _MetricTile extends StatelessWidget {
@@ -664,7 +637,6 @@ class _MetricTile extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.comparison,
-    required this.comparisonColor,
     required this.surface,
     required this.border,
     required this.textPrimary,
@@ -675,8 +647,7 @@ class _MetricTile extends StatelessWidget {
   final Color iconColor;
   final String label;
   final String amount;
-  final String comparison;
-  final Color comparisonColor;
+  final Widget comparison;
   final Color surface;
   final Color border;
   final Color textPrimary;
@@ -730,18 +701,7 @@ class _MetricTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              comparison,
-              style: TextStyle(
-                color: comparisonColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
+          comparison,
         ],
       ),
     );
@@ -903,11 +863,11 @@ class _IncomeVsExpensesChartCard extends StatelessWidget {
                           final incomeAmt = isCurrent
                               ? value.totalIncome
                               : value.totalIncome *
-                                  historicalIncomeFactors[index];
+                                    historicalIncomeFactors[index];
                           final expenseAmt = isCurrent
                               ? value.totalExpense
                               : value.totalExpense *
-                                  historicalExpenseFactors[index];
+                                    historicalExpenseFactors[index];
 
                           // Clamped bar heights within available 110px area
                           const maxBarHeight = 110.0;
@@ -965,11 +925,11 @@ class _IncomeVsExpensesChartCard extends StatelessWidget {
                                           color: isCurrent
                                               ? AppColors.financeAccent
                                               : AppColors.financeAccent
-                                                  .withValues(alpha: 0.65),
+                                                    .withValues(alpha: 0.65),
                                           borderRadius:
                                               const BorderRadius.vertical(
-                                            top: Radius.circular(4),
-                                          ),
+                                                top: Radius.circular(4),
+                                              ),
                                         ),
                                       ),
                                       const SizedBox(width: 3),
@@ -980,12 +940,13 @@ class _IncomeVsExpensesChartCard extends StatelessWidget {
                                         decoration: BoxDecoration(
                                           color: isCurrent
                                               ? AppColors.danger
-                                              : AppColors.danger
-                                                  .withValues(alpha: 0.65),
+                                              : AppColors.danger.withValues(
+                                                  alpha: 0.65,
+                                                ),
                                           borderRadius:
                                               const BorderRadius.vertical(
-                                            top: Radius.circular(4),
-                                          ),
+                                                top: Radius.circular(4),
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -996,7 +957,9 @@ class _IncomeVsExpensesChartCard extends StatelessWidget {
                                   Text(
                                     monthItem,
                                     style: TextStyle(
-                                      color: isCurrent ? textPrimary : textMuted,
+                                      color: isCurrent
+                                          ? textPrimary
+                                          : textMuted,
                                       fontSize: 10,
                                       fontWeight: isCurrent
                                           ? FontWeight.w800
@@ -1276,10 +1239,7 @@ class _DetailTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: textMuted,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: textMuted, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1303,108 +1263,9 @@ class _DetailTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: textMuted,
-            ),
+            Icon(Icons.chevron_right_rounded, size: 18, color: textMuted),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── 7. Smart Insight Card ─────────────────────────────────────────────────────
-class _SmartInsightCard extends StatelessWidget {
-  const _SmartInsightCard({
-    required this.value,
-    required this.surface,
-    required this.border,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.isDark,
-  });
-
-  final FinanceCashFlowEntity value;
-  final Color surface;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final String tip;
-    if (value.savingsRatePercent >= 50) {
-      tip = 'finance.cashFlow.insightSaving'.trParams({
-        'rate': value.savingsRatePercent.toStringAsFixed(0),
-      });
-    } else if (value.net < 0) {
-      tip = 'finance.cashFlow.insightDeficit'.tr;
-    } else {
-      tip = 'finance.cashFlow.insightBalanced'.tr;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.financeAccent.withValues(
-            alpha: isDark ? 0.35 : 0.2,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.financeAccent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.lightbulb_rounded,
-              color: AppColors.financeAccent,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'finance.cashFlow.smartInsight'.tr,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  tip,
-                  style: TextStyle(
-                    color: textMuted,
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 18,
-            color: textMuted,
-          ),
-        ],
       ),
     );
   }
@@ -1478,9 +1339,7 @@ class _BottomActionButtons extends StatelessWidget {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.danger.withValues(
-                  alpha: isDark ? 0.16 : 0.10,
-                ),
+                color: AppColors.danger.withValues(alpha: isDark ? 0.16 : 0.10),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: AppColors.danger.withValues(alpha: 0.4),
@@ -1654,8 +1513,9 @@ class _MonthPickerSheetState extends State<_MonthPickerSheet> {
                         color: isSelected
                             ? Theme.of(context).colorScheme.onPrimary
                             : semantic.primaryText,
-                        fontWeight:
-                            isSelected ? FontWeight.w800 : FontWeight.w600,
+                        fontWeight: isSelected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
                         fontSize: 14,
                       ),
                     ),

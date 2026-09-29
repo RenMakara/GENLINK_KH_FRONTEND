@@ -12,6 +12,7 @@ import '../controllers/income_controller.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/saving_goal_controller.dart';
 import '../controllers/finance_learning_controller.dart';
+import '../controllers/finance_tools_controller.dart';
 
 class FinanceBinding extends Bindings {
   @override
@@ -78,6 +79,13 @@ class FinanceBinding extends Bindings {
     Get.lazyPut<FinanceLearningController>(
       () =>
           FinanceLearningController(repository: Get.find<FinanceRepository>()),
+      fenix: true,
+    );
+    Get.lazyPut<FinanceToolsController>(
+      () => FinanceToolsController(
+        repository: Get.find<FinanceRepository>(),
+        financeController: Get.find<FinanceController>(),
+      ),
       fenix: true,
     );
   }

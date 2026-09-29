@@ -6,6 +6,7 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.d
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_money.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/saving_goal_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 import 'saving_goals_create.dart';
@@ -61,29 +62,30 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
                             'finance.goal.title'.tr,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: textPrimary,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ) ?? TextStyle(
-                              color: textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
+                            style:
+                                theme.textTheme.titleLarge?.copyWith(
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                ) ??
+                                TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'finance.savingGoals.subtitle'.tr,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: muted,
-                              fontWeight: FontWeight.w500,
-                            ) ?? TextStyle(
-                              color: muted,
-                              fontSize: 12,
-                            ),
+                            style:
+                                theme.textTheme.bodySmall?.copyWith(
+                                  color: muted,
+                                  fontWeight: FontWeight.w500,
+                                ) ??
+                                TextStyle(color: muted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -91,7 +93,7 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
                     const SizedBox(width: 8),
                     Material(
                       color: primary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(25),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(100),
                         onTap: () => Navigator.push<void>(
@@ -206,11 +208,7 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(
-                            Icons.swap_vert_rounded,
-                            size: 16,
-                            color: muted,
-                          ),
+                          Icon(Icons.swap_vert_rounded, size: 16, color: muted),
                         ],
                       ),
                     ],
@@ -273,7 +271,7 @@ class _CurrencyBar extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
       ),
       child: Stack(
@@ -288,7 +286,7 @@ class _CurrencyBar extends StatelessWidget {
                 height: 38,
                 decoration: BoxDecoration(
                   color: primary,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
@@ -366,9 +364,7 @@ class _StatusBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: selected ? primary : surface,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selected ? primary : border,
-                  ),
+                  border: Border.all(color: selected ? primary : border),
                 ),
                 child: Text(
                   _label(status),
@@ -423,9 +419,8 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCurrent = goals.fold<double>(
-      0,
-      (sum, goal) => sum + goal.currentAmount,
+    final totalCurrent = FinanceMoney.sum(
+      goals.map((goal) => goal.currentAmount),
     );
 
     return Container(
@@ -439,7 +434,7 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
                 width: 44,
@@ -452,41 +447,6 @@ class _SummaryCard extends StatelessWidget {
                   Icons.savings_rounded,
                   color: Color(0xFF10B981),
                   size: 24,
-                ),
-              ),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.arrow_upward_rounded,
-                        size: 13,
-                        color: Color(0xFF10B981),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          'finance.savingGoals.fromLastMonth'.tr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF10B981),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -505,7 +465,7 @@ class _SummaryCard extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              FinanceMoneyFormatter.format(totalCurrent, currency),
+              FinanceMoneyFormatter.formatExact(totalCurrent, currency),
               style: TextStyle(
                 color: text,
                 fontSize: 32,
@@ -517,11 +477,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(
-                Icons.flag_outlined,
-                size: 14,
-                color: muted,
-              ),
+              Icon(Icons.flag_outlined, size: 14, color: muted),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -591,11 +547,7 @@ class _GoalCard extends StatelessWidget {
                     color: category.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    category.icon,
-                    color: category.color,
-                    size: 22,
-                  ),
+                  child: Icon(category.icon, color: category.color, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -629,11 +581,7 @@ class _GoalCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 _StatusPill(status: goal.status, primary: primary),
                 const SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: muted,
-                  size: 20,
-                ),
+                Icon(Icons.chevron_right_rounded, color: muted, size: 20),
               ],
             ),
             const SizedBox(height: 14),
@@ -688,8 +636,18 @@ class _GoalCard extends StatelessWidget {
       final parsed = DateTime.tryParse(rawDate);
       if (parsed != null) {
         const months = [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
         ];
         final formatted =
             '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
@@ -713,8 +671,8 @@ class _StatusPill extends StatelessWidget {
     final color = cancelled
         ? Theme.of(context).colorScheme.error
         : completed
-            ? const Color(0xFF10B981)
-            : primary;
+        ? const Color(0xFF10B981)
+        : primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -777,23 +735,14 @@ class _GoalCategoryInfo {
         lower.contains('japan') ||
         lower.contains('flight') ||
         lower.contains('vacation')) {
-      return const _GoalCategoryInfo(
-        Icons.flight_rounded,
-        Color(0xFF8B5CF6),
-      );
+      return const _GoalCategoryInfo(Icons.flight_rounded, Color(0xFF8B5CF6));
     }
     if (lower.contains('emergency') ||
         lower.contains('fund') ||
         lower.contains('health') ||
         lower.contains('shield')) {
-      return const _GoalCategoryInfo(
-        Icons.shield_outlined,
-        Color(0xFF10B981),
-      );
+      return const _GoalCategoryInfo(Icons.shield_outlined, Color(0xFF10B981));
     }
-    return const _GoalCategoryInfo(
-      Icons.savings_outlined,
-      Color(0xFFF59E0B),
-    );
+    return const _GoalCategoryInfo(Icons.savings_outlined, Color(0xFFF59E0B));
   }
 }

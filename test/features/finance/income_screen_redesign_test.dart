@@ -173,7 +173,7 @@ void main() {
       // Hero Total Income Card
       expect(find.text('Total Income'), findsOneWidget);
       expect(find.text(r'$1,850,000.00'), findsOneWidget);
-      expect(find.text('+16% from last month'), findsOneWidget);
+      expect(find.text('+16% from last month'), findsNothing);
       expect(find.text(r'$1.9M'), findsOneWidget); // Mini chart badge
 
       // Income by Source Section

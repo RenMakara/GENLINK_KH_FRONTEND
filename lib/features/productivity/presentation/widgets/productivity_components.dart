@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../notification/domain/models/notification_model.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../levelup/widget/grow_section_widget.dart';
-import '../../domain/entities/productivity_entities.dart'
-    hide ProductivityPage;
+import '../../domain/entities/productivity_entities.dart' hide ProductivityPage;
 import '../controllers/productivity_controller.dart';
 import '../focus_feature/focus_home_screen.dart';
 import '../goals_plan/goal_plan_create.dart';
@@ -32,10 +32,12 @@ class ProductivityHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     final streak = streakCount ?? 0;
     final streakText = streak == 1
@@ -46,53 +48,16 @@ class ProductivityHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showBackButton) ...[
-          Semantics(
-            button: true,
-            label: 'Back',
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onBack ??
-                    () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      } else {
-                        Get.back();
-                      }
-                    },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  margin: const EdgeInsets.only(top: 2),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfacePrimary : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.darkBorderSubtle
-                          : AppColors.lightBorderSubtle,
-                      width: 1.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDark ? 0.25 : 0.05,
-                        ),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    color: textPrimary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
+          AppBackButton(
+            onPressed:
+                onBack ??
+                () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    Get.back();
+                  }
+                },
           ),
           const SizedBox(width: 14),
         ],
@@ -146,7 +111,9 @@ class ProductivityHeader extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFF97316).withValues(alpha: isDark ? 0.2 : 0.08),
+                color: const Color(
+                  0xFFF97316,
+                ).withValues(alpha: isDark ? 0.2 : 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -168,7 +135,9 @@ class ProductivityHeader extends StatelessWidget {
                   Text(
                     streakText,
                     style: TextStyle(
-                      color: isDark ? const Color(0xFFFDBA74) : const Color(0xFFC2410C),
+                      color: isDark
+                          ? const Color(0xFFFDBA74)
+                          : const Color(0xFFC2410C),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                       height: 1.1,
@@ -177,7 +146,9 @@ class ProductivityHeader extends StatelessWidget {
                   Text(
                     'productivity.streakStat'.tr,
                     style: TextStyle(
-                      color: isDark ? const Color(0xFFFED7AA) : const Color(0xFFEA580C),
+                      color: isDark
+                          ? const Color(0xFFFED7AA)
+                          : const Color(0xFFEA580C),
                       fontSize: 9.5,
                       fontWeight: FontWeight.w500,
                       height: 1.1,
@@ -273,8 +244,9 @@ class ProductivitySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double percent =
-        totalTasks == 0 ? 0.0 : (completedTasks / totalTasks).clamp(0.0, 1.0);
+    final double percent = totalTasks == 0
+        ? 0.0
+        : (completedTasks / totalTasks).clamp(0.0, 1.0);
     final streak = habitStreak ?? 0;
     final streakFormatted = streak == 1
         ? 'productivity.dayCount'.trParams({'count': '$streak'})
@@ -286,11 +258,7 @@ class ProductivitySummaryCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF2563EB),
-            Color(0xFF4F46E5),
-            Color(0xFF7C3AED),
-          ],
+          colors: [Color(0xFF2563EB), Color(0xFF4F46E5), Color(0xFF7C3AED)],
         ),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.22),
@@ -566,16 +534,21 @@ class ProductivityTodayPlan extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final border =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final visibleTasks = controller.tasks.take(3).toList(growable: false);
 
@@ -692,8 +665,8 @@ class ProductivityTodayPlan extends StatelessWidget {
                                 color: visibleTasks[i].completed
                                     ? const Color(0xFF22C55E)
                                     : (isDark
-                                        ? const Color(0xFF64748B)
-                                        : const Color(0xFFCBD5E1)),
+                                          ? const Color(0xFF64748B)
+                                          : const Color(0xFFCBD5E1)),
                                 width: 1.8,
                               ),
                             ),
@@ -772,18 +745,16 @@ class ProductivityTodayPlan extends StatelessWidget {
 /// 4. Quick Actions (2x2 Grid) with soft 3D icons, soft tinted cards, subtitles,
 /// and small circular arrow buttons matching the Grow visual language.
 class ProductivityQuickActions extends StatelessWidget {
-  const ProductivityQuickActions({
-    super.key,
-    required this.controller,
-  });
+  const ProductivityQuickActions({super.key, required this.controller});
 
   final ProductivityController controller;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -808,11 +779,15 @@ class ProductivityQuickActions extends StatelessWidget {
                 title: 'productivity.addTask'.tr,
                 subtitle: 'productivity.addTaskSubtitle'.tr,
                 icon: const Soft3DTasksIcon(size: 38),
-                bgColor: isDark ? const Color(0xFF132338) : const Color(0xFFEFF6FF),
+                bgColor: isDark
+                    ? const Color(0xFF132338)
+                    : const Color(0xFFEFF6FF),
                 borderColor: isDark
                     ? const Color(0xFF1E3A8A).withValues(alpha: 0.45)
                     : const Color(0xFFDBEAFE),
-                titleColor: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E3A8A),
+                titleColor: isDark
+                    ? const Color(0xFF93C5FD)
+                    : const Color(0xFF1E3A8A),
                 onTap: () async {
                   await Get.to(() => const CreateTaskScreen());
                   await controller.reload();
@@ -825,11 +800,15 @@ class ProductivityQuickActions extends StatelessWidget {
                 title: 'productivity.addHabit'.tr,
                 subtitle: 'productivity.addHabitSubtitle'.tr,
                 icon: const Soft3DHabitsIcon(size: 38),
-                bgColor: isDark ? const Color(0xFF2C1E14) : const Color(0xFFFFF7ED),
+                bgColor: isDark
+                    ? const Color(0xFF2C1E14)
+                    : const Color(0xFFFFF7ED),
                 borderColor: isDark
                     ? const Color(0xFF9A3412).withValues(alpha: 0.45)
                     : const Color(0xFFFFEDD5),
-                titleColor: isDark ? const Color(0xFFFDBA74) : const Color(0xFF9A3412),
+                titleColor: isDark
+                    ? const Color(0xFFFDBA74)
+                    : const Color(0xFF9A3412),
                 onTap: () async {
                   await Get.to(() => const CreateHabitScreen());
                   await controller.reload();
@@ -846,11 +825,15 @@ class ProductivityQuickActions extends StatelessWidget {
                 title: 'productivity.focus'.tr,
                 subtitle: 'productivity.focusSubtitle'.tr,
                 icon: const Soft3DFocusIcon(size: 38),
-                bgColor: isDark ? const Color(0xFF241535) : const Color(0xFFFAF5FF),
+                bgColor: isDark
+                    ? const Color(0xFF241535)
+                    : const Color(0xFFFAF5FF),
                 borderColor: isDark
                     ? const Color(0xFF7E22CE).withValues(alpha: 0.45)
                     : const Color(0xFFF3E8FF),
-                titleColor: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF581C87),
+                titleColor: isDark
+                    ? const Color(0xFFD8B4FE)
+                    : const Color(0xFF581C87),
                 onTap: () async {
                   await Get.to(() => const FocusPage());
                 },
@@ -862,11 +845,15 @@ class ProductivityQuickActions extends StatelessWidget {
                 title: 'productivity.newGoal'.tr,
                 subtitle: 'productivity.newGoalSubtitle'.tr,
                 icon: const Soft3DGoalsIcon(size: 38),
-                bgColor: isDark ? const Color(0xFF12281D) : const Color(0xFFF0FDF4),
+                bgColor: isDark
+                    ? const Color(0xFF12281D)
+                    : const Color(0xFFF0FDF4),
                 borderColor: isDark
                     ? const Color(0xFF16A34A).withValues(alpha: 0.45)
                     : const Color(0xFFDCFCE7),
-                titleColor: isDark ? const Color(0xFF86EFAC) : const Color(0xFF065F46),
+                titleColor: isDark
+                    ? const Color(0xFF86EFAC)
+                    : const Color(0xFF065F46),
                 onTap: () async {
                   await Get.to(() => const CreateGoalScreen());
                   await controller.reload();
@@ -983,10 +970,7 @@ class _QuickActionCardState extends State<_QuickActionCard> {
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.12)
                       : Colors.white.withValues(alpha: 0.85),
-                  border: Border.all(
-                    color: widget.borderColor,
-                    width: 0.8,
-                  ),
+                  border: Border.all(color: widget.borderColor, width: 0.8),
                 ),
                 alignment: Alignment.center,
                 child: Icon(
@@ -1018,16 +1002,21 @@ class ProductivityGoalProgressSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final border =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1201,7 +1190,10 @@ class ProductivityGoalProgressSection extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: LinearProgressIndicator(
-                      value: (goals[i].progressPercentage / 100).clamp(0.0, 1.0),
+                      value: (goals[i].progressPercentage / 100).clamp(
+                        0.0,
+                        1.0,
+                      ),
                       minHeight: 6,
                       color: const Color(0xFF10B981),
                       backgroundColor: isDark
@@ -1224,74 +1216,83 @@ class ProductivityMotivationSection extends StatelessWidget {
   const ProductivityMotivationSection({
     super.key,
     required this.motivation,
+    this.onTap,
   });
 
   final ProductivityMotivationCard motivation;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E162B) : const Color(0xFFF7F5FE),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? const Color(0xFF6B21A8).withValues(alpha: 0.45)
-              : const Color(0xFFEDE9FE),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.15 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E162B) : const Color(0xFFF7F5FE),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isDark
+                ? const Color(0xFF6B21A8).withValues(alpha: 0.45)
+                : const Color(0xFFEDE9FE),
           ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Soft 3D Sparkle
-          const Soft3DSparkleWidget(size: 22),
-          const SizedBox(width: 10),
-
-          // Title & Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  motivation.title,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  motivation.content,
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 11,
-                    height: 1.35,
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: const Color(
+                0xFF7C3AED,
+              ).withValues(alpha: isDark ? 0.15 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-          ),
-          const SizedBox(width: 8),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Soft 3D Sparkle
+            const Soft3DSparkleWidget(size: 22),
+            const SizedBox(width: 10),
 
-          // Soft 3D Mountain Peak
-          const Soft3DMountainPeakWidget(width: 68, height: 48),
-        ],
+            // Title & Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    motivation.title,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    motivation.content,
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Soft 3D Mountain Peak
+            const Soft3DMountainPeakWidget(width: 68, height: 48),
+          ],
+        ),
       ),
     );
   }

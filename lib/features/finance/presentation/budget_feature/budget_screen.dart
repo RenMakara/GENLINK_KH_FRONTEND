@@ -99,10 +99,10 @@ class BudgetScreen extends GetView<BudgetController> {
                             builder: (_) => const SetBudgetScreen(),
                           ),
                         ),
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(40),
                         child: Ink(
-                          width: 44,
-                          height: 44,
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
                             color: isDark
                                 ? Colors.white
@@ -234,7 +234,7 @@ class _CurrencyBar extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
       ),
       child: Stack(
@@ -251,7 +251,7 @@ class _CurrencyBar extends StatelessWidget {
                   color: isDark
                       ? const Color(0xFF2DD4BF).withValues(alpha: 0.25)
                       : activeIndicatorColor,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(18),
                   border: isDark
                       ? Border.all(
                           color: const Color(0xFF2DD4BF).withValues(alpha: 0.4),
@@ -270,7 +270,7 @@ class _CurrencyBar extends StatelessWidget {
 
               return Expanded(
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(25),
                   onTap: () => onChanged(value),
                   child: Center(
                     child: AnimatedDefaultTextStyle(
@@ -334,7 +334,7 @@ class _PeriodBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor),
       ),
       child: Row(

@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/errors/app_error.dart';
 import '../../domain/entities/finance_entities.dart';
+import '../../domain/entities/finance_money.dart';
 import '../../domain/repositories/finance_repository.dart';
 import '../formatters/finance_localization.dart';
 import 'cash_flow_controller.dart';
@@ -309,5 +310,6 @@ class IncomeController extends GetxController {
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
-  bool _validAmount(double amount) => amount.isFinite && amount > 0;
+  bool _validAmount(double amount) =>
+      FinanceMoney.tryFromNumber(amount)?.sign == 1;
 }

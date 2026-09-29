@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/widget/task_home_widget.dart';
 
@@ -403,35 +404,8 @@ class TaskDetailTopBar extends StatelessWidget {
         children: [
           // BACK
 
-          Material(
-            color: Colors.transparent,
-
-            child: InkWell(
-              onTap: onBack,
-
-              borderRadius: BorderRadius.circular(12),
-
-              child: Ink(
-                width: 38,
-                height: 38,
-
-                decoration: BoxDecoration(
-                  color: colors.surface,
-
-                  borderRadius: BorderRadius.circular(12),
-
-                  border: Border.all(
-                    color: colors.border,
-                  ),
-                ),
-
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  size: 19,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ),
+          AppBackButton(
+            onPressed: onBack,
           ),
 
           const SizedBox(width: 12),

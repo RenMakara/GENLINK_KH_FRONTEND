@@ -5,7 +5,6 @@ abstract class FinanceRepository {
     FinanceCurrency currency = FinanceCurrency.usd,
   });
 
-
   Future<FinancePage<FinanceExpenseEntity>> getExpenses({
     String? category,
     int? month,
@@ -48,7 +47,6 @@ abstract class FinanceRepository {
     int? year,
   });
 
-
   Future<FinancePage<FinanceIncomeEntity>> getIncomes({
     String? source,
     int? month,
@@ -87,6 +85,38 @@ abstract class FinanceRepository {
     int? year,
   });
 
+  Future<FinanceInsightsEntity> getFinanceInsights({
+    required FinanceCurrency currency,
+    required int month,
+    required int year,
+  });
+
+  Future<List<FinanceRecurringTransactionEntity>> getRecurringTransactions();
+
+  Future<FinanceRecurringTransactionEntity> createRecurringTransaction({
+    required FinanceRecurringType type,
+    required String title,
+    required double amount,
+    required FinanceRecurringFrequency frequency,
+    required String startDate,
+    required FinanceCurrency currency,
+    String? category,
+    bool fromWallet = false,
+    String? endDate,
+  });
+
+  Future<void> deleteRecurringTransaction(String recurringId);
+
+  Future<List<FinanceAutoSaveRuleEntity>> getAutoSaveRules();
+
+  Future<FinanceAutoSaveRuleEntity> createAutoSaveRule({
+    required String savingGoalId,
+    required FinanceAutoSaveType type,
+    required FinanceCurrency currency,
+    double? percent,
+  });
+
+  Future<void> deleteAutoSaveRule(String ruleId);
 
   Future<FinanceWalletEntity> getWallet();
 
@@ -107,7 +137,6 @@ abstract class FinanceRepository {
     int? page,
     int? size,
   });
-
 
   Future<FinancePage<FinanceBudgetEntity>> getBudgets({int? page, int? size});
 
@@ -137,7 +166,6 @@ abstract class FinanceRepository {
   });
 
   Future<void> deleteBudget(String budgetId);
-
 
   Future<List<FinanceSavingGoalEntity>> getSavingGoals({
     String? status,
@@ -174,7 +202,6 @@ abstract class FinanceRepository {
   Future<List<FinanceSavingDepositEntity>> getSavingDeposits(
     String savingGoalId,
   );
-
 
   Future<FinanceLearningDashboardEntity> getLearningDashboard();
 

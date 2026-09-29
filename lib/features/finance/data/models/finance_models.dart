@@ -323,6 +323,70 @@ abstract final class FinanceMapper {
     );
   }
 
+  static FinanceRecurringTransactionEntity recurringTransaction(
+    Map<String, dynamic> json,
+  ) {
+    return FinanceRecurringTransactionEntity(
+      id: _requiredString(json, 'id'),
+      type: parseFinanceRecurringType(json['type']),
+      title: _requiredString(json, 'title'),
+      amount: _requiredDouble(json, 'amount'),
+      currency: parseFinanceCurrency(json['currency']),
+      category: json['category'] as String?,
+      frequency: parseFinanceRecurringFrequency(json['frequency']),
+      fromWallet: _requiredBool(json, 'fromWallet'),
+      nextRunDate: _requiredString(json, 'nextRunDate'),
+      startDate: _requiredString(json, 'startDate'),
+      endDate: json['endDate'] as String?,
+      lastRunDate: json['lastRunDate'] as String?,
+      active: _requiredBool(json, 'active'),
+      createdAt: json['createdAt'] as String?,
+    );
+  }
+
+  static FinanceAutoSaveRuleEntity autoSaveRule(Map<String, dynamic> json) {
+    return FinanceAutoSaveRuleEntity(
+      id: _requiredString(json, 'id'),
+      savingGoalId: _requiredString(json, 'savingGoalId'),
+      goalTitle: _requiredString(json, 'goalTitle'),
+      type: parseFinanceAutoSaveType(json['type']),
+      percent: _double(json['percent']),
+      currency: parseFinanceCurrency(json['currency']),
+      nextRunDate: _requiredString(json, 'nextRunDate'),
+      lastRunDate: json['lastRunDate'] as String?,
+      active: _requiredBool(json, 'active'),
+      createdAt: json['createdAt'] as String?,
+    );
+  }
+
+  static FinanceInsightsEntity insights(Map<String, dynamic> json) {
+    return FinanceInsightsEntity(
+      currency: parseFinanceCurrency(json['currency']),
+      month: _requiredInt(json, 'month'),
+      year: _requiredInt(json, 'year'),
+      income: _requiredDouble(json, 'income'),
+      expense: _requiredDouble(json, 'expense'),
+      net: _requiredDouble(json, 'net'),
+      savingsRatePercent: _requiredDouble(json, 'savingsRatePercent'),
+      insights: _list(json['insights'], insight),
+    );
+  }
+
+  static FinanceInsightEntity insight(Map<String, dynamic> json) {
+    final lesson = _map(json['lesson']);
+    return FinanceInsightEntity(
+      type: _requiredString(json, 'type'),
+      severity: _requiredString(json, 'severity'),
+      title: _requiredString(json, 'title'),
+      message: _requiredString(json, 'message'),
+      category: json['category'] as String?,
+      amount: _double(json['amount']),
+      lessonId: lesson['lessonId'] as String?,
+      lessonTitle: lesson['title'] as String?,
+      lessonTopic: lesson['topic'] as String?,
+    );
+  }
+
   static List<T> _list<T>(dynamic raw, T Function(Map<String, dynamic>) item) {
     final list = raw as List? ?? const [];
     return list
@@ -577,6 +641,63 @@ class FinanceWalletPaymentRequestModel {
     'merchant': merchant,
     'note': note,
     'currency': currency?.apiValue,
+  });
+}
+
+class FinanceRecurringTransactionRequestModel {
+  const FinanceRecurringTransactionRequestModel({
+    required this.type,
+    required this.title,
+    required this.amount,
+    required this.frequency,
+    required this.startDate,
+    required this.currency,
+    this.category,
+    this.fromWallet = false,
+    this.endDate,
+  });
+
+  final FinanceRecurringType type;
+  final String title;
+  final double amount;
+  final FinanceRecurringFrequency frequency;
+  final String startDate;
+  final FinanceCurrency currency;
+  final String? category;
+  final bool fromWallet;
+  final String? endDate;
+
+  Map<String, dynamic> toJson() => _withoutNulls({
+    'type': type.apiValue,
+    'title': title.trim(),
+    'amount': amount,
+    'currency': currency.apiValue,
+    'category': category?.trim(),
+    'frequency': frequency.apiValue,
+    'fromWallet': fromWallet,
+    'startDate': startDate,
+    'endDate': endDate,
+  });
+}
+
+class FinanceAutoSaveRuleRequestModel {
+  const FinanceAutoSaveRuleRequestModel({
+    required this.savingGoalId,
+    required this.type,
+    required this.currency,
+    this.percent,
+  });
+
+  final String savingGoalId;
+  final FinanceAutoSaveType type;
+  final FinanceCurrency currency;
+  final double? percent;
+
+  Map<String, dynamic> toJson() => _withoutNulls({
+    'savingGoalId': savingGoalId,
+    'type': type.apiValue,
+    'percent': percent,
+    'currency': currency.apiValue,
   });
 }
 

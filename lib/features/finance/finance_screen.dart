@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
-import 'package:genlink_frontend/design_system/shadows/app_shadows.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
@@ -12,6 +11,8 @@ import 'package:genlink_frontend/features/finance/presentation/controllers/finan
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
+import 'package:genlink_frontend/features/finance/presentation/widgets/finance_insights_widgets.dart';
+import 'package:genlink_frontend/features/finance/presentation/finance_tools_feature/finance_tools_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/income_feature/income_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/learn_finance_feature/learn_finance.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
@@ -40,18 +41,52 @@ class FinanceScreen extends GetView<FinanceController> {
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                12,
-                16,
-                120,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
               children: [
                 _FinanceHeader(
                   selectedCurrency: controller.selectedCurrency.value,
                   onCurrencyChanged: controller.selectCurrency,
                 ),
                 const SizedBox(height: 16),
+                if (dashboard != null && controller.errorMessage.value != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.cloud_off_outlined,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              controller.errorMessage.value!,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: controller.reload,
+                            child: Text('common.retry'.tr),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (controller.isLoading.value && dashboard == null)
                   SizedBox(
                     height: 480,
@@ -101,8 +136,8 @@ class _FinanceHeader extends StatelessWidget {
     final greeting = hour < 12
         ? 'finance.greetingMorning'.tr
         : (hour < 17
-            ? 'finance.greetingAfternoon'.tr
-            : 'finance.greetingEvening'.tr);
+              ? 'finance.greetingAfternoon'.tr
+              : 'finance.greetingEvening'.tr);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,8 +216,7 @@ class _CurrencySelector extends StatelessWidget {
     final isUsd = selectedCurrency == FinanceCurrency.usd;
 
     final selectedBg = isDark ? semantic.surfaceElevated : semantic.primary;
-    final selectedText =
-        isDark ? semantic.primaryText : semantic.textInverse;
+    final selectedText = isDark ? semantic.primaryText : semantic.textInverse;
     final unselectedText = semantic.secondaryText;
 
     return Container(
@@ -328,20 +362,13 @@ class _FinanceDashboardContent extends StatelessWidget {
         ),
         const SizedBox(height: 18),
 
-        _QuickActionsSection(
-          quickActions: dashboard.quickActions,
-        ),
+        _QuickActionsSection(quickActions: dashboard.quickActions),
         const SizedBox(height: 18),
 
-        _MonthlySpendingCard(
-          dashboard: dashboard,
-        ),
+        _MonthlySpendingCard(dashboard: dashboard),
         const SizedBox(height: 18),
 
-        _SavingsCard(
-          saving: dashboard.saving,
-          currency: dashboard.currency,
-        ),
+        _SavingsCard(saving: dashboard.saving, currency: dashboard.currency),
         const SizedBox(height: 18),
 
         _RecentExpenses(
@@ -350,24 +377,25 @@ class _FinanceDashboardContent extends StatelessWidget {
         ),
         const SizedBox(height: 18),
 
-        _InsightCard(
-          tip: dashboard.financialTip,
-          isDark: isDark,
+        FinanceInsightsSummaryCard(
+          currency: dashboard.currency,
+          month: dashboard.month.month,
+          year: dashboard.month.year,
+          onOpen: () => Navigator.push<void>(
+            context,
+            MaterialPageRoute(builder: (_) => const FinanceToolsScreen()),
+          ),
         ),
         const SizedBox(height: 16),
 
-        _LearnFinanceCard(
-          isDark: isDark,
-        ),
+        _LearnFinanceCard(isDark: isDark),
       ],
     );
   }
 }
 
 class _QuickActionsSection extends StatelessWidget {
-  const _QuickActionsSection({
-    required this.quickActions,
-  });
+  const _QuickActionsSection({required this.quickActions});
 
   final List<String> quickActions;
 
@@ -456,6 +484,34 @@ class _QuickActionsSection extends StatelessWidget {
             },
           ),
           (
+            Icons.lightbulb_outline_rounded,
+            'finance.smartInsight'.tr,
+            AppColors.growthAccent,
+            () {
+              Navigator.pop(sheetContext);
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FinanceToolsScreen(initialIndex: 0),
+                ),
+              );
+            },
+          ),
+          (
+            Icons.tune_rounded,
+            'finance.tools.title'.tr,
+            AppColors.brandPrimary,
+            () {
+              Navigator.pop(sheetContext);
+              Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FinanceToolsScreen(initialIndex: 1),
+                ),
+              );
+            },
+          ),
+          (
             Icons.menu_book_rounded,
             'finance.learn'.tr,
             AppColors.growthAccent,
@@ -469,54 +525,85 @@ class _QuickActionsSection extends StatelessWidget {
           ),
         ];
 
-        return SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: semantic.borderStrong,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'finance.allActions'.tr,
-                  style: TextStyle(
-                    color: semantic.primaryText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 14,
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: semantic.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xl),
+            ),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final item in allActions)
-                      SizedBox(
-                        width: (MediaQuery.of(context).size.width - 64) / 4,
-                        child: QuickAction(
-                          icon: item.$1,
-                          title: item.$2,
-                          accent: item.$3,
-                          background: semantic.surfaceElevated,
-                          border: semantic.borderSubtle,
-                          textColor: semantic.primaryText,
-                          onTap: item.$4,
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: semantic.borderStrong,
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        'finance.allActions'.tr,
+                        style: TextStyle(
+                          color: semantic.primaryText,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (int i = 0; i < allActions.length; i += 3)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                for (int j = 0; j < 3; j++)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(
+                                        left: j == 0 ? 0 : 5,
+                                        right: j == 2 ? 0 : 5,
+                                      ),
+                                      child: i + j < allActions.length
+                                          ? QuickAction(
+                                              icon: allActions[i + j].$1,
+                                              title: allActions[i + j].$2,
+                                              accent: allActions[i + j].$3,
+                                              background: semantic.surfaceElevated,
+                                              border: semantic.borderSubtle,
+                                              textColor: semantic.primaryText,
+                                              onTap: allActions[i + j].$4,
+                                              maxLines: 2,
+                                              fontSize: 12.5,
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -624,9 +711,7 @@ class _QuickActionsSection extends StatelessWidget {
 }
 
 class _MonthlySpendingCard extends StatelessWidget {
-  const _MonthlySpendingCard({
-    required this.dashboard,
-  });
+  const _MonthlySpendingCard({required this.dashboard});
 
   final FinanceDashboardEntity dashboard;
 
@@ -713,7 +798,10 @@ class _MonthlySpendingCard extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        FinanceMoneyFormatter.format(month.spent, month.currency),
+                        FinanceMoneyFormatter.format(
+                          month.spent,
+                          month.currency,
+                        ),
                         style: TextStyle(
                           color: semantic.primaryText,
                           fontSize: 24,
@@ -723,27 +811,11 @@ class _MonthlySpendingCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.arrow_downward_rounded,
-                          size: 14,
-                          color: AppColors.success,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '12% ${'finance.fromLastMonth'.tr}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.success,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                    FinanceTrendBadge(
+                      metric: FinanceTrendMetric.expense,
+                      currency: month.currency,
+                      month: month.month,
+                      year: month.year,
                     ),
                   ],
                 ),
@@ -939,10 +1011,7 @@ class _MonthlySpendingCard extends StatelessWidget {
 }
 
 class _SavingsCard extends StatelessWidget {
-  const _SavingsCard({
-    required this.saving,
-    required this.currency,
-  });
+  const _SavingsCard({required this.saving, required this.currency});
 
   final FinanceSavingProgress saving;
   final FinanceCurrency currency;
@@ -1156,10 +1225,7 @@ class _SavingsCard extends StatelessWidget {
 }
 
 class _RecentExpenses extends StatelessWidget {
-  const _RecentExpenses({
-    required this.expenses,
-    required this.currency,
-  });
+  const _RecentExpenses({required this.expenses, required this.currency});
 
   final List<FinanceRecentExpense> expenses;
   final FinanceCurrency currency;
@@ -1277,96 +1343,8 @@ class _RecentExpenses extends StatelessWidget {
   }
 }
 
-class _InsightCard extends StatelessWidget {
-  const _InsightCard({
-    required this.tip,
-    required this.isDark,
-  });
-
-  final String? tip;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final semantic = context.semanticColors;
-    final message = tip?.trim();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.growthAccent.withValues(alpha: 0.08)
-            : semantic.surface,
-        borderRadius: BorderRadius.circular(AppRadius.squircle),
-        border: Border.all(
-          color: isDark
-              ? AppColors.growthAccent.withValues(alpha: 0.28)
-              : semantic.borderSubtle,
-        ),
-        boxShadow: isDark ? [] : AppShadows.cardLight,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.growthAccent.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.lightbulb_rounded,
-              color: AppColors.growthAccent,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'finance.smartInsight'.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: semantic.primaryText,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message == null || message.isEmpty
-                      ? 'finance.noInsight'.tr
-                      : message,
-                  style: TextStyle(
-                    color: semantic.secondaryText,
-                    fontSize: 12,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 18,
-            color: semantic.textMuted,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _LearnFinanceCard extends StatelessWidget {
-  const _LearnFinanceCard({
-    required this.isDark,
-  });
+  const _LearnFinanceCard({required this.isDark});
 
   final bool isDark;
 

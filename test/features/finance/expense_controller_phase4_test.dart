@@ -130,6 +130,58 @@ void main() {
     ).called(1);
   });
 
+  test(
+    'loads the selected period budget categories for expense entry',
+    () async {
+      when(
+        () => repository.getCurrentBudget(
+          currency: FinanceCurrency.usd,
+          month: 9,
+          year: 2026,
+        ),
+      ).thenAnswer(
+        (_) async => const FinanceBudgetEntity(
+          budgetId: 'budget-1',
+          month: 9,
+          year: 2026,
+          totalBudget: 400000,
+          spentAmount: 5000,
+          remainingAmount: 395000,
+          status: 'SAFE',
+          currency: FinanceCurrency.usd,
+          categories: [
+            FinanceCategoryBudget(
+              category: 'Drink',
+              allocatedAmount: 100000,
+              spentAmount: 0,
+              remainingAmount: 100000,
+            ),
+            FinanceCategoryBudget(
+              category: 'Food',
+              allocatedAmount: 200000,
+              spentAmount: 5000,
+              remainingAmount: 195000,
+            ),
+            FinanceCategoryBudget(
+              category: 'Travel',
+              allocatedAmount: 100000,
+              spentAmount: 0,
+              remainingAmount: 100000,
+            ),
+          ],
+        ),
+      );
+
+      await controller.loadBudgetCategories(
+        currency: FinanceCurrency.usd,
+        month: 9,
+        year: 2026,
+      );
+
+      expect(controller.budgetCategories, ['Drink', 'Food', 'Travel']);
+    },
+  );
+
   test('exposes initial list errors without fake rows', () async {
     when(
       () => repository.getExpenses(

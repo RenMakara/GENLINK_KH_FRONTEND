@@ -276,4 +276,45 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('ExpensePeriodBar switches month when previous and next are tapped', (tester) async {
+    when(
+      () => repository.getExpenses(
+        category: any(named: 'category'),
+        currency: any(named: 'currency'),
+        month: any(named: 'month'),
+        year: any(named: 'year'),
+        page: any(named: 'page'),
+        size: any(named: 'size'),
+      ),
+    ).thenAnswer(
+      (_) async => FinancePage<FinanceExpenseEntity>(
+        content: [],
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+        hasNext: false,
+      ),
+    );
+
+    await tester.pumpWidget(buildTestApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ExpensePeriodBar), findsOneWidget);
+    expect(find.text('Sep 2026'), findsOneWidget);
+
+    // Tap previous month (<)
+    await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aug 2026'), findsOneWidget);
+
+    // Tap next month (>)
+    await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sep 2026'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

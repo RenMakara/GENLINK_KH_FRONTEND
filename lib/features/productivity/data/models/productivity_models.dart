@@ -80,6 +80,8 @@ abstract final class ProductivityMapper {
       streakCount: _int(json['streakCount']),
       completionRate: _double(json['completionRate']),
       checkedInToday: _bool(json['checkedInToday']),
+      checkedInThisWeek: _bool(json['checkedInThisWeek']),
+      xpEarned: _int(json['xpEarned']),
     );
   }
 
@@ -94,6 +96,7 @@ abstract final class ProductivityMapper {
       reminderTime: _date(json['reminderTime']),
       completed: _bool(json['completed']),
       overdue: _bool(json['overdue']),
+      xpEarned: _int(json['xpEarned']),
     );
   }
 

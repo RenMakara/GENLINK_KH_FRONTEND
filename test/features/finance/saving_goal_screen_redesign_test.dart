@@ -195,7 +195,7 @@ void main() {
       // Hero Total Saved Card
       expect(find.text('Total Saved'), findsOneWidget);
       expect(find.text(r'$11,500.00'), findsOneWidget);
-      expect(find.text('+12% from last month'), findsOneWidget);
+      expect(find.text('+12% from last month'), findsNothing);
       expect(find.text('Across 4 goals'), findsOneWidget);
 
       // Section Header

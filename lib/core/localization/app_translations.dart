@@ -68,7 +68,8 @@ class AppTranslations extends Translations {
     'onboarding.themeLight': 'Light',
     'onboarding.themeDark': 'Dark',
     'onboarding.themeSystem': 'System default',
-    'onboarding.autoMatchesDevice': 'Automatically matches your device settings.',
+    'onboarding.autoMatchesDevice':
+        'Automatically matches your device settings.',
     'onboarding.continue': 'Continue',
     'onboarding.chooseLanguage': 'Choose your language',
     'onboarding.chooseLanguageHint': 'You can change this anytime in settings.',
@@ -296,7 +297,8 @@ class AppTranslations extends Translations {
     'community.repostingOriginal': 'Reposting content originally by @name',
     'community.repostQuoteHint': 'Add an optional quote caption...',
     'community.addQuoteOptional': 'Add a quote (optional)',
-    'community.shareThoughtsWithCommunity': 'Share your thoughts with your community.',
+    'community.shareThoughtsWithCommunity':
+        'Share your thoughts with your community.',
     'community.repostNow': 'Repost Now',
     'community.userReposted': '@name reposted',
     'community.discussionRepostedMsg':
@@ -730,10 +732,8 @@ class AppTranslations extends Translations {
     'quiz.catDescEntertainment':
         'Fun questions about games, shows, and pop culture.',
     'quiz.catDescGames': 'Test your gaming knowledge and fun facts.',
-    'quiz.catDescMovies':
-        'See how much you know about your favorite movies.',
-    'quiz.catDescMusic':
-        'From classics to hits, quiz your music knowledge.',
+    'quiz.catDescMovies': 'See how much you know about your favorite movies.',
+    'quiz.catDescMusic': 'From classics to hits, quiz your music knowledge.',
     'quiz.catDescHealth': 'Learn about health, wellness, and a better you.',
     'quiz.catDescFinance':
         'Build your financial knowledge for a brighter future.',
@@ -1013,6 +1013,15 @@ class AppTranslations extends Translations {
     'settings.themeLight': 'Light',
     'settings.themeDark': 'Dark',
     'settings.themeSystem': 'System default',
+    'settings.themeSystemDefault': 'System default',
+    'settings.themeSystemShort': 'System',
+    'settings.themeDarkMode': 'Dark mode',
+    'settings.themeLightMode': 'Light mode',
+    'settings.themeDarkDesc': 'Easier on the eyes in low light',
+    'settings.themeLightDesc': 'Clean, bright, and classic interface',
+    'settings.themeSystemDesc': 'Follow your device system theme',
+    'settings.languageChoose': 'Choose Language',
+    'settings.appearanceChoose': 'Choose Appearance',
     'settings.language': 'Language',
     'settings.languageEnglish': 'English',
     'settings.languageKhmer': 'ភាសាខ្មែរ',
@@ -1103,8 +1112,7 @@ class AppTranslations extends Translations {
     'friends.unfollowed': 'Unfollowed @name',
     'friends.removedFollower': 'Removed @name from list',
     'friends.noFollowers': 'No followers yet',
-    'friends.noFollowersDesc':
-        'When people follow you, they will appear here.',
+    'friends.noFollowersDesc': 'When people follow you, they will appear here.',
     'friends.accept': 'Accept',
     'friends.decline': 'Decline',
     'friends.accepted': 'Friend request accepted',
@@ -1581,7 +1589,6 @@ class AppTranslations extends Translations {
     'finance.subtitle': 'Take control of your money',
     'finance.viewDetails': 'View details',
     'finance.totalSpending': 'Total Spending',
-    'finance.fromLastMonth': 'from last month',
     'finance.allActions': 'All Actions',
     'finance.loadingDashboard': 'Loading finance dashboard…',
     'finance.balance': 'Total Balance',
@@ -1616,6 +1623,19 @@ class AppTranslations extends Translations {
 
     'finance.smartInsight': 'Smart Insight',
     'finance.noInsight': 'No insight available yet.',
+    'finance.trend.invalidPeriod': 'This finance period is invalid.',
+    'finance.trend.unavailable': 'Trend unavailable',
+    'finance.trend.noBaseline': 'No prior month comparison',
+    'finance.trend.noChange': 'No change vs last month',
+    'finance.trend.percentChange': '@direction@percent% vs last month',
+    'finance.trend.netChange': '@direction@amount net vs last month',
+    'finance.trend.pointsChange': '@direction@points pp vs last month',
+    'finance.insights.noData': 'No finance activity for this period.',
+    'finance.insights.noInsight': 'There are no insights for this period yet.',
+    'finance.insights.income': 'Income',
+    'finance.insights.expense': 'Expenses',
+    'finance.insights.net': 'Net cash flow',
+    'finance.insights.savingsRate': 'Savings rate',
     'finance.foodSpendingInsight':
         "You're spending @percent% more on food this month. "
         'Set a @amount limit to stay on track.',
@@ -1627,6 +1647,88 @@ class AppTranslations extends Translations {
     'finance.saveGoal': 'Save Goal',
     'finance.ewallet': 'E-Wallet',
     'finance.learn': 'Learn',
+    'finance.tools.title': 'Finance tools',
+    'finance.tools.insights': 'Insights',
+    'finance.tools.recurring': 'Recurring',
+    'finance.tools.autoSave': 'Auto Save',
+    'finance.tools.previousMonth': 'Previous month',
+    'finance.tools.nextMonth': 'Next month',
+    'finance.tools.previousPeriodShort': 'Prev',
+    'finance.tools.currentPeriodShort': 'Now',
+    'finance.tools.insightSection': 'Insights',
+    'finance.tools.insightEmptyNote':
+        'New insights will appear when more activity is available for this period.',
+    'finance.tools.scheduledNote':
+        'A recurring rule is scheduled activity. Creating it does not create a transaction now.',
+    'finance.tools.autoSaveNote':
+        'Auto Save runs on its backend schedule. A rule is not an immediate deposit.',
+    'finance.tools.autoSaveBannerNote':
+        'Automatically save money into your savings goal based on your income.',
+    'finance.tools.startLesson': 'Start Lesson',
+    'finance.tools.recommendedLesson': 'Recommended Lesson',
+    'finance.tools.exploreLessons': 'Explore Lessons',
+    'finance.tools.recurringEmpty': 'No recurring transactions yet.',
+    'finance.tools.recurringEmptyNote':
+        'Schedule an income or expense to repeat on the dates you choose.',
+    'finance.tools.autoSaveEmpty': 'No Auto Save rules yet.',
+    'finance.tools.autoSaveEmptyNote':
+        'Create a rule to save toward one of your in-progress goals.',
+    'finance.tools.createAutoSaveCta':
+        'Choose a goal and set how Auto Save should work.',
+    'finance.tools.upcoming': 'Upcoming',
+    'finance.tools.noUpcoming':
+        'No active recurring transactions are upcoming.',
+    'finance.tools.allRecurring': 'All recurring transactions',
+    'finance.tools.activeRules': 'Active rules',
+    'finance.tools.inactiveRules': 'Inactive rules',
+    'finance.tools.active': 'Active',
+    'finance.tools.inactive': 'Inactive',
+    'finance.tools.create': 'Create',
+    'finance.tools.createRecurring': 'Create recurring transaction',
+    'finance.tools.createAutoSave': 'Create Auto Save rule',
+    'finance.tools.type': 'Type',
+    'finance.tools.titleField': 'Title',
+    'finance.tools.amount': 'Amount',
+    'finance.tools.currency': 'Currency',
+    'finance.tools.category': 'Category (optional)',
+    'finance.tools.frequency': 'Frequency',
+    'finance.tools.startDate': 'Start date',
+    'finance.tools.endDateOptional': 'End date (optional)',
+    'finance.tools.fromWallet': 'Pay from wallet',
+    'finance.tools.nextRun': 'Next scheduled date',
+    'finance.tools.lastRun': 'Last executed',
+    'finance.tools.incomeType': 'Income',
+    'finance.tools.expenseType': 'Expense',
+    'finance.tools.daily': 'Daily',
+    'finance.tools.weekly': 'Weekly',
+    'finance.tools.monthly': 'Monthly',
+    'finance.tools.deleteRecurring': 'Delete recurring transaction?',
+    'finance.tools.deleteAutoSave': 'Delete Auto Save rule?',
+    'finance.tools.deleteConfirm': 'This scheduled rule will be removed.',
+    'finance.tools.actionFailed': 'The action failed. Please try again.',
+    'finance.tools.saved': 'Finance rule saved.',
+    'finance.tools.validationTitle': 'Enter a title up to 160 characters.',
+    'finance.tools.validationAmount':
+        'Enter a positive amount with no more than 2 decimal places.',
+    'finance.tools.validationDateRange':
+        'End date must be on or after the start date.',
+    'finance.tools.validationStartDate': 'Choose a valid start date.',
+    'finance.tools.validationCategory':
+        'Category must be 80 characters or fewer.',
+    'finance.tools.autoSaveType': 'Auto Save method',
+    'finance.tools.goal': 'Savings goal',
+    'finance.tools.noGoals':
+        'Create an in-progress savings goal in this currency first.',
+    'finance.tools.selectGoal': 'Choose an in-progress savings goal.',
+    'finance.tools.percent': 'Percent of income (0.01–100)',
+    'finance.tools.percentOfIncome': '@percent@% of prior-month income',
+    'finance.tools.roundUp': 'Round up expenses',
+    'finance.tools.percentDescription':
+        'The selected percent of the prior month’s income is scheduled for the selected goal.',
+    'finance.tools.roundUpDescription':
+        'The spare amount from rounding expenses up to a whole currency unit is scheduled for the selected goal.',
+    'finance.tools.validationPercent':
+        'Enter a percent from 0.01 to 100 with up to 2 decimal places.',
 
     'finance.recentTransactions': 'Recent Transactions',
     'finance.seeAll': 'See All',
@@ -1639,14 +1741,10 @@ class AppTranslations extends Translations {
     'finance.income.title': 'Income',
     'finance.income.subtitle': 'Track and manage your income',
     'finance.income.totalIncome': 'Total Income',
-    'finance.income.fromLastMonth': '+16% from last month',
-    'finance.income.lastMonthComparison': 'Aug 2026: @amount',
     'finance.income.bySource': 'Income by Source',
     'finance.income.recent': 'Recent Income',
     'finance.income.seeAll': 'See All',
     'finance.income.smartInsight': 'Smart Insight',
-    'finance.income.smartInsightDesc':
-        'Your income increased by 16% this month. Keep it up!',
     'finance.income.filterActive': 'Filtered by: @source',
     'finance.income.add': 'Add Income',
     'finance.income.edit': 'Edit',
@@ -1697,12 +1795,6 @@ class AppTranslations extends Translations {
     'finance.cashFlow.viewIncome': 'View Income',
     'finance.cashFlow.viewExpenses': 'View Expenses',
     'finance.cashFlow.vsMonth': 'vs @month',
-    'finance.cashFlow.insightSaving':
-        "You're saving @rate% of your income this month. Great job! 🎉",
-    'finance.cashFlow.insightDeficit':
-        'Expenses exceeded income this month. Review your budget to improve savings.',
-    'finance.cashFlow.insightBalanced':
-        'Your cash flow is balanced this month. Keep tracking your expenses.',
     'finance.cashFlow.selectMonth': 'Select Month',
     'finance.cashFlow.transactionsCount': '@count transactions',
     'finance.cashFlow.singleTransaction': '1 transaction',
@@ -2020,8 +2112,7 @@ class AppTranslations extends Translations {
     'finance.ewallet.cancel': 'Cancel',
     'finance.ewallet.scanAndPay': 'Scan & Pay',
     'finance.ewallet.scanQrCode': 'Scan QR code',
-    'finance.ewallet.scanQrHint':
-        'Place the QR code inside the frame to scan.',
+    'finance.ewallet.scanQrHint': 'Place the QR code inside the frame to scan.',
     'finance.ewallet.defaultMerchant': 'Merchant',
     'finance.ewallet.paymentToMerchant': 'Payment to merchant',
     'finance.ewallet.invalidAmount': 'Enter an amount greater than zero.',
@@ -2191,7 +2282,8 @@ class AppTranslations extends Translations {
     'tasks.heroQuote': 'Small tasks make big progress',
     'tasks.heroSub': 'Stay consistent every day.',
     'tasks.allCaughtUp': 'All caught up! 🎉',
-    'tasks.allCaughtUpSubtitle': "You've completed all your tasks.\nKeep going!",
+    'tasks.allCaughtUpSubtitle':
+        "You've completed all your tasks.\nKeep going!",
     'tasks.addTask': 'Add Task',
     'tasks.searchHint': 'Search your tasks...',
     'tasks.myTasks': 'My Tasks',
@@ -2220,7 +2312,17 @@ class AppTranslations extends Translations {
     'tasks.due': 'Due',
     'tasks.deleteConfirmTitle': 'Delete task?',
     'tasks.deleteConfirmMessage': 'This task will be removed permanently.',
+    'tasks.editTitle': 'Edit task',
+    'tasks.titleField': 'Task title',
+    'tasks.descriptionField': 'Description',
     'tasks.signInToManage': 'Sign in to manage tasks.',
+    'motivation.libraryTitle': 'Motivation',
+    'motivation.browse': 'Browse',
+    'motivation.saved': 'Saved',
+    'motivation.emptySaved': 'No saved motivation yet.',
+    'motivation.emptyLibrary': 'No motivation is available right now.',
+    'motivation.save': 'Save motivation',
+    'motivation.unsave': 'Remove saved motivation',
 
     // ── Productivity - Task Create ───────────────────────────────────────────
     'task.create.title': 'Create Task',
@@ -2284,6 +2386,8 @@ class AppTranslations extends Translations {
     'habits.todayHabits': "Today's habits",
     'habits.dayStreak': '@count-day streak',
     'habits.dayStreakShort': '@count day streak',
+    'habits.weekStreakShort': '@count week streak',
+    'habits.streakCount': '@count streak',
     'habits.completedTodayCount': '@completed of @total completed today',
     'habits.deleteConfirmTitle': 'Delete habit?',
     'habits.deleteConfirmMessage':
@@ -2321,6 +2425,11 @@ class AppTranslations extends Translations {
     'habits.notesSubtitle':
         'Keep working on this habit every day. Consistency is more important than perfection.',
     'habits.completedToday': 'Completed today',
+    'habits.completedThisWeek': 'Completed this week',
+    'habits.completedCount': '@completed of @total completed',
+    'habits.editTitle': 'Edit habit',
+    'habits.customUnavailable':
+        'This recurrence is not configured yet. Choose daily or weekly to continue.',
     'habits.completeToday': 'Complete today',
     'habits.keepStreakAlive': 'Great job. Keep your streak alive.',
     'habits.tapWhenFinished': 'Tap here when you finish this habit.',
@@ -2342,6 +2451,7 @@ class AppTranslations extends Translations {
         'Set a goal today and start building the future you want.',
     'goals.signInToManage': 'Sign in to manage goals.',
     'goals.statusCompleted': 'Completed',
+    'goals.editTitle': 'Edit goal',
     'goals.statusInProgress': 'In progress',
     'goals.statusNotStarted': 'Not started',
     'goals.create.title': 'New Goal',
@@ -2424,6 +2534,7 @@ class AppTranslations extends Translations {
     'focus.completeTitle': 'Focus Complete',
     'focus.done': 'Done',
     'focus.minutesShort': 'min',
+    'focus.secondsShort': 'sec',
     'focus.today': 'Today',
     'focus.recent': 'Recent',
     'focus.sessionStarted': 'Focus session started',
@@ -2449,7 +2560,8 @@ class AppTranslations extends Translations {
     'focus.takeABreathQuote': "Take a breath\nYou're doing great! ☕",
     'focus.runningQuote': '“Success is the product of daily focus.” — GenLink',
     'focus.pausedQuote': '“Rest is a part of growth, not stopping!” — GenLink',
-    'focus.completedQuote': '“Success comes from focusing one step at a time!” — GenLink',
+    'focus.completedQuote':
+        '“Success comes from focusing one step at a time!” — GenLink',
     'focus.currentSession': 'Current Session',
     'focus.sessionPaused': 'Session Paused',
     'focus.elapsed': 'Elapsed',
@@ -2563,7 +2675,8 @@ class AppTranslations extends Translations {
     'chat.group.groupName': 'Group Name',
     'chat.group.groupNameHint': 'e.g. Flutter Study Group',
     'chat.group.groupNameRequired': 'Group Name Required',
-    'chat.group.groupNameRequiredMsg': 'Please enter a name for your group chat.',
+    'chat.group.groupNameRequiredMsg':
+        'Please enter a name for your group chat.',
     'chat.group.selectMembersWarningTitle': 'Select Members',
     'chat.group.selectMembersWarningMsg':
         'Please select at least 1 member to add to the group.',
@@ -2586,7 +2699,8 @@ class AppTranslations extends Translations {
     'chat.group.searchDifferentHint':
         'Search for a different\nname or username.',
     'chat.group.noMembersAvailable': 'No members available',
-    'chat.group.noMembersAvailableHint': 'There are no eligible members to add.',
+    'chat.group.noMembersAvailableHint':
+        'There are no eligible members to add.',
     'chat.group.editGroup': 'Edit Group',
     'chat.group.editGroupName': 'Edit Group Name',
     'chat.group.enterGroupName': 'Enter new group name',
@@ -2697,7 +2811,6 @@ class AppTranslations extends Translations {
     'finance.savingGoals.subtitle': 'Turn your dreams into reality',
     'finance.savingGoals.totalSaved': 'Total Saved',
     'finance.savingGoals.acrossGoals': 'Across @count goals',
-    'finance.savingGoals.fromLastMonth': '+12% from last month',
     'finance.savingGoals.yourGoals': 'Your Goals',
     'finance.savingGoals.newestFirst': 'Newest first',
     'finance.savingGoals.dueOn': 'Due @date',
@@ -2760,7 +2873,8 @@ class AppTranslations extends Translations {
     'onboarding.step3Of3': 'ជំហានទី ៣ ក្នុងចំណោម ៣',
     'onboarding.allSet1': 'រួចរាល់',
     'onboarding.allSet2': 'ហើយ!',
-    'onboarding.allSetSecondary': 'រៀន · ភ្ជាប់ទំនាក់ទំនង · រីកចម្រើន · រួមគ្នា',
+    'onboarding.allSetSecondary':
+        'រៀន · ភ្ជាប់ទំនាក់ទំនង · រីកចម្រើន · រួមគ្នា',
     'onboarding.explore': 'ស្វែងរក',
     'onboarding.exploreDesc': 'ឱកាសពិតប្រាកដ',
     'onboarding.learnDesc': 'ចំណេះដឹងជាក់ស្តែង',
@@ -2769,7 +2883,8 @@ class AppTranslations extends Translations {
     'onboarding.personalizeTitle2': 'នូវ',
     'onboarding.personalizeTitle3': 'បទពិសោធន៍របស់អ្នក',
     'onboarding.personalizeDesc1': 'ជ្រើសរើសភាសា និងរូបរាងរបស់អ្នក',
-    'onboarding.personalizeDesc2': 'អ្នកអាចផ្លាស់ប្តូរវានៅពេលណាក៏បានក្នុងការកំណត់',
+    'onboarding.personalizeDesc2':
+        'អ្នកអាចផ្លាស់ប្តូរវានៅពេលណាក៏បានក្នុងការកំណត់',
     'onboarding.languageTitle': 'ភាសា',
     'onboarding.languageSubtitle': 'ជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត',
     'onboarding.khmerTitle': 'ភាសាខ្មែរ',
@@ -2781,7 +2896,8 @@ class AppTranslations extends Translations {
     'onboarding.themeLight': 'ពន្លឺ',
     'onboarding.themeDark': 'ងងឹត',
     'onboarding.themeSystem': 'តាមប្រព័ន្ធ',
-    'onboarding.autoMatchesDevice': 'ត្រូវគ្នានឹងការកំណត់ឧបករណ៍របស់អ្នកដោយស្វ័យប្រវត្តិ',
+    'onboarding.autoMatchesDevice':
+        'ត្រូវគ្នានឹងការកំណត់ឧបករណ៍របស់អ្នកដោយស្វ័យប្រវត្តិ',
     'onboarding.continue': 'បន្ត',
     'onboarding.chooseLanguage': 'ជ្រើសរើសភាសារបស់អ្នក',
     'onboarding.chooseLanguageHint': 'អ្នកអាចប្តូរវានៅពេលណាក៏បាន ក្នុងការកំណត់',
@@ -3294,8 +3410,7 @@ class AppTranslations extends Translations {
     'achievements.toNextLevel': '@xp XP ទៀតដល់កម្រិត @level',
     'achievements.myBadges': 'ស្លាកសញ្ញារបស់ខ្ញុំ',
     'achievements.empty': 'មិនទាន់មានស្លាកសញ្ញា — ចាប់ផ្តើមប្រមូល XP!',
-    'achievements.headerSubtitle':
-        'តាមដានការរីកចម្រើនរបស់អ្នក ដោះសោបន្ថែមទៀត',
+    'achievements.headerSubtitle': 'តាមដានការរីកចម្រើនរបស់អ្នក ដោះសោបន្ថែមទៀត',
     'achievements.filterAll': 'ទាំងអស់',
     'achievements.filterUnlocked': 'បានដោះសោ',
     'achievements.filterLocked': 'ចាក់សោ',
@@ -3435,9 +3550,9 @@ class AppTranslations extends Translations {
         'ស្វែងយល់ពីសំណួរគួរឱ្យចាប់អារម្មណ៍ចម្រុះលើប្រធានបទផ្សេងៗ',
     'quiz.catDescBusiness':
         'សាកល្បងចំណេះដឹងរបស់អ្នកក្នុងអាជីវកម្ម និងសហគ្រិនភាព',
-    'quiz.catDescFood': 'ស្វែងយល់ពីការពិតដ៏ឆ្ងាញ់អំពីម្ហូបអាហារ និងអាហារូបត្ថម្ភ',
-    'quiz.catDescCulture':
-        'ស្វែងយល់អំពីប្រពៃណី មនុស្ស និងវប្បធម៌នៃពិភពលោក',
+    'quiz.catDescFood':
+        'ស្វែងយល់ពីការពិតដ៏ឆ្ងាញ់អំពីម្ហូបអាហារ និងអាហារូបត្ថម្ភ',
+    'quiz.catDescCulture': 'ស្វែងយល់អំពីប្រពៃណី មនុស្ស និងវប្បធម៌នៃពិភពលោក',
     'quiz.catDescScience': 'ស្វែងយល់ពីភាពអស្ចារ្យនៃវិទ្យាសាស្ត្រ និងធម្មជាតិ',
     'quiz.catDescHistory':
         'សាកល្បងចំណេះដឹងរបស់អ្នកអំពីព្រឹត្តិការណ៍ និងឥស្សរជនប្រវត្តិសាស្ត្រ',
@@ -3445,16 +3560,12 @@ class AppTranslations extends Translations {
         'ស្វែងយល់ពីបណ្តាប្រទេស ទីកន្លែង និងពិភពលោកជុំវិញយើង',
     'quiz.catDescTechnology':
         'ទទួលបានព័ត៌មានទាន់សម័យអំពីបច្ចេកវិទ្យា និងការច្នៃប្រឌិត',
-    'quiz.catDescSports':
-        'ប្រកួតប្រជែងខ្លួនឯងជាមួយនឹងចំណេះដឹងទូទៅផ្នែកកីឡា',
+    'quiz.catDescSports': 'ប្រកួតប្រជែងខ្លួនឯងជាមួយនឹងចំណេះដឹងទូទៅផ្នែកកីឡា',
     'quiz.catDescEntertainment':
         'សំណួរសប្បាយៗអំពីហ្គេម កម្មវិធី និងវប្បធម៌ប្រជាប្រិយ',
-    'quiz.catDescGames':
-        'សាកល្បងចំណេះដឹង និងការពិតដ៏រីករាយអំពីការលេងហ្គេម',
-    'quiz.catDescMovies':
-        'មើលថាតើអ្នកស្គាល់ភាពយន្តដែលអ្នកចូលចិត្តកម្រិតណា',
-    'quiz.catDescMusic':
-        'ពីបុរាណរហូតដល់បទល្បីៗ សាកល្បងចំណេះដឹងតន្ត្រីរបស់អ្នក',
+    'quiz.catDescGames': 'សាកល្បងចំណេះដឹង និងការពិតដ៏រីករាយអំពីការលេងហ្គេម',
+    'quiz.catDescMovies': 'មើលថាតើអ្នកស្គាល់ភាពយន្តដែលអ្នកចូលចិត្តកម្រិតណា',
+    'quiz.catDescMusic': 'ពីបុរាណរហូតដល់បទល្បីៗ សាកល្បងចំណេះដឹងតន្ត្រីរបស់អ្នក',
     'quiz.catDescHealth':
         'ស្វែងយល់អំពីសុខភាព សុខុមាលភាព និងភាពប្រសើរឡើងរបស់អ្នក',
     'quiz.catDescFinance':
@@ -3714,8 +3825,7 @@ class AppTranslations extends Translations {
     'shortContent.deleteConfirm': 'តើអ្នកពិតជាចង់លុប "@title" មែនទេ?',
     'shortContent.deleteSuccess': 'បានលុបមាតិកាដោយជោគជ័យ',
     'shortContent.more': 'ជម្រើសបន្ថែម',
-    'shortContent.loadFailed':
-        'មិនអាចទាញយកមាតិកាបានទេ ចុចដើម្បីព្យាយាមម្តងទៀត',
+    'shortContent.loadFailed': 'មិនអាចទាញយកមាតិកាបានទេ ចុចដើម្បីព្យាយាមម្តងទៀត',
     'shortContent.mediaError': 'កំហុសក្នុងការចាក់វីដេអូ សូមព្យាយាមម្តងទៀត',
     'shortContent.creatorUnknown': 'អ្នកបង្កើតមិនស្គាល់',
     'shortContent.actionFailed': 'សកម្មភាពបរាជ័យ សូមព្យាយាមម្តងទៀត',
@@ -3740,6 +3850,15 @@ class AppTranslations extends Translations {
     'settings.themeLight': 'ភ្លឺ',
     'settings.themeDark': 'ងងឹត',
     'settings.themeSystem': 'តាមប្រព័ន្ធ',
+    'settings.themeSystemDefault': 'តាមប្រព័ន្ធ (System default)',
+    'settings.themeSystemShort': 'ប្រព័ន្ធ',
+    'settings.themeDarkMode': 'ម៉ូដងងឹត (Dark mode)',
+    'settings.themeLightMode': 'ម៉ូដភ្លឺ (Light mode)',
+    'settings.themeDarkDesc': 'ស្រួលភ្នែកនៅពេលយប់ ឬកន្លែងងងឹត',
+    'settings.themeLightDesc': 'ផ្ទៃភ្លឺច្បាស់ និងទាក់ទាញ',
+    'settings.themeSystemDesc': 'កំណត់ស្វ័យប្រវត្តិតាមឧបករណ៍',
+    'settings.languageChoose': 'ជ្រើសរើសភាសា',
+    'settings.appearanceChoose': 'ជ្រើសរើសរូបរាង',
     'settings.language': 'ភាសា',
     'settings.languageEnglish': 'English',
     'settings.languageKhmer': 'ភាសាខ្មែរ',
@@ -4002,7 +4121,8 @@ class AppTranslations extends Translations {
     'community.ticketing': 'ការលក់សំបុត្រ',
     'community.paidEvent': 'ព្រឹត្តិការណ៍បង់ប្រាក់',
     'community.paidEventDesc': 'ទាមទារការទិញសំបុត្រដើម្បីចូលរួម',
-    'community.freeEventNotice': 'នេះជាព្រឹត្តិការណ៍ឥតគិតថ្លៃសម្រាប់អ្នកចូលរួមទាំងអស់',
+    'community.freeEventNotice':
+        'នេះជាព្រឹត្តិការណ៍ឥតគិតថ្លៃសម្រាប់អ្នកចូលរួមទាំងអស់',
     'community.currency': 'រូបិយប័ណ្ណ',
     'community.registeredAttendees': 'អ្នកចូលរួមដែលបានចុះឈ្មោះ',
     'community.physicalVenue': 'ទីតាំងផ្ទាល់',
@@ -4300,7 +4420,6 @@ class AppTranslations extends Translations {
     'finance.subtitle': 'គ្រប់គ្រងលំហូរសាច់ប្រាក់របស់អ្នក',
     'finance.viewDetails': 'មើលលម្អិត',
     'finance.totalSpending': 'ការចំណាយសរុប',
-    'finance.fromLastMonth': 'ធៀបនឹងខែមុន',
     'finance.allActions': 'សកម្មភាពទាំងអស់',
     'finance.loadingDashboard': 'កំពុងផ្ទុកផ្ទាំងគ្រប់គ្រងហិរញ្ញវត្ថុ…',
     'finance.balance': 'សមតុល្យសរុប',
@@ -4335,6 +4454,19 @@ class AppTranslations extends Translations {
 
     'finance.smartInsight': 'ការយល់ដឹងឆ្លាតវៃ',
     'finance.noInsight': 'មិនទាន់មានការយល់ដឹងទេ',
+    'finance.trend.invalidPeriod': 'រយៈពេលហិរញ្ញវត្ថុនេះមិនត្រឹមត្រូវទេ',
+    'finance.trend.unavailable': 'មិនអាចផ្ទុកនិន្នាការបានទេ',
+    'finance.trend.noBaseline': 'មិនមានទិន្នន័យខែមុនសម្រាប់ប្រៀបធៀបទេ',
+    'finance.trend.noChange': 'មិនមានការផ្លាស់ប្តូរធៀបនឹងខែមុនទេ',
+    'finance.trend.percentChange': '@direction@percent% ធៀបនឹងខែមុន',
+    'finance.trend.netChange': '@direction@amount លំហូរសុទ្ធធៀបនឹងខែមុន',
+    'finance.trend.pointsChange': '@direction@points ពិន្ទុភាគរយធៀបនឹងខែមុន',
+    'finance.insights.noData': 'មិនមានសកម្មភាពហិរញ្ញវត្ថុក្នុងរយៈពេលនេះទេ',
+    'finance.insights.noInsight': 'មិនទាន់មានការយល់ដឹងសម្រាប់រយៈពេលនេះទេ',
+    'finance.insights.income': 'ចំណូល',
+    'finance.insights.expense': 'ចំណាយ',
+    'finance.insights.net': 'លំហូរសាច់ប្រាក់សុទ្ធ',
+    'finance.insights.savingsRate': 'អត្រាសន្សំ',
     'finance.foodSpendingInsight':
         'អ្នកបានចំណាយលើអាហារច្រើនជាងមុន @percent% ក្នុងខែនេះ '
         'កំណត់កម្រិត @amount ដើម្បីគ្រប់គ្រងការចំណាយ',
@@ -4346,6 +4478,88 @@ class AppTranslations extends Translations {
     'finance.saveGoal': 'គោលដៅសន្សំ',
     'finance.ewallet': 'កាបូបអេឡិចត្រូនិក',
     'finance.learn': 'រៀន',
+    'finance.tools.title': 'ឧបករណ៍ហិរញ្ញវត្ថុ',
+    'finance.tools.insights': 'ការយល់ដឹង',
+    'finance.tools.recurring': 'ប្រតិបត្តិការកំណត់ពេល',
+    'finance.tools.autoSave': 'សន្សំស្វ័យប្រវត្តិ',
+    'finance.tools.previousMonth': 'ខែមុន',
+    'finance.tools.nextMonth': 'ខែបន្ទាប់',
+    'finance.tools.previousPeriodShort': 'មុន',
+    'finance.tools.currentPeriodShort': 'បច្ចុប្បន្ន',
+    'finance.tools.insightSection': 'ការយល់ដឹង',
+    'finance.tools.insightEmptyNote':
+        'ការយល់ដឹងថ្មីនឹងបង្ហាញនៅពេលមានសកម្មភាពបន្ថែមក្នុងអំឡុងពេលនេះ។',
+    'finance.tools.scheduledNote':
+        'ច្បាប់ប្រតិបត្តិការកំណត់ពេលនឹងដំណើរការតាមកាលវិភាគ។ ការបង្កើតវាមិនបង្កើតប្រតិបត្តិការភ្លាមៗទេ។',
+    'finance.tools.autoSaveNote':
+        'ការសន្សំស្វ័យប្រវត្តិដំណើរការតាមកាលវិភាគរបស់ម៉ាស៊ីនមេ។ ច្បាប់មិនមែនជាការដាក់ប្រាក់ភ្លាមៗទេ។',
+    'finance.tools.autoSaveBannerNote':
+        'សន្សំប្រាក់ដោយស្វ័យប្រវត្តិទៅក្នុងគោលដៅសន្សំរបស់អ្នកដោយផ្អែកលើចំណូលរបស់អ្នក។',
+    'finance.tools.startLesson': 'ចាប់ផ្តើមមេរៀន',
+    'finance.tools.recommendedLesson': 'មេរៀនដែលបានណែនាំ',
+    'finance.tools.exploreLessons': 'ស្វែងយល់មេរៀន',
+    'finance.tools.recurringEmpty': 'មិនទាន់មានប្រតិបត្តិការកំណត់ពេលទេ',
+    'finance.tools.recurringEmptyNote':
+        'កំណត់ចំណូល ឬចំណាយឱ្យកើតឡើងម្ដងទៀតតាមកាលបរិច្ឆេទដែលអ្នកជ្រើសរើស។',
+    'finance.tools.autoSaveEmpty': 'មិនទាន់មានច្បាប់សន្សំស្វ័យប្រវត្តិទេ',
+    'finance.tools.autoSaveEmptyNote':
+        'បង្កើតច្បាប់សន្សំសម្រាប់គោលដៅដែលកំពុងដំណើរការរបស់អ្នក។',
+    'finance.tools.createAutoSaveCta':
+        'ជ្រើសរើសគោលដៅ និងកំណត់វិធីសន្សំស្វ័យប្រវត្តិ។',
+    'finance.tools.upcoming': 'ខាងមុខ',
+    'finance.tools.noUpcoming':
+        'គ្មានប្រតិបត្តិការសកម្មដែលនឹងកើតឡើងនាពេលខាងមុខទេ។',
+    'finance.tools.allRecurring': 'ប្រតិបត្តិការកំណត់ពេលទាំងអស់',
+    'finance.tools.activeRules': 'ច្បាប់សកម្ម',
+    'finance.tools.inactiveRules': 'ច្បាប់អសកម្ម',
+    'finance.tools.active': 'សកម្ម',
+    'finance.tools.inactive': 'អសកម្ម',
+    'finance.tools.create': 'បង្កើត',
+    'finance.tools.createRecurring': 'បង្កើតប្រតិបត្តិការកំណត់ពេល',
+    'finance.tools.createAutoSave': 'បង្កើតច្បាប់សន្សំស្វ័យប្រវត្តិ',
+    'finance.tools.type': 'ប្រភេទ',
+    'finance.tools.titleField': 'ចំណងជើង',
+    'finance.tools.amount': 'ចំនួនទឹកប្រាក់',
+    'finance.tools.currency': 'រូបិយប័ណ្ណ',
+    'finance.tools.category': 'ប្រភេទចំណាយ (ស្រេចចិត្ត)',
+    'finance.tools.frequency': 'ប្រេកង់',
+    'finance.tools.startDate': 'ថ្ងៃចាប់ផ្តើម',
+    'finance.tools.endDateOptional': 'ថ្ងៃបញ្ចប់ (ស្រេចចិត្ត)',
+    'finance.tools.fromWallet': 'ទូទាត់ពីកាបូប',
+    'finance.tools.nextRun': 'ថ្ងៃកំណត់បន្ទាប់',
+    'finance.tools.lastRun': 'បានអនុវត្តចុងក្រោយ',
+    'finance.tools.incomeType': 'ចំណូល',
+    'finance.tools.expenseType': 'ចំណាយ',
+    'finance.tools.daily': 'រាល់ថ្ងៃ',
+    'finance.tools.weekly': 'រាល់សប្តាហ៍',
+    'finance.tools.monthly': 'រាល់ខែ',
+    'finance.tools.deleteRecurring': 'លុបប្រតិបត្តិការកំណត់ពេលនេះ?',
+    'finance.tools.deleteAutoSave': 'លុបច្បាប់សន្សំស្វ័យប្រវត្តិនេះ?',
+    'finance.tools.deleteConfirm': 'ច្បាប់កំណត់ពេលនេះនឹងត្រូវបានលុបចេញ។',
+    'finance.tools.actionFailed': 'សកម្មភាពមិនបានសម្រេចទេ។ សូមព្យាយាមម្តងទៀត។',
+    'finance.tools.saved': 'បានរក្សាទុកច្បាប់ហិរញ្ញវត្ថុ។',
+    'finance.tools.validationTitle':
+        'សូមបញ្ចូលចំណងជើងដែលមានអក្សរមិនលើសពី 160 តួ។',
+    'finance.tools.validationAmount':
+        'សូមបញ្ចូលចំនួនវិជ្ជមានដែលមានខ្ទង់ទសភាគមិនលើសពី 2 ខ្ទង់។',
+    'finance.tools.validationDateRange':
+        'ថ្ងៃបញ្ចប់ត្រូវតែស្មើ ឬក្រោយថ្ងៃចាប់ផ្តើម។',
+    'finance.tools.validationStartDate': 'សូមជ្រើសរើសថ្ងៃចាប់ផ្តើមត្រឹមត្រូវ។',
+    'finance.tools.validationCategory': 'ប្រភេទមិនត្រូវមានអក្សរលើសពី 80 តួទេ។',
+    'finance.tools.autoSaveType': 'វិធីសន្សំស្វ័យប្រវត្តិ',
+    'finance.tools.goal': 'គោលដៅសន្សំ',
+    'finance.tools.noGoals':
+        'សូមបង្កើតគោលដៅសន្សំដែលកំពុងដំណើរការក្នុងរូបិយប័ណ្ណនេះជាមុនសិន។',
+    'finance.tools.selectGoal': 'សូមជ្រើសរើសគោលដៅសន្សំដែលកំពុងដំណើរការ។',
+    'finance.tools.percent': 'ភាគរយនៃចំណូល (0.01–100)',
+    'finance.tools.percentOfIncome': '@percent@% នៃចំណូលខែមុន',
+    'finance.tools.roundUp': 'បង្គត់ការចំណាយឡើង',
+    'finance.tools.percentDescription':
+        'ភាគរយដែលបានជ្រើសពីចំណូលខែមុននឹងត្រូវកំណត់ពេលដាក់ចូលគោលដៅ។',
+    'finance.tools.roundUpDescription':
+        'ចំនួនលើសពីការបង្គត់ការចំណាយទៅជាឯកតារូបិយប័ណ្ណពេញ នឹងត្រូវកំណត់ពេលដាក់ចូលគោលដៅ។',
+    'finance.tools.validationPercent':
+        'សូមបញ្ចូលភាគរយចាប់ពី 0.01 ដល់ 100 ដែលមានទសភាគមិនលើសពី 2 ខ្ទង់។',
 
     'finance.recentTransactions': 'ប្រតិបត្តិការថ្មីៗ',
     'finance.seeAll': 'មើលទាំងអស់',
@@ -4356,14 +4570,10 @@ class AppTranslations extends Translations {
     'finance.income.title': 'ចំណូល',
     'finance.income.subtitle': 'តាមដាន និងគ្រប់គ្រងចំណូលរបស់អ្នក',
     'finance.income.totalIncome': 'ចំណូលសរុប',
-    'finance.income.fromLastMonth': '+16% ពីខែមុន',
-    'finance.income.lastMonthComparison': 'សីហា 2026: @amount',
     'finance.income.bySource': 'ចំណូលតាមប្រភព',
     'finance.income.recent': 'ចំណូលថ្មីៗ',
     'finance.income.seeAll': 'មើលទាំងអស់',
     'finance.income.smartInsight': 'ការយល់ដឹងឆ្លាតវៃ',
-    'finance.income.smartInsightDesc':
-        'ចំណូលរបស់អ្នកបានកើនឡើង 16% នៅក្នុងខែនេះ សូមបន្ត!',
     'finance.income.filterActive': 'បានត្រងតាម៖ @source',
     'finance.income.add': 'បន្ថែមចំណូល',
     'finance.income.edit': 'កែសម្រួល',
@@ -4413,12 +4623,6 @@ class AppTranslations extends Translations {
     'finance.cashFlow.viewIncome': 'មើលចំណូល',
     'finance.cashFlow.viewExpenses': 'មើលចំណាយ',
     'finance.cashFlow.vsMonth': 'ធៀបនឹង @month',
-    'finance.cashFlow.insightSaving':
-        'អ្នកកំពុងសន្សំ @rate% នៃចំណូលរបស់អ្នកក្នុងខែនេះ ល្អណាស់! 🎉',
-    'finance.cashFlow.insightDeficit':
-        'ការចំណាយលើសពីចំណូលក្នុងខែនេះ សូមពិនិត្យថវិការបស់អ្នកដើម្បីបង្កើនការសន្សំ',
-    'finance.cashFlow.insightBalanced':
-        'លំហូរសាច់ប្រាក់របស់អ្នកមានតុល្យភាពក្នុងខែនេះ បន្តតាមដានការចំណាយរបស់អ្នក',
     'finance.cashFlow.selectMonth': 'ជ្រើសរើសខែ',
     'finance.cashFlow.transactionsCount': '@count ប្រតិបត្តិការ',
     'finance.cashFlow.singleTransaction': '1 ប្រតិបត្តិការ',
@@ -4946,7 +5150,17 @@ class AppTranslations extends Translations {
     'tasks.due': 'ផុតកំណត់',
     'tasks.deleteConfirmTitle': 'លុបកិច្ចការនេះ?',
     'tasks.deleteConfirmMessage': 'កិច្ចការនេះនឹងត្រូវលុបចេញជាអចិន្ត្រៃយ៍',
+    'tasks.editTitle': 'កែសម្រួលកិច្ចការ',
+    'tasks.titleField': 'ចំណងជើងកិច្ចការ',
+    'tasks.descriptionField': 'ការពិពណ៌នា',
     'tasks.signInToManage': 'សូមចូលគណនីដើម្បីគ្រប់គ្រងកិច្ចការ',
+    'motivation.libraryTitle': 'ការលើកទឹកចិត្ត',
+    'motivation.browse': 'រកមើល',
+    'motivation.saved': 'បានរក្សាទុក',
+    'motivation.emptySaved': 'មិនទាន់មានការលើកទឹកចិត្តដែលបានរក្សាទុកទេ',
+    'motivation.emptyLibrary': 'មិនមានការលើកទឹកចិត្តនៅពេលនេះទេ',
+    'motivation.save': 'រក្សាទុកការលើកទឹកចិត្ត',
+    'motivation.unsave': 'លុបការលើកទឹកចិត្តដែលបានរក្សាទុក',
 
     // ── Productivity - Task Create ───────────────────────────────────────────
     'task.create.title': 'បង្កើតកិច្ចការ',
@@ -5012,6 +5226,8 @@ class AppTranslations extends Translations {
     'habits.todayHabits': 'ទម្លាប់ថ្ងៃនេះ',
     'habits.dayStreak': 'ជាប់គ្នា @count ថ្ងៃ',
     'habits.dayStreakShort': 'ជាប់គ្នា @count ថ្ងៃ',
+    'habits.weekStreakShort': 'ជាប់គ្នា @count សប្តាហ៍',
+    'habits.streakCount': 'ជាប់គ្នា @count',
     'habits.completedTodayCount': 'បានបញ្ចប់ @completed នៃ @total ថ្ងៃនេះ',
     'habits.deleteConfirmTitle': 'លុបទម្លាប់?',
     'habits.deleteConfirmMessage':
@@ -5049,6 +5265,11 @@ class AppTranslations extends Translations {
     'habits.notesSubtitle':
         'បន្តអនុវត្តទម្លាប់នេះជារៀងរាល់ថ្ងៃ ភាពខ្ជាប់ខ្ជួនសំខាន់ជាងភាពល្អឥតខ្ចោះ',
     'habits.completedToday': 'បានបញ្ចប់ថ្ងៃនេះ',
+    'habits.completedThisWeek': 'បានបញ្ចប់សប្តាហ៍នេះ',
+    'habits.completedCount': 'បានបញ្ចប់ @completed ក្នុងចំណោម @total',
+    'habits.editTitle': 'កែសម្រួលទម្លាប់',
+    'habits.customUnavailable':
+        'ការកំណត់នេះមិនទាន់រួចរាល់ទេ។ សូមជ្រើសរើសរាល់ថ្ងៃ ឬរាល់សប្តាហ៍ ដើម្បីបន្ត។',
     'habits.completeToday': 'បញ្ចប់ថ្ងៃនេះ',
     'habits.keepStreakAlive': 'ពូកែណាស់! បន្តរក្សាការអនុវត្តជាប់គ្នារបស់អ្នក',
     'habits.tapWhenFinished': 'ចុចត្រង់នេះនៅពេលអ្នកអនុវត្តទម្លាប់នេះរួចរាល់',
@@ -5066,10 +5287,10 @@ class AppTranslations extends Translations {
     'goals.emptyTitle': 'មិនទាន់មានគោលដៅទេ',
     'goals.emptySubtitle': 'បង្កើតគោលដៅ និងបែងចែកវាទៅជាដំណាក់កាលតូចៗ',
     'goals.tipTitle': 'ខ្លួនអ្នកកាន់តែប្រសើរ គឺនៅត្រឹមគោលដៅមួយប៉ុណ្ណោះ',
-    'goals.tipSubtitle':
-        'កំណត់គោលដៅថ្ងៃនេះ ហើយចាប់ផ្តើមកសាងអនាគតដែលអ្នកចង់បាន',
+    'goals.tipSubtitle': 'កំណត់គោលដៅថ្ងៃនេះ ហើយចាប់ផ្តើមកសាងអនាគតដែលអ្នកចង់បាន',
     'goals.signInToManage': 'សូមចូលគណនីដើម្បីគ្រប់គ្រងគោលដៅ',
     'goals.statusCompleted': 'បានបញ្ចប់',
+    'goals.editTitle': 'កែសម្រួលគោលដៅ',
     'goals.statusInProgress': 'កំពុងដំណើរការ',
     'goals.statusNotStarted': 'មិនទាន់ចាប់ផ្តើម',
     'goals.create.title': 'គោលដៅថ្មី',
@@ -5096,8 +5317,7 @@ class AppTranslations extends Translations {
     'goals.create.addMilestoneBtn': '+ បន្ថែមដំណាក់កាល',
     'goals.create.milestoneDialogTitle': 'បន្ថែមដំណាក់កាល',
     'goals.create.milestoneDialogHint': 'បញ្ចូលចំណងជើងដំណាក់កាល...',
-    'goals.create.milestoneNotice':
-        'ដំណាក់កាលអាចបន្ថែមបានបន្ទាប់ពីបង្កើតគោលដៅ',
+    'goals.create.milestoneNotice': 'ដំណាក់កាលអាចបន្ថែមបានបន្ទាប់ពីបង្កើតគោលដៅ',
     'goals.create.motivationTitle': 'ជំហានតូចៗ បង្កើតការផ្លាស់ប្តូរដ៏ធំ',
     'goals.create.motivationSubtitle':
         'កំណត់គោលដៅថ្ងៃនេះ ហើយចាប់ផ្តើមដំណើររបស់អ្នក!',
@@ -5152,6 +5372,7 @@ class AppTranslations extends Translations {
     'focus.completeTitle': 'បានបញ្ចប់ការផ្តោតអារម្មណ៍',
     'focus.done': 'រួចរាល់',
     'focus.minutesShort': 'នាទី',
+    'focus.secondsShort': 'វិនាទី',
     'focus.today': 'ថ្ងៃនេះ',
     'focus.recent': 'ថ្មីៗ',
     'focus.sessionStarted': 'វគ្គផ្តោតអារម្មណ៍បានចាប់ផ្តើម',
@@ -5175,9 +5396,12 @@ class AppTranslations extends Translations {
     'focus.smallStepsQuote': 'Small steps\nBig progress',
     'focus.stayFocusedQuote': 'បន្តផ្តោតអារម្មណ៍\nអ្នកអាចធ្វើបាន! 💜',
     'focus.takeABreathQuote': 'ដកដង្ហើមវែងៗ\nអ្នកកំពុងធ្វើបានល្អណាស់! ☕',
-    'focus.runningQuote': '« ភាពជោគជ័យកើតចេញពីការផ្តោតអារម្មណ៍ជារៀងរាល់ថ្ងៃ » — GenLink',
-    'focus.pausedQuote': '« ការសម្រាកជាផ្នែកនៃការរីកចម្រើន មិនមែនជាការឈប់នោះទេ! » — GenLink',
-    'focus.completedQuote': '« ជោគជ័យកើតចេញពីការផ្តោតអារម្មណ៍ម្តងមួយជំហាន! » — GenLink',
+    'focus.runningQuote':
+        '« ភាពជោគជ័យកើតចេញពីការផ្តោតអារម្មណ៍ជារៀងរាល់ថ្ងៃ » — GenLink',
+    'focus.pausedQuote':
+        '« ការសម្រាកជាផ្នែកនៃការរីកចម្រើន មិនមែនជាការឈប់នោះទេ! » — GenLink',
+    'focus.completedQuote':
+        '« ជោគជ័យកើតចេញពីការផ្តោតអារម្មណ៍ម្តងមួយជំហាន! » — GenLink',
     'focus.currentSession': 'Current Session',
     'focus.sessionPaused': 'Session Paused',
     'focus.elapsed': 'Elapsed',
@@ -5291,7 +5515,8 @@ class AppTranslations extends Translations {
     'chat.group.groupName': 'ឈ្មោះក្រុម',
     'chat.group.groupNameHint': 'ឧ. ក្រុមសិក្សា Flutter',
     'chat.group.groupNameRequired': 'ទាមទារឈ្មោះក្រុម',
-    'chat.group.groupNameRequiredMsg': 'សូមបញ្ចូលឈ្មោះសម្រាប់ការជជែកជាក្រុមរបស់អ្នក',
+    'chat.group.groupNameRequiredMsg':
+        'សូមបញ្ចូលឈ្មោះសម្រាប់ការជជែកជាក្រុមរបស់អ្នក',
     'chat.group.selectMembersWarningTitle': 'ជ្រើសរើសសមាជិក',
     'chat.group.selectMembersWarningMsg':
         'សូមជ្រើសរើសសមាជិកយ៉ាងហោចណាស់ 1 នាក់ដើម្បីបន្ថែមទៅក្នុងក្រុម',
@@ -5311,8 +5536,7 @@ class AppTranslations extends Translations {
     'chat.group.student': 'សិស្ស',
     'chat.group.noStudentsFound': 'រកមិនឃើញសិស្សទេ',
     'chat.group.tryDifferentSearch': 'សាកល្បងឈ្មោះ ឬឈ្មោះអ្នកប្រើផ្សេង',
-    'chat.group.searchDifferentHint':
-        'ស្វែងរកឈ្មោះ\nឬឈ្មោះអ្នកប្រើផ្សេង',
+    'chat.group.searchDifferentHint': 'ស្វែងរកឈ្មោះ\nឬឈ្មោះអ្នកប្រើផ្សេង',
     'chat.group.noMembersAvailable': 'មិនមានសមាជិកទេ',
     'chat.group.noMembersAvailableHint': 'មិនមានសមាជិកដែលអាចបន្ថែមបានទេ',
     'chat.group.editGroup': 'កែសម្រួលក្រុម',
@@ -5386,7 +5610,8 @@ class AppTranslations extends Translations {
     'levelup.goalsSubtitle': 'ប្រែក្លាយក្តីស្រមៃ\nទៅជាការពិត',
     'levelup.focusSubtitle': 'រក្សាការផ្តោតអារម្មណ៍\nនិងបង្កើនផលិតភាព',
     'levelup.quizSubtitle': 'សាកល្បងចំណេះដឹង\nនិងទទួលបាន XP',
-    'levelup.leaderboardSubtitle': 'មើលអ្នកដែលរកពិន្ទុបាន\nខ្ពស់ជាងគេក្នុង GenLink',
+    'levelup.leaderboardSubtitle':
+        'មើលអ្នកដែលរកពិន្ទុបាន\nខ្ពស់ជាងគេក្នុង GenLink',
     'levelup.yourNextMove': 'ជំហានបន្ទាប់របស់អ្នក',
     'levelup.recommendedForYou': 'ណែនាំសម្រាប់អ្នក',
     'levelup.todaysChallenge': 'បញ្ហាប្រឈមថ្ងៃនេះ',
@@ -5424,10 +5649,10 @@ class AppTranslations extends Translations {
     'levelup.categoryQuiz': 'សំណួរ',
 
     // ── Saving Goals ───────────────────────────────────────────────────
-    'finance.savingGoals.subtitle': 'ប្រែក្លាយក្តីស្រមៃរបស់អ្នកឱ្យក្លាយជាការពិត',
+    'finance.savingGoals.subtitle':
+        'ប្រែក្លាយក្តីស្រមៃរបស់អ្នកឱ្យក្លាយជាការពិត',
     'finance.savingGoals.totalSaved': 'សន្សំបានសរុប',
     'finance.savingGoals.acrossGoals': 'ក្នុងចំណោម @count គោលដៅ',
-    'finance.savingGoals.fromLastMonth': '+12% ពីខែមុន',
     'finance.savingGoals.yourGoals': 'គោលដៅរបស់អ្នក',
     'finance.savingGoals.newestFirst': 'ថ្មីបំផុតមុន',
     'finance.savingGoals.dueOn': 'ផុតកំណត់ @date',

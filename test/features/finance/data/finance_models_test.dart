@@ -156,4 +156,72 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+
+  test('maps the existing insights response contract', () {
+    final result = FinanceMapper.insights({
+      'currency': 'USD',
+      'month': 9,
+      'year': 2026,
+      'income': 120.00,
+      'expense': 60.00,
+      'net': 60.00,
+      'savingsRatePercent': 50.0,
+      'insights': [
+        {
+          'type': 'SPENDING_TREND',
+          'severity': 'INFO',
+          'title': 'Spending trend',
+          'message': 'Expense is higher than last month.',
+          'category': null,
+          'amount': 60.0,
+          'lesson': {
+            'lessonId': 'lesson-1',
+            'title': 'Budgeting',
+            'topic': 'BUDGETING',
+          },
+        },
+      ],
+    });
+
+    expect(result.currency, FinanceCurrency.usd);
+    expect(result.month, 9);
+    expect(result.insights.single.type, 'SPENDING_TREND');
+    expect(result.insights.single.lessonId, 'lesson-1');
+  });
+
+  test(
+    'recurring and Auto Save requests serialize only supported API fields',
+    () {
+      expect(
+        const FinanceRecurringTransactionRequestModel(
+          type: FinanceRecurringType.expense,
+          title: ' Rent ',
+          amount: 12.3,
+          frequency: FinanceRecurringFrequency.monthly,
+          startDate: '2026-10-01',
+          currency: FinanceCurrency.usd,
+          category: ' HOME ',
+          fromWallet: true,
+        ).toJson(),
+        {
+          'type': 'EXPENSE',
+          'title': 'Rent',
+          'amount': 12.3,
+          'currency': 'USD',
+          'category': 'HOME',
+          'frequency': 'MONTHLY',
+          'fromWallet': true,
+          'startDate': '2026-10-01',
+        },
+      );
+      expect(
+        const FinanceAutoSaveRuleRequestModel(
+          savingGoalId: 'goal-1',
+          type: FinanceAutoSaveType.roundUp,
+          currency: FinanceCurrency.khr,
+        ).toJson(),
+        {'savingGoalId': 'goal-1', 'type': 'ROUND_UP', 'currency': 'KHR'},
+      );
+    },
+  );
 }

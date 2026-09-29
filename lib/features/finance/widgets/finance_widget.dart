@@ -261,6 +261,9 @@ class QuickAction extends StatefulWidget {
   final Color border;
   final Color textColor;
   final VoidCallback? onTap;
+  final int maxLines;
+  final double? fontSize;
+  final EdgeInsetsGeometry? padding;
 
   const QuickAction({
     super.key,
@@ -271,6 +274,9 @@ class QuickAction extends StatefulWidget {
     required this.border,
     required this.textColor,
     this.onTap,
+    this.maxLines = 1,
+    this.fontSize,
+    this.padding,
   });
 
   @override
@@ -293,7 +299,8 @@ class _QuickActionState extends State<QuickAction> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          padding: widget.padding ??
+              const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
           decoration: BoxDecoration(
             color: _isPressed
                 ? widget.accent.withValues(alpha: 0.08)
@@ -317,25 +324,30 @@ class _QuickActionState extends State<QuickAction> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: widget.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(widget.icon, size: 22, color: widget.accent),
+                child: Icon(widget.icon, size: 23, color: widget.accent),
               ),
               const SizedBox(height: 8),
-              Text(
-                widget.title,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: widget.textColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
+              SizedBox(
+                height: widget.maxLines > 1 ? 30 : null,
+                child: Center(
+                  child: Text(
+                    widget.title,
+                    maxLines: widget.maxLines,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: widget.textColor,
+                      fontSize: widget.fontSize ?? 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.15,
+                    ),
+                  ),
                 ),
               ),
             ],

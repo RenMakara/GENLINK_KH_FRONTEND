@@ -30,6 +30,7 @@ abstract class ProductivityRepository {
     bool? completed,
     String? scope,
   });
+  Future<ProductivityTask> getTask(String taskId);
   Future<ProductivityTask> createTask({
     required String title,
     String? description,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 
 class FocusModeData {
   final IconData icon;
@@ -78,28 +79,7 @@ class FocusHeader extends StatelessWidget {
     return Row(
       children: [
         if (onBack != null) ...[
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: onBack,
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.border),
-                ),
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  size: 19,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-
+          AppBackButton(onPressed: onBack),
           const SizedBox(width: 12),
         ],
 

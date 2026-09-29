@@ -184,7 +184,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
               subtitle: subtitle,
               time: timeStr == '00:00' ? '' : timeStr,
               endTime: '',
-              xp: 15,
+              xp: task.xpEarned,
               icon: Icons.check_circle_outline_rounded,
               color: const Color(0xFF3B82F6),
               completed: task.completed,
@@ -218,7 +218,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                 }),
           time: '',
           endTime: '',
-          xp: 15,
+          xp: 0,
           icon: Icons.check_circle_outline_rounded,
           color: const Color(0xFF3B82F6),
           completed: isTaskDone,
@@ -232,23 +232,31 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
         _productivityController?.habits ?? const <ProductivityHabit>[];
     if (habitItems.isNotEmpty) {
       for (final habit in habitItems) {
+        final isWeekly = habit.frequency?.toUpperCase() == 'WEEKLY';
+        final habitDone = isWeekly
+            ? habit.checkedInThisWeek
+            : habit.checkedInToday;
         final streakText = habit.streakCount > 0
             ? 'levelup.habitStreak'.trParams({'streak': '${habit.streakCount}'})
             : null;
         final sub = isToday
-            ? (habit.checkedInToday
-                  ? 'levelup.habitCompletedToday'.tr +
+            ? (habitDone
+                  ? (isWeekly
+                            ? 'habits.completedThisWeek'.tr
+                            : 'levelup.habitCompletedToday'.tr) +
                         (streakText != null ? ' · $streakText' : '')
                   : 'levelup.habitPrefix'.tr +
                         (streakText ??
                             (habit.category ?? 'levelup.habitDailyRoutine'.tr)))
             : (date.isAfter(today)
                   ? (habit.frequency ?? 'levelup.habitDailyRoutine'.tr)
-                  : (habit.checkedInToday
-                        ? 'levelup.habitCompletedToday'.tr
+                  : (habitDone
+                        ? (isWeekly
+                              ? 'habits.completedThisWeek'.tr
+                              : 'levelup.habitCompletedToday'.tr)
                         : (habit.category ?? 'levelup.habitDailyRoutine'.tr)));
 
-        final isDone = isToday ? habit.checkedInToday : false;
+        final isDone = isToday ? habitDone : false;
 
         activities.add(
           GrowthTimelineActivity(
@@ -258,21 +266,18 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
             subtitle: sub,
             time: habit.reminderTime ?? '',
             endTime: '',
-            xp: 10,
+            xp: habit.xpEarned,
             icon: Icons.repeat_rounded,
             color: const Color(0xFFF97316),
             completed: isDone,
             onTap: () => Get.to(() => const HabitHomeScreen()),
-            onToggle: isToday
-                ? () {
-                    _productivityController?.toggleHabit(
-                      habit.habitId,
-                      completed: !habit.checkedInToday,
-                    );
-                    widget.controller.toggleHabitCheckIn(
+            onToggle: isToday && !isDone
+                ? () async {
+                    await widget.controller.toggleHabitCheckIn(
                       habitId: habit.habitId,
-                      targetState: !habit.checkedInToday,
+                      targetState: true,
                     );
+                    await _productivityController?.reload();
                   }
                 : null,
           ),
@@ -297,16 +302,16 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
             subtitle: sub,
             time: '',
             endTime: '',
-            xp: 10,
+            xp: 0,
             icon: Icons.repeat_rounded,
             color: const Color(0xFFF97316),
             completed: habit.checkedInToday,
             onTap: () => Get.to(() => const HabitHomeScreen()),
             onToggle: isToday
                 ? () => widget.controller.toggleHabitCheckIn(
-                      habitId: habit.habitId,
-                      targetState: !habit.checkedInToday,
-                    )
+                    habitId: habit.habitId,
+                    targetState: !habit.checkedInToday,
+                  )
                 : null,
           ),
         );
@@ -331,10 +336,10 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                 : 'levelup.focus'.tr,
             type: 'levelup.categoryFocus'.tr,
             categoryKey: 'focus',
-            subtitle: '${session.durationMinutes}m · ${session.xpEarned} XP',
+            subtitle: '${session.focusedSeconds}s · ${session.xpEarned} XP',
             time: startTimeStr,
             endTime: endTimeStr,
-            xp: session.xpEarned > 0 ? session.xpEarned : 20,
+            xp: session.xpEarned,
             icon: Icons.timer_outlined,
             color: const Color(0xFF8B5CF6),
             completed: session.isCompleted,
@@ -345,8 +350,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     }
 
     // 4. Goals
-    final goals =
-        _productivityController?.goals ?? const <ProductivityGoal>[];
+    final goals = _productivityController?.goals ?? const <ProductivityGoal>[];
     for (final goal in goals) {
       final matchesDeadline =
           goal.deadline != null && _isSameDay(goal.deadline!, date);
@@ -367,7 +371,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                 '${goal.progressPercentage.toInt()}% · ${goal.completedMilestones}/${goal.totalMilestones} milestones',
             time: '',
             endTime: '',
-            xp: 50,
+            xp: 0,
             icon: Icons.flag_outlined,
             color: const Color(0xFF10B981),
             completed: isGoalDone,
@@ -395,9 +399,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
             subtitle: challengeDesc,
             time: '',
             endTime: '',
-            xp: (challenge.xpReward != null && challenge.xpReward! > 0)
-                ? challenge.xpReward!
-                : 50,
+            xp: challenge.xpReward ?? 0,
             icon: Icons.quiz_outlined,
             color: const Color(0xFFF2B84B),
             completed: false,
@@ -488,14 +490,12 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     final progress = widget.home.todayProgress;
     final habitsTotal = progress.habitsTotal;
     final habitsDone = progress.habitsCompletedToday;
-    final tasksDone = progress.tasksCompleted;
     final doneCount = progress.doneCount;
     final totalCount = progress.totalCount;
     final percent = progress.percent;
     final isGoalCompleted = totalCount > 0 && doneCount >= totalCount;
 
-    // XP earned today from completed activities (tasks: 15 XP, habits: 10 XP)
-    final earnedXp = (tasksDone * 15) + (habitsDone * 10);
+    final earnedXp = progress.xpEarnedToday;
 
     final String statusMessage;
     final String activitiesSummary;
@@ -527,7 +527,6 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     }
 
     final xpEarnedText = 'levelup.xpEarnedCount'.trParams({'xp': '$earnedXp'});
-
 
     // Alert
     final isStreakAtRisk =
@@ -573,178 +572,181 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                  // HEADER
-                  AppScreenHeader(
-                    title: 'levelup.title'.tr,
-                    subtitle: subtitle,
-                    includeSafeArea: false,
-                    horizontalPadding: EdgeInsets.zero,
-                    actions: [
-                      AppHeaderActionButton(
-                        icon: Icons.emoji_events_outlined,
-                        onTap: () => Get.to(
-                          () => const LeaderboardHomeScreen(),
-                          binding: LeaderboardBinding(),
-                        ),
-                        tooltip: 'quiz.leaderboard'.tr,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // DATE CARD
-                  GrowthDateCard(
-                    today: today,
-                    selectedDate: selectedDate,
-                    showDateDetail: showDateDetail,
-                    onDateSelected: _selectDate,
-                    onToggleDetail: _toggleDateDetail,
-                    detailChild: Obx(() {
-                      // Observe changes from controllers
-                      _productivityController?.tasks.length;
-                      _productivityController?.habits.length;
-                      _productivityController?.goals.length;
-                      _productivityController?.focusHistory.length;
-                      widget.controller.habits.length;
-
-                      final dateActivities = _buildDateActivities(selectedDate);
-                      return GrowthDateDetailLayout(
-                        selectedDate: selectedDate,
-                        today: today,
-                        categories: categories,
-                        activities: dateActivities,
-                        onDateSelected: _selectDate,
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // LEVEL PROGRESS
-                  LevelProgressCard(
-                    levelDisplay: levelDisplay,
-                    xpText: '${user.safeTotalXp} / ${user.xpForNextLevel} XP',
-                    progressCopy: progressCopy,
-                    percentText: '${user.percentToNext}%',
-                    progress: user.levelProgress,
-                    onTap: () => Get.to(
-                      () => const LeaderboardHomeScreen(),
-                      binding: LeaderboardBinding(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // TODAY'S PROGRESS (Compact Summary)
-                  GrowthTodayProgressCard(
-                    percentText: '$percent%',
-                    progress: progress.progress,
-                    statusMessage: statusMessage,
-                    activitiesText: activitiesSummary,
-                    xpText: xpEarnedText,
-                    isCompleted: isGoalCompleted,
-                    onTap: () {
-                      if (!showDateDetail) {
-                        _toggleDateDetail();
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // ALERT
-                  if (isStreakAtRisk)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GrowthAlertCard(
-                        icon: Icons.local_fire_department_rounded,
-                        iconColor: const Color(0xFFF97316),
-                        title: 'levelup.streakAtRiskTitle'.tr,
-                        message: 'levelup.streakAtRiskMessage'.tr,
-                        actionText: 'levelup.streakAtRiskAction'.tr,
-                        onTap: () => Get.to(() => const HabitHomeScreen()),
-                      ),
-                    ),
-
-                  // PRODUCTIVITY TOOLS (GROW)
-                  GrowSectionWidget(
-                    onTasksTap: () => Get.to(() => const TasksPage()),
-                    onHabitsTap: () => Get.to(() => const HabitHomeScreen()),
-                    onGoalsTap: () => Get.to(() => const PlanGoalScreen()),
-                    onFocusTap: () => Get.to(() => const FocusPage()),
-                    onQuizTap: () => Get.toNamed(AppRoutes.quizDashboard),
-                    onLeaderboardTap: () => Get.to(
-                      () => const LeaderboardHomeScreen(),
-                      binding: LeaderboardBinding(),
-                    ),
-                    onExploreAllTap: () => Get.to(() => const ProductivityPage()),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // YOUR NEXT MOVE
-                  if (challenge != null) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'levelup.yourNextMove'.tr,
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
-                            ),
+                    // HEADER
+                    AppScreenHeader(
+                      title: 'levelup.title'.tr,
+                      subtitle: subtitle,
+                      includeSafeArea: false,
+                      horizontalPadding: EdgeInsets.zero,
+                      actions: [
+                        AppHeaderActionButton(
+                          icon: Icons.emoji_events_outlined,
+                          onTap: () => Get.to(
+                            () => const LeaderboardHomeScreen(),
+                            binding: LeaderboardBinding(),
                           ),
-                        ),
-                        Text(
-                          'levelup.recommendedForYou'.tr,
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.darkTextMuted
-                                : AppColors.lightTextMuted,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
-                          ),
+                          tooltip: 'quiz.leaderboard'.tr,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    GrowthActionCard(
-                      icon: Icons.flag_outlined,
-                      accentColor: const Color(0xFFF97316),
-                      title: challengeTitle,
-                      subtitle: challengeDesc,
-                      badgeText: xpReward != null && xpReward > 0
-                          ? '+$xpReward XP'
-                          : null,
-                      onTap: () => _handleNextMove(challenge),
-                    ),
-                  ],
 
-                  // DAILY MINDSET
-                  if (widget.home.dailyMotivation != null &&
-                      (widget.home.dailyMotivation?.content
-                              ?.trim()
-                              .isNotEmpty ??
-                          false)) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    DailyMindsetCard(
-                      title:
-                          widget.home.dailyMotivation!.title
-                                  ?.trim()
-                                  .isNotEmpty ==
-                              true
-                          ? widget.home.dailyMotivation!.title!
-                          : 'levelup.dailyMindset'.tr,
-                      content: widget.home.dailyMotivation!.content ?? '',
+                    const SizedBox(height: 14),
+
+                    // DATE CARD
+                    GrowthDateCard(
+                      today: today,
+                      selectedDate: selectedDate,
+                      showDateDetail: showDateDetail,
+                      onDateSelected: _selectDate,
+                      onToggleDetail: _toggleDateDetail,
+                      detailChild: Obx(() {
+                        // Observe changes from controllers
+                        _productivityController?.tasks.length;
+                        _productivityController?.habits.length;
+                        _productivityController?.goals.length;
+                        _productivityController?.focusHistory.length;
+                        widget.controller.habits.length;
+
+                        final dateActivities = _buildDateActivities(
+                          selectedDate,
+                        );
+                        return GrowthDateDetailLayout(
+                          selectedDate: selectedDate,
+                          today: today,
+                          categories: categories,
+                          activities: dateActivities,
+                          onDateSelected: _selectDate,
+                        );
+                      }),
                     ),
+
+                    const SizedBox(height: 14),
+
+                    // LEVEL PROGRESS
+                    LevelProgressCard(
+                      levelDisplay: levelDisplay,
+                      xpText: '${user.safeTotalXp} / ${user.xpForNextLevel} XP',
+                      progressCopy: progressCopy,
+                      percentText: '${user.percentToNext}%',
+                      progress: user.levelProgress,
+                      onTap: () => Get.to(
+                        () => const LeaderboardHomeScreen(),
+                        binding: LeaderboardBinding(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // TODAY'S PROGRESS (Compact Summary)
+                    GrowthTodayProgressCard(
+                      percentText: '$percent%',
+                      progress: progress.progress,
+                      statusMessage: statusMessage,
+                      activitiesText: activitiesSummary,
+                      xpText: xpEarnedText,
+                      isCompleted: isGoalCompleted,
+                      onTap: () {
+                        if (!showDateDetail) {
+                          _toggleDateDetail();
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // ALERT
+                    if (isStreakAtRisk)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: GrowthAlertCard(
+                          icon: Icons.local_fire_department_rounded,
+                          iconColor: const Color(0xFFF97316),
+                          title: 'levelup.streakAtRiskTitle'.tr,
+                          message: 'levelup.streakAtRiskMessage'.tr,
+                          actionText: 'levelup.streakAtRiskAction'.tr,
+                          onTap: () => Get.to(() => const HabitHomeScreen()),
+                        ),
+                      ),
+
+                    // PRODUCTIVITY TOOLS (GROW)
+                    GrowSectionWidget(
+                      onTasksTap: () => Get.to(() => const TasksPage()),
+                      onHabitsTap: () => Get.to(() => const HabitHomeScreen()),
+                      onGoalsTap: () => Get.to(() => const PlanGoalScreen()),
+                      onFocusTap: () => Get.to(() => const FocusPage()),
+                      onQuizTap: () => Get.toNamed(AppRoutes.quizDashboard),
+                      onLeaderboardTap: () => Get.to(
+                        () => const LeaderboardHomeScreen(),
+                        binding: LeaderboardBinding(),
+                      ),
+                      onExploreAllTap: () =>
+                          Get.to(() => const ProductivityPage()),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // YOUR NEXT MOVE
+                    if (challenge != null) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'levelup.yourNextMove'.tr,
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'levelup.recommendedForYou'.tr,
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      GrowthActionCard(
+                        icon: Icons.flag_outlined,
+                        accentColor: const Color(0xFFF97316),
+                        title: challengeTitle,
+                        subtitle: challengeDesc,
+                        badgeText: xpReward != null && xpReward > 0
+                            ? '+$xpReward XP'
+                            : null,
+                        onTap: () => _handleNextMove(challenge),
+                      ),
+                    ],
+
+                    // DAILY MINDSET
+                    if (widget.home.dailyMotivation != null &&
+                        (widget.home.dailyMotivation?.content
+                                ?.trim()
+                                .isNotEmpty ??
+                            false)) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      DailyMindsetCard(
+                        title:
+                            widget.home.dailyMotivation!.title
+                                    ?.trim()
+                                    .isNotEmpty ==
+                                true
+                            ? widget.home.dailyMotivation!.title!
+                            : 'levelup.dailyMindset'.tr,
+                        content: widget.home.dailyMotivation!.content ?? '',
+                      ),
+                    ],
                   ],
-                ],
-              ),
+                ),
               ),
             ),
           ),

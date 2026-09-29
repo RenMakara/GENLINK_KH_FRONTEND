@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_money.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment_processing.dart';
 
 class Payment extends StatefulWidget {
@@ -45,12 +46,11 @@ class _PaymentState extends State<Payment> {
     return amount.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
   }
 
-  double _getAmount() {
+  FinanceMoney? _getAmount() {
     if (_amountText.isEmpty || _amountText == '.') {
-      return 0;
+      return null;
     }
-
-    return double.tryParse(_amountText) ?? 0;
+    return FinanceMoney.tryParseInput(_amountText);
   }
 
   String _merchantName() {
@@ -116,30 +116,12 @@ class _PaymentState extends State<Payment> {
           }
         }
 
-        // Prevent leading zeros
-        if (_amountText == '0') {
-          if (key == '0') {
-            return;
-          }
-
-          _amountText = key;
-          return;
-        }
-
-        // 0.5
-        if (_amountText == '0.') {
-          _amountText += key;
-          return;
-        }
-
-        // Maximum 12 digits
-        final digitsOnly = _amountText.replaceAll('.', '');
-
-        if (digitsOnly.length >= 12) {
-          return;
-        }
-
-        _amountText += key;
+        if (_amountText == '0' && key == '0') return;
+        final candidate = _amountText == '0' ? key : '$_amountText$key';
+        // Enforce the backend's NUMERIC(19,2) limit without imposing a smaller
+        // keypad-only amount cap.
+        if (FinanceMoney.tryParseInput(candidate) == null) return;
+        _amountText = candidate;
       }
     });
   }
@@ -151,9 +133,8 @@ class _PaymentState extends State<Payment> {
   void _confirmPayment() {
     if (_isProcessing) return;
 
-    final amount = _getAmount();
-
-    if (amount <= 0) {
+    final exactAmount = _getAmount();
+    if (exactAmount == null || exactAmount.sign <= 0) {
       _showMessage('finance.ewallet.invalidAmount'.tr, AppColors.danger);
       return;
     }
@@ -166,7 +147,7 @@ class _PaymentState extends State<Payment> {
       context,
       MaterialPageRoute(
         builder: (_) => PaymentProcessingScreen(
-          amount: amount,
+          amount: double.parse(exactAmount.toDecimalString()),
           merchant: _merchantName(),
           currency: widget.currency,
         ),

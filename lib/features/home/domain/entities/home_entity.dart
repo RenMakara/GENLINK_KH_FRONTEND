@@ -83,12 +83,14 @@ class TodayProgress {
     required this.habitsTotal,
     required this.tasksCompleted,
     required this.tasksTotal,
+    this.xpEarnedToday = 0,
   });
 
   final int habitsCompletedToday;
   final int habitsTotal;
   final int tasksCompleted;
   final int tasksTotal;
+  final int xpEarnedToday;
 
   int get doneCount => habitsCompletedToday + tasksCompleted;
   int get totalCount => habitsTotal + tasksTotal;
@@ -102,12 +104,14 @@ class TodayProgress {
     int? habitsTotal,
     int? tasksCompleted,
     int? tasksTotal,
+    int? xpEarnedToday,
   }) {
     return TodayProgress(
       habitsCompletedToday: habitsCompletedToday ?? this.habitsCompletedToday,
       habitsTotal: habitsTotal ?? this.habitsTotal,
       tasksCompleted: tasksCompleted ?? this.tasksCompleted,
       tasksTotal: tasksTotal ?? this.tasksTotal,
+      xpEarnedToday: xpEarnedToday ?? this.xpEarnedToday,
     );
   }
 }
@@ -182,7 +186,9 @@ class ChallengePreview {
     if (text.contains('task') || text.contains('កិច្ចការ')) {
       return ChallengeType.task;
     }
-    if (text.contains('quiz') || text.contains('សំណួរ') || text.contains('កម្រងសំណួរ')) {
+    if (text.contains('quiz') ||
+        text.contains('សំណួរ') ||
+        text.contains('កម្រងសំណួរ')) {
       return ChallengeType.quiz;
     }
     if (text.contains('expense') ||

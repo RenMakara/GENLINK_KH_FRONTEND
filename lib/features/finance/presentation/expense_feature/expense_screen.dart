@@ -14,6 +14,7 @@ import 'package:genlink_frontend/features/finance/presentation/expense_feature/e
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_history_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
+import 'package:genlink_frontend/features/finance/presentation/widgets/finance_insights_widgets.dart';
 
 class ExpenseScreen extends GetView<ExpenseController> {
   const ExpenseScreen({super.key});
@@ -34,8 +35,9 @@ class ExpenseScreen extends GetView<ExpenseController> {
     final border = semantic.borderSubtle;
     final primary = semantic.primary;
 
-    final accentActionColor =
-        isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
+    final accentActionColor = isDark
+        ? const Color(0xFF34D399)
+        : const Color(0xFF059669);
 
     return Scaffold(
       backgroundColor: bg,
@@ -45,12 +47,25 @@ class ExpenseScreen extends GetView<ExpenseController> {
           final currency = controller.selectedCurrency.value;
           final expenses = controller.expenses.toList(growable: false);
           final month = dashboard?.month;
-          final categories = dashboard?.topCategories ?? const [];
-          final totalSpent = month?.spent ?? 0.0;
 
-          final monthLabel = month == null
-              ? '—'
-              : _monthLabel(month.month, month.year);
+          final selectedMonth = controller.selectedMonth.value;
+          final selectedYear = controller.selectedYear.value;
+          final isCurrentMonth = month != null &&
+              month.month == selectedMonth &&
+              month.year == selectedYear &&
+              !controller.hasExplicitMonthFilter.value;
+
+          final monthLabel = _monthLabel(selectedMonth, selectedYear);
+
+          final computedTotal =
+              expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+          final totalSpent =
+              isCurrentMonth ? month.spent : computedTotal;
+
+          final categories = isCurrentMonth &&
+                  (dashboard?.topCategories.isNotEmpty ?? false)
+              ? dashboard!.topCategories
+              : _aggregateCategories(expenses, currency);
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -135,6 +150,8 @@ class ExpenseScreen extends GetView<ExpenseController> {
                 // ── 3. Period / Month Selector ───────────────────────────────
                 ExpensePeriodBar(
                   label: monthLabel,
+                  onPrevious: controller.selectPreviousMonth,
+                  onNext: controller.selectNextMonth,
                   background: surface,
                   borderColor: border,
                   textPrimary: textPrimary,
@@ -191,12 +208,10 @@ class ExpenseScreen extends GetView<ExpenseController> {
                                     fit: BoxFit.scaleDown,
                                     alignment: Alignment.centerLeft,
                                     child: Text(
-                                      month == null
-                                          ? '—'
-                                          : FinanceMoneyFormatter.format(
-                                              month.spent,
-                                              currency,
-                                            ),
+                                      FinanceMoneyFormatter.format(
+                                        totalSpent,
+                                        currency,
+                                      ),
                                       maxLines: 1,
                                       style: TextStyle(
                                         color: textPrimary,
@@ -207,32 +222,23 @@ class ExpenseScreen extends GetView<ExpenseController> {
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.arrow_downward_rounded,
-                                        size: 14,
-                                        color: AppColors.success,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          '12% ${'finance.fromLastMonth'.tr}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: AppColors.success,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  FinanceTrendBadge(
+                                    metric: FinanceTrendMetric.expense,
+                                    currency: currency,
+                                    month: selectedMonth,
+                                    year: selectedYear,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    _previousMonthSubtitle(month, currency),
+                                    _previousMonthSubtitle(
+                                      month: selectedMonth,
+                                      year: selectedYear,
+                                      spent: totalSpent,
+                                      currency: currency,
+                                      budgetStatus: isCurrentMonth
+                                          ? month.budgetStatus
+                                          : null,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -256,11 +262,12 @@ class ExpenseScreen extends GetView<ExpenseController> {
                                       final ratio = totalSpent <= 0
                                           ? 0.0
                                           : (category.amount / totalSpent)
-                                              .clamp(0.0, 1.0);
+                                                .clamp(0.0, 1.0);
                                       return DonutSegment(
                                         value: ratio,
                                         color: _categoryColor(
-                                            category.category),
+                                          category.category,
+                                        ),
                                       );
                                     }).toList(),
                               center: Column(
@@ -276,12 +283,9 @@ class ExpenseScreen extends GetView<ExpenseController> {
                                   ),
                                   const SizedBox(height: 1),
                                   Text(
-                                    month == null
+                                    totalSpent <= 0
                                         ? '—'
-                                        : _compactMoney(
-                                            month.spent,
-                                            currency,
-                                          ),
+                                        : _compactMoney(totalSpent, currency),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -395,9 +399,8 @@ class ExpenseScreen extends GetView<ExpenseController> {
                             textMuted: textMuted,
                             backgroundColor: surfaceSecondary,
                             showDivider: false,
-                            onTap: () => controller.selectCategory(
-                              category.category,
-                            ),
+                            onTap: () =>
+                                controller.selectCategory(category.category),
                           ),
                         ),
                       );
@@ -434,8 +437,11 @@ class ExpenseScreen extends GetView<ExpenseController> {
                     ...expenses.take(5).map((expense) {
                       final catColor = _categoryColor(expense.category);
                       final catIcon = _categoryIcon(expense.category);
-                      final formattedDate = _formatExpenseDate(expense.expenseDate);
-                      final categoryLabel = expense.category != null &&
+                      final formattedDate = _formatExpenseDate(
+                        expense.expenseDate,
+                      );
+                      final categoryLabel =
+                          expense.category != null &&
                               expense.category!.trim().isNotEmpty
                           ? _localizedCategoryName(expense.category!)
                           : null;
@@ -479,8 +485,9 @@ class ExpenseScreen extends GetView<ExpenseController> {
                                           AddExpenseScreen(expense: expense),
                                     ),
                                   ),
-                                  onDeleted: () => controller
-                                      .deleteExpense(expense.expenseId),
+                                  onDeleted: () => controller.deleteExpense(
+                                    expense.expenseId,
+                                  ),
                                 ),
                               ),
                             ),
@@ -531,7 +538,7 @@ class _CurrencyBar extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
       ),
       child: Stack(
@@ -545,8 +552,10 @@ class _CurrencyBar extends StatelessWidget {
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2DD4BF).withValues(alpha: 0.25) : activeIndicatorColor,
-                  borderRadius: BorderRadius.circular(10),
+                  color: isDark
+                      ? const Color(0xFF2DD4BF).withValues(alpha: 0.25)
+                      : activeIndicatorColor,
+                  borderRadius: BorderRadius.circular(18),
                   border: isDark
                       ? Border.all(
                           color: const Color(0xFF2DD4BF).withValues(alpha: 0.4),
@@ -560,11 +569,13 @@ class _CurrencyBar extends StatelessWidget {
           Row(
             children: FinanceCurrency.values.map((value) {
               final selected = value == currency;
-              final activeTextColor = isDark ? const Color(0xFF2DD4BF) : Colors.white;
+              final activeTextColor = isDark
+                  ? const Color(0xFF2DD4BF)
+                  : Colors.white;
 
               return Expanded(
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(18),
                   onTap: () => onChanged(value),
                   child: Center(
                     child: AnimatedDefaultTextStyle(
@@ -595,19 +606,46 @@ String _monthLabel(int month, int year) {
   return '${months[month - 1]} $year';
 }
 
-String _previousMonthSubtitle(
-  FinanceMonthOverview? month,
+String _previousMonthSubtitle({
+  required int month,
+  required int year,
+  required double spent,
+  required FinanceCurrency currency,
+  String? budgetStatus,
+}) {
+  if (budgetStatus != null && budgetStatus.trim().isNotEmpty) {
+    return budgetStatus;
+  }
+  final prevMonth = month == 1 ? 12 : month - 1;
+  final prevYear = month == 1 ? year - 1 : year;
+  final prevLabel = _monthLabel(prevMonth, prevYear);
+  if (spent <= 0) {
+    return 'finance.trend.noBaseline'.tr;
+  }
+  final prevSpent = spent * 1.13;
+  return '$prevLabel: ${FinanceMoneyFormatter.format(prevSpent, currency)}';
+}
+
+List<FinanceCategorySpend> _aggregateCategories(
+  List<FinanceExpenseEntity> expenses,
   FinanceCurrency currency,
 ) {
-  if (month == null) return 'Loading…';
-  if (month.budgetStatus != null && month.budgetStatus!.trim().isNotEmpty) {
-    return month.budgetStatus!;
+  if (expenses.isEmpty) return const [];
+  final totals = <String, double>{};
+  for (final expense in expenses) {
+    final cat = (expense.category?.trim().isNotEmpty == true)
+        ? expense.category!.trim().toUpperCase()
+        : 'OTHER';
+    totals[cat] = (totals[cat] ?? 0.0) + expense.amount;
   }
-  final prevMonth = month.month == 1 ? 12 : month.month - 1;
-  final prevYear = month.month == 1 ? month.year - 1 : month.year;
-  final prevLabel = _monthLabel(prevMonth, prevYear);
-  final prevSpent = month.spent * 1.13;
-  return '$prevLabel: ${FinanceMoneyFormatter.format(prevSpent, currency)}';
+  return totals.entries
+      .map((e) => FinanceCategorySpend(
+            category: e.key,
+            currency: currency,
+            amount: e.value,
+          ))
+      .toList()
+    ..sort((a, b) => b.amount.compareTo(a.amount));
 }
 
 String _compactMoney(double amount, FinanceCurrency currency) {

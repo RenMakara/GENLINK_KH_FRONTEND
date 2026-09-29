@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:genlink_frontend/features/productivity/domain/entities/productivity_entities.dart'
     hide ProductivityPage;
 import 'package:genlink_frontend/features/productivity/presentation/controllers/productivity_controller.dart';
@@ -30,8 +31,10 @@ class _MockProductivityController extends GetxController
   @override
   final focusHistory = <ProductivityFocusSession>[].obs;
 
-  final focusHistoryPage = 1.obs;
+  @override
+  final focusHistoryPage = (-1).obs;
 
+  @override
   final focusHistoryHasMore = false.obs;
 
   @override
@@ -58,6 +61,12 @@ class _MockProductivityController extends GetxController
   Future<void> reload() async {
     reloadCalled = true;
   }
+
+  @override
+  Future<void> loadFocusHistory({bool refresh = true}) async {}
+
+  @override
+  Future<void> loadNextFocusHistoryPage() async {}
 
   @override
   Future<ProductivityTask> toggleTask(String taskId, {required bool completed}) async {
@@ -116,7 +125,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+      expect(find.byType(AppBackButton), findsOneWidget);
       expect(find.text('Productivity'), findsOneWidget);
       expect(find.text('Your daily growth dashboard'), findsOneWidget);
       expect(find.text('3 days'), findsOneWidget);
@@ -124,7 +133,7 @@ void main() {
       expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.tap(find.byType(AppBackButton));
       await tester.pumpAndSettle();
       expect(backTapped, isTrue);
 
@@ -145,7 +154,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1 day'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+      expect(find.byType(AppBackButton), findsOneWidget);
     });
 
     testWidgets('hides back button when showBackButton is false', (
@@ -162,7 +171,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
+      expect(find.byType(AppBackButton), findsNothing);
     });
   });
 

@@ -3,12 +3,15 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../levelup/widget/grow_section_widget.dart';
+import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
 import '../productivity_scope.dart';
 import '../widgets/creation_form_components.dart';
 
 class CreateHabitScreen extends StatefulWidget {
-  const CreateHabitScreen({super.key});
+  const CreateHabitScreen({super.key, this.initialHabit});
+
+  final ProductivityHabit? initialHabit;
 
   @override
   State<CreateHabitScreen> createState() => _CreateHabitScreenState();
@@ -18,7 +21,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   final _titleController = TextEditingController();
   ProductivityController? _controller;
   String _category = 'PERSONAL';
-  String _frequency = 'DAILY';
+  String? _frequency = 'DAILY';
   TimeOfDay? _reminderTime;
   bool _saving = false;
 
@@ -29,12 +32,39 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     'WORK',
     'OTHER',
   ];
-  static const _frequencies = ['DAILY', 'WEEKLY', 'CUSTOM'];
+  // Custom scheduling stays hidden until the API has fields to configure it.
+  static const _frequencies = ['DAILY', 'WEEKLY'];
 
   @override
   void initState() {
     super.initState();
     _controller = ensureProductivityController();
+    final habit = widget.initialHabit;
+    if (habit != null) {
+      _titleController.text = habit.title;
+      _category = habit.category ?? _category;
+      final frequency = habit.frequency?.toUpperCase();
+      if (frequency == null || frequency.isEmpty || frequency == 'DAILY') {
+        _frequency = 'DAILY';
+      } else if (frequency == 'WEEKLY') {
+        _frequency = 'WEEKLY';
+      } else {
+        _frequency = null;
+      }
+      final time = habit.reminderTime?.split(':');
+      if (time != null && time.length >= 2) {
+        final hour = int.tryParse(time[0]);
+        final minute = int.tryParse(time[1]);
+        if (hour != null &&
+            minute != null &&
+            hour >= 0 &&
+            hour < 24 &&
+            minute >= 0 &&
+            minute < 60) {
+          _reminderTime = TimeOfDay(hour: hour, minute: minute);
+        }
+      }
+    }
   }
 
   @override
@@ -49,6 +79,10 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
       _showMessage('habits.create.validationTitle'.tr);
       return;
     }
+    if (_frequency == null) {
+      _showMessage('habits.customUnavailable'.tr);
+      return;
+    }
 
     final controller = _controller;
     if (controller == null) {
@@ -58,12 +92,23 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
     setState(() => _saving = true);
     try {
-      await controller.createHabit(
-        title: title,
-        category: _category,
-        frequency: _frequency,
-        reminderTime: _formatTime(_reminderTime),
-      );
+      final initialHabit = widget.initialHabit;
+      if (initialHabit == null) {
+        await controller.createHabit(
+          title: title,
+          category: _category,
+          frequency: _frequency,
+          reminderTime: _formatTime(_reminderTime),
+        );
+      } else {
+        await controller.updateHabit(
+          habitId: initialHabit.habitId,
+          title: title,
+          category: _category,
+          frequency: _frequency,
+          reminderTime: _formatTime(_reminderTime),
+        );
+      }
       if (mounted) Get.back(result: true);
     } catch (error) {
       _showMessage(_errorText(error));
@@ -146,11 +191,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        iconData,
-        color: iconColor,
-        size: 19,
-      ),
+      child: Icon(iconData, color: iconColor, size: 19),
     );
   }
 
@@ -167,7 +208,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   }
 
   Widget _frequencyIcon(String frequency, bool isSelected) {
-    final color = isSelected ? const Color(0xFFEA580C) : const Color(0xFFF97316);
+    final color = isSelected
+        ? const Color(0xFFEA580C)
+        : const Color(0xFFF97316);
     switch (frequency) {
       case 'DAILY':
         return Icon(
@@ -176,18 +219,10 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
           size: 24,
         );
       case 'WEEKLY':
-        return Icon(
-          Icons.calendar_view_week_rounded,
-          color: color,
-          size: 24,
-        );
+        return Icon(Icons.calendar_view_week_rounded, color: color, size: 24);
       case 'CUSTOM':
       default:
-        return Icon(
-          Icons.tune_rounded,
-          color: color,
-          size: 24,
-        );
+        return Icon(Icons.tune_rounded, color: color, size: 24);
     }
   }
 
@@ -195,13 +230,21 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   Widget build(BuildContext context) {
     return CreationFormScaffold(
       header: CreationFormHeader(
-        title: 'habits.create.title'.tr,
+        title:
+            (widget.initialHabit == null
+                    ? 'habits.create.title'
+                    : 'habits.editTitle')
+                .tr,
         subtitle: 'habits.create.subtitle'.tr,
         onSave: _save,
         isSaving: _saving,
       ),
       bottomBar: CreationPrimaryButton(
-        label: 'habits.create.saveHabit'.tr,
+        label:
+            (widget.initialHabit == null
+                    ? 'habits.create.saveHabit'
+                    : 'common.save')
+                .tr,
         onPressed: _save,
         isLoading: _saving,
       ),
@@ -260,22 +303,34 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         // Frequency Segmented Selection
         CreationSectionLabel(label: 'habits.create.frequency'.tr),
         Row(
-          children: _frequencies.map((frequency) {
-            final isSelected = _frequency == frequency;
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: SelectionOptionCard(
-                  label: _frequencyLabel(frequency),
-                  isSelected: isSelected,
-                  accentColor: const Color(0xFFF97316),
-                  icon: _frequencyIcon(frequency, isSelected),
-                  onTap: () => setState(() => _frequency = frequency),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+          children: _frequencies
+              .map((frequency) {
+                final isSelected = _frequency == frequency;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: SelectionOptionCard(
+                      label: _frequencyLabel(frequency),
+                      isSelected: isSelected,
+                      accentColor: const Color(0xFFF97316),
+                      icon: _frequencyIcon(frequency, isSelected),
+                      onTap: () => setState(() => _frequency = frequency),
+                    ),
+                  ),
+                );
+              })
+              .toList(growable: false),
         ),
+        if (_frequency == null) ...[
+          const SizedBox(height: 8),
+          Text(
+            'habits.customUnavailable'.tr,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: 12,
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
 
         // Reminder Picker Card

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import '../../domain/entities/productivity_entities.dart';
 import '../controllers/productivity_controller.dart';
@@ -73,12 +74,75 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     }
   }
 
+  Future<void> _editGoal() async {
+    final title = TextEditingController(text: _goal.title);
+    final description = TextEditingController(text: _goal.description ?? '');
+    try {
+      final shouldSave = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('goals.editTitle'.tr),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: title,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'goals.create.goalTitle'.tr,
+                ),
+              ),
+              TextField(
+                controller: description,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'goals.create.descriptionOptional'.tr,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text('common.save'.tr),
+            ),
+          ],
+        ),
+      );
+      if (shouldSave != true ||
+          title.text.trim().isEmpty ||
+          _controller == null) {
+        return;
+      }
+      final updated = await _controller!.updateGoal(
+        goalId: _goal.goalId,
+        title: title.text.trim(),
+        description: description.text.trim().isEmpty
+            ? null
+            : description.text.trim(),
+        goalType: _goal.goalType,
+        deadline: _goal.deadline,
+      );
+      if (mounted) setState(() => _goal = updated);
+    } catch (error) {
+      _showError(error);
+    } finally {
+      title.dispose();
+      description.dispose();
+    }
+  }
+
   Future<void> _deleteMilestone(ProductivityMilestone milestone) async {
     final confirmed = await GenLinkConfirmDialog.showDanger(
       context: context,
       title: 'goals.detail.deleteMilestoneTitle'.tr,
-      message: 'goals.detail.deleteMilestoneMessage'
-          .trParams({'title': milestone.title}),
+      message: 'goals.detail.deleteMilestoneMessage'.trParams({
+        'title': milestone.title,
+      }),
       confirmLabel: 'common.delete'.tr,
       cancelLabel: 'common.cancel'.tr,
     );
@@ -128,8 +192,14 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
         backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
         elevation: 0,
+        leading: const Center(child: AppBackButton()),
         title: Text('goals.detail.title'.tr),
         actions: [
+          IconButton(
+            onPressed: _editGoal,
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'goals.editTitle'.tr,
+          ),
           IconButton(
             onPressed: _deleteGoal,
             icon: const Icon(Icons.delete_outline_rounded),
@@ -196,8 +266,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                   if (_goal.deadline != null) ...[
                     const SizedBox(height: 10),
                     Text(
-                      'goals.detail.deadline'
-                          .trParams({'date': _formatDate(_goal.deadline!)}),
+                      'goals.detail.deadline'.trParams({
+                        'date': _formatDate(_goal.deadline!),
+                      }),
                       style: TextStyle(color: colors.textMuted, fontSize: 11),
                     ),
                   ],
@@ -299,10 +370,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
             ),
             const SizedBox(height: 10),
             if (_goal.milestones.isEmpty)
-              _EmptyMilestones(
-                colors: colors,
-                onAddMilestone: _addMilestone,
-              )
+              _EmptyMilestones(colors: colors, onAddMilestone: _addMilestone)
             else
               Material(
                 color: colors.surface,
@@ -347,15 +415,16 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
-                                  value: (_goal.completedMilestones /
-                                          _goal.totalMilestones)
-                                      .clamp(0.0, 1.0),
+                                  value:
+                                      (_goal.completedMilestones /
+                                              _goal.totalMilestones)
+                                          .clamp(0.0, 1.0),
                                   minHeight: 5,
                                   backgroundColor: colors.surfaceSecondary,
                                   valueColor:
                                       const AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF9333EA),
-                                  ),
+                                        Color(0xFF9333EA),
+                                      ),
                                 ),
                               ),
                             ],
@@ -445,10 +514,7 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 }
 
 class _EmptyMilestones extends StatelessWidget {
-  const _EmptyMilestones({
-    required this.colors,
-    this.onAddMilestone,
-  });
+  const _EmptyMilestones({required this.colors, this.onAddMilestone});
 
   final _GoalDetailColors colors;
   final VoidCallback? onAddMilestone;
@@ -577,7 +643,6 @@ String _formatDate(DateTime date) =>
 
 String _errorText(Object error) =>
     error.toString().replaceFirst('AppError(', '').split('):').last.trim();
-
 
 class _AddMilestoneDialog extends StatefulWidget {
   const _AddMilestoneDialog();
@@ -784,14 +849,8 @@ class _AddMilestoneDialogState extends State<_AddMilestoneDialog> {
                       )
                     : null,
                 hintText: 'goals.detail.milestoneHint'.tr,
-                hintStyle: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 13,
-                ),
-                counterStyle: TextStyle(
-                  color: colors.textMuted,
-                  fontSize: 11,
-                ),
+                hintStyle: TextStyle(color: colors.textMuted, fontSize: 13),
+                counterStyle: TextStyle(color: colors.textMuted, fontSize: 11),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 12,
@@ -830,10 +889,7 @@ class _AddMilestoneDialogState extends State<_AddMilestoneDialog> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF9333EA),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),

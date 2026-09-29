@@ -95,6 +95,13 @@ class ProductivityRemoteDatasource {
     );
   }
 
+  Future<ProductivityTask> getTask(String taskId) {
+    return _client.get(
+      ApiEndpoints.task(taskId),
+      parse: (data) => ProductivityMapper.task(ApiClient.asMap(data)),
+    );
+  }
+
   Future<ProductivityTask> createTask({
     required String title,
     String? description,

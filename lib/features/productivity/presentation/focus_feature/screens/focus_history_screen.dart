@@ -82,7 +82,8 @@ class FocusHistoryScreen extends StatelessWidget {
             // History List
             Expanded(
               child: Obx(() {
-                if (controller.isFocusHistoryLoading.value) {
+                if (controller.isFocusHistoryLoading.value &&
+                    controller.focusHistory.isEmpty) {
                   return const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   );
@@ -122,63 +123,89 @@ class FocusHistoryScreen extends StatelessWidget {
                 // Group by date
                 final groups = _groupByDate(completed);
 
-                return RefreshIndicator(
-                  onRefresh: controller.loadFocusHistory,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                    itemCount: groups.length,
-                    itemBuilder: (context, index) {
-                      final group = groups[index];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              top: 14,
-                              bottom: 8,
-                              left: 4,
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.metrics.extentAfter < 280 &&
+                        controller.focusHistoryHasMore.value &&
+                        !controller.isFocusHistoryLoading.value) {
+                      controller.loadNextFocusHistoryPage();
+                    }
+                    return false;
+                  },
+                  child: RefreshIndicator(
+                    onRefresh: () => controller.loadFocusHistory(),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      itemCount:
+                          groups.length +
+                          (controller.focusHistoryHasMore.value ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= groups.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            child: Center(
+                              child: controller.isFocusHistoryLoading.value
+                                  ? const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
-                            child: Text(
-                              group.dateLabel,
-                              style: TextStyle(
-                                color: semantic.secondaryText,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
+                          );
+                        }
+                        final group = groups[index];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 14,
+                                bottom: 8,
+                                left: 4,
+                              ),
+                              child: Text(
+                                group.dateLabel,
+                                style: TextStyle(
+                                  color: semantic.secondaryText,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.darkSurfacePrimary
-                                  : AppColors.lightSurfacePrimary,
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                              border: Border.all(
+                            Container(
+                              decoration: BoxDecoration(
                                 color: isDark
-                                    ? AppColors.darkBorderSubtle
-                                    : AppColors.lightBorderSubtle,
+                                    ? AppColors.darkSurfacePrimary
+                                    : AppColors.lightSurfacePrimary,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.lg,
+                                ),
+                                border: Border.all(
+                                  color: isDark
+                                      ? AppColors.darkBorderSubtle
+                                      : AppColors.lightBorderSubtle,
+                                ),
+                              ),
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: group.sessions.length,
+                                separatorBuilder: (context, index) => Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: isDark
+                                      ? AppColors.darkBorderSubtle
+                                      : AppColors.lightBorderSubtle,
+                                ),
+                                itemBuilder: (context, sIndex) {
+                                  final session = group.sessions[sIndex];
+                                  return _HistorySessionRow(session: session);
+                                },
                               ),
                             ),
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: group.sessions.length,
-                              separatorBuilder: (context, index) => Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: isDark
-                                    ? AppColors.darkBorderSubtle
-                                    : AppColors.lightBorderSubtle,
-                              ),
-                              itemBuilder: (context, sIndex) {
-                                final session = group.sessions[sIndex];
-                                return _HistorySessionRow(session: session);
-                              },
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 );
               }),
@@ -262,8 +289,8 @@ class _HistorySessionRow extends StatelessWidget {
     final iconBgColor = isDeep
         ? AppColors.productivityAccent.withValues(alpha: 0.12)
         : (isLong
-            ? const Color(0xFF388BFD).withValues(alpha: 0.12)
-            : const Color(0xFFFF5252).withValues(alpha: 0.12));
+              ? const Color(0xFF388BFD).withValues(alpha: 0.12)
+              : const Color(0xFFFF5252).withValues(alpha: 0.12));
 
     final iconColor = isDeep
         ? AppColors.productivityAccent
@@ -274,9 +301,11 @@ class _HistorySessionRow extends StatelessWidget {
         : (isLong ? 'focus.modeLongFocus'.tr : 'focus.modePomodoro'.tr);
 
     final timeString = _formatTime(session.endedAt ?? session.startedAt);
-    final durationMinutes = session.durationMinutes > 0
-        ? session.durationMinutes
-        : (session.focusedSeconds ~/ 60);
+    final focusedSeconds = session.focusedSeconds.clamp(0, 1 << 31);
+    final focusedMinutes = focusedSeconds ~/ 60;
+    final durationLabel = focusedMinutes > 0
+        ? '$focusedMinutes ${'focus.minutesShort'.tr} ${focusedSeconds % 60} ${'focus.secondsShort'.tr}'
+        : '$focusedSeconds ${'focus.secondsShort'.tr}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -310,10 +339,7 @@ class _HistorySessionRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   timeString,
-                  style: TextStyle(
-                    color: semantic.textMuted,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: semantic.textMuted, fontSize: 11),
                 ),
               ],
             ),
@@ -324,7 +350,7 @@ class _HistorySessionRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$durationMinutes ${'focus.minutesShort'.tr}',
+                durationLabel,
                 style: TextStyle(
                   color: semantic.primaryText,
                   fontSize: 13,
@@ -357,7 +383,9 @@ class _HistorySessionRow extends StatelessWidget {
 
   String _formatTime(DateTime? date) {
     if (date == null) return '';
-    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    final hour = date.hour > 12
+        ? date.hour - 12
+        : (date.hour == 0 ? 12 : date.hour);
     final minute = date.minute.toString().padLeft(2, '0');
     final ampm = date.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $ampm';

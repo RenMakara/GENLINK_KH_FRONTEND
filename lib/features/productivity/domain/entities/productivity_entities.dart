@@ -105,6 +105,8 @@ class ProductivityHabit {
     this.streakCount = 0,
     this.completionRate = 0,
     this.checkedInToday = false,
+    this.checkedInThisWeek = false,
+    this.xpEarned = 0,
   });
 
   final String habitId;
@@ -115,6 +117,8 @@ class ProductivityHabit {
   final int streakCount;
   final double completionRate;
   final bool checkedInToday;
+  final bool checkedInThisWeek;
+  final int xpEarned;
 
   ProductivityHabit copyWith({
     String? title,
@@ -124,6 +128,8 @@ class ProductivityHabit {
     int? streakCount,
     double? completionRate,
     bool? checkedInToday,
+    bool? checkedInThisWeek,
+    int? xpEarned,
   }) {
     return ProductivityHabit(
       habitId: habitId,
@@ -134,6 +140,8 @@ class ProductivityHabit {
       streakCount: streakCount ?? this.streakCount,
       completionRate: completionRate ?? this.completionRate,
       checkedInToday: checkedInToday ?? this.checkedInToday,
+      checkedInThisWeek: checkedInThisWeek ?? this.checkedInThisWeek,
+      xpEarned: xpEarned ?? this.xpEarned,
     );
   }
 }
@@ -149,6 +157,7 @@ class ProductivityTask {
     this.reminderTime,
     this.completed = false,
     this.overdue = false,
+    this.xpEarned = 0,
   });
 
   final String taskId;
@@ -160,6 +169,7 @@ class ProductivityTask {
   final DateTime? reminderTime;
   final bool completed;
   final bool overdue;
+  final int xpEarned;
 
   ProductivityTask copyWith({
     String? title,
@@ -170,6 +180,7 @@ class ProductivityTask {
     DateTime? reminderTime,
     bool? completed,
     bool? overdue,
+    int? xpEarned,
   }) {
     return ProductivityTask(
       taskId: taskId,
@@ -181,6 +192,7 @@ class ProductivityTask {
       reminderTime: reminderTime ?? this.reminderTime,
       completed: completed ?? this.completed,
       overdue: overdue ?? this.overdue,
+      xpEarned: xpEarned ?? this.xpEarned,
     );
   }
 }

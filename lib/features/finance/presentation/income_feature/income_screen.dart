@@ -12,6 +12,8 @@ import 'package:genlink_frontend/features/finance/presentation/formatters/financ
 import 'package:genlink_frontend/features/finance/presentation/income_feature/income_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/income_feature/income_detail_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/cash_flow_feature/cash_flow_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/widgets/finance_insights_widgets.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_money.dart';
 
 class IncomeScreen extends StatefulWidget {
   const IncomeScreen({super.key});
@@ -90,10 +92,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
           final currency = controller.selectedCurrency.value;
           final selectedSource = controller.selectedSource.value;
 
-          final totalIncome = incomes.fold<double>(
-            0.0,
-            (sum, item) => sum + item.amount,
+          final totalIncome = FinanceMoney.sum(
+            incomes.map((item) => item.amount),
           );
+          final dashboardMonth = financeController.dashboard.value?.month;
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -157,7 +159,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     const SizedBox(width: 4),
                     Material(
                       color: primary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(25),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () => Navigator.push<void>(
@@ -232,6 +234,8 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   _TotalIncomeHeroCard(
                     totalIncome: totalIncome,
                     currency: currency,
+                    month: dashboardMonth?.month ?? DateTime.now().month,
+                    year: dashboardMonth?.year ?? DateTime.now().year,
                     surface: surface,
                     border: border,
                     text: text,
@@ -242,7 +246,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   // ── Income by Source Section ───────────────────────────────
                   _IncomeBySourceSection(
                     incomes: incomes,
-                    totalIncome: totalIncome,
+                    totalIncome: double.parse(totalIncome.toDecimalString()),
                     currency: currency,
                     selectedSource: selectedSource,
                     onSelectSource: (source) {
@@ -301,11 +305,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   const SizedBox(height: 20),
 
                   // ── Smart Insight Card ─────────────────────────────────────
-                  _SmartInsightCard(
-                    surface: surface,
-                    border: border,
-                    text: text,
-                    muted: muted,
+                  FinanceInsightsSummaryCard(
+                    currency: currency,
+                    month: dashboardMonth?.month ?? DateTime.now().month,
+                    year: dashboardMonth?.year ?? DateTime.now().year,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -330,9 +333,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           icon: Icons.add_rounded,
           onPressed: () => Navigator.push<void>(
             context,
-            MaterialPageRoute(
-              builder: (_) => const IncomeAddScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const IncomeAddScreen()),
           ),
         ),
       ),
@@ -390,7 +391,7 @@ class _CurrencyBar extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
       ),
       child: Stack(
@@ -405,7 +406,7 @@ class _CurrencyBar extends StatelessWidget {
                 height: 38,
                 decoration: BoxDecoration(
                   color: primary,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
@@ -463,8 +464,18 @@ class _PeriodBar extends StatelessWidget {
     final year = dashboardMonth?.year ?? now.year;
 
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     final monthName = months[(month - 1).clamp(0, 11)];
     final periodLabel = '$monthName $year';
@@ -474,25 +485,17 @@ class _PeriodBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
-            Icons.chevron_left_rounded,
-            color: muted,
-            size: 22,
-          ),
+          Icon(Icons.chevron_left_rounded, color: muted, size: 22),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.calendar_today_rounded,
-                size: 15,
-                color: text,
-              ),
+              Icon(Icons.calendar_today_rounded, size: 15, color: text),
               const SizedBox(width: 8),
               Text(
                 periodLabel,
@@ -504,11 +507,7 @@ class _PeriodBar extends StatelessWidget {
               ),
             ],
           ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: muted,
-            size: 22,
-          ),
+          Icon(Icons.chevron_right_rounded, color: muted, size: 22),
         ],
       ),
     );
@@ -519,14 +518,18 @@ class _TotalIncomeHeroCard extends StatelessWidget {
   const _TotalIncomeHeroCard({
     required this.totalIncome,
     required this.currency,
+    required this.month,
+    required this.year,
     required this.surface,
     required this.border,
     required this.text,
     required this.muted,
   });
 
-  final double totalIncome;
+  final FinanceMoney totalIncome;
   final FinanceCurrency currency;
+  final int month;
+  final int year;
   final Color surface;
   final Color border;
   final Color text;
@@ -534,8 +537,10 @@ class _TotalIncomeHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compactValue = _compactMoney(totalIncome, currency);
-    final previousAmount = totalIncome * 0.86;
+    final compactValue = _compactMoney(
+      double.parse(totalIncome.toDecimalString()),
+      currency,
+    );
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -566,7 +571,7 @@ class _TotalIncomeHeroCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    FinanceMoneyFormatter.format(totalIncome, currency),
+                    FinanceMoneyFormatter.formatExact(totalIncome, currency),
                     style: TextStyle(
                       color: text,
                       fontSize: 26,
@@ -576,67 +581,20 @@ class _TotalIncomeHeroCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.arrow_upward_rounded,
-                          size: 12,
-                          color: Color(0xFF10B981),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'finance.income.fromLastMonth'.tr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF10B981),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                FinanceTrendBadge(
+                  metric: FinanceTrendMetric.income,
+                  currency: currency,
+                  month: month,
+                  year: year,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  'finance.income.lastMonthComparison'.trParams({
-                    'amount': FinanceMoneyFormatter.format(
-                      previousAmount,
-                      currency,
-                    ),
-                  }),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ],
             ),
           ),
           const SizedBox(width: 14),
 
           // Right side: 6-Month Mini Bar Chart
-          _MiniBarChart(
-            compactBadge: compactValue,
-            muted: muted,
-          ),
+          _MiniBarChart(compactBadge: compactValue, muted: muted),
         ],
       ),
     );
@@ -658,10 +616,7 @@ class _TotalIncomeHeroCard extends StatelessWidget {
 }
 
 class _MiniBarChart extends StatelessWidget {
-  const _MiniBarChart({
-    required this.compactBadge,
-    required this.muted,
-  });
+  const _MiniBarChart({required this.compactBadge, required this.muted});
 
   final String compactBadge;
   final Color muted;
@@ -722,8 +677,9 @@ class _MiniBarChart extends StatelessWidget {
                       style: TextStyle(
                         color: isCurrent ? const Color(0xFF10B981) : muted,
                         fontSize: 8.5,
-                        fontWeight:
-                            isCurrent ? FontWeight.w800 : FontWeight.w500,
+                        fontWeight: isCurrent
+                            ? FontWeight.w800
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -892,11 +848,7 @@ class _IncomeBySourceSection extends StatelessWidget {
                               color: info.color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(
-                              info.icon,
-                              color: info.color,
-                              size: 20,
-                            ),
+                            child: Icon(info.icon, color: info.color, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -960,8 +912,9 @@ class _IncomeBySourceSection extends StatelessWidget {
                                   child: LinearProgressIndicator(
                                     value: ratio,
                                     minHeight: 6,
-                                    backgroundColor:
-                                        info.color.withValues(alpha: 0.12),
+                                    backgroundColor: info.color.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     valueColor: AlwaysStoppedAnimation(
                                       info.color,
                                     ),
@@ -1189,11 +1142,7 @@ class _RecentIncomeSection extends StatelessWidget {
                           color: info.color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(
-                          info.icon,
-                          color: info.color,
-                          size: 20,
-                        ),
+                        child: Icon(info.icon, color: info.color, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1240,11 +1189,7 @@ class _RecentIncomeSection extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 18,
-                        color: muted,
-                      ),
+                      Icon(Icons.chevron_right_rounded, size: 18, color: muted),
                     ],
                   ),
                 ),
@@ -1260,89 +1205,23 @@ class _RecentIncomeSection extends StatelessWidget {
       final parsed = DateTime.tryParse(rawDate);
       if (parsed != null) {
         const months = [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
         ];
         return '${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}';
       }
     } catch (_) {}
     return rawDate;
-  }
-}
-
-class _SmartInsightCard extends StatelessWidget {
-  const _SmartInsightCard({
-    required this.surface,
-    required this.border,
-    required this.text,
-    required this.muted,
-  });
-
-  final Color surface;
-  final Color border;
-  final Color text;
-  final Color muted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF10B981).withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF10B981).withValues(alpha: 0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.lightbulb_rounded,
-              color: Color(0xFF10B981),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'finance.income.smartInsight'.tr,
-                  style: TextStyle(
-                    color: text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'finance.income.smartInsightDesc'.tr,
-                  style: TextStyle(
-                    color: muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: muted,
-            size: 18,
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -1399,19 +1278,13 @@ class _SourceMeta {
         lower.contains('trade') ||
         lower.contains('invest') ||
         lower.contains('profit')) {
-      return const _SourceMeta(
-        Icons.trending_up_rounded,
-        Color(0xFF2563EB),
-      );
+      return const _SourceMeta(Icons.trending_up_rounded, Color(0xFF2563EB));
     }
     if (lower.contains('gift') ||
         lower.contains('birthday') ||
         lower.contains('bonus') ||
         lower.contains('reward')) {
-      return const _SourceMeta(
-        Icons.card_giftcard_rounded,
-        Color(0xFF8B5CF6),
-      );
+      return const _SourceMeta(Icons.card_giftcard_rounded, Color(0xFF8B5CF6));
     }
     if (lower.contains('allowance') ||
         lower.contains('pocket') ||
@@ -1421,9 +1294,6 @@ class _SourceMeta {
         Color(0xFFF59E0B),
       );
     }
-    return const _SourceMeta(
-      Icons.more_horiz_rounded,
-      Color(0xFF64748B),
-    );
+    return const _SourceMeta(Icons.more_horiz_rounded, Color(0xFF64748B));
   }
 }

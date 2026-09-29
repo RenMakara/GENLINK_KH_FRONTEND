@@ -281,8 +281,10 @@ class _WalletContentState extends State<_WalletContent> {
     final textSecondary = widget.textSecondary;
     final textMuted = widget.textMuted;
     final currency = widget.controller.selectedCurrency.value;
-    final transactions =
-        widget.controller.visibleTransactions.take(5).toList();
+    final transactions = widget.controller.visibleTransactions.take(5).toList();
+    final refreshError =
+        widget.controller.walletErrorMessage.value ??
+        widget.controller.historyErrorMessage.value;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(
@@ -302,6 +304,38 @@ class _WalletContentState extends State<_WalletContent> {
             });
           },
         ),
+
+        if (refreshError != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.cloud_off_outlined,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    refreshError,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: widget.controller.refresh,
+                  child: Text('common.retry'.tr),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         const SizedBox(height: 18),
 
@@ -339,11 +373,7 @@ class _WalletContentState extends State<_WalletContent> {
           onActionTap: (label) => ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  'finance.ewallet.featureComingSoon'.tr,
-                ),
-              ),
+              SnackBar(content: Text('finance.ewallet.featureComingSoon'.tr)),
             ),
         ),
 
@@ -428,20 +458,12 @@ class _WalletHeroCard extends StatelessWidget {
         ? const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F2620),
-              Color(0xFF0C1F1B),
-              Color(0xFF081412),
-            ],
+            colors: [Color(0xFF0F2620), Color(0xFF0C1F1B), Color(0xFF081412)],
           )
         : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFE8F2FE),
-              Color(0xFFDEF0FE),
-              Color(0xFFD4E7FC),
-            ],
+            colors: [Color(0xFFE8F2FE), Color(0xFFDEF0FE), Color(0xFFD4E7FC)],
           );
 
     final borderColor = isDark
@@ -470,7 +492,10 @@ class _WalletHeroCard extends StatelessWidget {
         : const Color(0xFF475569);
 
     final balanceValue = controller.balanceFor(currency);
-    final formattedBalance = FinanceMoneyFormatter.format(balanceValue, currency);
+    final formattedBalance = FinanceMoneyFormatter.format(
+      balanceValue,
+      currency,
+    );
 
     return Container(
       width: double.infinity,
@@ -657,7 +682,9 @@ class _WalletHeroCard extends StatelessWidget {
                             duration: const Duration(milliseconds: 200),
                             child: isBalanceHidden
                                 ? ClipRRect(
-                                    key: const ValueKey('ewallet_balance_blurred'),
+                                    key: const ValueKey(
+                                      'ewallet_balance_blurred',
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                     child: ImageFiltered(
                                       imageFilter: ImageFilter.blur(
@@ -679,7 +706,9 @@ class _WalletHeroCard extends StatelessWidget {
                                   )
                                 : Text(
                                     formattedBalance,
-                                    key: const ValueKey('ewallet_balance_visible'),
+                                    key: const ValueKey(
+                                      'ewallet_balance_visible',
+                                    ),
                                     maxLines: 1,
                                     style: TextStyle(
                                       color: textTitleColor,
@@ -733,38 +762,43 @@ class _CurrencySelector extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: FinanceCurrency.values.map((option) {
-          final isSelected = option == currency;
-          return GestureDetector(
-            onTap: isSelected ? null : () => onSelected(option),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isSelected ? activeBg : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Text(
-                option.apiValue,
-                style: TextStyle(
-                  color: isSelected ? activeFg : inactiveFg,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
+        children: FinanceCurrency.values
+            .map((option) {
+              final isSelected = option == currency;
+              return GestureDetector(
+                onTap: isSelected ? null : () => onSelected(option),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? activeBg : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    option.apiValue,
+                    style: TextStyle(
+                      color: isSelected ? activeFg : inactiveFg,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }).toList(growable: false),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
@@ -1046,11 +1080,15 @@ class _SummarySection extends StatelessWidget {
             value: '+$incomingFormatted',
             subtitle: 'finance.ewallet.thisMonth'.tr,
             icon: Icons.arrow_outward_rounded,
-            iconColor: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
+            iconColor: isDark
+                ? const Color(0xFF34D399)
+                : const Color(0xFF16A34A),
             iconBg: isDark
                 ? const Color(0xFF064E3B).withValues(alpha: 0.5)
                 : const Color(0xFFDCFCE7),
-            valueColor: isDark ? const Color(0xFF34D399) : const Color(0xFF16A34A),
+            valueColor: isDark
+                ? const Color(0xFF34D399)
+                : const Color(0xFF16A34A),
             surface: surface,
             border: border,
             textPrimary: textPrimary,
@@ -1067,7 +1105,9 @@ class _SummarySection extends StatelessWidget {
             value: spendingFormatted,
             subtitle: 'finance.ewallet.thisMonth'.tr,
             icon: Icons.arrow_downward_rounded,
-            iconColor: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+            iconColor: isDark
+                ? const Color(0xFFF87171)
+                : const Color(0xFFDC2626),
             iconBg: isDark
                 ? const Color(0xFF450A0A).withValues(alpha: 0.5)
                 : const Color(0xFFFEE2E2),
@@ -1220,10 +1260,7 @@ class _RecentTransactionsSection extends StatelessWidget {
                 controller.selectedCurrency.value,
                 textPrimary,
               ),
-              background: _transactionBgColor(
-                transactions[index],
-                isDark,
-              ),
+              background: _transactionBgColor(transactions[index], isDark),
               textPrimary: textPrimary,
               textMuted: textMuted,
               onTap: onSeeAll,
@@ -1250,18 +1287,17 @@ class _RecentTransactionsSection extends StatelessWidget {
     }
 
     return switch (type) {
-      'EXPENSE' => isDark
-          ? const Color(0xFF450A0A).withValues(alpha: 0.45)
-          : const Color(0xFFFEE2E2),
-      'KHQR_PAYMENT' => isDark
-          ? const Color(0xFF1E293B)
-          : const Color(0xFFEFF6FF),
-      'EVENT_PAYMENT' => isDark
-          ? const Color(0xFF2E1065).withValues(alpha: 0.4)
-          : const Color(0xFFFAF5FF),
-      _ => isDark
-          ? const Color(0xFF1E293B)
-          : const Color(0xFFF1F5F9),
+      'EXPENSE' =>
+        isDark
+            ? const Color(0xFF450A0A).withValues(alpha: 0.45)
+            : const Color(0xFFFEE2E2),
+      'KHQR_PAYMENT' =>
+        isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+      'EVENT_PAYMENT' =>
+        isDark
+            ? const Color(0xFF2E1065).withValues(alpha: 0.4)
+            : const Color(0xFFFAF5FF),
+      _ => isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
     };
   }
 }
@@ -1313,11 +1349,7 @@ class _DemoNoticeCard extends StatelessWidget {
               color: iconBg,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.info_outline_rounded,
-              color: iconColor,
-              size: 22,
-            ),
+            child: Icon(Icons.info_outline_rounded, color: iconColor, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1384,16 +1416,10 @@ class _WalletSecurityCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1E293B)
-                  : const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
-              Icons.lock_outline_rounded,
-              color: textMuted,
-              size: 21,
-            ),
+            child: Icon(Icons.lock_outline_rounded, color: textMuted, size: 21),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1416,11 +1442,7 @@ class _WalletSecurityCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: textMuted,
-            size: 20,
-          ),
+          Icon(Icons.chevron_right_rounded, color: textMuted, size: 20),
         ],
       ),
     );

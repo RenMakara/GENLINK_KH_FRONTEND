@@ -144,6 +144,12 @@ abstract final class ApiEndpoints {
   static const financeExpenses = '$_base/finance/expenses';
   static const financeExpenseSummary = '$_base/finance/expenses/summary';
 
+  static const financeInsights = '$_base/finance/insights';
+  static const financeRecurring = '$_base/finance/recurring';
+  static String financeRecurringItem(String id) => '$_base/finance/recurring/$id';
+  static const financeAutoSave = '$_base/finance/auto-save';
+  static String financeAutoSaveItem(String id) => '$_base/finance/auto-save/$id';
+
   static const financeBudgets = '$_base/finance/budgets';
   static const financeBudgetCurrent = '$_base/finance/budgets/current';
 

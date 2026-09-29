@@ -57,9 +57,10 @@ class PaymentSuccessScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // SUCCESS ICON
               Container(
@@ -194,87 +195,70 @@ class PaymentSuccessScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               // TRANSACTION DETAILS
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'finance.transactions.details'.tr,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'finance.transactions.details'.tr,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
-
-                      const SizedBox(height: 8),
-
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Merchant
-                            _DetailRow(
-                              icon: Icons.storefront_outlined,
-                              label: 'finance.ewallet.merchant'.tr,
-                              value: merchant ?? '—',
-                              textPrimary: textPrimary,
-                              textMuted: textMuted,
-                              surfaceSecondary: surfaceSecondary,
-                            ),
-
-                            // Amount
-                            _DetailRow(
-                              icon: Icons.payments_outlined,
-                              label: 'finance.ewallet.amount'.tr,
-                              value: amount == null || currency == null
-                                  ? '—'
-                                  : FinanceMoneyFormatter.format(
-                                      amount!,
-                                      currency!,
-                                    ),
-                              textPrimary: textPrimary,
-                              textMuted: textMuted,
-                              surfaceSecondary: surfaceSecondary,
-                              valueBold: true,
-                            ),
-
-                            // Currency
-                            _DetailRow(
-                              icon: Icons.language_rounded,
-                              label: 'finance.ewallet.currency'.tr,
-                              value: currency?.apiValue ?? '—',
-                              textPrimary: textPrimary,
-                              textMuted: textMuted,
-                              surfaceSecondary: surfaceSecondary,
-                            ),
-
-                            // Status
-                            _DetailRow(
-                              icon: Icons.verified_outlined,
-                              label: 'finance.ewallet.status'.tr,
-                              value: 'finance.ewallet.successful'.tr,
-                              textPrimary: textPrimary,
-                              textMuted: textMuted,
-                              surfaceSecondary: surfaceSecondary,
-                              valueColor: success,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    _DetailRow(
+                      icon: Icons.storefront_outlined,
+                      label: 'finance.ewallet.merchant'.tr,
+                      value: merchant ?? '—',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      surfaceSecondary: surfaceSecondary,
+                    ),
+                    const SizedBox(height: 8),
+                    _DetailRow(
+                      icon: Icons.payments_outlined,
+                      label: 'finance.ewallet.amount'.tr,
+                      value: amount == null || currency == null
+                          ? '—'
+                          : FinanceMoneyFormatter.format(amount!, currency!),
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      surfaceSecondary: surfaceSecondary,
+                      valueBold: true,
+                    ),
+                    const SizedBox(height: 8),
+                    _DetailRow(
+                      icon: Icons.language_rounded,
+                      label: 'finance.ewallet.currency'.tr,
+                      value: currency?.apiValue ?? '—',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      surfaceSecondary: surfaceSecondary,
+                    ),
+                    const SizedBox(height: 8),
+                    _DetailRow(
+                      icon: Icons.verified_outlined,
+                      label: 'finance.ewallet.status'.tr,
+                      value: 'finance.ewallet.successful'.tr,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      surfaceSecondary: surfaceSecondary,
+                      valueColor: success,
+                    ),
+                  ],
                 ),
               ),
 
@@ -304,11 +288,15 @@ class PaymentSuccessScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'finance.ewallet.viewHistory'.tr,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: Text(
+                          'finance.ewallet.viewHistory'.tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 7),
@@ -411,7 +399,7 @@ class _DetailRow extends StatelessWidget {
         const SizedBox(width: 8),
 
         // Value
-        Flexible(
+        Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,

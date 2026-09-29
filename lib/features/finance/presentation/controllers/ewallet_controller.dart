@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/errors/app_error.dart';
 import '../../domain/entities/finance_entities.dart';
+import '../../domain/entities/finance_money.dart';
 import '../../domain/repositories/finance_repository.dart';
 import 'finance_controller.dart';
 
@@ -47,10 +48,6 @@ class EWalletController extends GetxController {
     isLoadingMore.value = false;
     walletErrorMessage.value = null;
     historyErrorMessage.value = null;
-    wallet.value = null;
-    transactions.clear();
-    _currentPage = -1;
-    hasNextPage.value = false;
 
     await _loadWallet(walletRequest);
     if (walletRequest == _walletRequestSequence) {
@@ -121,6 +118,7 @@ class EWalletController extends GetxController {
   }
 
   Future<bool> topUpWallet({required double amount, String? note}) {
+    if (!_validMoney(amount)) return _invalidAmount();
     return _runOperation(
       () => _repository.topUpWallet(
         amount: amount,
@@ -135,6 +133,7 @@ class EWalletController extends GetxController {
     String? merchant,
     String? note,
   }) {
+    if (!_validMoney(amount)) return _invalidAmount();
     return _runOperation(
       () => _repository.makePayment(
         amount: amount,
@@ -146,6 +145,14 @@ class EWalletController extends GetxController {
   }
 
   void clearOperationError() => operationErrorMessage.value = null;
+
+  Future<bool> _invalidAmount() async {
+    operationErrorMessage.value = 'finance.validation.invalidAmount'.tr;
+    return false;
+  }
+
+  bool _validMoney(double amount) =>
+      FinanceMoney.tryFromNumber(amount)?.sign == 1;
 
   double balanceFor(FinanceCurrency currency) {
     final current = wallet.value;
@@ -189,18 +196,17 @@ class EWalletController extends GetxController {
   Future<void> _loadHistory(int request, {required bool reset}) async {
     isHistoryLoading.value = true;
     historyErrorMessage.value = null;
-    if (reset) {
-      transactions.clear();
-      _currentPage = -1;
-      hasNextPage.value = false;
-    }
     try {
       final result = await _repository.getWalletTransactions(
         page: 0,
         size: pageSize,
       );
       if (request != _historyRequestSequence) return;
-      _appendTransactions(result.content);
+      if (reset) {
+        transactions.assignAll(result.content);
+      } else {
+        _appendTransactions(result.content);
+      }
       _currentPage = result.page;
       hasNextPage.value = result.hasNext;
     } on AppError catch (error) {
@@ -251,12 +257,15 @@ class EWalletController extends GetxController {
   }
 
   double _sumByDirection(String direction) {
-    return visibleTransactions
-        .where(
-          (transaction) =>
-              transaction.status.toUpperCase() == 'SUCCESS' &&
-              transaction.direction.toUpperCase() == direction,
-        )
-        .fold<double>(0, (sum, transaction) => sum + transaction.amount.abs());
+    final matching = visibleTransactions.where(
+      (transaction) =>
+          transaction.status.toUpperCase() == 'SUCCESS' &&
+          transaction.direction.toUpperCase() == direction,
+    );
+    return double.parse(
+      FinanceMoney.sum(
+        matching.map((transaction) => transaction.amount.abs()),
+      ).toDecimalString(),
+    );
   }
 }

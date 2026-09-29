@@ -11,6 +11,7 @@ import 'package:genlink_frontend/features/finance/presentation/controllers/ewall
 import 'package:genlink_frontend/features/finance/presentation/controllers/finance_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment_success.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockFinanceRepository extends Mock implements FinanceRepository {}
@@ -200,6 +201,48 @@ void main() {
 
     expect(controller.transactions.map((item) => item.transactionId), ['one']);
     verify(() => repository.getWalletTransactions(page: 0, size: 20)).called(2);
+  });
+
+  test('refresh failure preserves wallet and transaction snapshots', () async {
+    final initialWallet = _wallet();
+    final initialTransaction = _transaction(
+      id: 'existing',
+      currency: FinanceCurrency.usd,
+    );
+    var walletCalls = 0;
+    var historyCalls = 0;
+    when(() => repository.getWallet()).thenAnswer((_) async {
+      walletCalls++;
+      if (walletCalls > 1) {
+        throw const AppError(
+          message: 'Wallet unavailable',
+          errorCode: 'API_ERROR',
+          statusCode: 503,
+        );
+      }
+      return initialWallet;
+    });
+    when(() => repository.getWalletTransactions(page: 0, size: 20)).thenAnswer((
+      _,
+    ) async {
+      historyCalls++;
+      if (historyCalls > 1) {
+        throw const AppError(
+          message: 'History unavailable',
+          errorCode: 'API_ERROR',
+          statusCode: 503,
+        );
+      }
+      return _page([initialTransaction]);
+    });
+
+    await controller.loadInitial();
+    await controller.refresh();
+
+    expect(controller.wallet.value, same(initialWallet));
+    expect(controller.transactions, [initialTransaction]);
+    expect(controller.walletErrorMessage.value, 'Wallet unavailable');
+    expect(controller.historyErrorMessage.value, 'History unavailable');
   });
 
   test(
@@ -551,15 +594,53 @@ void main() {
         translations: AppTranslations(),
         locale: const Locale('en', 'US'),
         fallbackLocale: const Locale('en', 'US'),
-        home: const Payment(currency: FinanceCurrency.usd),
+        home: const Payment(
+          currency: FinanceCurrency.usd,
+          merchant: 'ShopABC · KHQR',
+        ),
       ),
     );
-    await tester.enterText(find.byType(TextField).first, '100');
-    await tester.ensureVisible(find.text('Confirm Payment'));
-    await tester.tap(find.text('Confirm Payment'));
+    for (final digit in ['1', '0', '0']) {
+      await tester.tap(find.text(digit).last);
+      await tester.pump();
+    }
+    final confirmPayment = find.widgetWithText(
+      ElevatedButton,
+      'Confirm Payment',
+    );
+    await tester.ensureVisible(confirmPayment);
+    await tester.tap(confirmPayment);
     await tester.pumpAndSettle();
 
     expect(find.text('Payment Successful!'), findsNothing);
     expect(find.text('Not enough balance'), findsOneWidget);
+  });
+
+  testWidgets('payment success screen scrolls cleanly on a compact display', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        fallbackLocale: const Locale('en', 'US'),
+        home: const PaymentSuccessScreen(
+          amount: 2,
+          merchant: 'ShopABC · KHQR',
+          currency: FinanceCurrency.usd,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment Successful!'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

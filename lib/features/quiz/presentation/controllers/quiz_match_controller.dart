@@ -388,8 +388,24 @@ class QuizMatchController extends GetxController {
 
   Future<void> _handleTimeout() async {
     final question = currentQuestion;
-    if (question == null || submittedQuestionIds.contains(question.id)) return;
+    final activeMatchId = matchId.value;
+    if (question == null || activeMatchId == null || submittedQuestionIds.contains(question.id)) return;
+    submittedQuestionIds.add(question.id);
     phase.value = QuizMatchPhase.timeout;
+    try {
+      // Persist timeouts as explicit skipped answers so the server can verify a
+      // complete round for both players before awarding the match result.
+      await _realtimeDataSource.submitAnswer(
+        matchId: activeMatchId,
+        questionId: question.id,
+        optionId: null,
+      );
+    } catch (error, stack) {
+      submittedQuestionIds.remove(question.id);
+      _debug('Unable to submit timed-out match question: $error\\n$stack');
+      _setError(_messageForError(error));
+      return;
+    }
     await Future<void>.delayed(_timeoutAdvanceDelay);
     if (_isLeaving || phase.value != QuizMatchPhase.timeout) return;
     _advanceQuestion();

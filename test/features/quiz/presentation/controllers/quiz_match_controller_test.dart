@@ -21,7 +21,7 @@ class _FakeQuizMatchRealtimeDataSource
   final findMatchQuizIds = <String>[];
   final subscribedMatchIds = <String>[];
   final unsubscribedMatchIds = <String>[];
-  final submittedAnswers = <({String matchId, String questionId, String optionId})>[];
+  final submittedAnswers = <({String matchId, String questionId, String? optionId})>[];
   final finishedMatchIds = <String>[];
 
   bool connectionAvailable = true;
@@ -59,7 +59,7 @@ class _FakeQuizMatchRealtimeDataSource
   Future<void> submitAnswer({
     required String matchId,
     required String questionId,
-    required String optionId,
+    required String? optionId,
   }) async {
     submittedAnswers.add(
       (matchId: matchId, questionId: questionId, optionId: optionId),

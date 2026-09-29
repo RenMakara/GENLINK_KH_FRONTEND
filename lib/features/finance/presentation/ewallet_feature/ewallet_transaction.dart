@@ -5,6 +5,7 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.d
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_money.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/ewallet_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_localization.dart';
@@ -76,9 +77,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             .where(
               (t) =>
                   t.direction.toUpperCase() == 'DEBIT' &&
-                  t.transactionType.toUpperCase() != 'TRANSFER' &&
-                  t.transactionType.toUpperCase() != 'KHQR_PAYMENT' &&
-                  t.transactionType.toUpperCase() != 'SAVING' ||
+                      t.transactionType.toUpperCase() != 'TRANSFER' &&
+                      t.transactionType.toUpperCase() != 'KHQR_PAYMENT' &&
+                      t.transactionType.toUpperCase() != 'SAVING' ||
                   t.transactionType.toUpperCase() == 'EXPENSE',
             )
             .toList(growable: false),
@@ -98,16 +99,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     // 2. Apply Search Query Filter
     final query = _searchQuery.trim().toLowerCase();
     if (query.isNotEmpty) {
-      list = list.where((t) {
-        final title = _transactionTitleFor(t).toLowerCase();
-        final desc = (t.description ?? '').toLowerCase();
-        final type = t.transactionType.toLowerCase();
-        final amount = t.amount.toString();
-        return title.contains(query) ||
-            desc.contains(query) ||
-            type.contains(query) ||
-            amount.contains(query);
-      }).toList(growable: false);
+      list = list
+          .where((t) {
+            final title = _transactionTitleFor(t).toLowerCase();
+            final desc = (t.description ?? '').toLowerCase();
+            final type = t.transactionType.toLowerCase();
+            final amount = t.amount.toString();
+            return title.contains(query) ||
+                desc.contains(query) ||
+                type.contains(query) ||
+                amount.contains(query);
+          })
+          .toList(growable: false);
     }
 
     return list;
@@ -142,19 +145,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         child: Obx(() {
           final transactions = _filteredTransactions();
           final historyError = _walletController.historyErrorMessage.value;
+          final refreshError =
+              _walletController.walletErrorMessage.value ?? historyError;
           final loading = _walletController.isHistoryLoading.value;
           final allVisible = _walletController.visibleTransactions;
 
           // Calculate Total Income & Total Expenses across visible transactions
-          double totalIncome = 0;
-          double totalExpenses = 0;
-          for (final t in allVisible) {
-            if (t.direction.toUpperCase() == 'CREDIT') {
-              totalIncome += t.amount.abs();
-            } else {
-              totalExpenses += t.amount.abs();
-            }
-          }
+          final totalIncome = FinanceMoney.sum(
+            allVisible
+                .where((t) => t.direction.toUpperCase() == 'CREDIT')
+                .map((t) => t.amount.abs()),
+          );
+          final totalExpenses = FinanceMoney.sum(
+            allVisible
+                .where((t) => t.direction.toUpperCase() != 'CREDIT')
+                .map((t) => t.amount.abs()),
+          );
 
           final currency = _walletController.selectedCurrency.value;
           final grouped = _groupByDate(transactions);
@@ -176,6 +182,41 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   onAdd: () => _showAddActionSheet(context),
                 ),
                 const SizedBox(height: 16),
+                if (refreshError != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.cloud_off_outlined,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            refreshError,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _walletController.refresh,
+                          child: Text('common.retry'.tr),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // ── 2. Search & Filter Bar ────────────────────────────────────
                 _SearchAndFilterBar(
@@ -188,7 +229,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   },
                   onFilterTap: () {
                     setState(() {
-                      _selectedFilter = (_selectedFilter + 1) % _filterKeys.length;
+                      _selectedFilter =
+                          (_selectedFilter + 1) % _filterKeys.length;
                     });
                   },
                   surface: surface,
@@ -225,11 +267,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
                 // ── 5. State Handling / Grouped Transactions List ─────────────
                 if (loading && _walletController.transactions.isEmpty)
-                  const SizedBox(
-                    height: 300,
-                    child: AppLoader(),
-                  )
-                else if (historyError != null && _walletController.transactions.isEmpty)
+                  const SizedBox(height: 300, child: AppLoader())
+                else if (historyError != null &&
+                    _walletController.transactions.isEmpty)
                   SizedBox(
                     height: 300,
                     child: AppEmptyState(
@@ -264,14 +304,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     final items = entry.value;
 
                     // Daily Net balance
-                    double dailyNet = 0;
-                    for (final t in items) {
-                      if (t.direction.toUpperCase() == 'CREDIT') {
-                        dailyNet += t.amount.abs();
-                      } else {
-                        dailyNet -= t.amount.abs();
-                      }
-                    }
+                    final dailyNet = FinanceMoney.sum(
+                      items.map((t) => t.direction.toUpperCase() == 'CREDIT'
+                          ? t.amount.abs()
+                          : -t.amount.abs()),
+                    );
 
                     return _DateGroupSection(
                       dateKey: dateKey,
@@ -371,7 +408,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     Navigator.pop(sheetContext);
                     Navigator.push<void>(
                       context,
-                      MaterialPageRoute(builder: (_) => const IncomeAddScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const IncomeAddScreen(),
+                      ),
                     );
                   },
                 ),
@@ -384,7 +423,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     Navigator.pop(sheetContext);
                     Navigator.push<void>(
                       context,
-                      MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const AddExpenseScreen(),
+                      ),
                     );
                   },
                 ),
@@ -435,10 +476,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: semantic.textMuted,
-            ),
+            Icon(Icons.chevron_right_rounded, color: semantic.textMuted),
           ],
         ),
       ),
@@ -715,10 +753,10 @@ class _SearchAndFilterBar extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: searchQuery.isNotEmpty
-                    ? AppColors.financeAccent.withValues(alpha: 0.45)
+                    ? AppColors.financeAccent.withValues(alpha: 0.15)
                     : border,
                 width: searchQuery.isNotEmpty ? 1.2 : 1,
               ),
@@ -776,11 +814,7 @@ class _SearchAndFilterBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: border),
             ),
-            child: Icon(
-              Icons.tune_rounded,
-              color: textPrimary,
-              size: 22,
-            ),
+            child: Icon(Icons.tune_rounded, color: textPrimary, size: 22),
           ),
         ),
       ],
@@ -863,8 +897,8 @@ class _SummaryCardsRow extends StatelessWidget {
     required this.textMuted,
   });
 
-  final double totalIncome;
-  final double totalExpenses;
+  final FinanceMoney totalIncome;
+  final FinanceMoney totalExpenses;
   final FinanceCurrency currency;
   final Color surface;
   final Color border;
@@ -874,8 +908,14 @@ class _SummaryCardsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const monthTag = 'Sep 2026';
-    final incomeFormatted = FinanceMoneyFormatter.format(totalIncome, currency);
-    final expenseFormatted = FinanceMoneyFormatter.format(totalExpenses, currency);
+    final incomeFormatted = FinanceMoneyFormatter.formatExact(
+      totalIncome,
+      currency,
+    );
+    final expenseFormatted = FinanceMoneyFormatter.formatExact(
+      totalExpenses,
+      currency,
+    );
 
     return Row(
       children: [
@@ -1041,7 +1081,7 @@ class _DateGroupSection extends StatelessWidget {
   });
 
   final String dateKey;
-  final double dailyNet;
+  final FinanceMoney dailyNet;
   final FinanceCurrency currency;
   final List<FinanceWalletTransactionEntity> items;
   final Color surface;
@@ -1052,10 +1092,11 @@ class _DateGroupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNetPositive = dailyNet >= 0;
+    final isNetPositive = dailyNet.sign >= 0;
     final netColor = isNetPositive ? AppColors.financeAccent : AppColors.danger;
     final netSign = isNetPositive ? '+' : '-';
-    final formattedNet = '$netSign${FinanceMoneyFormatter.format(dailyNet.abs(), currency)}';
+    final formattedNet =
+        '$netSign${FinanceMoneyFormatter.formatExact(dailyNet.abs(), currency)}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -1151,7 +1192,8 @@ class _TransactionItemCard extends StatelessWidget {
     final isCredit = transaction.direction.toUpperCase() == 'CREDIT';
     final amountColor = isCredit ? AppColors.financeAccent : AppColors.danger;
     final sign = isCredit ? '+' : '-';
-    final formattedAmount = '$sign${FinanceMoneyFormatter.format(transaction.amount.abs(), transaction.currency)}';
+    final formattedAmount =
+        '$sign${FinanceMoneyFormatter.format(transaction.amount.abs(), transaction.currency)}';
 
     final categoryTheme = _resolveCategoryTheme(transaction);
     final title = _cleanTitle(transaction);
@@ -1218,34 +1260,22 @@ class _TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
 
-            // Keep every amount in the same right-aligned column.
-            SizedBox(
-              width: 88,
-              child: Align(
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    formattedAmount,
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: amountColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
+                child: Text(
+                  formattedAmount,
+                  maxLines: 1,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: amountColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 18,
-              child: Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: textMuted,
               ),
             ),
           ],
@@ -1275,7 +1305,9 @@ class _TransactionItemCard extends StatelessWidget {
   String _typeLabel(FinanceWalletTransactionEntity t) {
     if (t.direction.toUpperCase() == 'CREDIT') return 'Income';
     final type = t.transactionType.toUpperCase();
-    if (type.contains('PAYMENT') || type.contains('TRANSFER') || type == 'SAVING') {
+    if (type.contains('PAYMENT') ||
+        type.contains('TRANSFER') ||
+        type == 'SAVING') {
       return 'Transfer';
     }
     return 'Expense';
@@ -1287,9 +1319,19 @@ class _TransactionItemCard extends StatelessWidget {
     if (text.contains('car') || text.contains('transport')) return 'Bills';
     if (text.contains('bank') || text.contains('top up')) return 'E-Wallet';
     if (text.contains('electr') || text.contains('utilit')) return 'Utilities';
-    if (text.contains('spotify') || text.contains('entertain')) return 'Entertainment';
-    if (text.contains('salary') || text.contains('freelance') || text.contains('business')) return 'Business';
-    if (text.contains('food') || text.contains('cafe') || text.contains('lunch')) return 'Food';
+    if (text.contains('spotify') || text.contains('entertain')) {
+      return 'Entertainment';
+    }
+    if (text.contains('salary') ||
+        text.contains('freelance') ||
+        text.contains('business')) {
+      return 'Business';
+    }
+    if (text.contains('food') ||
+        text.contains('cafe') ||
+        text.contains('lunch')) {
+      return 'Food';
+    }
     if (text.contains('laptop') || text.contains('saving')) return 'Savings';
     return 'General';
   }
@@ -1306,24 +1348,43 @@ class _TransactionItemCard extends StatelessWidget {
   _CategoryTheme _resolveCategoryTheme(FinanceWalletTransactionEntity t) {
     final text = '${t.description ?? ''} ${t.transactionType}'.toLowerCase();
     if (text.contains('trade') || text.contains('invest')) {
-      return const _CategoryTheme(Icons.trending_up_rounded, AppColors.financeAccent);
+      return const _CategoryTheme(
+        Icons.trending_up_rounded,
+        AppColors.financeAccent,
+      );
     }
     if (text.contains('car') || text.contains('vehicle')) {
-      return const _CategoryTheme(Icons.directions_car_rounded, AppColors.danger);
+      return const _CategoryTheme(
+        Icons.directions_car_rounded,
+        AppColors.danger,
+      );
     }
-    if (text.contains('bank') || text.contains('top up') || text.contains('deposit')) {
-      return const _CategoryTheme(Icons.account_balance_rounded, AppColors.brandPrimary);
+    if (text.contains('bank') ||
+        text.contains('top up') ||
+        text.contains('deposit')) {
+      return const _CategoryTheme(
+        Icons.account_balance_rounded,
+        AppColors.brandPrimary,
+      );
     }
-    if (text.contains('electr') || text.contains('utilit') || text.contains('bill')) {
+    if (text.contains('electr') ||
+        text.contains('utilit') ||
+        text.contains('bill')) {
       return const _CategoryTheme(Icons.lightbulb_rounded, AppColors.warning);
     }
-    if (text.contains('spotify') || text.contains('entertain') || text.contains('music')) {
+    if (text.contains('spotify') ||
+        text.contains('entertain') ||
+        text.contains('music')) {
       return const _CategoryTheme(Icons.headphones_rounded, Color(0xFF8B5CF6));
     }
-    if (text.contains('freelance') || text.contains('salary') || text.contains('business')) {
+    if (text.contains('freelance') ||
+        text.contains('salary') ||
+        text.contains('business')) {
       return const _CategoryTheme(Icons.work_rounded, AppColors.financeAccent);
     }
-    if (text.contains('food') || text.contains('cafe') || text.contains('lunch')) {
+    if (text.contains('food') ||
+        text.contains('cafe') ||
+        text.contains('lunch')) {
       return const _CategoryTheme(Icons.restaurant_rounded, Color(0xFFF97316));
     }
     if (text.contains('saving')) {
@@ -1334,7 +1395,10 @@ class _TransactionItemCard extends StatelessWidget {
 
   _CategoryTheme _defaultThemeFor(FinanceWalletTransactionEntity t) {
     if (t.direction.toUpperCase() == 'CREDIT') {
-      return const _CategoryTheme(Icons.trending_up_rounded, AppColors.financeAccent);
+      return const _CategoryTheme(
+        Icons.trending_up_rounded,
+        AppColors.financeAccent,
+      );
     }
     return const _CategoryTheme(Icons.receipt_long_rounded, AppColors.danger);
   }
@@ -1370,9 +1434,7 @@ class _MotivationStatusCard extends StatelessWidget {
         color: surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.financeAccent.withValues(
-            alpha: isDark ? 0.35 : 0.2,
-          ),
+          color: AppColors.financeAccent.withValues(alpha: isDark ? 0.35 : 0.2),
         ),
       ),
       child: Row(
@@ -1407,10 +1469,7 @@ class _MotivationStatusCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'finance.transactions.keepTrackingDesc'.tr,
-                  style: TextStyle(
-                    color: textMuted,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: textMuted, fontSize: 12),
                 ),
               ],
             ),

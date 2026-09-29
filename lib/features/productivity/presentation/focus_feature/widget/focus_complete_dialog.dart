@@ -6,23 +6,23 @@ import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 class FocusCompleteDialog extends StatelessWidget {
   const FocusCompleteDialog({
     super.key,
-    required this.focusedMinutes,
+    required this.focusedSeconds,
     required this.xpEarned,
   });
 
-  final int focusedMinutes;
+  final int focusedSeconds;
   final int xpEarned;
 
   static Future<void> show(
     BuildContext context, {
-    required int focusedMinutes,
+    required int focusedSeconds,
     required int xpEarned,
   }) {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => FocusCompleteDialog(
-        focusedMinutes: focusedMinutes,
+        focusedSeconds: focusedSeconds,
         xpEarned: xpEarned,
       ),
     );
@@ -75,7 +75,7 @@ class FocusCompleteDialog extends StatelessWidget {
 
             // Large Duration text
             Text(
-              '$focusedMinutes ${'focus.minutesStat'.tr}',
+              _durationLabel,
               style: TextStyle(
                 color: semantic.primaryText,
                 fontSize: 26,
@@ -180,6 +180,13 @@ class FocusCompleteDialog extends StatelessWidget {
       ),
     );
   }
+
+  String get _durationLabel {
+    final seconds = focusedSeconds.clamp(0, 1 << 31);
+    final minutes = seconds ~/ 60;
+    if (minutes == 0) return '$seconds ${'focus.secondsShort'.tr}';
+    return '$minutes ${'focus.minutesShort'.tr} ${seconds % 60} ${'focus.secondsShort'.tr}';
+  }
 }
 
 class _CelebrationHeroGraphic extends StatelessWidget {
@@ -247,11 +254,7 @@ class _CelebrationHeroGraphic extends StatelessWidget {
               ],
             ),
             child: const Center(
-              child: Icon(
-                Icons.check_rounded,
-                color: Colors.white,
-                size: 40,
-              ),
+              child: Icon(Icons.check_rounded, color: Colors.white, size: 40),
             ),
           ),
         ],
@@ -271,10 +274,7 @@ class _ParticleDot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

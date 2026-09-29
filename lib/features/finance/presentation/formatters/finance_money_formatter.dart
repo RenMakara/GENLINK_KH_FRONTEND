@@ -1,4 +1,5 @@
 import '../../domain/entities/finance_entities.dart';
+import '../../domain/entities/finance_money.dart';
 
 abstract final class FinanceMoneyFormatter {
   const FinanceMoneyFormatter._();
@@ -11,6 +12,21 @@ abstract final class FinanceMoneyFormatter {
     final number = decimals == 0 ? grouped : '$grouped.${parts[1]}';
     final symbol = currency == FinanceCurrency.usd ? r'$' : '៛';
     final sign = amount < 0 ? '-' : '';
+    return '$sign$symbol$number';
+  }
+
+  static String formatExact(FinanceMoney amount, FinanceCurrency currency) {
+    final absolute = amount.minorUnits.abs();
+    var whole = absolute ~/ BigInt.from(100);
+    final decimals = currency == FinanceCurrency.usd ? 2 : 0;
+    if (decimals == 0 && absolute % BigInt.from(100) >= BigInt.from(50)) {
+      whole += BigInt.one;
+    }
+    final grouped = _groupThousands(whole.toString());
+    final fraction = (absolute % BigInt.from(100)).toString().padLeft(2, '0');
+    final number = decimals == 0 ? grouped : '$grouped.$fraction';
+    final symbol = currency == FinanceCurrency.usd ? r'$' : '៛';
+    final sign = amount.minorUnits.isNegative ? '-' : '';
     return '$sign$symbol$number';
   }
 

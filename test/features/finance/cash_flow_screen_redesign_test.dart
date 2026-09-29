@@ -162,7 +162,7 @@ void main() {
       expect(find.text('Smart Insight'), findsOneWidget);
       expect(
         find.text("You're saving 90% of your income this month. Great job! 🎉"),
-        findsOneWidget,
+        findsNothing,
       );
 
       // Bottom Action Buttons

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_money.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/ewallet_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
@@ -36,14 +37,14 @@ class _TopUpWalletScreenState extends State<TopUpWalletScreen> {
 
   Future<void> _submit() async {
     final amountText = _amountController.text.trim();
-    final amount = double.tryParse(amountText);
-    if (amount == null || !amount.isFinite || amount <= 0) {
+    final exactAmount = FinanceMoney.tryParseInput(amountText);
+    if (exactAmount == null || exactAmount.sign <= 0) {
       setState(() => _validationError = 'finance.validation.invalidAmount'.tr);
       return;
     }
     setState(() => _validationError = null);
     final success = await _walletController.topUpWallet(
-      amount: amount,
+      amount: double.parse(exactAmount.toDecimalString()),
       note: _noteController.text.trim().isEmpty
           ? null
           : _noteController.text.trim(),

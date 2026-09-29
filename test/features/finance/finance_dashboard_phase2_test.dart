@@ -206,7 +206,7 @@ void main() {
     expect(find.text(r'$12.50'), findsAtLeastNWidgets(1));
     expect(find.text('USD'), findsOneWidget);
     expect(find.text('KHR'), findsOneWidget);
-    expect(find.text('Track every expense.'), findsOneWidget);
+    expect(find.text('Track every expense.'), findsNothing);
   });
 
   testWidgets('renders loading and error retry states', (tester) async {

@@ -17,6 +17,7 @@ class _MockProductivityController extends GetxController
   String? createdTaskPriority;
   String? createdHabitTitle;
   String? createdHabitFrequency;
+  String? updatedHabitFrequency;
 
   @override
   Future<ProductivityGoal> createGoal({
@@ -77,6 +78,24 @@ class _MockProductivityController extends GetxController
   }
 
   @override
+  Future<ProductivityHabit> updateHabit({
+    required String habitId,
+    required String title,
+    String? category,
+    String? frequency,
+    String? reminderTime,
+  }) async {
+    updatedHabitFrequency = frequency;
+    return ProductivityHabit(
+      habitId: habitId,
+      title: title,
+      category: category,
+      frequency: frequency,
+      reminderTime: reminderTime,
+    );
+  }
+
+  @override
   Future<ProductivityGoal> addMilestone({
     required String goalId,
     required String title,
@@ -119,14 +138,16 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(GetMaterialApp(
-      themeMode: mode,
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      translations: AppTranslations(),
-      locale: locale,
-      home: child,
-    ));
+    await tester.pumpWidget(
+      GetMaterialApp(
+        themeMode: mode,
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        translations: AppTranslations(),
+        locale: locale,
+        home: child,
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -278,7 +299,10 @@ void main() {
       expect(find.text('Small habits, big results'), findsOneWidget);
 
       // Hero Card
-      expect(find.text('Build better you, one habit at a time'), findsOneWidget);
+      expect(
+        find.text('Build better you, one habit at a time'),
+        findsOneWidget,
+      );
 
       // Fields
       expect(find.text('Habit name'), findsOneWidget);
@@ -288,7 +312,7 @@ void main() {
       // Frequency options
       expect(find.text('Daily'), findsOneWidget);
       expect(find.text('Weekly'), findsOneWidget);
-      expect(find.text('Custom'), findsOneWidget);
+      expect(find.text('Custom'), findsNothing);
 
       // Reminder & Motivation
       expect(find.text('Reminder (optional)'), findsOneWidget);
@@ -317,6 +341,37 @@ void main() {
 
       expect(controller.createdHabitTitle, 'Read 10 pages');
       expect(controller.createdHabitFrequency, 'WEEKLY');
+    });
+
+    testWidgets('does not silently convert an unconfigured legacy recurrence', (
+      tester,
+    ) async {
+      await pumpForm(
+        tester,
+        const CreateHabitScreen(
+          initialHabit: ProductivityHabit(
+            habitId: 'legacy-custom',
+            title: 'Legacy habit',
+            frequency: 'CUSTOM',
+          ),
+        ),
+      );
+
+      expect(
+        find.text(
+          'This recurrence is not configured yet. Choose daily or weekly to continue.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.descendant(
+          of: find.byType(CreationPrimaryButton),
+          matching: find.text('Save'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(controller.updatedHabitFrequency, isNull);
     });
 
     testWidgets('allows selecting category via modal bottom sheet', (

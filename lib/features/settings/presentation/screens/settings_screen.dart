@@ -15,6 +15,7 @@ import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/entities/user_settings_entity.dart';
 import '../controllers/settings_controller.dart';
+import '../widgets/settings_selection_popups.dart';
 
 class SettingsScreen extends GetView<SettingsController> {
   const SettingsScreen({super.key});
@@ -98,14 +99,16 @@ class SettingsScreen extends GetView<SettingsController> {
                       settings.language == UserSettingsEntity.languageKhmer
                       ? 'settings.languageKhmer'.tr
                       : 'settings.languageEnglish'.tr,
-                  onTap: () => Get.toNamed<void>(AppRoutes.settingsLanguage),
+                  onTapWithContext: (rowContext) =>
+                      LanguageSelectionPopup.show(rowContext, controller),
                 ),
                 _SettingsRow(
-                  icon: Icons.palette_outlined,
+                  icon: Icons.dark_mode_outlined,
                   accent: AppColors.warning,
                   title: 'settings.appearance'.tr,
                   subtitle: _themeLabel(settings.theme),
-                  onTap: () => Get.toNamed<void>(AppRoutes.settingsAppearance),
+                  onTapWithContext: (rowContext) =>
+                      AppearanceSelectionPopup.show(rowContext, controller),
                 ),
                 _SettingsRow(
                   icon: Icons.notifications_none_rounded,
@@ -405,6 +408,7 @@ class _SettingsRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.onTap,
+    this.onTapWithContext,
     this.trailing,
   });
 
@@ -413,15 +417,17 @@ class _SettingsRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+  final void Function(BuildContext context)? onTapWithContext;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final hasAction = onTap != null || onTapWithContext != null;
     final trailingWidget =
         trailing ??
-        (onTap == null
+        (!hasAction
             ? const SizedBox(width: 4)
             : Icon(
                 Icons.chevron_right_rounded,
@@ -432,7 +438,15 @@ class _SettingsRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: hasAction
+            ? () {
+                if (onTapWithContext != null) {
+                  onTapWithContext!(context);
+                } else {
+                  onTap?.call();
+                }
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.md,

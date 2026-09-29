@@ -32,6 +32,11 @@ class _HabitHomeScreenState extends State<HabitHomeScreen> {
     await _controller?.reload();
   }
 
+  Future<void> _edit(ProductivityHabit habit) async {
+    await Get.to(() => CreateHabitScreen(initialHabit: habit));
+    await _controller?.reload();
+  }
+
   Future<void> _toggle(
     ProductivityController controller,
     String id,
@@ -82,7 +87,7 @@ class _HabitHomeScreenState extends State<HabitHomeScreen> {
       }
 
       final completed = controller.habits
-          .where((habit) => habit.checkedInToday)
+          .where((habit) => _isCheckedForCurrentPeriod(habit))
           .length;
 
       return Scaffold(
@@ -154,6 +159,7 @@ class _HabitHomeScreenState extends State<HabitHomeScreen> {
                         busy: controller.isBusy(habit.habitId),
                         onChanged: (value) =>
                             _toggle(controller, habit.habitId, value),
+                        onEdit: () => _edit(habit),
                         onDelete: () => _delete(controller, habit.habitId),
                       ),
                     ),
@@ -190,11 +196,16 @@ class _StreakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bestStreak = habits.isEmpty
-        ? 0
-        : habits
-              .map((habit) => habit.streakCount)
-              .reduce((a, b) => a > b ? a : b);
+    final bestHabit = habits.isEmpty
+        ? null
+        : habits.reduce(
+            (current, next) =>
+                next.streakCount > current.streakCount ? next : current,
+          );
+    final bestStreak = bestHabit?.streakCount ?? 0;
+    final streakLabel = bestHabit?.frequency?.toUpperCase() == 'WEEKLY'
+        ? 'habits.weekStreakShort'
+        : 'habits.dayStreakShort';
     final progress = total == 0 ? 0.0 : completed / total;
 
     return Container(
@@ -246,7 +257,7 @@ class _StreakCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'habits.dayStreak'.trParams({'count': '$bestStreak'}),
+                      streakLabel.trParams({'count': '$bestStreak'}),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -256,7 +267,7 @@ class _StreakCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'habits.completedTodayCount'.trParams({
+                      'habits.completedCount'.trParams({
                         'completed': '$completed',
                         'total': '$total',
                       }),
@@ -303,18 +314,21 @@ class _HabitTile extends StatelessWidget {
     required this.habit,
     required this.busy,
     required this.onChanged,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final ProductivityHabit habit;
   final bool busy;
   final ValueChanged<bool> onChanged;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final colors = ListThemeColors(context);
-    final checked = habit.checkedInToday;
+    final isWeekly = habit.frequency?.toUpperCase() == 'WEEKLY';
+    final checked = isWeekly ? habit.checkedInThisWeek : habit.checkedInToday;
 
     return Container(
       decoration: BoxDecoration(
@@ -336,16 +350,16 @@ class _HabitTile extends StatelessWidget {
           // Circular Purple Check Toggle Button
           GestureDetector(
             key: ValueKey('habit_toggle_${habit.habitId}'),
-            onTap: busy ? null : () => onChanged(!checked),
+            onTap: busy || (isWeekly && checked)
+                ? null
+                : () => onChanged(!checked),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               width: 26,
               height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: checked
-                    ? const Color(0xFF8B5CF6)
-                    : Colors.transparent,
+                color: checked ? const Color(0xFF8B5CF6) : Colors.transparent,
                 border: Border.all(
                   color: checked ? const Color(0xFF8B5CF6) : colors.border,
                   width: checked ? 1.5 : 2.0,
@@ -359,17 +373,17 @@ class _HabitTile extends StatelessWidget {
                       color: Colors.white,
                     )
                   : (busy
-                      ? SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colors.textMuted,
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colors.textMuted,
+                              ),
                             ),
-                          ),
-                        )
-                      : null),
+                          )
+                        : null),
             ),
           ),
           const SizedBox(width: 14),
@@ -416,9 +430,20 @@ class _HabitTile extends StatelessWidget {
               size: 20,
             ),
             onSelected: (value) {
+              if (value == 'edit') onEdit();
               if (value == 'delete') onDelete();
             },
             itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text('common.edit'.tr),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'delete',
                 child: Row(
@@ -447,14 +472,17 @@ class _HabitTile extends StatelessWidget {
   }
 }
 
+bool _isCheckedForCurrentPeriod(ProductivityHabit habit) =>
+    habit.frequency?.toUpperCase() == 'WEEKLY'
+    ? habit.checkedInThisWeek
+    : habit.checkedInToday;
+
 class _UnavailableHabitView extends StatelessWidget {
   const _UnavailableHabitView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(child: Text('habits.signInToManage'.tr)),
-    );
+    return Scaffold(body: Center(child: Text('habits.signInToManage'.tr)));
   }
 }
 
@@ -462,9 +490,18 @@ String _habitSubtitle(ProductivityHabit habit) {
   final parts = <String>[];
   final category = habit.category;
   final frequency = habit.frequency;
-  if (category != null && category.isNotEmpty) parts.add(category.toUpperCase());
-  if (frequency != null && frequency.isNotEmpty) parts.add(frequency.toUpperCase());
-  parts.add('habits.dayStreakShort'.trParams({'count': '${habit.streakCount}'}));
+  if (category != null && category.isNotEmpty) {
+    parts.add(category.toUpperCase());
+  }
+  if (frequency != null && frequency.isNotEmpty) {
+    parts.add(frequency.toUpperCase());
+  }
+  parts.add(
+    (frequency?.toUpperCase() == 'WEEKLY'
+            ? 'habits.weekStreakShort'
+            : 'habits.dayStreakShort')
+        .trParams({'count': '${habit.streakCount}'}),
+  );
   final reminder = habit.reminderTime;
   if (reminder != null && reminder.isNotEmpty) {
     parts.add('habits.reminder'.trParams({'time': reminder}));

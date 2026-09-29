@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 
 enum TaskPriority { high, medium, low }
 
@@ -67,12 +68,8 @@ class TasksTopBar extends StatelessWidget {
 
     return Row(
       children: [
-        _TaskIconButton(
-          icon: Icons.arrow_back_rounded,
-          onTap: onBack ?? () => Navigator.of(context).pop(),
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          iconColor: colors.textPrimary,
+        AppBackButton(
+          onPressed: onBack,
         ),
 
         const SizedBox(width: 12),
@@ -128,7 +125,6 @@ class _TaskIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
   final Color backgroundColor;
-  final Color? borderColor;
   final Color iconColor;
   final double size;
   final double iconSize;
@@ -138,7 +134,6 @@ class _TaskIconButton extends StatelessWidget {
     required this.onTap,
     required this.backgroundColor,
     required this.iconColor,
-    this.borderColor,
     this.size = 40,
     this.iconSize = 20,
   });
@@ -156,9 +151,6 @@ class _TaskIconButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(13),
-            border: borderColor == null
-                ? null
-                : Border.all(color: borderColor!),
           ),
           child: Icon(icon, size: iconSize, color: iconColor),
         ),

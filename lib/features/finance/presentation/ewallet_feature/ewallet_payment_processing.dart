@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/ewallet_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment_success.dart';
 
 class PaymentProcessingScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
   late final AnimationController _pulseController;
   late final AnimationController _progressController;
 
-  Timer? _timer;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -54,13 +55,11 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
       duration: const Duration(seconds: 3),
     )..forward();
 
-    // Simulate payment processing.
-    _timer = Timer(const Duration(seconds: 3), _openSuccessScreen);
+    unawaited(_processPayment());
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _rotationController.dispose();
     _pulseController.dispose();
     _progressController.dispose();
@@ -68,13 +67,42 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
     super.dispose();
   }
 
+  Future<void> _processPayment() async {
+    try {
+      final succeeded = await Get.find<EWalletController>().makePayment(
+        amount: widget.amount,
+        merchant: widget.merchant,
+      );
+      if (!mounted) return;
+      if (succeeded) {
+        _openSuccessScreen();
+      } else {
+        _showFailure(
+          Get.find<EWalletController>().operationErrorMessage.value ??
+              'common.error'.tr,
+        );
+      }
+    } catch (_) {
+      if (mounted) _showFailure('common.error'.tr);
+    }
+  }
+
+  void _stopAnimations() {
+    _rotationController.stop();
+    _pulseController.stop();
+    _progressController.stop();
+  }
+
+  void _showFailure(String message) {
+    _stopAnimations();
+    setState(() => _errorMessage = message);
+  }
+
   // OPEN SUCCESS SCREEN
   void _openSuccessScreen() {
     if (!mounted) return;
 
-    _rotationController.stop();
-    _pulseController.stop();
-    _progressController.stop();
+    _stopAnimations();
 
     Navigator.pushReplacement<void, void>(
       context,
@@ -257,7 +285,10 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
 
                       // TITLE
                       Text(
-                        'finance.ewallet.processingPayment'.tr,
+                        (_errorMessage == null
+                                ? 'finance.ewallet.processingPayment'
+                                : 'finance.ewallet.paymentFailedTitle')
+                            .tr,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: textPrimary,
@@ -273,8 +304,11 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
-                          'finance.ewallet.processingPaymentHint'.tr,
+                          _errorMessage ??
+                              'finance.ewallet.processingPaymentHint'.tr,
                           textAlign: TextAlign.center,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: textMuted,
                             fontSize: 14,
@@ -383,90 +417,96 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
                       const SizedBox(height: 24),
 
                       // PROGRESS
-                      AnimatedBuilder(
-                        animation: _progressController,
-                        builder: (context, child) {
-                          return Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: LinearProgressIndicator(
-                                  value: _progressController.value,
-                                  minHeight: 5,
-                                  backgroundColor: primary.withValues(
-                                    alpha: 0.08,
-                                  ),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    primary,
+                      if (_errorMessage == null)
+                        AnimatedBuilder(
+                          animation: _progressController,
+                          builder: (context, child) {
+                            return Column(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: LinearProgressIndicator(
+                                    value: _progressController.value,
+                                    minHeight: 5,
+                                    backgroundColor: primary.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      primary,
+                                    ),
                                   ),
                                 ),
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 15,
-                                    height: 15,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 1.8,
-                                      color: primary,
+                                const SizedBox(height: 14),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 15,
+                                      height: 15,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.8,
+                                        color: primary,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 9),
-                                  Text(
-                                    'finance.ewallet.processingPayment'.tr,
-                                    style: TextStyle(
-                                      color: textMuted,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                    const SizedBox(width: 9),
+                                    Text(
+                                      'finance.ewallet.processingPayment'.tr,
+                                      style: TextStyle(
+                                        color: textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        )
+                      else
+                        TextButton.icon(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          label: Text('common.back'.tr),
+                        ),
 
                       const SizedBox(height: 24),
 
                       // SECURITY NOTICE
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 13,
-                        ),
-                        decoration: BoxDecoration(
-                          color: primary.withValues(alpha: 0.055),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.lock_outline_rounded,
-                              color: primary,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'finance.ewallet.doNotCloseApp'.tr,
-                                textAlign: TextAlign.left,
-                                style: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 12,
-                                  height: 1.4,
-                                  fontWeight: FontWeight.w500,
+                      if (_errorMessage == null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 13,
+                          ),
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: 0.055),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lock_outline_rounded,
+                                color: primary,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'finance.ewallet.doNotCloseApp'.tr,
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                    color: textMuted,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
 
                       const SizedBox(height: 16),
 

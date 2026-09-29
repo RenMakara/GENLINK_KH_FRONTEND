@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
+
 /// Semantic colors helper for Productivity listing screens
 class ListThemeColors {
   ListThemeColors(this.context) {
@@ -56,35 +58,7 @@ class ListScreenHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Circular Back Button
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Navigator.maybePop(context),
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colors.surface,
-                  border: Border.all(color: colors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: colors.textPrimary,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
+          const AppBackButton(),
           const SizedBox(width: 14),
 
           // Title & Subtitle

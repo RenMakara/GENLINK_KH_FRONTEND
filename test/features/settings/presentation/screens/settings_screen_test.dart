@@ -6,6 +6,7 @@ import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/core/storage/secure_storage.dart';
 import 'package:genlink_frontend/core/theme/theme_controller.dart';
 import 'package:genlink_frontend/design_system/theme/app_theme.dart';
+import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_dialog.dart';
 import 'package:genlink_frontend/features/auth/domain/entities/user_entity.dart';
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
@@ -143,5 +144,150 @@ void main() {
 
     // No RenderFlex overflow exception
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'tapping clear media cache shows confirmation dialog and cancels when dismissed', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    var cacheCleared = false;
+
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: LocalizationService.englishLocale,
+        fallbackLocale: LocalizationService.englishLocale,
+        theme: AppTheme.darkFor('en'),
+        home: SettingsScreen(
+          onClearCache: () async {
+            cacheCleared = true;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final clearCacheTile = find.text('Clear Media Cache');
+    await tester.scrollUntilVisible(
+      clearCacheTile,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(clearCacheTile, findsOneWidget);
+
+    await tester.tap(clearCacheTile);
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog is shown
+    expect(find.byType(GenLinkConfirmDialog), findsOneWidget);
+    expect(find.text('Clear Media Cache?'), findsOneWidget);
+    expect(
+      find.text(
+        'Are you sure you want to clear the media cache? Cached images and videos will be removed and re-downloaded when needed.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Clear Cache'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    // Tap Cancel
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog is closed, cache was not cleared, and banner is NOT displayed
+    expect(find.byType(GenLinkConfirmDialog), findsNothing);
+    expect(cacheCleared, isFalse);
+    expect(find.text('Cache Cleared'), findsNothing);
+  });
+
+  testWidgets(
+      'tapping clear media cache and confirming clears cache and shows success banner', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    var cacheCleared = false;
+
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: LocalizationService.englishLocale,
+        fallbackLocale: LocalizationService.englishLocale,
+        theme: AppTheme.darkFor('en'),
+        home: SettingsScreen(
+          onClearCache: () async {
+            cacheCleared = true;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final clearCacheTile = find.text('Clear Media Cache');
+    await tester.scrollUntilVisible(
+      clearCacheTile,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(clearCacheTile, findsOneWidget);
+
+    await tester.tap(clearCacheTile);
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog is shown
+    expect(find.byType(GenLinkConfirmDialog), findsOneWidget);
+
+    // Tap Confirm "Clear Cache"
+    await tester.tap(find.text('Clear Cache'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog is closed, cache was cleared, and success banner is displayed
+    expect(find.byType(GenLinkConfirmDialog), findsNothing);
+    expect(cacheCleared, isTrue);
+    expect(find.text('Cache Cleared'), findsOneWidget);
+  });
+
+  testWidgets(
+      'clear media cache confirmation dialog displays correctly in Khmer locale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: LocalizationService.khmerLocale,
+        fallbackLocale: LocalizationService.khmerLocale,
+        theme: AppTheme.darkFor('km'),
+        home: const SettingsScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final clearCacheTile = find.text('settings.clearMediaCache'.tr);
+    await tester.scrollUntilVisible(
+      clearCacheTile,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(clearCacheTile, findsOneWidget);
+
+    await tester.tap(clearCacheTile);
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog in Khmer
+    expect(find.byType(GenLinkConfirmDialog), findsOneWidget);
+    expect(find.text('settings.clearCacheTitle'.tr), findsOneWidget);
+    expect(find.text('settings.clearCacheConfirm'.tr), findsOneWidget);
+    expect(find.text('settings.clearCache'.tr), findsOneWidget);
+    expect(find.text('common.cancel'.tr), findsOneWidget);
   });
 }

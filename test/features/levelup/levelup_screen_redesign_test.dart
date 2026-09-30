@@ -12,6 +12,8 @@ import 'package:genlink_frontend/features/levelup/widget/grow_section_widget.dar
 import 'package:genlink_frontend/features/levelup/widget/levelup_widget.dart';
 import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/features/challenge/domain/models/challenge_models.dart';
+import 'package:genlink_frontend/features/challenge/domain/repositories/challenge_repository.dart';
+import 'package:genlink_frontend/features/challenge/presentation/controllers/challenge_controller.dart';
 import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:get/get.dart';
@@ -45,12 +47,73 @@ class _MockHttpClientRequest implements HttpClientRequest {
 
 class _MockHttpClientResponse implements HttpClientResponse {
   static final _kTransparentPng = <int>[
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-    0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-    0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-    0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-    0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-    0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+    0x00,
+    0x00,
+    0x00,
+    0x0D,
+    0x49,
+    0x48,
+    0x44,
+    0x52,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x08,
+    0x06,
+    0x00,
+    0x00,
+    0x00,
+    0x1F,
+    0x15,
+    0xC4,
+    0x89,
+    0x00,
+    0x00,
+    0x00,
+    0x0A,
+    0x49,
+    0x44,
+    0x41,
+    0x54,
+    0x78,
+    0x9C,
+    0x63,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x05,
+    0x00,
+    0x01,
+    0x0D,
+    0x0A,
+    0x2D,
+    0xB4,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x49,
+    0x45,
+    0x4E,
+    0x44,
+    0xAE,
+    0x42,
+    0x60,
+    0x82,
   ];
 
   @override
@@ -80,6 +143,33 @@ class _MockHttpClientResponse implements HttpClientResponse {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _RecordingChallengeRepository implements ChallengeRepository {
+  _RecordingChallengeRepository(this.challenge);
+
+  final ChallengeModel challenge;
+  String? joinedChallengeId;
+
+  @override
+  Future<List<ChallengeModel>> getActiveChallenges() async => [challenge];
+
+  @override
+  Future<List<ChallengeModel>> getMyChallenges() async => [];
+
+  @override
+  Future<ChallengeModel> joinChallenge(String challengeId) async {
+    joinedChallengeId = challengeId;
+    return challenge.copyWith(status: ChallengeStatus.inProgress);
+  }
+
+  @override
+  Future<ChallengeModel> completeChallenge(String challengeId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<ChallengeModel> claimReward(String challengeId) async =>
+      throw UnimplementedError();
 }
 
 class MockHomeRepository implements HomeRepository {
@@ -151,7 +241,8 @@ HomeEntity _createMockHome({
       tasksCompleted: tasksDone,
       tasksTotal: tasksTotal,
     ),
-    dailyChallenge: dailyChallenge ??
+    dailyChallenge:
+        dailyChallenge ??
         const ChallengePreview(
           challengeId: 'ch-1',
           title: 'Practice Focus Session',
@@ -426,7 +517,9 @@ void main() {
         expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
         expect(find.text('Check in on a habit'), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(GrowthActionCard, 'Check in on a habit'));
+        await tester.tap(
+          find.widgetWithText(GrowthActionCard, 'Check in on a habit'),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(HabitHomeScreen), findsOneWidget);
@@ -469,7 +562,9 @@ void main() {
         expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
         expect(find.text('Complete today task'), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(GrowthActionCard, 'Complete today task'));
+        await tester.tap(
+          find.widgetWithText(GrowthActionCard, 'Complete today task'),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(TasksPage), findsOneWidget);
@@ -575,17 +670,22 @@ void main() {
         expect(find.text('YOUR NEXT MOVE'), findsOneWidget);
         expect(find.text('Mystery Adventure'), findsOneWidget);
 
-        await tester.tap(find.widgetWithText(GrowthActionCard, 'Mystery Adventure'));
+        await tester.tap(
+          find.widgetWithText(GrowthActionCard, 'Mystery Adventure'),
+        );
         await tester.pumpAndSettle();
 
-        expect(find.text('Detail for: custom-challenge-id-999'), findsOneWidget);
+        expect(
+          find.text('Detail for: custom-challenge-id-999'),
+          findsOneWidget,
+        );
         expect(detailReceivedId, 'custom-challenge-id-999');
         expect(find.text('Challenge List Screen'), findsNothing);
       },
     );
 
     testWidgets(
-      'Test 5 — Tap action does NOT award duplicate XP',
+      'LevelUp exposes a Join Challenge action that opens the challenge detail',
       (tester) async {
         tester.view.physicalSize = const Size(390, 1600);
         tester.view.devicePixelRatio = 1.0;
@@ -594,11 +694,24 @@ void main() {
           tester.view.resetDevicePixelRatio();
         });
 
+        const challengeId = 'f0000000-0000-4000-8000-000000000005';
+        final challengeRepository = _RecordingChallengeRepository(
+          ChallengeModel(
+            challengeId: challengeId,
+            title: 'Check in on a habit',
+            description: 'Complete one habit check-in today.',
+            challengeType: ChallengeType.habit,
+            xpReward: 15,
+            deadline: null,
+            status: ChallengeStatus.notStarted,
+            progress: 0,
+          ),
+        );
+        Get.put(ChallengeController(repository: challengeRepository));
         final mockRepo = MockHomeRepository(
           stubData: _createMockHome(
-            totalXp: 95,
             dailyChallenge: const ChallengePreview(
-              challengeId: 'f0000000-0000-4000-8000-000000000001',
+              challengeId: challengeId,
               title: 'Check in on a habit',
               description: 'Complete one habit check-in today.',
               xpReward: 15,
@@ -607,27 +720,108 @@ void main() {
             ),
           ),
         );
-        final controller = Get.put(HomeController(repository: mockRepo));
+        Get.put(HomeController(repository: mockRepo));
 
+        String? receivedChallengeId;
+        var challengeListOpened = false;
         await tester.pumpWidget(
           GetMaterialApp(
             translations: AppTranslations(),
             locale: const Locale('en'),
             home: const LevelUpScreen(),
+            getPages: [
+              GetPage(
+                name: AppRoutes.challengeList,
+                page: () {
+                  challengeListOpened = true;
+                  return const Scaffold(body: Text('Challenge List Screen'));
+                },
+              ),
+              GetPage(
+                name: AppRoutes.challengeDetail,
+                page: () {
+                  receivedChallengeId = Get.arguments?.toString();
+                  return const Scaffold(body: Text('Challenge Detail Screen'));
+                },
+              ),
+            ],
           ),
         );
         await tester.pumpAndSettle();
 
-        final xpBefore = controller.home.value?.user.totalXp;
-        expect(xpBefore, 95);
-
-        await tester.tap(find.widgetWithText(GrowthActionCard, 'Check in on a habit'));
+        final viewAllAction = find.text('View all challenges');
+        expect(viewAllAction, findsOneWidget);
+        await tester.tap(viewAllAction);
+        await tester.pumpAndSettle();
+        expect(challengeListOpened, isTrue);
+        expect(find.text('Challenge List Screen'), findsOneWidget);
+        Get.back();
         await tester.pumpAndSettle();
 
-        final xpAfter = controller.home.value?.user.totalXp;
-        expect(xpAfter, 95);
+        final joinAction = find.text('Join Challenge');
+        expect(joinAction, findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(GrowthActionCard),
+            matching: joinAction,
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(joinAction);
+        await tester.pumpAndSettle();
+
+        expect(receivedChallengeId, challengeId);
+        expect(challengeRepository.joinedChallengeId, challengeId);
+        expect(find.text('Challenge Detail Screen'), findsOneWidget);
+        expect(find.byType(HabitHomeScreen), findsNothing);
       },
     );
+
+    testWidgets('Test 5 — Tap action does NOT award duplicate XP', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final mockRepo = MockHomeRepository(
+        stubData: _createMockHome(
+          totalXp: 95,
+          dailyChallenge: const ChallengePreview(
+            challengeId: 'f0000000-0000-4000-8000-000000000001',
+            title: 'Check in on a habit',
+            description: 'Complete one habit check-in today.',
+            xpReward: 15,
+            type: 'HABIT',
+            challengeType: ChallengeType.habit,
+          ),
+        ),
+      );
+      final controller = Get.put(HomeController(repository: mockRepo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          home: const LevelUpScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final xpBefore = controller.home.value?.user.totalXp;
+      expect(xpBefore, 95);
+
+      await tester.tap(
+        find.widgetWithText(GrowthActionCard, 'Check in on a habit'),
+      );
+      await tester.pumpAndSettle();
+
+      final xpAfter = controller.home.value?.user.totalXp;
+      expect(xpAfter, 95);
+    });
 
     testWidgets(
       'Expense/Finance challenge navigates via onNavigateTab when provided',
@@ -658,14 +852,14 @@ void main() {
           GetMaterialApp(
             translations: AppTranslations(),
             locale: const Locale('en'),
-            home: LevelUpScreen(
-              onNavigateTab: (index) => navigatedTab = index,
-            ),
+            home: LevelUpScreen(onNavigateTab: (index) => navigatedTab = index),
           ),
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(GrowthActionCard, 'Log an expense'));
+        await tester.tap(
+          find.widgetWithText(GrowthActionCard, 'Log an expense'),
+        );
         await tester.pumpAndSettle();
 
         expect(navigatedTab, 2);

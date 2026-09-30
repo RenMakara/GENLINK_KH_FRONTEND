@@ -5,6 +5,8 @@ import '../../app/routes/app_routes.dart';
 import '../../design_system/colors/app_colors.dart';
 import '../../design_system/spacing/app_spacing.dart';
 import '../../design_system/widgets/headers/app_screen_header.dart';
+import '../challenge/presentation/challenge_scope.dart';
+import '../challenge/presentation/controllers/challenge_controller.dart';
 import '../leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../productivity/presentation/focus_feature/focus_home_screen.dart';
@@ -79,6 +81,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
   late DateTime today;
   bool showDateDetail = false;
   late final ProductivityController? _productivityController;
+  late final ChallengeController? _challengeController;
 
   List<GrowthCategory> get categories => [
     GrowthCategory(
@@ -127,6 +130,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     selectedDate = today;
     _productivityController = ensureProductivityController();
     _productivityController?.loadFocusHistory();
+    _challengeController = ensureChallengeController();
   }
 
   Future<void> _handleRefresh() async {
@@ -461,6 +465,67 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     }
   }
 
+  Future<void> _joinChallenge(ChallengePreview challenge) async {
+    final id = challenge.challengeId.trim();
+    if (id.isEmpty) {
+      Get.toNamed(AppRoutes.challengeList);
+      return;
+    }
+
+    await _challengeController?.joinChallenge(id);
+    if (!mounted) return;
+    Get.toNamed(AppRoutes.challengeDetail, arguments: id);
+  }
+
+  Widget _buildJoinChallengeButton(ChallengePreview challenge) {
+    final id = challenge.challengeId.trim();
+    final challengeController = _challengeController;
+    const accent = Color(0xFFF97316);
+
+    Widget buildButton(bool isJoining) {
+      return TextButton(
+        onPressed: isJoining ? null : () => _joinChallenge(challenge),
+        style: TextButton.styleFrom(
+          foregroundColor: accent,
+          disabledForegroundColor: accent.withValues(alpha: 0.72),
+          backgroundColor: accent.withValues(alpha: 0.10),
+          minimumSize: const Size(0, 38),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isJoining)
+              const SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(strokeWidth: 2, color: accent),
+              )
+            else
+              const Icon(Icons.play_arrow_rounded, size: 18),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'challenge.join'.tr,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (challengeController == null) {
+      return buildButton(false);
+    }
+
+    return Obx(() {
+      final isJoining = challengeController.isJoining(id);
+      return buildButton(isJoining);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -685,35 +750,53 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                     const SizedBox(height: AppSpacing.lg),
 
                     // YOUR NEXT MOVE
-                    if (challenge != null) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'levelup.yourNextMove'.tr,
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'levelup.recommendedForYou'.tr,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            challenge == null
+                                ? 'challenge.title'.tr
+                                : 'levelup.yourNextMove'.tr,
                             style: TextStyle(
                               color: isDark
-                                  ? AppColors.darkTextMuted
-                                  : AppColors.lightTextMuted,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        TextButton(
+                          onPressed: () => Get.toNamed(AppRoutes.challengeList),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFF97316),
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'challenge.viewAll'.tr,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (challenge != null) ...[
                       const SizedBox(height: 10),
                       GrowthActionCard(
                         icon: Icons.flag_outlined,
@@ -723,6 +806,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                         badgeText: xpReward != null && xpReward > 0
                             ? '+$xpReward XP'
                             : null,
+                        action: _buildJoinChallengeButton(challenge),
                         onTap: () => _handleNextMove(challenge),
                       ),
                     ],

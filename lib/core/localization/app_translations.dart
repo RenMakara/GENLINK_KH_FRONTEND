@@ -955,6 +955,7 @@ class AppTranslations extends Translations {
 
     // ── Challenge ────────────────────────────────────────────────────────
     'challenge.title': 'Challenges',
+    'challenge.viewAll': 'View all challenges',
     'challenge.subtitle':
         'Complete challenges to earn bonus XP and level up your skills.',
     'challenge.detail': 'Challenge Detail',
@@ -1133,7 +1134,7 @@ class AppTranslations extends Translations {
     'settings.securityHint': 'Password and account protection',
     'settings.password': 'Password',
     'settings.passwordSet': 'Set',
-    'settings.passwordNotSet': 'Not set',
+    'settings.passwordNotSet': 'Password not set',
     'settings.setPasswordHint':
         'Create a password for email and password sign-in.',
     'settings.changePasswordHint':
@@ -1146,6 +1147,17 @@ class AppTranslations extends Translations {
     'settings.notificationsHint': 'Manage your notifications',
     'settings.version': 'Version 1.0.0',
     'settings.saved': 'Settings saved',
+    'settings.storage': 'Data & Storage',
+    'settings.clearMediaCache': 'Clear Media Cache',
+    'settings.clearMediaCacheHint':
+        'Free up local video and image disk storage',
+    'settings.clearCacheTitle': 'Clear Media Cache?',
+    'settings.clearCacheConfirm':
+        'Are you sure you want to clear the media cache? Cached images and videos will be removed and re-downloaded when needed.',
+    'settings.clearCache': 'Clear Cache',
+    'settings.cacheCleared': 'Cache Cleared',
+    'settings.cacheClearedMsg':
+        'Media disk cache has been cleared successfully.',
 
     // ── About ───────────────────────────────────────────────────────────
     'about.title': 'About GenLink KH',
@@ -1733,6 +1745,7 @@ class AppTranslations extends Translations {
     'finance.recentTransactions': 'Recent Transactions',
     'finance.seeAll': 'See All',
     'finance.noRecentExpenses': 'No recent expenses',
+    'finance.noRecentTransactions': 'No recent transactions',
 
     // ── Finance Validation / wallet labels ───────────────────────────────
     'finance.validation.invalidAmount': 'Amount must be greater than zero.',
@@ -3790,6 +3803,7 @@ class AppTranslations extends Translations {
 
     // ── Challenge ────────────────────────────────────────────────────────
     'challenge.title': 'ការប្រកួតប្រជែង',
+    'challenge.viewAll': 'មើលការប្រកួតប្រជែងទាំងអស់',
     'challenge.subtitle':
         'បំពេញការប្រកួតប្រជែងដើម្បីទទួលបាន XP បន្ថែម និងបង្កើនជំនាញរបស់អ្នក',
     'challenge.detail': 'ព័ត៌មានលម្អិតការប្រកួតប្រជែង',
@@ -3971,7 +3985,7 @@ class AppTranslations extends Translations {
     'settings.securityHint': 'ពាក្យសម្ងាត់ និងការការពារគណនី',
     'settings.password': 'ពាក្យសម្ងាត់',
     'settings.passwordSet': 'បានកំណត់',
-    'settings.passwordNotSet': 'មិនទាន់កំណត់',
+    'settings.passwordNotSet': 'ពាក្យសម្ងាត់មិនទាន់កំណត់',
     'settings.setPasswordHint':
         'បង្កើតពាក្យសម្ងាត់សម្រាប់ការចូលដោយអ៊ីមែល និងពាក្យសម្ងាត់',
     'settings.changePasswordHint':
@@ -3984,6 +3998,17 @@ class AppTranslations extends Translations {
     'settings.notificationsHint': 'គ្រប់គ្រងការជូនដំណឹងរបស់អ្នក',
     'settings.version': 'កំណែ 1.0.0',
     'settings.saved': 'បានរក្សាទុកការកំណត់',
+    'settings.storage': 'ទិន្នន័យ និងទំហំផ្ទុក',
+    'settings.clearMediaCache': 'សម្អាតឃ្លាំងសម្ងាត់មេឌា',
+    'settings.clearMediaCacheHint':
+        'បង្កើនទំហំផ្ទុកសម្រាប់វីដេអូ និងរូបភាពក្នុងឧបករណ៍',
+    'settings.clearCacheTitle': 'សម្អាតឃ្លាំងសម្ងាត់មេឌា?',
+    'settings.clearCacheConfirm':
+        'តើអ្នកប្រាកដថាចង់សម្អាតឃ្លាំងសម្ងាត់មេឌាឬ? រូបភាព និងវីដេអូដែលបានរក្សាទុកក្នុងឃ្លាំងសម្ងាត់នឹងត្រូវលុបចេញ ហើយទាញយកម្តងទៀតនៅពេលចាំបាច់។',
+    'settings.clearCache': 'សម្អាតឃ្លាំងសម្ងាត់',
+    'settings.cacheCleared': 'បានសម្អាតឃ្លាំងសម្ងាត់',
+    'settings.cacheClearedMsg':
+        'ឃ្លាំងសម្ងាត់មេឌាត្រូវបានសម្អាតដោយជោគជ័យ។',
 
     // ── About ───────────────────────────────────────────────────────────
     'about.title': 'អំពី GenLink KH',
@@ -4564,6 +4589,7 @@ class AppTranslations extends Translations {
     'finance.recentTransactions': 'ប្រតិបត្តិការថ្មីៗ',
     'finance.seeAll': 'មើលទាំងអស់',
     'finance.noRecentExpenses': 'មិនទាន់មានការចំណាយថ្មីៗ',
+    'finance.noRecentTransactions': 'មិនទាន់មានប្រតិបត្តិការថ្មីៗ',
     'finance.validation.invalidAmount': 'ចំនួនទឹកប្រាក់ត្រូវតែធំជាងសូន្យ',
 
     // ── Income Screen ───────────────────────────────────────────────────

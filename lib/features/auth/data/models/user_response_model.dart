@@ -20,6 +20,7 @@ class UserResponseModel {
     required this.role,
     required this.active,
     this.hasPassword = false,
+    this.authProvider = 'LOCAL',
   });
 
   final String userId;
@@ -40,6 +41,7 @@ class UserResponseModel {
   final String role;
   final bool active;
   final bool hasPassword;
+  final String authProvider;
 
   UserEntity toEntity() {
     return UserEntity(
@@ -61,6 +63,7 @@ class UserResponseModel {
       role: role,
       active: active,
       hasPassword: hasPassword,
+      authProvider: authProvider,
     );
   }
 
@@ -104,6 +107,15 @@ class UserResponseModel {
         json['hasPassword'] ?? json['has_password'] ?? json['isHasPassword'],
         defaultValue: false,
       ),
+      authProvider: () {
+        final raw = (json['authProvider'] ?? json['auth_provider'])?.toString().trim();
+        if (raw != null && raw.isNotEmpty) return raw;
+        final hasPw = _parseBool(
+          json['hasPassword'] ?? json['has_password'] ?? json['isHasPassword'],
+          defaultValue: false,
+        );
+        return hasPw ? 'LOCAL' : 'GOOGLE';
+      }(),
     );
   }
 }

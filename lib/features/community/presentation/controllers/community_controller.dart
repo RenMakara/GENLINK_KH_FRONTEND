@@ -1377,9 +1377,7 @@ class CommunityController extends GetxController {
         final discussion = forumLatestDiscussions.firstWhereOrNull(
           (d) => d.id == discussionId,
         );
-        final isOwner =
-            discussion?.isOwner ??
-            (discussion?.checkIsOwner(currentUserId) ?? false);
+        final isOwner = discussion?.checkIsOwner(currentUserId) ?? false;
         if (isOwner) {
           await fetchDiscussionLikers(
             discussionId,

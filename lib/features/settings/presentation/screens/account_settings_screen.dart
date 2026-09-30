@@ -6,8 +6,23 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
-class AccountSettingsScreen extends StatelessWidget {
+class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({super.key});
+
+  @override
+  State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
+}
+
+class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Get.find<AuthController>().refreshCurrentUser();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +45,7 @@ class AccountSettingsScreen extends StatelessWidget {
         final user = auth.currentUser.value;
         if (user == null) return const SizedBox.shrink();
 
+        final hasPassword = user.canChangePassword;
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           children: [
@@ -52,10 +68,14 @@ class AccountSettingsScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.lock_outline_rounded),
-              title: Text('settings.password'.tr),
+              title: Text(
+                hasPassword
+                    ? 'auth.changePassword'.tr
+                    : 'settings.password'.tr,
+              ),
               subtitle: Text(
-                user.hasPassword
-                    ? 'settings.passwordSet'.tr
+                hasPassword
+                    ? 'settings.changePasswordHint'.tr
                     : 'settings.passwordNotSet'.tr,
               ),
               trailing: const Icon(Icons.chevron_right, size: 20),

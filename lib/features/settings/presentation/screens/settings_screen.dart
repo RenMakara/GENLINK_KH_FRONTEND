@@ -18,7 +18,12 @@ import '../controllers/settings_controller.dart';
 import '../widgets/settings_selection_popups.dart';
 
 class SettingsScreen extends GetView<SettingsController> {
-  const SettingsScreen({super.key});
+  const SettingsScreen({
+    super.key,
+    this.onClearCache,
+  });
+
+  final Future<void> Function()? onClearCache;
 
   @override
   Widget build(BuildContext context) {
@@ -168,25 +173,15 @@ class SettingsScreen extends GetView<SettingsController> {
               ],
             ),
 
-            _SectionLabel(text: 'settings.storage'.tr.isNotEmpty && 'settings.storage'.tr != 'settings.storage' ? 'settings.storage'.tr : 'Data & Storage'),
+            _SectionLabel(text: 'settings.storage'.tr),
             _SettingsGroup(
               rows: [
                 _SettingsRow(
                   icon: Icons.cleaning_services_rounded,
                   accent: AppColors.growthAccent,
-                  title: 'Clear Media Cache',
-                  subtitle: 'Free up local video and image disk storage',
-                  onTap: () async {
-                    await VideoCacheService.instance.clearCache();
-                    await GenLinkImageCacheManager().emptyCache();
-                    if (context.mounted) {
-                      AppNotificationBanner.showSuccess(
-                        context: context,
-                        title: 'Cache Cleared',
-                        message: 'Media disk cache has been cleared successfully.',
-                      );
-                    }
-                  },
+                  title: 'settings.clearMediaCache'.tr,
+                  subtitle: 'settings.clearMediaCacheHint'.tr,
+                  onTap: () => _confirmClearMediaCache(context),
                 ),
               ],
             ),
@@ -204,6 +199,38 @@ class SettingsScreen extends GetView<SettingsController> {
     'DARK' => 'settings.themeDark'.tr,
     _ => 'settings.themeSystem'.tr,
   };
+
+  Future<void> _confirmClearMediaCache(BuildContext context) async {
+    final confirmed = await GenLinkConfirmDialog.showWarning(
+      context: context,
+      title: 'settings.clearCacheTitle'.tr,
+      message: 'settings.clearCacheConfirm'.tr,
+      icon: Icons.cleaning_services_rounded,
+      confirmLabel: 'settings.clearCache'.tr,
+      cancelLabel: 'common.cancel'.tr,
+    );
+
+    if (!confirmed) return;
+
+    if (onClearCache != null) {
+      await onClearCache!();
+    } else {
+      try {
+        await VideoCacheService.instance.clearCache();
+        await GenLinkImageCacheManager().emptyCache();
+      } catch (e) {
+        debugPrint('[SettingsScreen] clear media cache error: $e');
+      }
+    }
+
+    if (context.mounted) {
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: 'settings.cacheCleared'.tr,
+        message: 'settings.cacheClearedMsg'.tr,
+      );
+    }
+  }
 
   Future<void> _confirmLogout(BuildContext context) async {
     final auth = Get.find<AuthController>();

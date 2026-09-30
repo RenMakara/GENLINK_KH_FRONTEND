@@ -7,9 +7,12 @@ import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/cash_flow_feature/cash_flow_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/ewallet_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/finance_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_transaction.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/formatters/finance_localization.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 import 'package:genlink_frontend/features/finance/presentation/widgets/finance_insights_widgets.dart';
 import 'package:genlink_frontend/features/finance/presentation/finance_tools_feature/finance_tools_screen.dart';
@@ -35,7 +38,12 @@ class FinanceScreen extends GetView<FinanceController> {
         body: SafeArea(
           bottom: false,
           child: RefreshIndicator(
-            onRefresh: controller.reload,
+            onRefresh: () async {
+              await controller.reload();
+              if (Get.isRegistered<EWalletController>()) {
+                await Get.find<EWalletController>().refresh();
+              }
+            },
             color: AppColors.financeAccent,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(
@@ -371,9 +379,9 @@ class _FinanceDashboardContent extends StatelessWidget {
         _SavingsCard(saving: dashboard.saving, currency: dashboard.currency),
         const SizedBox(height: 18),
 
-        _RecentExpenses(
-          expenses: dashboard.recentExpenses,
+        _RecentTransactions(
           currency: dashboard.currency,
+          fallbackExpenses: dashboard.recentExpenses,
         ),
         const SizedBox(height: 18),
 
@@ -1225,15 +1233,98 @@ class _SavingsCard extends StatelessWidget {
 }
 
 class _RecentExpenses extends StatelessWidget {
-  const _RecentExpenses({required this.expenses, required this.currency});
+  const _RecentExpenses({
+    super.key,
+    required this.expenses,
+    required this.currency,
+  });
 
   final List<FinanceRecentExpense> expenses;
   final FinanceCurrency currency;
 
   @override
   Widget build(BuildContext context) {
+    return _RecentTransactions(
+      currency: currency,
+      fallbackExpenses: expenses,
+    );
+  }
+}
+
+class _RecentTransactions extends StatelessWidget {
+  const _RecentTransactions({
+    super.key,
+    required this.currency,
+    this.fallbackExpenses = const [],
+    this.transactions,
+  });
+
+  final FinanceCurrency currency;
+  final List<FinanceRecentExpense> fallbackExpenses;
+  final List<FinanceWalletTransactionEntity>? transactions;
+
+  @override
+  Widget build(BuildContext context) {
     final semantic = context.semanticColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final EWalletController? walletController = transactions != null
+        ? null
+        : (Get.isRegistered<EWalletController>()
+            ? Get.find<EWalletController>()
+            : null);
+
+    Widget contentBuilder() {
+      final List<FinanceWalletTransactionEntity> walletTxns = transactions ??
+          (walletController != null
+              ? walletController.visibleTransactions
+              : const <FinanceWalletTransactionEntity>[]);
+
+      if (walletTxns.isNotEmpty) {
+        final items = walletTxns.take(5).toList(growable: false);
+        return Column(
+          children: [
+            for (final item in items)
+              _buildWalletTransactionRow(
+                context,
+                item,
+                currency,
+                semantic,
+                isDark,
+              ),
+          ],
+        );
+      }
+
+      if (fallbackExpenses.isNotEmpty) {
+        final items = fallbackExpenses.take(5).toList(growable: false);
+        return Column(
+          children: [
+            for (final item in items)
+              _buildExpenseRow(
+                context,
+                item,
+                currency,
+                semantic,
+                isDark,
+              ),
+          ],
+        );
+      }
+
+      return Container(
+        height: 130,
+        decoration: BoxDecoration(
+          color: semantic.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: semantic.borderSubtle),
+        ),
+        child: AppEmptyState(
+          message: 'finance.noRecentTransactions'.tr,
+          icon: Icons.receipt_long_outlined,
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1255,9 +1346,10 @@ class _RecentExpenses extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             GestureDetector(
+              key: const ValueKey('recent_transactions_see_all'),
               onTap: () => Navigator.push<void>(
                 context,
-                MaterialPageRoute(builder: (_) => const ExpenseScreen()),
+                MaterialPageRoute(builder: (_) => const TransactionsScreen()),
               ),
               child: Text(
                 'finance.seeAll'.tr,
@@ -1271,38 +1363,83 @@ class _RecentExpenses extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        if (expenses.isEmpty)
-          Container(
-            height: 130,
-            decoration: BoxDecoration(
-              color: semantic.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: semantic.borderSubtle),
-            ),
-            child: AppEmptyState(
-              message: 'finance.noRecentExpenses'.tr,
-              icon: Icons.receipt_long_outlined,
-            ),
-          )
+        if (walletController != null && transactions == null)
+          Obx(contentBuilder)
         else
-          Column(
-            children: [
-              for (var index = 0; index < expenses.length; index++) ...[
-                _buildTransactionRow(
-                  context,
-                  expenses[index],
-                  currency,
-                  semantic,
-                  isDark,
-                ),
-              ],
-            ],
-          ),
+          contentBuilder(),
       ],
     );
   }
 
-  Widget _buildTransactionRow(
+  Widget _buildWalletTransactionRow(
+    BuildContext context,
+    FinanceWalletTransactionEntity transaction,
+    FinanceCurrency currency,
+    AppSemanticColors semantic,
+    bool isDark,
+  ) {
+    final type = transaction.transactionType.toUpperCase();
+    final isCredit = transaction.direction.toUpperCase() == 'CREDIT' ||
+        type == 'INCOME' ||
+        type == 'DEPOSIT' ||
+        type == 'REWARD';
+    final debit = !isCredit;
+
+    final desc = transaction.description?.trim();
+    String title = financeTransactionTypeText(transaction.transactionType);
+    if (desc != null && desc.isNotEmpty) {
+      if (desc.startsWith('Income: ')) {
+        title = desc.substring(8);
+      } else if (desc.startsWith('Expense: ')) {
+        title = desc.substring(9);
+      } else {
+        title = desc;
+      }
+    }
+
+    final date = _formatTransactionDate(transaction.createdAt);
+    final status = transaction.status.toUpperCase();
+    final subtitleParts = <String>[
+      if (date != null) date,
+      if (status != 'SUCCESS') status,
+    ];
+    final subtitle =
+        subtitleParts.isEmpty ? currency.apiValue : subtitleParts.join(' · ');
+
+    final iconBg = isCredit
+        ? AppColors.success.withValues(alpha: isDark ? 0.18 : 0.10)
+        : AppColors.danger.withValues(alpha: isDark ? 0.18 : 0.10);
+    final iconColor = isCredit ? AppColors.success : AppColors.danger;
+    final icon = isCredit
+        ? Icons.trending_up_rounded
+        : (type == 'KHQR_PAYMENT'
+            ? Icons.qr_code_2_rounded
+            : (type == 'TRANSFER'
+                ? Icons.swap_horiz_rounded
+                : Icons.arrow_outward_rounded));
+
+    return Transaction(
+      title: title,
+      subtitle: subtitle,
+      amount: FinanceMoneyFormatter.signed(
+        transaction.amount,
+        currency,
+        debit: debit,
+      ),
+      icon: icon,
+      iconColor: iconColor,
+      background: semantic.surface,
+      iconBackground: iconBg,
+      border: semantic.borderSubtle,
+      textPrimary: semantic.primaryText,
+      textMuted: semantic.textMuted,
+      amountColor: isCredit ? AppColors.success : semantic.primaryText,
+      isCredit: isCredit,
+      onTap: () => showTransactionDetailBottomSheet(context, transaction),
+    );
+  }
+
+  Widget _buildExpenseRow(
     BuildContext context,
     FinanceRecentExpense expense,
     FinanceCurrency currency,
@@ -1310,14 +1447,20 @@ class _RecentExpenses extends StatelessWidget {
     bool isDark,
   ) {
     final category = expense.category?.trim();
+    final isCredit = category?.toUpperCase() == 'INCOME';
     final subtitle = [
       expense.expenseDate,
       if (category != null && category.isNotEmpty)
         _localizedCategoryName(category),
     ].join(' · ');
 
-    final iconBg = AppColors.danger.withValues(alpha: isDark ? 0.18 : 0.10);
-    const iconColor = AppColors.danger;
+    final iconBg = isCredit
+        ? AppColors.success.withValues(alpha: isDark ? 0.18 : 0.10)
+        : AppColors.danger.withValues(alpha: isDark ? 0.18 : 0.10);
+    final iconColor = isCredit ? AppColors.success : AppColors.danger;
+    final icon = isCredit
+        ? Icons.trending_up_rounded
+        : Icons.arrow_outward_rounded;
 
     return Transaction(
       title: expense.title,
@@ -1325,21 +1468,41 @@ class _RecentExpenses extends StatelessWidget {
       amount: FinanceMoneyFormatter.signed(
         expense.amount,
         currency,
-        debit: true,
+        debit: !isCredit,
       ),
-      icon: Icons.arrow_outward_rounded,
+      icon: icon,
       iconColor: iconColor,
       background: semantic.surface,
       iconBackground: iconBg,
       border: semantic.borderSubtle,
       textPrimary: semantic.primaryText,
       textMuted: semantic.textMuted,
-      amountColor: semantic.primaryText,
-      onTap: () => Navigator.push<void>(
+      amountColor: isCredit ? AppColors.success : semantic.primaryText,
+      isCredit: isCredit,
+      onTap: () => showTransactionDetailBottomSheet(
         context,
-        MaterialPageRoute(builder: (_) => const ExpenseScreen()),
+        FinanceWalletTransactionEntity(
+          transactionId: expense.expenseId,
+          transactionType: isCredit ? 'INCOME' : 'EXPENSE',
+          direction: isCredit ? 'CREDIT' : 'DEBIT',
+          currency: currency,
+          amount: expense.amount,
+          description: expense.title,
+          status: 'SUCCESS',
+          createdAt: expense.expenseDate,
+        ),
       ),
     );
+  }
+
+  String? _formatTransactionDate(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    final local = parsed.toLocal();
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-'
+        '${local.day.toString().padLeft(2, '0')} ${local.hour}:$minute';
   }
 }
 

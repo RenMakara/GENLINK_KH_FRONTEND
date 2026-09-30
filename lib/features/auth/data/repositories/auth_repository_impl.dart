@@ -144,26 +144,5 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 
-  UserEntity _mapToUserEntity(UserResponseModel model) {
-    return UserEntity(
-      id: model.userId,
-      fullName: model.fullName,
-      username: model.username,
-      email: model.email,
-      phoneNumber: model.phoneNumber,
-      avatarUrl: model.avatarUrl,
-      bio: model.bio,
-      universityName: model.universityName,
-      workStatus: model.workStatus,
-      location: model.location,
-      emailVerified: model.emailVerified,
-      accountStatus: model.accountStatus,
-      totalXp: model.totalXp,
-      level: model.level,
-      preferredLanguage: model.preferredLanguage,
-      role: model.role,
-      active: model.active,
-      hasPassword: model.hasPassword,
-    );
-  }
+  UserEntity _mapToUserEntity(UserResponseModel model) => model.toEntity();
 }

@@ -40,6 +40,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   late bool _isBookmarked;
   bool _hasText = false;
 
+  bool get _isDiscussionOwner =>
+      _discussion.checkIsOwner(_controller.currentUserId);
+
   @override
   void initState() {
     super.initState();
@@ -71,7 +74,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     _isBookmarked = _controller.isDiscussionBookmarked(_discussion.id);
 
     _controller.fetchDiscussionComments(_discussion.id);
-    if (_discussion.isOwner) {
+    if (_isDiscussionOwner) {
       _controller
           .fetchDiscussionLikers(_discussion.id)
           .catchError((_) => <ForumLikerModel>[]);
@@ -103,7 +106,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         _isLiked = effectiveDetail.isLiked;
         _isBookmarked = _controller.isDiscussionBookmarked(effectiveDetail.id);
       });
-      if (effectiveDetail.isOwner) {
+      if (effectiveDetail.checkIsOwner(_controller.currentUserId)) {
         _controller
             .fetchDiscussionLikers(_discussion.id)
             .catchError((_) => <ForumLikerModel>[]);
@@ -143,6 +146,15 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       _upvotes += _isLiked ? 1 : -1;
     });
     final success = await _controller.toggleDiscussionLike(_discussion.id);
+    if (success && mounted && _isDiscussionOwner) {
+      final cachedDiscussion = _controller.getDiscussionById(_discussion.id);
+      if (cachedDiscussion == null ||
+          !cachedDiscussion.checkIsOwner(_controller.currentUserId)) {
+        await _controller
+            .fetchDiscussionLikers(_discussion.id)
+            .catchError((_) => <ForumLikerModel>[]);
+      }
+    }
     if (!success && mounted) {
       setState(() {
         _isLiked = !_isLiked;
@@ -723,7 +735,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           ),
                     ),
                   ],
-                  if (_discussion.isOwner && _upvotes > 0) ...[
+                  if (_isDiscussionOwner && _upvotes > 0) ...[
                     const SizedBox(height: AppSpacing.sm + 2),
                     Obx(() {
                       final likers =
@@ -733,14 +745,14 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         likesCount: _upvotes,
                         likers: likers,
                         isDark: isDark,
-                        isOwner: _discussion.isOwner,
+                        isOwner: _isDiscussionOwner,
                         onTap: () {
-                          if (!_discussion.isOwner || _upvotes <= 0) return;
+                          if (!_isDiscussionOwner || _upvotes <= 0) return;
                           ForumLikedBySheet.show(
                             context,
                             discussionId: _discussion.id,
                             initialLikers: likers,
-                            isOwner: _discussion.isOwner,
+                            isOwner: _isDiscussionOwner,
                           );
                         },
                       );

@@ -18,6 +18,7 @@ class UserEntity {
     required this.role,
     required this.active,
     this.hasPassword = false,
+    this.authProvider = 'LOCAL',
   });
 
   final String id;
@@ -38,8 +39,12 @@ class UserEntity {
   final String role;
   final bool active;
   final bool hasPassword;
+  final String authProvider;
 
-  UserEntity copyWith({bool? hasPassword}) {
+  UserEntity copyWith({
+    bool? hasPassword,
+    String? authProvider,
+  }) {
     return UserEntity(
       id: id,
       fullName: fullName,
@@ -59,10 +64,14 @@ class UserEntity {
       role: role,
       active: active,
       hasPassword: hasPassword ?? this.hasPassword,
+      authProvider: authProvider ?? this.authProvider,
     );
   }
 
   bool get isAdmin => role == 'ADMIN';
   bool get isPending => accountStatus == 'PENDING';
   bool get isActive => accountStatus == 'ACTIVE' && active;
+  bool get isGoogle => authProvider.toUpperCase() == 'GOOGLE';
+  bool get isLocal => authProvider.toUpperCase() == 'LOCAL';
+  bool get canChangePassword => isLocal || hasPassword;
 }

@@ -39,6 +39,8 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.optionalPrompt && _hasPassword) {
         Get.offAllNamed<void>(AppRoutes.home);
+      } else {
+        _auth.refreshCurrentUser();
       }
     });
   }
@@ -51,7 +53,7 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
     super.dispose();
   }
 
-  bool get _hasPassword => _auth.currentUser.value?.hasPassword ?? false;
+  bool get _hasPassword => _auth.currentUser.value?.canChangePassword ?? false;
 
   void _dismissError() {
     if (mounted) {
@@ -96,6 +98,9 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
           Get.offAllNamed<void>(AppRoutes.home);
           return;
         } else {
+          _currentPassword.clear();
+          _password.clear();
+          _confirmPassword.clear();
           setState(() {
             _errorMessage = null;
           });

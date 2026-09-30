@@ -272,6 +272,7 @@ void main() {
         role: 'USER',
         active: true,
         hasPassword: false,
+        authProvider: 'GOOGLE',
       );
 
       await pumpScreen(tester, optionalPrompt: true, user: userWithoutPassword);

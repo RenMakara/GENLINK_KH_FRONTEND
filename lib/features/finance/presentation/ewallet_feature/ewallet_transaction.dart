@@ -6,6 +6,7 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_money.dart';
+import 'package:genlink_frontend/features/finance/presentation/bindings/finance_binding.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/ewallet_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_localization.dart';
@@ -38,6 +39,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   @override
   void initState() {
     super.initState();
+    if (!Get.isRegistered<EWalletController>()) {
+      FinanceBinding().dependencies();
+    }
     _walletController = Get.find<EWalletController>();
     _scrollController = ScrollController()..addListener(_onScroll);
   }
@@ -487,141 +491,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     BuildContext context,
     FinanceWalletTransactionEntity transaction,
   ) {
-    final semantic = context.semanticColors;
-    final isCredit = transaction.direction.toUpperCase() == 'CREDIT';
-    final amountColor = isCredit ? AppColors.financeAccent : AppColors.danger;
-    final formattedAmount = FinanceMoneyFormatter.signed(
-      transaction.amount,
-      transaction.currency,
-      debit: !isCredit,
-    );
-
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: semantic.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: semantic.borderSubtle,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'finance.transactions.details'.tr,
-                      style: TextStyle(
-                        color: semantic.primaryText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: transaction.status.toUpperCase() == 'SUCCESS'
-                            ? AppColors.financeAccent.withValues(alpha: 0.15)
-                            : AppColors.danger.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        transaction.status.toUpperCase(),
-                        style: TextStyle(
-                          color: transaction.status.toUpperCase() == 'SUCCESS'
-                              ? AppColors.financeAccent
-                              : AppColors.danger,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Center(
-                  child: Text(
-                    formattedAmount,
-                    style: TextStyle(
-                      color: amountColor,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _detailRow('Title', _transactionTitleFor(transaction)),
-                const Divider(height: 18),
-                _detailRow('Type', transaction.transactionType),
-                const Divider(height: 18),
-                if (transaction.description != null &&
-                    transaction.description!.isNotEmpty) ...[
-                  _detailRow('Description', transaction.description!),
-                  const Divider(height: 18),
-                ],
-                _detailRow('Date', transaction.createdAt ?? '—'),
-                if (transaction.provider != null) ...[
-                  const Divider(height: 18),
-                  _detailRow('Provider', transaction.provider!),
-                ],
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    showTransactionDetailBottomSheet(context, transaction);
   }
 
-  Widget _detailRow(String label, String value) {
-    final semantic = context.semanticColors;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: semantic.textMuted,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: semantic.primaryText,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _detailRow(String label, String value) =>
+      _buildTransactionDetailRow(context, label, value);
 
   String _formatDateKey(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return 'Recent';
@@ -1482,3 +1356,173 @@ class _MotivationStatusCard extends StatelessWidget {
 
 String _transactionTitleFor(FinanceWalletTransactionEntity transaction) =>
     financeTransactionTypeText(transaction.transactionType);
+
+void showTransactionDetailBottomSheet(
+  BuildContext context,
+  FinanceWalletTransactionEntity transaction,
+) {
+  final semantic = context.semanticColors;
+  final isCredit = transaction.direction.toUpperCase() == 'CREDIT';
+  final amountColor = isCredit ? AppColors.financeAccent : AppColors.danger;
+  final formattedAmount = FinanceMoneyFormatter.signed(
+    transaction.amount,
+    transaction.currency,
+    debit: !isCredit,
+  );
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: semantic.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+    ),
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: semantic.borderSubtle,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'finance.transactions.details'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: semantic.primaryText,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: transaction.status.toUpperCase() == 'SUCCESS'
+                          ? AppColors.financeAccent.withValues(alpha: 0.15)
+                          : AppColors.danger.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      transaction.status.toUpperCase(),
+                      style: TextStyle(
+                        color: transaction.status.toUpperCase() == 'SUCCESS'
+                            ? AppColors.financeAccent
+                            : AppColors.danger,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Center(
+                child: Text(
+                  formattedAmount,
+                  style: TextStyle(
+                    color: amountColor,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildTransactionDetailRow(
+                sheetContext,
+                'Title',
+                _transactionTitleFor(transaction),
+              ),
+              const Divider(height: 18),
+              _buildTransactionDetailRow(
+                sheetContext,
+                'Type',
+                transaction.transactionType,
+              ),
+              const Divider(height: 18),
+              if (transaction.description != null &&
+                  transaction.description!.isNotEmpty) ...[
+                _buildTransactionDetailRow(
+                  sheetContext,
+                  'Description',
+                  transaction.description!,
+                ),
+                const Divider(height: 18),
+              ],
+              _buildTransactionDetailRow(
+                sheetContext,
+                'Date',
+                transaction.createdAt ?? '—',
+              ),
+              if (transaction.provider != null) ...[
+                const Divider(height: 18),
+                _buildTransactionDetailRow(
+                  sheetContext,
+                  'Provider',
+                  transaction.provider!,
+                ),
+              ],
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildTransactionDetailRow(
+  BuildContext context,
+  String label,
+  String value,
+) {
+  final semantic = context.semanticColors;
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          color: semantic.textMuted,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Text(
+          value,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: semantic.primaryText,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ],
+  );
+}
+

@@ -7,7 +7,6 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/expense_controller.dart';
-import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_detail_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_history_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
@@ -41,6 +40,14 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
+    final currentCat = controller.selectedCategory.value;
+    final catIndex = _categoryValues.indexWhere(
+      (v) => v?.toUpperCase() == currentCat?.toUpperCase(),
+    );
+    _selectedCategory = catIndex >= 0 ? catIndex : 0;
+    if (controller.hasExplicitMonthFilter.value) {
+      controller.clearMonthFilter();
+    }
   }
 
   @override
@@ -278,14 +285,6 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       MaterialPageRoute(
         builder: (_) => ExpenseDetailScreen.fromEntity(
           expense,
-          onEdit: () {
-            Navigator.push<void>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AddExpenseScreen(expense: expense),
-              ),
-            );
-          },
           onDeleted: () => controller.deleteExpense(expense.expenseId),
         ),
       ),

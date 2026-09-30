@@ -7,9 +7,10 @@ import 'package:genlink_frontend/design_system/widgets/dialogs/genlink_confirm_d
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/expense_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_detail_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-class ExpenseDetailScreen extends StatelessWidget {
+class ExpenseDetailScreen extends StatefulWidget {
   const ExpenseDetailScreen({
     super.key,
     required this.icon,
@@ -25,6 +26,7 @@ class ExpenseDetailScreen extends StatelessWidget {
     this.note,
     this.currency,
     this.expenseId,
+    this.initialExpense,
     this.onEdit,
     this.onDeleted,
   });
@@ -56,6 +58,7 @@ class ExpenseDetailScreen extends StatelessWidget {
       note: expense.description,
       currency: expense.currency,
       expenseId: expense.expenseId,
+      initialExpense: expense,
       onEdit: onEdit,
       onDeleted: onDeleted,
     );
@@ -74,6 +77,7 @@ class ExpenseDetailScreen extends StatelessWidget {
   final String? note;
   final FinanceCurrency? currency;
   final String? expenseId;
+  final FinanceExpenseEntity? initialExpense;
   final VoidCallback? onEdit;
   final Future<bool> Function()? onDeleted;
 
@@ -85,7 +89,168 @@ class ExpenseDetailScreen extends StatelessWidget {
       };
 
   @override
+  State<ExpenseDetailScreen> createState() => _ExpenseDetailScreenState();
+}
+
+class _ExpenseDetailScreenState extends State<ExpenseDetailScreen> {
+  FinanceExpenseEntity? _currentExpense;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentExpense = widget.initialExpense;
+  }
+
+  Future<void> _handleEdit(BuildContext context) async {
+    if (widget.onEdit != null) {
+      widget.onEdit!();
+      return;
+    }
+    final expenseToEdit = _currentExpense ??
+        (widget.expenseId != null && Get.isRegistered<ExpenseController>()
+            ? Get.find<ExpenseController>().findExpense(widget.expenseId!)
+            : null);
+
+    if (expenseToEdit == null) {
+      Navigator.pop(context);
+      return;
+    }
+
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddExpenseScreen(expense: expenseToEdit),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      if (Get.isRegistered<ExpenseController>()) {
+        final latest =
+            Get.find<ExpenseController>().findExpense(expenseToEdit.expenseId);
+        if (latest != null) {
+          setState(() {
+            _currentExpense = latest;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _showDeleteDialog(BuildContext context) async {
+    final confirmed = await GenLinkConfirmDialog.showDanger(
+      context: context,
+      title: 'finance.expense.deleteConfirmTitle'.tr,
+      message: 'finance.expense.deleteConfirmMessage'.tr,
+      confirmLabel: 'finance.expense.delete'.tr,
+      cancelLabel: 'finance.expense.cancel'.tr,
+    );
+    if (!confirmed || widget.onDeleted == null) return;
+    final deleted = await widget.onDeleted!();
+    if (!context.mounted) return;
+    if (deleted) {
+      Navigator.pop(context, true);
+    } else {
+      Get.snackbar(
+        'finance.expense.delete'.tr,
+        _deleteErrorMessage(),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    }
+  }
+
+  String _deleteErrorMessage() {
+    if (Get.isRegistered<ExpenseController>()) {
+      return Get.find<ExpenseController>().mutationErrorMessage.value ??
+          'common.error'.tr;
+    }
+    return 'common.error'.tr;
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ExpenseSheetItem(
+              icon: Icons.edit_outlined,
+              title: 'finance.expense.edit'.tr,
+              color: textPrimary,
+              onTap: () {
+                Get.back();
+                _handleEdit(context);
+              },
+            ),
+            ExpenseSheetItem(
+              icon: Icons.delete_outline_rounded,
+              title: 'finance.expense.delete'.tr,
+              color: const Color(0xFFB00020),
+              onTap: () {
+                Get.back();
+                _showDeleteDialog(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final liveExpense =
+        (widget.expenseId != null && Get.isRegistered<ExpenseController>())
+            ? (Get.find<ExpenseController>().findExpense(widget.expenseId!) ??
+                _currentExpense)
+            : _currentExpense;
+
+    final accent = liveExpense != null
+        ? _categoryColor(liveExpense.category)
+        : widget.iconColor;
+    final icon = liveExpense != null
+        ? _categoryIcon(liveExpense.category)
+        : widget.icon;
+    final iconColor = accent;
+    final iconBackground = accent.withValues(alpha: .12);
+    final title = liveExpense?.title ?? widget.title;
+    final subtitle = liveExpense != null
+        ? [
+            liveExpense.expenseDate,
+            if (liveExpense.category?.trim().isNotEmpty == true)
+              liveExpense.category!,
+          ].join(' · ')
+        : widget.subtitle;
+    final amount = liveExpense != null
+        ? FinanceMoneyFormatter.signed(
+            liveExpense.amount,
+            liveExpense.currency,
+            debit: true,
+          )
+        : widget.amount;
+    final date = liveExpense?.expenseDate ?? widget.date;
+    final time = liveExpense != null
+        ? _timeFromCreatedAt(liveExpense.createdAt)
+        : widget.time;
+    final category = liveExpense?.category ?? widget.category;
+    final payment = liveExpense != null
+        ? ExpenseDetailScreen._paymentLabel(liveExpense.paymentMethod)
+        : widget.payment;
+    final note = liveExpense?.description ?? widget.note;
+    final currency = liveExpense?.currency ?? widget.currency;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
     final surface = isDark
@@ -155,7 +320,7 @@ class ExpenseDetailScreen extends StatelessWidget {
                     if (currency != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        currency!.apiValue,
+                        currency.apiValue,
                         style: TextStyle(
                           color: textMuted,
                           fontSize: 11,
@@ -210,10 +375,10 @@ class ExpenseDetailScreen extends StatelessWidget {
                             textPrimary: textPrimary,
                             textMuted: textMuted,
                           ),
-                          if (note != null && note!.trim().isNotEmpty) ...[
+                          if (note != null && note.trim().isNotEmpty) ...[
                             ExpenseDetailDivider(border: border),
                             ExpenseNoteItem(
-                              note: note!,
+                              note: note,
                               surfaceSecondary: surfaceSecondary,
                               textPrimary: textPrimary,
                               textMuted: textMuted,
@@ -227,7 +392,7 @@ class ExpenseDetailScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: onEdit ?? () => Navigator.pop(context),
+                            onPressed: () => _handleEdit(context),
                             icon: const Icon(Icons.edit_outlined, size: 17),
                             label: Text('finance.expense.edit'.tr),
                             style: OutlinedButton.styleFrom(
@@ -244,7 +409,7 @@ class ExpenseDetailScreen extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: onDeleted == null
+                            onPressed: widget.onDeleted == null
                                 ? null
                                 : () => _showDeleteDialog(context),
                             icon: const Icon(Icons.delete_outline_rounded),
@@ -278,79 +443,6 @@ class ExpenseDetailScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _showMoreMenu(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark
-        ? AppColors.darkSurfacePrimary
-        : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ExpenseSheetItem(
-              icon: Icons.edit_outlined,
-              title: 'finance.expense.edit'.tr,
-              color: textPrimary,
-              onTap: () {
-                Get.back();
-                onEdit?.call();
-              },
-            ),
-            ExpenseSheetItem(
-              icon: Icons.delete_outline_rounded,
-              title: 'finance.expense.delete'.tr,
-              color: const Color(0xFFB00020),
-              onTap: () {
-                Get.back();
-                _showDeleteDialog(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showDeleteDialog(BuildContext context) async {
-    final confirmed = await GenLinkConfirmDialog.showDanger(
-      context: context,
-      title: 'finance.expense.deleteConfirmTitle'.tr,
-      message: 'finance.expense.deleteConfirmMessage'.tr,
-      confirmLabel: 'finance.expense.delete'.tr,
-      cancelLabel: 'finance.expense.cancel'.tr,
-    );
-    if (!confirmed || onDeleted == null) return;
-    final deleted = await onDeleted!();
-    if (!context.mounted) return;
-    if (deleted) {
-      Navigator.pop(context, true);
-    } else {
-      Get.snackbar(
-        'finance.expense.delete'.tr,
-        _deleteErrorMessage(),
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-      );
-    }
-  }
-
-  String _deleteErrorMessage() {
-    if (Get.isRegistered<ExpenseController>()) {
-      return Get.find<ExpenseController>().mutationErrorMessage.value ??
-          'common.error'.tr;
-    }
-    return 'common.error'.tr;
   }
 }
 

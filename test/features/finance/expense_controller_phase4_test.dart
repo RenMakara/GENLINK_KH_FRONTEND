@@ -14,13 +14,14 @@ class _MockFinanceRepository extends Mock implements FinanceRepository {}
 
 FinanceExpenseEntity _expense({
   String id = 'expense-1',
+  String title = 'Lunch',
   FinanceCurrency currency = FinanceCurrency.usd,
   String category = 'FOOD',
   double amount = 5,
 }) {
   return FinanceExpenseEntity(
     expenseId: id,
-    title: 'Lunch',
+    title: title,
     amount: amount,
     currency: currency,
     category: category,
@@ -831,4 +832,81 @@ void main() {
       verify(() => repository.deleteExpense('expense-1')).called(1);
     },
   );
+
+  test('update updates expense in-place and preserves history list', () async {
+    final originalFirst = _expense(amount: 10, title: 'Item 1');
+    final second = FinanceExpenseEntity(
+      expenseId: 'expense-2',
+      title: 'Item 2',
+      amount: 20,
+      currency: FinanceCurrency.usd,
+      expenseDate: '2026-08-20',
+      paidFromWallet: false,
+    );
+    controller.expenses.assignAll([originalFirst, second]);
+
+    final updatedFirst = _expense(amount: 15, title: 'Updated Item 1');
+    when(
+      () => repository.updateExpense(
+        expenseId: 'expense-1',
+        title: 'Updated Item 1',
+        amount: 15,
+        expenseDate: '2026-08-20',
+        category: null,
+        description: null,
+        paymentMethod: null,
+        paidFromWallet: false,
+        currency: FinanceCurrency.usd,
+      ),
+    ).thenAnswer((_) async => updatedFirst);
+    when(
+      () => repository.getExpenses(
+        category: null,
+        currency: FinanceCurrency.usd,
+        page: 0,
+        size: 20,
+      ),
+    ).thenAnswer((_) async => _page([updatedFirst, second]));
+
+    final success = await controller.updateExpense(
+      existing: originalFirst,
+      title: 'Updated Item 1',
+      amount: 15,
+      expenseDate: '2026-08-20',
+      paidFromWallet: false,
+    );
+
+    expect(success, isTrue);
+    expect(controller.expenses.length, 2);
+    expect(controller.expenses[0].title, 'Updated Item 1');
+    expect(controller.expenses[0].amount, 15);
+    expect(controller.expenses[1].title, 'Item 2');
+    expect(controller.findExpense('expense-1')?.title, 'Updated Item 1');
+  });
+
+  test('clearMonthFilter resets hasExplicitMonthFilter and refreshes', () async {
+    controller.hasExplicitMonthFilter.value = true;
+    when(
+      () => repository.getExpenses(
+        category: null,
+        currency: FinanceCurrency.usd,
+        page: 0,
+        size: 20,
+      ),
+    ).thenAnswer((_) async => _page([_expense()]));
+
+    await controller.clearMonthFilter();
+
+    expect(controller.hasExplicitMonthFilter.value, isFalse);
+    verify(
+      () => repository.getExpenses(
+        category: null,
+        currency: FinanceCurrency.usd,
+        month: null,
+        year: null,
+        page: 0,
+        size: 20,
+      ),
+    ).called(1);
+  });
 }

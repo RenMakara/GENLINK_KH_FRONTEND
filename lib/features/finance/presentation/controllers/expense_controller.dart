@@ -218,6 +218,19 @@ class ExpenseController extends GetxController {
     }
   }
 
+  FinanceExpenseEntity? findExpense(String expenseId) {
+    for (final expense in expenses) {
+      if (expense.expenseId == expenseId) return expense;
+    }
+    return null;
+  }
+
+  Future<void> clearMonthFilter() async {
+    if (!hasExplicitMonthFilter.value) return;
+    hasExplicitMonthFilter.value = false;
+    await refresh();
+  }
+
   Future<bool> createExpense({
     required String title,
     required double amount,
@@ -238,7 +251,7 @@ class ExpenseController extends GetxController {
     isCreateSubmitting.value = true;
     mutationErrorMessage.value = null;
     try {
-      await _repository.createExpense(
+      final created = await _repository.createExpense(
         title: title,
         amount: amount,
         expenseDate: expenseDate,
@@ -248,6 +261,9 @@ class ExpenseController extends GetxController {
         paidFromWallet: paidFromWallet,
         currency: selectedCurrency.value,
       );
+      if (!expenses.any((e) => e.expenseId == created.expenseId)) {
+        expenses.insert(0, created);
+      }
       await _refreshAfterMutation();
       return true;
     } on AppError catch (error) {
@@ -282,7 +298,7 @@ class ExpenseController extends GetxController {
     isUpdateSubmitting.value = true;
     mutationErrorMessage.value = null;
     try {
-      await _repository.updateExpense(
+      final updated = await _repository.updateExpense(
         expenseId: existing.expenseId,
         title: title,
         amount: amount,
@@ -293,6 +309,15 @@ class ExpenseController extends GetxController {
         paidFromWallet: paidFromWallet,
         currency: existing.currency,
       );
+      final index = expenses.indexWhere(
+        (e) => e.expenseId == existing.expenseId,
+      );
+      if (index >= 0) {
+        expenses[index] = updated;
+      } else {
+        expenses.insert(0, updated);
+      }
+      expenses.refresh();
       await _refreshAfterMutation();
       return true;
     } on AppError catch (error) {
@@ -312,6 +337,7 @@ class ExpenseController extends GetxController {
     mutationErrorMessage.value = null;
     try {
       await _repository.deleteExpense(expenseId);
+      expenses.removeWhere((e) => e.expenseId == expenseId);
       await _refreshAfterMutation();
       return true;
     } on AppError catch (error) {
@@ -328,7 +354,7 @@ class ExpenseController extends GetxController {
   void clearMutationError() => mutationErrorMessage.value = null;
 
   Future<void> _refreshAfterMutation() async {
-    await Future.wait<void>([loadInitial(), _financeController.reload()]);
+    await Future.wait<void>([refresh(), _financeController.reload()]);
   }
 
   Future<void> _loadPage(

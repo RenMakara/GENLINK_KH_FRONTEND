@@ -478,13 +478,6 @@ class ExpenseScreen extends GetView<ExpenseController> {
                               MaterialPageRoute(
                                 builder: (_) => ExpenseDetailScreen.fromEntity(
                                   expense,
-                                  onEdit: () => Navigator.push<void>(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          AddExpenseScreen(expense: expense),
-                                    ),
-                                  ),
                                   onDeleted: () => controller.deleteExpense(
                                     expense.expenseId,
                                   ),

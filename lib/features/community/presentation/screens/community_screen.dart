@@ -1320,88 +1320,97 @@ class _CommunityScreenState extends State<CommunityScreen>
 
     final mediaQuery = MediaQuery.of(context);
     final safeBottom = mediaQuery.padding.bottom;
-    final isNarrow = mediaQuery.size.width < 360;
-    final isVeryNarrow = mediaQuery.size.width < 335;
-    final navBarHeight = isVeryNarrow ? 72.0 : (isNarrow ? 76.0 : 82.0);
-    final navBarBottomMargin = safeBottom > 0 ? safeBottom + 8.0 : 20.0;
-    const visualBreathingRoom = 28.0;
-    final bottomPadding =
-        navBarHeight + navBarBottomMargin + visualBreathingRoom + 28.0;
+    final bottomPadding = safeBottom + 88.0;
 
-    return RefreshIndicator(
-      onRefresh: () => controller.refreshEvents(),
-      color: AppColors.communityAccent,
-      backgroundColor: surfaceSecondary,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification.metrics.extentAfter < 300) {
-            controller.loadMoreEvents();
-          }
-          return false;
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
+    final String upcomingTitle =
+        'community.upcomingEvents'.tr.isNotEmpty &&
+                'community.upcomingEvents'.tr != 'community.upcomingEvents'
+            ? 'community.upcomingEvents'.tr
+            : 'Upcoming Events';
+
+    final TextStyle upcomingStyle =
+        theme.textTheme.titleMedium?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w700,
+          fontSize: 17,
+          letterSpacing: -0.2,
+        ) ??
+        TextStyle(
+          color: textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        );
+
+    return Obx(() {
+      if (controller.isLoadingEvents.value && controller.events.isEmpty) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+              ),
+              child: Text(upcomingTitle, style: upcomingStyle),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: EdgeInsets.only(bottom: bottomPadding),
+                child: _buildEventListSkeleton(
+                  isDark,
+                  surfaceSecondary,
+                  borderSubtle,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      if (controller.hasEventsError.value && controller.events.isEmpty) {
+        return RefreshIndicator(
+          onRefresh: () => controller.refreshEvents(),
+          color: AppColors.communityAccent,
+          backgroundColor: surfaceSecondary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: EdgeInsets.only(bottom: bottomPadding),
+            child: _buildEventErrorState(
+              context,
+              controller,
+              isDark,
+              textPrimary,
+              textSecondary,
+              textMuted,
+              surfaceSecondary,
+              borderSubtle,
+            ),
           ),
-          padding: EdgeInsets.only(bottom: bottomPadding),
-          child: Obx(() {
-            if (controller.isLoadingEvents.value && controller.events.isEmpty) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Text(
-                      'community.upcomingEvents'.tr.isNotEmpty &&
-                              'community.upcomingEvents'.tr !=
-                                  'community.upcomingEvents'
-                          ? 'community.upcomingEvents'.tr
-                          : 'Upcoming Events',
-                      style:
-                          theme.textTheme.titleMedium?.copyWith(
-                            color: textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
-                            letterSpacing: -0.2,
-                          ) ??
-                          TextStyle(
-                            color: textPrimary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildEventListSkeleton(
-                    isDark,
-                    surfaceSecondary,
-                    borderSubtle,
-                  ),
-                ],
-              );
-            }
+        );
+      }
 
-            if (controller.hasEventsError.value && controller.events.isEmpty) {
-              return _buildEventErrorState(
-                context,
-                controller,
-                isDark,
-                textPrimary,
-                textSecondary,
-                textMuted,
-                surfaceSecondary,
-                borderSubtle,
-              );
-            }
+      final allEvents = controller.events;
 
-            final allEvents = controller.events;
-
-            if (allEvents.isEmpty) {
-              return _buildEventEmptyState(
+      if (allEvents.isEmpty) {
+        return RefreshIndicator(
+          onRefresh: () => controller.refreshEvents(),
+          color: AppColors.communityAccent,
+          backgroundColor: surfaceSecondary,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: EdgeInsets.only(bottom: bottomPadding),
+            children: [
+              SizedBox(height: mediaQuery.size.height * 0.12),
+              _buildEventEmptyState(
                 context,
                 isDark,
                 textPrimary,
@@ -1409,92 +1418,94 @@ class _CommunityScreenState extends State<CommunityScreen>
                 textMuted,
                 surfaceSecondary,
                 borderSubtle,
-              );
-            }
+              ),
+            ],
+          ),
+        );
+      }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  child: Text(
-                    'community.upcomingEvents'.tr.isNotEmpty &&
-                            'community.upcomingEvents'.tr !=
-                                'community.upcomingEvents'
-                        ? 'community.upcomingEvents'.tr
-                        : 'Upcoming Events',
-                    style:
-                        theme.textTheme.titleMedium?.copyWith(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 17,
-                          letterSpacing: -0.2,
-                        ) ??
-                        TextStyle(
-                          color: textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
-                  ),
-                ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+            ),
+            child: Text(upcomingTitle, style: upcomingStyle),
+          ),
 
-                const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: allEvents.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 10),
-                    itemBuilder: (context, idx) {
-                      final ev = allEvents[idx];
-                      return _buildUpcomingEventCard(
-                        context,
-                        controller,
-                        ev,
-                        idx,
-                        isDark,
-                        textPrimary,
-                        textSecondary,
-                        textMuted,
-                        surfaceSecondary,
-                        borderSubtle,
-                      );
-                    },
-                  ),
-                ),
-                Obx(() {
-                  if (!controller.hasMoreEvents.value) {
-                    return const SizedBox.shrink();
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => controller.refreshEvents(),
+              color: AppColors.communityAccent,
+              backgroundColor: surfaceSecondary,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.extentAfter < 300) {
+                    controller.loadMoreEvents();
                   }
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
-                    child: Center(
-                      child: controller.isLoadingMoreEvents.value
-                          ? const CircularProgressIndicator(
-                              color: AppColors.communityAccent,
-                            )
-                          : const SizedBox(height: 20),
-                    ),
-                  );
-                }),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
+                  return false;
+                },
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: EdgeInsets.only(
+                    left: AppSpacing.md,
+                    right: AppSpacing.md,
+                    top: 2,
+                    bottom: bottomPadding,
+                  ),
+                  itemCount:
+                      allEvents.length +
+                      (controller.hasMoreEvents.value ? 1 : 0),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
+                  itemBuilder: (context, idx) {
+                    if (idx == allEvents.length) {
+                      return Obx(() {
+                        if (!controller.hasMoreEvents.value) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                          child: Center(
+                            child: controller.isLoadingMoreEvents.value
+                                ? const CircularProgressIndicator(
+                                    color: AppColors.communityAccent,
+                                  )
+                                : const SizedBox(height: 20),
+                          ),
+                        );
+                      });
+                    }
+                    final ev = allEvents[idx];
+                    return _buildUpcomingEventCard(
+                      context,
+                      controller,
+                      ev,
+                      idx,
+                      isDark,
+                      textPrimary,
+                      textSecondary,
+                      textMuted,
+                      surfaceSecondary,
+                      borderSubtle,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildFeedSkeletonLoader(

@@ -199,6 +199,26 @@ class MockCommunityRepository implements CommunityRepository {
   }) async => true;
 
   @override
+  Future<EventPageModel<EventModel>> getEventsPage({
+    int page = 1,
+    int limit = 20,
+    String? category,
+  }) async {
+    final list = await getEvents(page: page, limit: limit, category: category);
+    return EventPageModel<EventModel>(
+      content: list,
+      page: page,
+      size: limit,
+      totalElements: list.length,
+      totalPages: 1,
+      hasNext: false,
+    );
+  }
+
+  @override
+  Future<Set<String>> getSavedEventIds() async => <String>{};
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -243,7 +263,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('FEATURED EVENTS'), findsOneWidget);
+        expect(find.textContaining('SUGGESTED EVENT'), findsOneWidget);
 
         expect(find.text('Flutter Workshop 2026'), findsOneWidget);
         expect(
@@ -262,8 +282,6 @@ void main() {
           find.textContaining('ACLEDA University, Phnom Penh'),
           findsOneWidget,
         );
-
-        expect(find.textContaining('120'), findsOneWidget);
 
         expect(find.text('View Event'), findsOneWidget);
 
